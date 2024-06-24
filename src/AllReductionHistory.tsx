@@ -1,21 +1,16 @@
 // React components
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link, useParams, useHistory } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
 // Material UI components
 import {
   Box,
   Button,
   Collapse,
-  FormControl,
   Grid,
   Icon,
   IconButton,
-  InputLabel,
   Paper,
-  MenuItem,
-  Select,
-  SelectChangeEvent,
   Table,
   TableBody,
   TableCell,
@@ -34,9 +29,6 @@ import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import HighlightOffIcon from '@mui/icons-material/HighlightOff';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
-
-// Local data
-import { instruments } from './InstrumentData';
 
 // Represents a single run with metadata and frame statistics
 interface Run {
