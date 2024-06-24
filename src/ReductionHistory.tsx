@@ -1,7 +1,7 @@
 // React components
 import React, { useCallback, useEffect, useState } from 'react';
-import { useHistory, useParams } from 'react-router-dom';
 import ReactGA from 'react-ga4';
+import { useParams, useHistory, Link } from 'react-router-dom';
 
 // Material UI components
 import {
@@ -29,6 +29,7 @@ import {
   Typography,
   useTheme,
 } from '@mui/material';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
@@ -163,7 +164,7 @@ const ReductionHistory: React.FC = () => {
     <div style={{ padding: '20px' }}>
       <Box display="flex" alignItems="center" justifyContent="space-between" marginBottom="20px">
         <Typography variant="h3" component="h1" style={{ color: theme.palette.text.primary }}>
-          {selectedInstrument.toUpperCase()} reduction history
+          {selectedInstrument.toUpperCase()} reductions
         </Typography>
         <FormControl style={{ width: '200px', marginLeft: '20px' }}>
           <InputLabel id="instrument-select-label">Instrument</InputLabel>
@@ -181,6 +182,16 @@ const ReductionHistory: React.FC = () => {
           </Select>
         </FormControl>
       </Box>
+
+      <Typography
+        variant="body1"
+        component={Link}
+        to="/reduction-history/all"
+        style={{ textDecoration: 'none', color: theme.palette.primary.main, display: 'flex', alignItems: 'center' }}
+      >
+        <ArrowBackIcon style={{ marginRight: '4px' }} />
+        View reductions for all instruments
+      </Typography>
 
       {reductions.length === 0 ? (
         <Typography variant="h6" style={{ textAlign: 'center', marginTop: '20px', color: theme.palette.text.primary }}>
