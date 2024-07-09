@@ -43,7 +43,7 @@ You will also want to delete the contents of SciGateway's [`res`](https://github
 
 ### Specifying environment variables
 
-For local development it is recommended you adjust the URLs for the `REST_API` and `DATA_VIEWER` in [`.env`](https://github.com/fiaisis/frontend/blob/main/.env) to point to the production `API` and `data viewer`.
+For local development it is recommended you adjust the URLs for the `REST_API` and `DATA_VIEWER` in [`.env`](https://github.com/fiaisis/frontend/blob/main/.env) to point to the staging `API` and `data viewer`.
 
 ## Available scripts
 
