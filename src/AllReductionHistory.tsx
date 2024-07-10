@@ -73,7 +73,7 @@ const AllReductionHistory: React.FC = () => {
 
   const fetchTotalCount = useCallback(async (): Promise<void> => {
     try {
-      const response = await fetch(`${fiaApiUrl}/instrument/mari/reductions/count`);
+      const response = await fetch(`${fiaApiUrl}/reductions/count`);
       const data = await response.json();
       setTotalRows(data.count);
     } catch (error) {
@@ -83,9 +83,13 @@ const AllReductionHistory: React.FC = () => {
 
   const fetchReductions = useCallback(async (): Promise<void> => {
     try {
+      const token = localStorage.getItem('scigateway:token');
       const offset = currentPage * rowsPerPage;
-      const query = `limit=${rowsPerPage}&offset=${offset}&order_by=${orderBy}&order_direction=${orderDirection}&include_runs=true`;
-      const response = await fetch(`${fiaApiUrl}/instrument/mari/reductions?${query}`);
+      const query = `limit=${rowsPerPage}&offset=${offset}&order_direction=${orderDirection}&include_runs=true`;
+      const response = await fetch(`${fiaApiUrl}/reductions?${query}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      });
       const data = await response.json();
       setReductions(data);
     } catch (error) {
