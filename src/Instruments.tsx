@@ -140,7 +140,7 @@ const Instruments: React.FC = () => {
                       component={RouterLink}
                       to={`/reduction-history/${instrument.name.toUpperCase()}`}
                     >
-                      Reduction History
+                      Reduction history
                     </Button>
                   </Box>
                 </Box>
