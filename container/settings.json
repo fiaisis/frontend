@@ -23,7 +23,7 @@
   "help-tour-steps": [
     {
       "target": ".tour-title",
-      "content": "Hello, and welcome to SciGateway! This tour will show you the important features of this application"
+      "content": "Hello, and welcome to FIA! This tour will show you the important features of this application"
     },
     {
       "target": ".tour-user-profile",
