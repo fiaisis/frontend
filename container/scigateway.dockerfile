@@ -6,5 +6,5 @@ ENV AUTH_PROVIDER jwt
 WORKDIR /usr/local/apache2/htdocs
 COPY --chown=www-data:www-data settings.json ./settings.json
 COPY --chown=www-data:www-data default.json ./res/default.json
-
+COPY --chown=www-data:www-data images ./res/images
 
