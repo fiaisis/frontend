@@ -38,6 +38,7 @@ A `dev-plugin-settings.json` file is also needed in SciGateway's `micro-frontend
     }
 ]
 ```
+
 ### Specifying environment variables
 
 Unless you have a working API and data viewer set-up locally you will want the frontend to point to the ones in staging which require your machine to be on the company VPN. The URLs for the `REST_API` and `DATA_VIEWER` are found in [`.env`](https://github.com/fiaisis/frontend/blob/main/.env).
@@ -60,7 +61,55 @@ You can now open a terminal in SciGateway and have it act as a parent applicatio
 
 ## Container files
 
-Certain features of the frontend such as the help page are handled by files in SciGateway which are overwritten during production to display the correct information to users. Files for this purpose are stored in the [`container`](https://github.com/fiaisis/frontend/tree/main/container) folder. Any changes made locally to this folder won't be visible when running the web application -- so if you want to test changes you you will need to run a [Docker](https://www.docker.com/) container by building [`frontend.dockerfile`](https://github.com/fiaisis/frontend/blob/main/container/scigateway.dockerfile) and [`scigateway.dockerfile`](https://github.com/fiaisis/frontend/blob/main/container/scigateway.dockerfile) then viewing the changes in a browser.
+Certain features of the frontend such as the help page are handled by files in SciGateway which are overwritten during production to display the correct information to users. Files for this purpose are stored in the [`container`](https://github.com/fiaisis/frontend/tree/main/container) folder. Any changes made locally to this folder won't be visible when running the web application using `yarn start`. So to test changes you need to create a container image. To do this we recommend installing and using [Docker](https://www.docker.com/).
+
+#### To build the frontend:
+
+```bash
+docker build . -t ghcr.io/fiaisis/frontend -f ./frontend.dockerfile
+```
+
+#### To build Scigateway (note the working directory needs to be in the container folder for this):
+
+```bash
+docker build . -t ghcr.io/fiaisis/scigateway -f ./scigateway.dockerfile
+```
+
+#### To run the frontend container:
+
+```bash
+docker run --rm -it -p 8080:80 ghcr.io/fiaisis/frontend
+```
+
+#### To run the SciGateway container (NOTE: without the frontend running on the same local network this will not display the plugin):
+
+```bash
+docker run --rm -it -p 8080:80 ghcr.io/fiaisis/scigateway
+```
+
+To access the websites made by the above containers navigate to http://localhost:8080.
+
+### Container alternative
+
+As an alternative to testing using containers, you can replace the contents of SciGateway's [`res`](https://github.com/ral-facilities/scigateway/tree/develop/public/res) folder with the frontend's [`default.json`](https://github.com/fiaisis/frontend/blob/main/container/default.json) file and [`images`](https://github.com/fiaisis/frontend/tree/main/container/images) folder. This will allow you to see the changes made by running `yarn start`.
+
+<span style="color:red">BEWARE:</span> this can give false positives. And do not push changes to SciGateway.
+
+## Package issues
+
+When adding new depencies to [`package.json`](https://github.com/fiaisis/frontend/blob/main/package.json) or switching between branches with different dependencies, you will need to run `yarn install` to update the `node_modules` folder.
+
+Occassionally there are issues with package conflicts that require `node_modules` and `yarn.lock` to be deleted and the cache cleared. You can do this with the following command:
+
+```bash
+rm -rf node_modules && yarn cache clean && rm -f yarn.lock && yarn install
+```
+
+## Writing browser tests
+
+The FIA frontend makes use of [Cypress](https://www.cypress.io/) for conducting end-to-end and component testing. These tests will be ran by a [workflow](https://github.com/fiaisis/frontend/blob/main/.github/workflows/cypress_tests.yml) whenever a commit is pushed or a pull request merged. The tests can also be ran locally.
+
+For writing your own tests, follow the guide [here](https://docs.cypress.io/guides/end-to-end-testing/writing-your-first-end-to-end-test). Alternatively you can replicate the methods used in pre-existing `.cy.tsx` files, like the [home page](https://github.com/fiaisis/frontend/blob/main/cypress/component/HomePage.cy.tsx).
 
 ## Additional scripts
 
@@ -83,22 +132,6 @@ Opens the Cypress Test Runner. This provides a graphical display for running end
 ### `yarn cypress run`
 
 Runs Cypress tests headlessly in the terminal. This is useful for running tests in a CI/CD pipeline (currently there are no e2e spec files so shouldn't do anything).
-
-## Package issues
-
-When adding new depencies to [`package.json`](https://github.com/fiaisis/frontend/blob/main/package.json) or switching between branches with different dependencies, you will need to run `yarn install` to update the `node_modules` folder.
-
-Occassionally there are issues with package conflicts that require `node_modules` and `yarn.lock` to be deleted and the cache cleared. You can do this with the following command:
-
-```bash
-rm -rf node_modules && yarn cache clean && rm -f yarn.lock && yarn install
-```
-
-## Writing browser tests
-
-The FIA frontend makes use of [Cypress](https://www.cypress.io/) for conducting end-to-end and component testing. These tests will be ran by a [workflow](https://github.com/fiaisis/frontend/blob/main/.github/workflows/cypress_tests.yml) whenever a commit is pushed or a pull request merged. The tests can also be ran locally. 
-
-For writing your own tests, follow the guide [here](https://docs.cypress.io/guides/end-to-end-testing/writing-your-first-end-to-end-test). Alternatively you can replicate the methods used in pre-existing `.cy.tsx` files, like the [home page](https://github.com/fiaisis/frontend/blob/main/cypress/component/HomePage.cy.tsx).
 
 ## Learn More
 
