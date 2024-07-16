@@ -8,6 +8,7 @@ import ReductionHistory from './ReductionHistory';
 import HomePage from './HomePage';
 import ValueEditor from './ValueEditor';
 import GlobalStyles from './GlobalStyles';
+import usePageTracking from './usePageTracking';
 
 const App: FC = () => {
   // Need to call forceUpdate if SciGateway tells us to rerender but there's no
@@ -30,6 +31,9 @@ const App: FC = () => {
       document.removeEventListener('scigateway', handler);
     };
   }, []);
+
+  // GA tracking
+  usePageTracking();
 
   return (
     <GlobalStyles>
