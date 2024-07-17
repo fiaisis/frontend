@@ -58,7 +58,7 @@
   "authUrl": "/auth",
   "ui-strings": "res/default.json",
   "autoLogin": true,
-  "ga-tracking-id": "UA-XXXX-Y",
+  "ga-tracking-id": "G-7XJBCP6P75",
   "contactUsAccessibilityFormUrl": "",
   "homepageUrl": "/fia"
 }
