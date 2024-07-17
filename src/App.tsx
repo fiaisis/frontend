@@ -1,6 +1,7 @@
 // React components
 import React, { FC } from 'react';
-import { BrowserRouter as Router, Route, Switch } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Switch, useLocation } from 'react-router-dom';
+import ReactGA from 'react-ga4';
 
 // Local data
 import Instruments from './Instruments';
@@ -8,6 +9,10 @@ import ReductionHistory from './ReductionHistory';
 import HomePage from './HomePage';
 import ValueEditor from './ValueEditor';
 import GlobalStyles from './GlobalStyles';
+
+// Initialize Google Analytics
+ReactGA.initialize('G-7XJBCP6P75');
+ReactGA.send({ hitType: 'pageview', page: window.location.pathname });
 
 const App: FC = () => {
   // Need to call forceUpdate if SciGateway tells us to rerender but there's no
