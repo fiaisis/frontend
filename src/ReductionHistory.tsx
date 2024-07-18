@@ -1,6 +1,7 @@
 // React components
 import React, { useCallback, useEffect, useState } from 'react';
 import { useHistory, useParams } from 'react-router-dom';
+import ReactGA from 'react-ga4';
 
 // Material UI components
 import {
@@ -326,6 +327,12 @@ function Row({ reduction, index }: { reduction: Reduction; index: number }): JSX
                     onClick={() => {
                       const url = `${fiaDataViewerUrl}/view/${reduction.runs[0].instrument_name}/${reduction.runs[0].experiment_number}/${output}`;
                       window.open(url, '_blank');
+                      ReactGA.event({
+                        category: 'Button',
+                        action: 'Click',
+                        label: 'View button',
+                        value: reduction.id,
+                      });
                     }}
                   >
                     View
@@ -423,6 +430,12 @@ function Row({ reduction, index }: { reduction: Reduction; index: number }): JSX
     const windowName = 'ValueEditorWindow';
     const features = 'width=1200,height=800,resizable=no';
     window.open(url, windowName, features);
+    ReactGA.event({
+      category: 'Button',
+      action: 'Click',
+      label: 'Value editor button',
+      value: reduction.id,
+    });
   };
 
   return (
