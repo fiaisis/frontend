@@ -29,6 +29,12 @@ import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import HighlightOffIcon from '@mui/icons-material/HighlightOff';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import ScienceIcon from '@mui/icons-material/Science';
+import BuildIcon from '@mui/icons-material/Build';
+import PeopleIcon from '@mui/icons-material/People';
+import FolderIcon from '@mui/icons-material/Folder';
+import ScheduleIcon from '@mui/icons-material/Schedule';
+import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 
 // Represents a single run with metadata and frame statistics
 interface Run {
@@ -271,7 +277,7 @@ function Row({ reduction, index }: { reduction: Reduction; index: number }): JSX
                     overflowWrap: 'break-word',
                   }}
                 >
-                  {output}
+                  <FolderIcon fontSize="small" /> {output}
                 </Box>
                 <Box>
                   <Button
@@ -343,7 +349,7 @@ function Row({ reduction, index }: { reduction: Reduction; index: number }): JSX
 
     return entries.map(([key, value], index) => (
       <Typography key={index} variant="body2" sx={{ fontWeight: 'bold' }}>
-        {`${key}: ${value}`}
+        <BuildIcon fontSize="small" /> {`${key}: ${value}`}
       </Typography>
     ));
   };
@@ -447,25 +453,26 @@ function Row({ reduction, index }: { reduction: Reduction; index: number }): JSX
                     Run details
                   </Typography>
                   <Typography variant="body2" gutterBottom sx={{ fontWeight: 'bold' }}>
-                    Reduction ID: {reduction.id}
+                    <FolderIcon fontSize="small" /> Reduction ID: {reduction.id}
                   </Typography>
                   <Typography variant="body2" gutterBottom sx={{ fontWeight: 'bold' }}>
-                    Instrument: {reduction.runs[0].instrument_name}
+                    <ScienceIcon fontSize="small" /> Instrument: {reduction.runs[0].instrument_name}
                   </Typography>
                   <Typography variant="body2" gutterBottom sx={{ fontWeight: 'bold' }}>
-                    Reduction start: {formatDateTime(reduction.reduction_start)}
+                    <ScheduleIcon fontSize="small" /> Reduction start: {formatDateTime(reduction.reduction_start)}
                   </Typography>
                   <Typography variant="body2" gutterBottom sx={{ fontWeight: 'bold' }}>
-                    Reduction end: {formatDateTime(reduction.reduction_end)}
+                    <ScheduleIcon fontSize="small" /> Reduction end: {formatDateTime(reduction.reduction_end)}
                   </Typography>
                   <Typography variant="body2" gutterBottom sx={{ fontWeight: 'bold' }}>
-                    Good frames: {reduction.runs[0].good_frames.toLocaleString()}
+                    <InsertDriveFileIcon fontSize="small" /> Good frames:{' '}
+                    {reduction.runs[0].good_frames.toLocaleString()}
                   </Typography>
                   <Typography variant="body2" gutterBottom sx={{ fontWeight: 'bold' }}>
-                    Raw frames: {reduction.runs[0].raw_frames.toLocaleString()}
+                    <InsertDriveFileIcon fontSize="small" /> Raw frames: {reduction.runs[0].raw_frames.toLocaleString()}
                   </Typography>
                   <Typography variant="body2" gutterBottom sx={{ fontWeight: 'bold' }}>
-                    Users: {reduction.runs[0].users}
+                    <PeopleIcon fontSize="small" /> Users: {reduction.runs[0].users}
                   </Typography>
                 </Grid>
 
