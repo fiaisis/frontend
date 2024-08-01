@@ -257,13 +257,13 @@ function Row({ reduction, index }: { reduction: Reduction; index: number }): JSX
 
   const getFileTypeIcon = (fileName: string): JSX.Element => {
     if (fileName.endsWith('.nxspe')) {
-      return <JoinFullIcon fontSize="small" />;
+      return <JoinFullIcon fontSize="small" style={{ marginRight: '8px' }} />;
     } else if (fileName.endsWith('.nxs')) {
-      return <JoinInnerIcon fontSize="small" />;
+      return <JoinInnerIcon fontSize="small" style={{ marginRight: '8px' }} />;
     } else if (fileName.endsWith('.txt')) {
-      return <InsertDriveFileIcon fontSize="small" />;
+      return <InsertDriveFileIcon fontSize="small" style={{ marginRight: '8px' }} />;
     } else {
-      return <FolderIcon fontSize="small" />;
+      return <FolderIcon fontSize="small" style={{ marginRight: '8px' }} />;
     }
   };
 
@@ -286,14 +286,24 @@ function Row({ reduction, index }: { reduction: Reduction; index: number }): JSX
             <TableCell>
               <Box maxHeight="80px" display="flex" alignItems="center" justifyContent="space-between" width="100%">
                 <Box
-                  flex="1"
-                  textAlign="left"
+                  display="flex"
+                  alignItems="center"
                   sx={{
                     minWidth: 0,
-                    overflowWrap: 'break-word',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    maxWidth: '200px',
                   }}
                 >
-                  {getFileTypeIcon(output)} {output}
+                  <Tooltip title={output}>
+                    <Box display="flex" alignItems="center">
+                      {getFileTypeIcon(output)}
+                      <Typography variant="body2" noWrap>
+                        {output}
+                      </Typography>
+                    </Box>
+                  </Tooltip>
                 </Box>
                 <Box>
                   <Button
@@ -364,9 +374,13 @@ function Row({ reduction, index }: { reduction: Reduction; index: number }): JSX
     }
 
     return entries.map(([key, value], index) => (
-      <Typography key={index} variant="body2" sx={{ fontWeight: 'bold' }}>
-        <BuildIcon fontSize="small" /> {`${key}: ${value}`}
-      </Typography>
+      <Box key={index} sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
+        <BuildIcon fontSize="small" style={{ marginRight: '8px' }} />
+        <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
+          {key}:
+        </Typography>
+        <Typography variant="body2">{value}</Typography>
+      </Box>
     ));
   };
 
@@ -468,28 +482,55 @@ function Row({ reduction, index }: { reduction: Reduction; index: number }): JSX
                   <Typography variant="h6" gutterBottom component="div" sx={{ fontWeight: 'bold' }}>
                     Run details
                   </Typography>
-                  <Typography variant="body2" gutterBottom sx={{ fontWeight: 'bold' }}>
-                    <VpnKeyIcon fontSize="small" /> Reduction ID: {reduction.id}
-                  </Typography>
-                  <Typography variant="body2" gutterBottom sx={{ fontWeight: 'bold' }}>
-                    <SchemaIcon fontSize="small" /> Instrument: {reduction.runs[0].instrument_name}
-                  </Typography>
-                  <Typography variant="body2" gutterBottom sx={{ fontWeight: 'bold' }}>
-                    <ScheduleIcon fontSize="small" /> Reduction start: {formatDateTime(reduction.reduction_start)}
-                  </Typography>
-                  <Typography variant="body2" gutterBottom sx={{ fontWeight: 'bold' }}>
-                    <ScheduleIcon fontSize="small" /> Reduction end: {formatDateTime(reduction.reduction_end)}
-                  </Typography>
-                  <Typography variant="body2" gutterBottom sx={{ fontWeight: 'bold' }}>
-                    <StackedBarChartIcon fontSize="small" /> Good frames:{' '}
-                    {reduction.runs[0].good_frames.toLocaleString()}
-                  </Typography>
-                  <Typography variant="body2" gutterBottom sx={{ fontWeight: 'bold' }}>
-                    <StackedBarChartIcon fontSize="small" /> Raw frames: {reduction.runs[0].raw_frames.toLocaleString()}
-                  </Typography>
-                  <Typography variant="body2" gutterBottom sx={{ fontWeight: 'bold' }}>
-                    <PeopleIcon fontSize="small" /> Users: {reduction.runs[0].users}
-                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
+                    <VpnKeyIcon fontSize="small" style={{ marginRight: '8px' }} />
+                    <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
+                      Reduction ID:
+                    </Typography>
+                    <Typography variant="body2">{reduction.id}</Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
+                    <SchemaIcon fontSize="small" style={{ marginRight: '8px' }} />
+                    <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
+                      Instrument:
+                    </Typography>
+                    <Typography variant="body2">{reduction.runs[0].instrument_name}</Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
+                    <ScheduleIcon fontSize="small" style={{ marginRight: '8px' }} />
+                    <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
+                      Reduction start:
+                    </Typography>
+                    <Typography variant="body2">{formatDateTime(reduction.reduction_start)}</Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
+                    <ScheduleIcon fontSize="small" style={{ marginRight: '8px' }} />
+                    <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
+                      Reduction end:
+                    </Typography>
+                    <Typography variant="body2">{formatDateTime(reduction.reduction_end)}</Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
+                    <StackedBarChartIcon fontSize="small" style={{ marginRight: '8px' }} />
+                    <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
+                      Good frames:
+                    </Typography>
+                    <Typography variant="body2">{reduction.runs[0].good_frames.toLocaleString()}</Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
+                    <StackedBarChartIcon fontSize="small" style={{ marginRight: '8px' }} />
+                    <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
+                      Raw frames:
+                    </Typography>
+                    <Typography variant="body2">{reduction.runs[0].raw_frames.toLocaleString()}</Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
+                    <PeopleIcon fontSize="small" style={{ marginRight: '8px' }} />
+                    <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
+                      Users:
+                    </Typography>
+                    <Typography variant="body2">{reduction.runs[0].users}</Typography>
+                  </Box>
                 </Grid>
 
                 <Grid item xs={5}>
