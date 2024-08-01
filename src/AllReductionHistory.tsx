@@ -29,12 +29,16 @@ import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import HighlightOffIcon from '@mui/icons-material/HighlightOff';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
-import ScienceIcon from '@mui/icons-material/Science';
 import BuildIcon from '@mui/icons-material/Build';
 import PeopleIcon from '@mui/icons-material/People';
 import FolderIcon from '@mui/icons-material/Folder';
 import ScheduleIcon from '@mui/icons-material/Schedule';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
+import VpnKeyIcon from '@mui/icons-material/VpnKey';
+import StackedBarChartIcon from '@mui/icons-material/StackedBarChart';
+import JoinFullIcon from '@mui/icons-material/JoinFull';
+import JoinInnerIcon from '@mui/icons-material/JoinInner';
+import SchemaIcon from '@mui/icons-material/Schema';
 
 // Represents a single run with metadata and frame statistics
 interface Run {
@@ -251,6 +255,18 @@ function Row({ reduction, index }: { reduction: Reduction; index: number }): JSX
     return fileName;
   };
 
+  const getFileTypeIcon = (fileName: string): JSX.Element => {
+    if (fileName.endsWith('.nxspe')) {
+      return <JoinFullIcon fontSize="small" />;
+    } else if (fileName.endsWith('.nxs')) {
+      return <JoinInnerIcon fontSize="small" />;
+    } else if (fileName.endsWith('.txt')) {
+      return <InsertDriveFileIcon fontSize="small" />;
+    } else {
+      return <FolderIcon fontSize="small" />;
+    }
+  };
+
   const parseReductionOutputs = (): JSX.Element | JSX.Element[] | undefined => {
     try {
       let outputs;
@@ -277,7 +293,7 @@ function Row({ reduction, index }: { reduction: Reduction; index: number }): JSX
                     overflowWrap: 'break-word',
                   }}
                 >
-                  <FolderIcon fontSize="small" /> {output}
+                  {getFileTypeIcon(output)} {output}
                 </Box>
                 <Box>
                   <Button
@@ -453,10 +469,10 @@ function Row({ reduction, index }: { reduction: Reduction; index: number }): JSX
                     Run details
                   </Typography>
                   <Typography variant="body2" gutterBottom sx={{ fontWeight: 'bold' }}>
-                    <FolderIcon fontSize="small" /> Reduction ID: {reduction.id}
+                    <VpnKeyIcon fontSize="small" /> Reduction ID: {reduction.id}
                   </Typography>
                   <Typography variant="body2" gutterBottom sx={{ fontWeight: 'bold' }}>
-                    <ScienceIcon fontSize="small" /> Instrument: {reduction.runs[0].instrument_name}
+                    <SchemaIcon fontSize="small" /> Instrument: {reduction.runs[0].instrument_name}
                   </Typography>
                   <Typography variant="body2" gutterBottom sx={{ fontWeight: 'bold' }}>
                     <ScheduleIcon fontSize="small" /> Reduction start: {formatDateTime(reduction.reduction_start)}
@@ -465,11 +481,11 @@ function Row({ reduction, index }: { reduction: Reduction; index: number }): JSX
                     <ScheduleIcon fontSize="small" /> Reduction end: {formatDateTime(reduction.reduction_end)}
                   </Typography>
                   <Typography variant="body2" gutterBottom sx={{ fontWeight: 'bold' }}>
-                    <InsertDriveFileIcon fontSize="small" /> Good frames:{' '}
+                    <StackedBarChartIcon fontSize="small" /> Good frames:{' '}
                     {reduction.runs[0].good_frames.toLocaleString()}
                   </Typography>
                   <Typography variant="body2" gutterBottom sx={{ fontWeight: 'bold' }}>
-                    <InsertDriveFileIcon fontSize="small" /> Raw frames: {reduction.runs[0].raw_frames.toLocaleString()}
+                    <StackedBarChartIcon fontSize="small" /> Raw frames: {reduction.runs[0].raw_frames.toLocaleString()}
                   </Typography>
                   <Typography variant="body2" gutterBottom sx={{ fontWeight: 'bold' }}>
                     <PeopleIcon fontSize="small" /> Users: {reduction.runs[0].users}
