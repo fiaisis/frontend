@@ -7,6 +7,7 @@ import { Box, Button, Collapse, IconButton, Link, List, ListItem, Typography, us
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
 import StarIcon from '@mui/icons-material/Star';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 
 // Local data
 import { instruments } from './InstrumentData';
@@ -132,7 +133,7 @@ const Instruments: React.FC = () => {
                     </Box>
                   </Box>
                   <Link href={instrument.infoPage} target="_blank" rel="noopener" underline="always">
-                    {instrument.infoPage}
+                    {instrument.infoPage} <OpenInNewIcon fontSize="small" />
                   </Link>
                   <Box marginTop={2}>
                     <Button
