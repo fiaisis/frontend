@@ -197,7 +197,12 @@ const ReductionHistory: React.FC = () => {
         variant="body1"
         component={Link}
         to="/reduction-history/all"
-        style={{ textDecoration: 'none', color: theme.palette.primary.main, display: 'flex', alignItems: 'center' }}
+        style={{
+          color: theme.palette.mode === 'dark' ? '#86b4ff' : theme.palette.primary.main,
+          display: 'flex',
+          alignItems: 'center',
+          textDecoration: 'none',
+        }}
       >
         <ArrowBackIcon style={{ marginRight: '4px' }} />
         View reductions for all instruments

@@ -442,7 +442,10 @@ function Row({ reduction, index }: { reduction: Reduction; index: number }): JSX
         <TableCell>
           <Link
             to={`/reduction-history/${reduction.runs[0].instrument_name}`}
-            style={{ color: theme.palette.primary.main, textDecoration: 'underline' }}
+            style={{
+              fontWeight: 'bold',
+              color: theme.palette.mode === 'dark' ? '#86b4ff' : theme.palette.primary.main,
+            }}
           >
             {reduction.runs[0].instrument_name}
           </Link>
