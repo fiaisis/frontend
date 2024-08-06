@@ -458,8 +458,8 @@ function Row({ reduction, index }: { reduction: Reduction; index: number }): JSX
               <Typography variant="h6" gutterBottom component="div">
                 {renderReductionStatus()}
               </Typography>
-              <Grid container spacing={3}>
-                <Grid item xs={4}>
+              <Grid container spacing={3} sx={{ '@media (max-width:600px)': { flexDirection: 'column' } }}>
+                <Grid item xs={4} sx={{ '@media (max-width:600px)': { width: '100%' } }}>
                   <Typography variant="h6" gutterBottom component="div" sx={{ fontWeight: 'bold' }}>
                     {reduction.reduction_state === 'UNSUCCESSFUL' || reduction.reduction_state === 'ERROR'
                       ? 'Stacktrace output'
@@ -481,7 +481,7 @@ function Row({ reduction, index }: { reduction: Reduction; index: number }): JSX
                     )}
                   </Box>
                 </Grid>
-                <Grid item xs={3}>
+                <Grid item xs={3} sx={{ '@media (max-width:600px)': { width: '100%' } }}>
                   <Typography variant="h6" gutterBottom component="div" sx={{ fontWeight: 'bold' }}>
                     Run details
                   </Typography>
@@ -536,7 +536,7 @@ function Row({ reduction, index }: { reduction: Reduction; index: number }): JSX
                   </Box>
                 </Grid>
 
-                <Grid item xs={5}>
+                <Grid item xs={5} sx={{ '@media (max-width:600px)': { width: '100%' } }}>
                   <Typography variant="h6" gutterBottom component="div" sx={{ fontWeight: 'bold' }}>
                     Reduction inputs
                   </Typography>
