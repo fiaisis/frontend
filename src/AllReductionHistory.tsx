@@ -481,6 +481,7 @@ function Row({ reduction, index }: { reduction: Reduction; index: number }): JSX
                     )}
                   </Box>
                 </Grid>
+
                 <Grid item xs={3} sx={{ '@media (max-width:600px)': { width: '100%' } }}>
                   <Typography variant="h6" gutterBottom component="div" sx={{ fontWeight: 'bold' }}>
                     Run details
