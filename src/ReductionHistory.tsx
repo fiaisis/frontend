@@ -536,7 +536,7 @@ function Row({ reduction, index }: { reduction: Reduction; index: number }): JSX
                       </Typography>
                     ) : reduction.reduction_state === 'UNSUCCESSFUL' || reduction.reduction_state === 'ERROR' ? (
                       <Typography variant="body2" style={{ margin: 2, whiteSpace: 'pre-wrap' }}>
-                        {reduction.stacktrace}
+                        {reduction.stacktrace ? reduction.stacktrace : 'No detailed stacktrace to show'}
                       </Typography>
                     ) : (
                       <Table size="small" aria-label="details">
