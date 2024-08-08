@@ -1,22 +1,16 @@
 // React components
-import React, { useCallback, useEffect, useState } from 'react';
-import ReactGA from 'react-ga4';
-import { useParams, useHistory, Link } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 
 // Material UI components
 import {
   Box,
   Button,
   Collapse,
-  FormControl,
   Grid,
   Icon,
   IconButton,
-  InputLabel,
-  MenuItem,
   Paper,
-  Select,
-  SelectChangeEvent,
   Table,
   TableBody,
   TableCell,
@@ -29,7 +23,6 @@ import {
   Typography,
   useTheme,
 } from '@mui/material';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
@@ -46,9 +39,6 @@ import StackedBarChartIcon from '@mui/icons-material/StackedBarChart';
 import JoinFullIcon from '@mui/icons-material/JoinFull';
 import JoinInnerIcon from '@mui/icons-material/JoinInner';
 import SchemaIcon from '@mui/icons-material/Schema';
-
-// Local data
-import { instruments } from './InstrumentData';
 
 // Represents a single run with metadata and frame statistics
 interface Run {
@@ -81,45 +71,32 @@ interface Reduction {
   runs: Run[];
 }
 
-const ReductionHistory: React.FC = () => {
+const AllReductionHistory: React.FC = () => {
   const fiaApiUrl = process.env.REACT_APP_FIA_REST_API_URL;
-  const history = useHistory();
   const theme = useTheme();
-  const { instrumentName } = useParams<{ instrumentName: string }>();
   const [reductions, setReductions] = useState<Reduction[]>([]);
-  const [selectedInstrument, setSelectedInstrument] = useState<string>(instrumentName || instruments[0].name);
   const [currentPage, setCurrentPage] = useState(0); // Page index starts at 0 for TablePagination
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [totalRows, setTotalRows] = useState(0);
   const [orderDirection, setOrderDirection] = useState<'asc' | 'desc'>('desc');
   const [orderBy, setOrderBy] = useState<string>('run_start');
 
-  useEffect(() => {
-    if (instrumentName && instruments.some((i) => i.name === instrumentName)) {
-      setSelectedInstrument(instrumentName);
-    } else {
-      // Fallback to the first instrument if the parameter is not valid
-      setSelectedInstrument(instruments[0].name);
-      history.replace(`/reduction-history/${instruments[0].name}`);
-    }
-  }, [instrumentName, history]);
-
   const fetchTotalCount = useCallback(async (): Promise<void> => {
     try {
-      const response = await fetch(`${fiaApiUrl}/instrument/${selectedInstrument}/reductions/count`);
+      const response = await fetch(`${fiaApiUrl}/reductions/count`);
       const data = await response.json();
       setTotalRows(data.count);
     } catch (error) {
       console.error('Error fetching run count:', error);
     }
-  }, [selectedInstrument, fiaApiUrl]);
+  }, [fiaApiUrl]);
 
   const fetchReductions = useCallback(async (): Promise<void> => {
     try {
       const token = localStorage.getItem('scigateway:token');
       const offset = currentPage * rowsPerPage;
-      const query = `limit=${rowsPerPage}&offset=${offset}&order_by=${orderBy}&order_direction=${orderDirection}&include_runs=true`;
-      const response = await fetch(`${fiaApiUrl}/instrument/${selectedInstrument}/reductions?${query}`, {
+      const query = `limit=${rowsPerPage}&offset=${offset}&order_direction=${orderDirection}&include_runs=true`;
+      const response = await fetch(`${fiaApiUrl}/reductions?${query}`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       });
@@ -128,21 +105,12 @@ const ReductionHistory: React.FC = () => {
     } catch (error) {
       console.error('Error fetching reductions:', error);
     }
-  }, [selectedInstrument, currentPage, rowsPerPage, orderBy, orderDirection, fiaApiUrl]);
+  }, [currentPage, rowsPerPage, orderDirection, fiaApiUrl]);
 
   useEffect(() => {
     fetchTotalCount();
     fetchReductions();
   }, [fetchTotalCount, fetchReductions, currentPage, rowsPerPage]);
-
-  const handleInstrumentChange = (event: SelectChangeEvent<string>): void => {
-    const newInstrument = event.target.value;
-    setSelectedInstrument(newInstrument);
-    setCurrentPage(0);
-    history.push(`/reduction-history/${newInstrument}`);
-    fetchTotalCount();
-    fetchReductions();
-  };
 
   const handleSort = (property: string): void => {
     const isAsc = orderBy === property && orderDirection === 'asc';
@@ -174,43 +142,13 @@ const ReductionHistory: React.FC = () => {
     <div style={{ padding: '20px' }}>
       <Box display="flex" alignItems="center" justifyContent="space-between" marginBottom="20px">
         <Typography variant="h3" component="h1" style={{ color: theme.palette.text.primary }}>
-          {selectedInstrument.toUpperCase()} reductions
+          All reductions
         </Typography>
-        <FormControl style={{ width: '200px', marginLeft: '20px' }}>
-          <InputLabel id="instrument-select-label">Instrument</InputLabel>
-          <Select
-            labelId="instrument-select-label"
-            value={selectedInstrument}
-            label="Instrument"
-            onChange={handleInstrumentChange}
-          >
-            {instruments.map((instrument) => (
-              <MenuItem key={instrument.name} value={instrument.name}>
-                {instrument.name}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
       </Box>
-
-      <Typography
-        variant="body1"
-        component={Link}
-        to="/reduction-history/all"
-        style={{
-          color: theme.palette.mode === 'dark' ? '#86b4ff' : theme.palette.primary.main,
-          display: 'flex',
-          alignItems: 'center',
-          textDecoration: 'none',
-        }}
-      >
-        <ArrowBackIcon style={{ marginRight: '4px' }} />
-        View reductions for all instruments
-      </Typography>
 
       {reductions.length === 0 ? (
         <Typography variant="h6" style={{ textAlign: 'center', marginTop: '20px', color: theme.palette.text.primary }}>
-          No reductions to show for this instrument
+          No reductions to show
         </Typography>
       ) : (
         <>
@@ -226,9 +164,7 @@ const ReductionHistory: React.FC = () => {
             <Table aria-label="collapsible table" stickyHeader>
               <TableHead>
                 <TableRow>
-                  <TableCell style={{ ...headerStyles, width: '8%' }} colSpan={2}>
-                    {selectedInstrument}
-                  </TableCell>
+                  <TableCell style={{ ...headerStyles, width: '5%' }} colSpan={2}></TableCell>
                   <TableCell
                     style={{ ...headerStyles, width: '12%' }}
                     sortDirection={orderBy === 'experiment_number' ? orderDirection : false}
@@ -244,21 +180,21 @@ const ReductionHistory: React.FC = () => {
                     Filename {orderBy === 'filename' ? (orderDirection === 'asc' ? '↑' : '↓') : ''}
                   </TableCell>
                   <TableCell
-                    style={{ ...headerStyles, width: '15%' }}
+                    style={{ ...headerStyles, width: '10%' }}
                     sortDirection={orderBy === 'run_start' ? orderDirection : false}
                     onClick={() => handleSort('run_start')}
                   >
                     Run start {orderBy === 'run_start' ? (orderDirection === 'asc' ? '↑' : '↓') : ''}
                   </TableCell>
                   <TableCell
-                    style={{ ...headerStyles, width: '15%' }}
+                    style={{ ...headerStyles, width: '10%' }}
                     sortDirection={orderBy === 'run_end' ? orderDirection : false}
                     onClick={() => handleSort('run_end')}
                   >
                     Run end {orderBy === 'run_end' ? (orderDirection === 'asc' ? '↑' : '↓') : ''}
                   </TableCell>
-                  {/* API doesn't allow for sorting by title */}
-                  <TableCell style={{ ...headerStyles, width: '40%' }}>Title</TableCell>
+                  <TableCell style={{ ...headerStyles, width: '28%' }}>Title</TableCell>
+                  <TableCell style={{ ...headerStyles, width: '15%' }}>Instrument</TableCell>
                 </TableRow>
               </TableHead>
 
@@ -315,7 +251,8 @@ function Row({ reduction, index }: { reduction: Reduction; index: number }): JSX
     if (typeof fileNameWithExtension === 'undefined') {
       return '';
     }
-    return fileNameWithExtension.split('.')[0];
+    const fileName = fileNameWithExtension.split('.')[0];
+    return fileName;
   };
 
   const getFileTypeIcon = (fileName: string): JSX.Element => {
@@ -375,12 +312,6 @@ function Row({ reduction, index }: { reduction: Reduction; index: number }): JSX
                     onClick={() => {
                       const url = `${fiaDataViewerUrl}/view/${reduction.runs[0].instrument_name}/${reduction.runs[0].experiment_number}/${output}`;
                       window.open(url, '_blank');
-                      ReactGA.event({
-                        category: 'Button',
-                        action: 'Click',
-                        label: 'View button',
-                        value: reduction.id,
-                      });
                     }}
                   >
                     View
@@ -482,12 +413,6 @@ function Row({ reduction, index }: { reduction: Reduction; index: number }): JSX
     const windowName = 'ValueEditorWindow';
     const features = 'width=1200,height=800,resizable=no';
     window.open(url, windowName, features);
-    ReactGA.event({
-      category: 'Button',
-      action: 'Click',
-      label: 'Value editor button',
-      value: reduction.id,
-    });
   };
 
   return (
@@ -514,9 +439,20 @@ function Row({ reduction, index }: { reduction: Reduction; index: number }): JSX
         <TableCell>{formatDateTime(reduction.runs[0].run_start)}</TableCell>
         <TableCell>{formatDateTime(reduction.runs[0].run_end)}</TableCell>
         <TableCell>{reduction.runs[0].title}</TableCell>
+        <TableCell>
+          <Link
+            to={`/reduction-history/${reduction.runs[0].instrument_name}`}
+            style={{
+              fontWeight: 'bold',
+              color: theme.palette.mode === 'dark' ? '#86b4ff' : theme.palette.primary.main,
+            }}
+          >
+            {reduction.runs[0].instrument_name}
+          </Link>
+        </TableCell>
       </TableRow>
       <TableRow sx={rowStyles}>
-        <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={7}>
+        <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={8}>
           <Collapse in={open} timeout="auto" unmountOnExit>
             <Box margin={2}>
               <Typography variant="h6" gutterBottom component="div">
@@ -633,4 +569,4 @@ function Row({ reduction, index }: { reduction: Reduction; index: number }): JSX
   );
 }
 
-export default ReductionHistory;
+export default AllReductionHistory;
