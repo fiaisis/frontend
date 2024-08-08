@@ -52,7 +52,7 @@ interface Run {
   instrument_name: string;
 }
 
-// Describes the details of a reduction for one or more runs
+// Describes the details of a reduction for one or more run
 interface Reduction {
   id: number;
   start: string;
@@ -67,7 +67,7 @@ interface Reduction {
   script: {
     value: string;
   };
-  runs: Run[];
+  run: Run;
 }
 
 const ReductionHistory: React.FC = () => {
@@ -107,7 +107,7 @@ const ReductionHistory: React.FC = () => {
     try {
       const token = localStorage.getItem('scigateway:token');
       const offset = currentPage * rowsPerPage;
-      const query = `limit=${rowsPerPage}&offset=${offset}&order_by=${orderBy}&order_direction=${orderDirection}&include_runs=true`;
+      const query = `limit=${rowsPerPage}&offset=${offset}&order_by=${orderBy}&order_direction=${orderDirection}&include_run=true`;
       const response = await fetch(`${fiaApiUrl}/instrument/${selectedInstrument}/jobs?${query}`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -325,7 +325,7 @@ function Row({ reduction, index }: { reduction: Reduction; index: number }): JSX
                     variant="contained"
                     style={{ marginLeft: '10px' }}
                     onClick={() => {
-                      const url = `${fiaDataViewerUrl}/view/${reduction.runs[0].instrument_name}/${reduction.runs[0].experiment_number}/${output}`;
+                      const url = `${fiaDataViewerUrl}/view/${reduction.run.instrument_name}/${reduction.run.experiment_number}/${output}`;
                       window.open(url, '_blank');
                       ReactGA.event({
                         category: 'Button',
@@ -456,12 +456,12 @@ function Row({ reduction, index }: { reduction: Reduction; index: number }): JSX
           <ReductionStatusIcon state={reduction.state} />
         </TableCell>
         <TableCell component="th" scope="row">
-          {reduction.runs[0].experiment_number}
+          {reduction.run.experiment_number}
         </TableCell>
-        <TableCell>{extractFileName(reduction.runs[0].filename)}</TableCell>
-        <TableCell>{formatDateTime(reduction.runs[0].run_start)}</TableCell>
-        <TableCell>{formatDateTime(reduction.runs[0].run_end)}</TableCell>
-        <TableCell>{reduction.runs[0].title}</TableCell>
+        <TableCell>{extractFileName(reduction.run.filename)}</TableCell>
+        <TableCell>{formatDateTime(reduction.run.run_start)}</TableCell>
+        <TableCell>{formatDateTime(reduction.run.run_end)}</TableCell>
+        <TableCell>{reduction.run.title}</TableCell>
       </TableRow>
       <TableRow sx={rowStyles}>
         <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={7}>
@@ -501,7 +501,7 @@ function Row({ reduction, index }: { reduction: Reduction; index: number }): JSX
                     Reduction ID: {reduction.id}
                   </Typography>
                   <Typography variant="body2" gutterBottom sx={{ fontWeight: 'bold' }}>
-                    Instrument: {reduction.runs[0].instrument_name}
+                    Instrument: {reduction.run.instrument_name}
                   </Typography>
                   <Typography variant="body2" gutterBottom sx={{ fontWeight: 'bold' }}>
                     Reduction start: {formatDateTime(reduction.start)}
@@ -510,13 +510,13 @@ function Row({ reduction, index }: { reduction: Reduction; index: number }): JSX
                     Reduction end: {formatDateTime(reduction.end)}
                   </Typography>
                   <Typography variant="body2" gutterBottom sx={{ fontWeight: 'bold' }}>
-                    Good frames: {reduction.runs[0].good_frames.toLocaleString()}
+                    Good frames: {reduction.run.good_frames.toLocaleString()}
                   </Typography>
                   <Typography variant="body2" gutterBottom sx={{ fontWeight: 'bold' }}>
-                    Raw frames: {reduction.runs[0].raw_frames.toLocaleString()}
+                    Raw frames: {reduction.run.raw_frames.toLocaleString()}
                   </Typography>
                   <Typography variant="body2" gutterBottom sx={{ fontWeight: 'bold' }}>
-                    Users: {reduction.runs[0].users}
+                    Users: {reduction.run.users}
                   </Typography>
                 </Grid>
 
