@@ -105,13 +105,21 @@ const ReductionHistory: React.FC = () => {
 
   const fetchReductions = useCallback(async (): Promise<void> => {
     try {
-      const token = localStorage.getItem('scigateway:token');
+      const isDev = process.env.REACT_APP_DEV_MODE === 'true';
+      const token = isDev ? null : localStorage.getItem('scigateway:token');
       const offset = currentPage * rowsPerPage;
       const query = `limit=${rowsPerPage}&offset=${offset}&order_by=${orderBy}&order_direction=${orderDirection}&include_runs=true`;
+
+      const headers: { [key: string]: string } = { 'Content-Type': 'application/json' };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch(`${fiaApiUrl}/instrument/${selectedInstrument}/reductions?${query}`, {
         method: 'GET',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        headers,
       });
+
       const data = await response.json();
       setReductions(data);
     } catch (error) {
