@@ -44,7 +44,7 @@ const ValueEditor: React.FC = () => {
     const token = localStorage.getItem('scigateway:token');
     try {
       setLoading(true);
-      const response = await fetch(`${fiaApiUrl}/reduction/${reductionId}`, {
+      const response = await fetch(`${fiaApiUrl}/job/${reductionId}`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       });
