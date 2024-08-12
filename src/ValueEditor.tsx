@@ -40,7 +40,7 @@ const ValueEditor: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const fiaApiUrl = process.env.REACT_APP_FIA_REST_API_URL;
 
-  const fetchReduction = useCallback(async (): Promise<void> => {
+const fetchReduction = useCallback(async (): Promise<void> => {
     try {
       setLoading(true);
       const isDev = process.env.REACT_APP_DEV_MODE === 'true';
@@ -49,7 +49,7 @@ const ValueEditor: React.FC = () => {
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
       }
-      const response = await fetch(`${fiaApiUrl}/reduction/${reductionId}`, {
+      const response = await fetch(`${fiaApiUrl}/job/${reductionId}`, {
         method: 'GET',
         headers,
       });

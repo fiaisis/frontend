@@ -52,22 +52,22 @@ interface Run {
   instrument_name: string;
 }
 
-// Describes the details of a reduction for one or more runs
+// Describes the details of a reduction for one or more run
 interface Reduction {
   id: number;
-  reduction_start: string;
-  reduction_end: string;
-  reduction_state: string;
-  reduction_status_message: string;
-  reduction_inputs: {
+  start: string;
+  end: string;
+  state: string;
+  status_message: string;
+  inputs: {
     [key: string]: string | number | boolean | null;
   };
-  reduction_outputs: string;
+  outputs: string;
   stacktrace: string;
   script: {
     value: string;
   };
-  runs: Run[];
+  run: Run;
 }
 
 const ReductionHistory: React.FC = () => {
@@ -95,7 +95,7 @@ const ReductionHistory: React.FC = () => {
 
   const fetchTotalCount = useCallback(async (): Promise<void> => {
     try {
-      const response = await fetch(`${fiaApiUrl}/instrument/${selectedInstrument}/reductions/count`);
+      const response = await fetch(`${fiaApiUrl}/instrument/${selectedInstrument}/jobs/count`);
       const data = await response.json();
       setTotalRows(data.count);
     } catch (error) {
@@ -108,18 +108,15 @@ const ReductionHistory: React.FC = () => {
       const isDev = process.env.REACT_APP_DEV_MODE === 'true';
       const token = isDev ? null : localStorage.getItem('scigateway:token');
       const offset = currentPage * rowsPerPage;
-      const query = `limit=${rowsPerPage}&offset=${offset}&order_by=${orderBy}&order_direction=${orderDirection}&include_runs=true`;
-
+      const query = `limit=${rowsPerPage}&offset=${offset}&order_by=${orderBy}&order_direction=${orderDirection}&include_run=true`;
       const headers: { [key: string]: string } = { 'Content-Type': 'application/json' };
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
       }
-
-      const response = await fetch(`${fiaApiUrl}/instrument/${selectedInstrument}/reductions?${query}`, {
+      const response = await fetch(`${fiaApiUrl}/instrument/${selectedInstrument}/jobs?${query}`, {
         method: 'GET',
         headers,
       });
-
       const data = await response.json();
       setReductions(data);
     } catch (error) {
@@ -303,14 +300,14 @@ function Row({ reduction, index }: { reduction: Reduction; index: number }): JSX
   const parseReductionOutputs = (): JSX.Element | JSX.Element[] | undefined => {
     try {
       let outputs;
-      if (reduction.reduction_outputs.startsWith('[') && reduction.reduction_outputs.endsWith(']')) {
+      if (reduction.outputs.startsWith('[') && reduction.outputs.endsWith(']')) {
         // If outputs is a list, replace single quotes with double quotes to form
         // a valid JSON string before parsing
-        const preParsedOutputs = reduction.reduction_outputs.replace(/'/g, '"');
+        const preParsedOutputs = reduction.outputs.replace(/'/g, '"');
         outputs = JSON.parse(preParsedOutputs);
       } else {
         // Cast to a list if just a single file
-        outputs = [reduction.reduction_outputs];
+        outputs = [reduction.outputs];
       }
 
       if (Array.isArray(outputs)) {
@@ -333,7 +330,7 @@ function Row({ reduction, index }: { reduction: Reduction; index: number }): JSX
                     variant="contained"
                     style={{ marginLeft: '10px' }}
                     onClick={() => {
-                      const url = `${fiaDataViewerUrl}/view/${reduction.runs[0].instrument_name}/${reduction.runs[0].experiment_number}/${output}`;
+                      const url = `${fiaDataViewerUrl}/view/${reduction.run.instrument_name}/${reduction.run.experiment_number}/${output}`;
                       window.open(url, '_blank');
                       ReactGA.event({
                         category: 'Button',
@@ -360,35 +357,35 @@ function Row({ reduction, index }: { reduction: Reduction; index: number }): JSX
         ));
       }
     } catch (error) {
-      console.error('Failed to parse reduction_outputs as JSON:', reduction.reduction_outputs);
+      console.error('Failed to parse job outputs as JSON:', reduction.outputs);
       console.error('Error:', error);
-      return <TableCell>{reduction.reduction_outputs}</TableCell>;
+      return <TableCell>{reduction.outputs}</TableCell>;
     }
   };
 
   const renderReductionStatus = (): JSX.Element => {
-    if (reduction.reduction_state === 'ERROR') {
+    if (reduction.state === 'ERROR') {
       return (
         <Typography variant="subtitle1" style={{ color: theme.palette.error.dark, fontWeight: 'bold' }}>
-          [ERROR] {reduction.reduction_status_message}
+          [ERROR] {reduction.status_message}
         </Typography>
       );
-    } else if (reduction.reduction_state === 'SUCCESSFUL') {
+    } else if (reduction.state === 'SUCCESSFUL') {
       return (
         <Typography variant="subtitle1" style={{ color: theme.palette.success.main, fontWeight: 'bold' }}>
           [SUCCESS] Reduction performed successfully
         </Typography>
       );
-    } else if (reduction.reduction_state === 'NOT_STARTED') {
+    } else if (reduction.state === 'NOT_STARTED') {
       return (
         <Typography variant="subtitle1" style={{ color: theme.palette.grey[700], fontWeight: 'bold' }}>
           [NOT STARTED] This reduction has not been started yet
         </Typography>
       );
-    } else if (reduction.reduction_state === 'UNSUCCESSFUL') {
+    } else if (reduction.state === 'UNSUCCESSFUL') {
       return (
         <Typography variant="subtitle1" style={{ color: theme.palette.warning.main, fontWeight: 'bold' }}>
-          [UNSUCCESSFUL] {reduction.reduction_status_message}
+          [UNSUCCESSFUL] {reduction.status_message}
         </Typography>
       );
     } else {
@@ -397,7 +394,7 @@ function Row({ reduction, index }: { reduction: Reduction; index: number }): JSX
   };
 
   const renderReductionInputs = (): JSX.Element | JSX.Element[] => {
-    const entries = Object.entries(reduction.reduction_inputs);
+    const entries = Object.entries(reduction.inputs);
     if (entries.length === 0) {
       return <Typography sx={{ fontWeight: 'bold' }}>No input data available</Typography>;
     }
@@ -461,15 +458,15 @@ function Row({ reduction, index }: { reduction: Reduction; index: number }): JSX
           </IconButton>
         </TableCell>
         <TableCell>
-          <ReductionStatusIcon state={reduction.reduction_state} />
+          <ReductionStatusIcon state={reduction.state} />
         </TableCell>
         <TableCell component="th" scope="row">
-          {reduction.runs[0].experiment_number}
+          {reduction.run.experiment_number}
         </TableCell>
-        <TableCell>{extractFileName(reduction.runs[0].filename)}</TableCell>
-        <TableCell>{formatDateTime(reduction.runs[0].run_start)}</TableCell>
-        <TableCell>{formatDateTime(reduction.runs[0].run_end)}</TableCell>
-        <TableCell>{reduction.runs[0].title}</TableCell>
+        <TableCell>{extractFileName(reduction.run.filename)}</TableCell>
+        <TableCell>{formatDateTime(reduction.run.run_start)}</TableCell>
+        <TableCell>{formatDateTime(reduction.run.run_end)}</TableCell>
+        <TableCell>{reduction.run.title}</TableCell>
       </TableRow>
       <TableRow sx={rowStyles}>
         <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={7}>
@@ -481,16 +478,16 @@ function Row({ reduction, index }: { reduction: Reduction; index: number }): JSX
               <Grid container spacing={3}>
                 <Grid item xs={4}>
                   <Typography variant="h6" gutterBottom component="div" sx={{ fontWeight: 'bold' }}>
-                    {reduction.reduction_state === 'UNSUCCESSFUL' || reduction.reduction_state === 'ERROR'
+                    {reduction.state === 'UNSUCCESSFUL' || reduction.state === 'ERROR'
                       ? 'Stacktrace output'
                       : 'Reduction outputs'}
                   </Typography>
                   <Box sx={{ maxHeight: 200, overflowY: 'auto' }}>
-                    {reduction.reduction_state === 'NOT_STARTED' ? (
+                    {reduction.state === 'NOT_STARTED' ? (
                       <Typography variant="body2" style={{ margin: 2 }}>
                         No output files to show
                       </Typography>
-                    ) : reduction.reduction_state === 'UNSUCCESSFUL' || reduction.reduction_state === 'ERROR' ? (
+                    ) : reduction.state === 'UNSUCCESSFUL' || reduction.state === 'ERROR' ? (
                       <Typography variant="body2" style={{ margin: 2, whiteSpace: 'pre-wrap' }}>
                         {reduction.stacktrace}
                       </Typography>
@@ -509,22 +506,22 @@ function Row({ reduction, index }: { reduction: Reduction; index: number }): JSX
                     Reduction ID: {reduction.id}
                   </Typography>
                   <Typography variant="body2" gutterBottom sx={{ fontWeight: 'bold' }}>
-                    Instrument: {reduction.runs[0].instrument_name}
+                    Instrument: {reduction.run.instrument_name}
                   </Typography>
                   <Typography variant="body2" gutterBottom sx={{ fontWeight: 'bold' }}>
-                    Reduction start: {formatDateTime(reduction.reduction_start)}
+                    Reduction start: {formatDateTime(reduction.start)}
                   </Typography>
                   <Typography variant="body2" gutterBottom sx={{ fontWeight: 'bold' }}>
-                    Reduction end: {formatDateTime(reduction.reduction_end)}
+                    Reduction end: {formatDateTime(reduction.end)}
                   </Typography>
                   <Typography variant="body2" gutterBottom sx={{ fontWeight: 'bold' }}>
-                    Good frames: {reduction.runs[0].good_frames.toLocaleString()}
+                    Good frames: {reduction.run.good_frames.toLocaleString()}
                   </Typography>
                   <Typography variant="body2" gutterBottom sx={{ fontWeight: 'bold' }}>
-                    Raw frames: {reduction.runs[0].raw_frames.toLocaleString()}
+                    Raw frames: {reduction.run.raw_frames.toLocaleString()}
                   </Typography>
                   <Typography variant="body2" gutterBottom sx={{ fontWeight: 'bold' }}>
-                    Users: {reduction.runs[0].users}
+                    Users: {reduction.run.users}
                   </Typography>
                 </Grid>
 

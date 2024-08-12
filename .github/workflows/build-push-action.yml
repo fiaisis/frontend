@@ -51,12 +51,12 @@ jobs:
           token: ${{ secrets.GITOPS_STAGING_EDIT_TOKEN }}
   
       - name: Edit the YAML frontend file for staging
-        uses: mikefarah/yq@v4.44.2
+        uses: mikefarah/yq@v4.44.3
         with:
           cmd: yq e -i '.spec.template.spec.containers[] |= select(.name == "frontend").image = "ghcr.io/fiaisis/frontend@${{ steps.frontend_build.outputs.digest }}"' './components/frontend/envs/staging/frontend.yml'
 
       - name: Edit the YAML scigateway file for staging
-        uses: mikefarah/yq@v4.44.2
+        uses: mikefarah/yq@v4.44.3
         with:
           cmd: yq e -i '.spec.template.spec.containers[] |= select(.name == "scigateway").image = "ghcr.io/fiaisis/scigateway@${{ steps.scigateway_build.outputs.digest }}"' './components/scigateway/envs/staging/scigateway.yml'
 
