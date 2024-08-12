@@ -566,7 +566,7 @@ function Row({ reduction, index }: { reduction: Reduction; index: number }): JSX
                     <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
                       Instrument:
                     </Typography>
-                    <Typography variant="body2">{reduction.runs[0].instrument_name}</Typography>
+                    <Typography variant="body2">{reduction.run.instrument_name}</Typography>
                   </Box>
                   <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
                     <ScheduleIcon fontSize="small" style={{ marginRight: '8px' }} />
@@ -604,7 +604,7 @@ function Row({ reduction, index }: { reduction: Reduction; index: number }): JSX
                     <Typography variant="body2">{reduction.run.users}</Typography>
                   </Box>
                 </Grid>
-                
+
                 <Grid item xs={5} sx={{ '@media (max-width:600px)': { width: '100%' } }}>
                   <Typography variant="h6" gutterBottom component="div" sx={{ fontWeight: 'bold' }}>
                     Reduction inputs
