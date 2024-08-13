@@ -495,24 +495,25 @@ function Row({ reduction, index }: { reduction: Reduction; index: number }): JSX
                     <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
                       Reduction ID:
                     </Typography>
-                    <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
-                      <ImageAspectRatioIcon fontSize="small" style={{ marginRight: '8px' }} />
-                      <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
-                        Runner image:
-                      </Typography>
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          maxWidth: '200px',
-                        }}
-                        title={reduction.runner_image}
-                      >
-                        {reduction.runner_image}
-                      </Typography>
-                    </Box>
+                    <Typography variant="body2">{reduction.id}</Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
+                    <ImageAspectRatioIcon fontSize="small" style={{ marginRight: '8px' }} />
+                    <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
+                      Runner image:
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        maxWidth: '200px',
+                      }}
+                      title={reduction.runner_image}
+                    >
+                      {reduction.runner_image}
+                    </Typography>
                     <Typography variant="body2">{reduction.id}</Typography>
                   </Box>
                   <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
