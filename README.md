@@ -47,7 +47,7 @@ Unless you have a working API and data viewer set-up locally you will want the f
 
 ## Running the frontend for the first time
 
-Assuming all the previous steps have been completed, you can now these commands in the terminal to get the web application running.
+Assuming all the previous steps have been completed, you can now use these commands in the terminal to get the web application running.
 
 ### `yarn install`
 
