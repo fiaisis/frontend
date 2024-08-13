@@ -1,6 +1,8 @@
 # Flexible Interactive Automation frontend
 
-This repository is for the frontend web application side of [FIA](https://github.com/fiaisis) which has been using Yarn, React, Typescript, and Material-UI. The application allows for users to view and manage runs and reductions performed by ISIS instruments. The frontend acts as a plugin for [SciGateway](https://github.com/ral-facilities/scigateway). The project is in the early stages of development and is continuously being worked on.
+This repository is for the frontend web application side of [FIA](https://github.com/fiaisis) which has been using Yarn, React, Typescript, Material-UI and serves as a plugin for [SciGateway](https://github.com/ral-facilities/scigateway). The application allows for users to view and manage runs and reductions performed by ISIS instruments.
+
+FIA is in the early stages of development and is continuously being worked on.
 
 ## Starting development
 
@@ -45,7 +47,7 @@ Unless you have a working API and data viewer set-up locally you will want the f
 
 ## Running the frontend for the first time
 
-Assuming all the previous steps have been completed, you can now run the frontend.
+Assuming all the previous steps have been completed, you can now use these commands in the terminal to get the web application running.
 
 ### `yarn install`
 
@@ -53,11 +55,13 @@ Installs the necessary dependencies for the project. You will also need to run t
 
 ### `yarn build`
 
-Builds the app for production to the `build` folder. It correctly bundles React in production mode and optimizes the build for the best performance. The build is minified and the filenames include the hashes. You will need to build every time you make changes you want to test.
+Builds the app for production. You will need to do this every time the frontend changes as the `build` folder isn't tracked by Git and SciGateway uses this folder to display the frontend.
 
 ### `yarn start`
 
-You can now open a terminal in SciGateway and have it act as a parent application for running the frontend. You only need to run `yarn start` and the FIA frontend will be running on [http://localhost:3000/fia](http://localhost:3000/fia).
+You can now open a terminal in SciGateway and have it act as a parent application for running the frontend. You only need to run `yarn start` and the FIA frontend will be running on http://localhost:3000/fia.
+
+If you're testing something doens't strictly need SciGateway, you can run the frontend on its own by running `yarn start` in the frontend directory. This will also be running on http://localhost:3000/fia.
 
 ## Container files
 
@@ -69,7 +73,7 @@ Certain features of the frontend such as the help page are handled by files in S
 docker build . -t ghcr.io/fiaisis/frontend -f ./frontend.dockerfile
 ```
 
-#### To build Scigateway (note the working directory needs to be in the container folder for this):
+#### To build SciGateway (NOTE: the working directory needs to be in the container folder for this):
 
 ```bash
 docker build . -t ghcr.io/fiaisis/scigateway -f ./scigateway.dockerfile
