@@ -43,13 +43,13 @@ jobs:
           file: ./container/scigateway.dockerfile
           push: true
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/scigateway:${{ github.sha }}
-    
+
       - name: Checkout the Gitops repository
         uses: actions/checkout@v4
         with:
           repository: fiaisis/gitops
           token: ${{ secrets.GITOPS_STAGING_EDIT_TOKEN }}
-  
+
       - name: Edit the YAML frontend file for staging
         uses: mikefarah/yq@v4.44.3
         with:
