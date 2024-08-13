@@ -46,6 +46,7 @@ import StackedBarChartIcon from '@mui/icons-material/StackedBarChart';
 import JoinFullIcon from '@mui/icons-material/JoinFull';
 import JoinInnerIcon from '@mui/icons-material/JoinInner';
 import SchemaIcon from '@mui/icons-material/Schema';
+import ImageAspectRatioIcon from '@mui/icons-material/ImageAspectRatio';
 
 // Local data
 import { instruments } from './InstrumentData';
@@ -63,7 +64,7 @@ interface Run {
   instrument_name: string;
 }
 
-// Describes the details of a reduction for one or more run
+// Describes the details of a reduction
 interface Reduction {
   id: number;
   start: string;
@@ -74,6 +75,7 @@ interface Reduction {
     [key: string]: string | number | boolean | null;
   };
   outputs: string;
+  runner_image: string;
   stacktrace: string;
   script: {
     value: string;
@@ -348,25 +350,22 @@ function Row({ reduction, index }: { reduction: Reduction; index: number }): JSX
           <TableRow key={index}>
             <TableCell>
               <Box maxHeight="80px" display="flex" alignItems="center" justifyContent="space-between" width="100%">
-                <Box
-                  display="flex"
-                  alignItems="center"
-                  sx={{
-                    minWidth: 0,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                    maxWidth: '200px',
-                  }}
-                >
-                  <Tooltip title={output}>
-                    <Box display="flex" alignItems="center">
-                      {getFileTypeIcon(output)}
-                      <Typography variant="body2" noWrap>
-                        {output}
-                      </Typography>
-                    </Box>
-                  </Tooltip>
+                <Box display="flex" alignItems="center">
+                  <Box display="flex" alignItems="center" sx={{ overflow: 'hidden' }}>
+                    {getFileTypeIcon(output)}
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        maxWidth: '200px',
+                      }}
+                      title={reduction.runner_image}
+                    >
+                      {output}
+                    </Typography>
+                  </Box>
                 </Box>
                 <Box>
                   <Button
@@ -560,6 +559,24 @@ function Row({ reduction, index }: { reduction: Reduction; index: number }): JSX
                       Reduction ID:
                     </Typography>
                     <Typography variant="body2">{reduction.id}</Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
+                    <ImageAspectRatioIcon fontSize="small" style={{ marginRight: '8px' }} />
+                    <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
+                      Runner image:
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        maxWidth: '200px',
+                      }}
+                      title={reduction.runner_image}
+                    >
+                      {reduction.runner_image}
+                    </Typography>
                   </Box>
                   <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
                     <SchemaIcon fontSize="small" style={{ marginRight: '8px' }} />
