@@ -41,12 +41,17 @@ const ValueEditor: React.FC = () => {
   const fiaApiUrl = process.env.REACT_APP_FIA_REST_API_URL;
 
   const fetchReduction = useCallback(async (): Promise<void> => {
-    const token = localStorage.getItem('scigateway:token');
     try {
       setLoading(true);
+      const isDev = process.env.REACT_APP_DEV_MODE === 'true';
+      const token = isDev ? null : localStorage.getItem('scigateway:token');
+      const headers: { [key: string]: string } = { 'Content-Type': 'application/json' };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
       const response = await fetch(`${fiaApiUrl}/job/${reductionId}`, {
         method: 'GET',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        headers,
       });
       const data = await response.json();
       if (data && data.script && data.script.value) {
