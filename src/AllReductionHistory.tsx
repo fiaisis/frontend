@@ -97,7 +97,7 @@ const AllReductionHistory: React.FC = () => {
     try {
       const token = localStorage.getItem('scigateway:token');
       const offset = currentPage * rowsPerPage;
-      const query = `limit=${rowsPerPage}&offset=${offset}&order_by=${orderBy}&order_direction=${orderDirection}&include_run=true`;
+      const query = `limit=${rowsPerPage}&offset=${offset}&order_direction=${orderDirection}&include_run=true`;
       const response = await fetch(`${fiaApiUrl}/jobs?${query}`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
