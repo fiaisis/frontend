@@ -173,7 +173,7 @@ const AllReductionHistory: React.FC = () => {
                     sortDirection={orderBy === 'experiment_number' ? orderDirection : false}
                     onClick={() => handleSort('experiment_number')}
                   >
-                    Experiment Number {orderBy === 'experiment_number' ? (orderDirection === 'asc' ? '↑' : '↓') : ''}
+                    Experiment number {orderBy === 'experiment_number' ? (orderDirection === 'asc' ? '↑' : '↓') : ''}
                   </TableCell>
                   <TableCell
                     style={{ ...headerStyles, width: '10%' }}
