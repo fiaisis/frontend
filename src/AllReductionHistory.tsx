@@ -103,8 +103,12 @@ const AllReductionHistory: React.FC = () => {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       });
       const data = await response.json();
+
+      // Filter out any reductions that don't have a valid run object
+      const filteredData = data.filter((reduction: Reduction) => reduction.run !== null);
+
       console.log('EXPERIMENT', data);
-      setReductions(data);
+      setReductions(filteredData);
     } catch (error) {
       console.error('Error fetching reductions:', error);
     }
