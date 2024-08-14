@@ -303,7 +303,7 @@ function Row({ reduction, index }: { reduction: Reduction; index: number }): JSX
                         whiteSpace: 'nowrap',
                         maxWidth: '200px',
                       }}
-                      title={reduction.runner_image}
+                      title={output}
                     >
                       {output}
                     </Typography>
