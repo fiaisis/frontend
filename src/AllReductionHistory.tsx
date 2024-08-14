@@ -107,7 +107,6 @@ const AllReductionHistory: React.FC = () => {
       // Filter out any reductions that don't have a valid run object
       const filteredData = data.filter((reduction: Reduction) => reduction.run !== null);
 
-      console.log('EXPERIMENT', data);
       setReductions(filteredData);
     } catch (error) {
       console.error('Error fetching reductions:', error);
