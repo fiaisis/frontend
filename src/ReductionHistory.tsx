@@ -38,6 +38,7 @@ import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 
 // Local data
 import { instruments } from './InstrumentData';
+import { fiaApi } from './api';
 
 // Represents a single run with metadata and frame statistics
 interface Run {
@@ -71,7 +72,6 @@ interface Reduction {
 }
 
 const ReductionHistory: React.FC = () => {
-  const fiaApiUrl = process.env.REACT_APP_FIA_REST_API_URL;
   const history = useHistory();
   const theme = useTheme();
   const { instrumentName } = useParams<{ instrumentName: string }>();
@@ -94,35 +94,22 @@ const ReductionHistory: React.FC = () => {
   }, [instrumentName, history]);
 
   const fetchTotalCount = useCallback(async (): Promise<void> => {
-    try {
-      const response = await fetch(`${fiaApiUrl}/instrument/${selectedInstrument}/jobs/count`);
-      const data = await response.json();
-      setTotalRows(data.count);
-    } catch (error) {
-      console.error('Error fetching run count:', error);
-    }
-  }, [selectedInstrument, fiaApiUrl]);
+    fiaApi
+      .get(`/instrument/${selectedInstrument}/reductions/count`)
+      .then((response) => response.data)
+      .then((data) => setTotalRows(data))
+      .catch((err) => console.error('Error fetching run count'));
+  }, [selectedInstrument]);
 
   const fetchReductions = useCallback(async (): Promise<void> => {
-    try {
-      const isDev = process.env.REACT_APP_DEV_MODE === 'true';
-      const token = isDev ? null : localStorage.getItem('scigateway:token');
-      const offset = currentPage * rowsPerPage;
-      const query = `limit=${rowsPerPage}&offset=${offset}&order_by=${orderBy}&order_direction=${orderDirection}&include_run=true`;
-      const headers: { [key: string]: string } = { 'Content-Type': 'application/json' };
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-      const response = await fetch(`${fiaApiUrl}/instrument/${selectedInstrument}/jobs?${query}`, {
-        method: 'GET',
-        headers,
-      });
-      const data = await response.json();
-      setReductions(data);
-    } catch (error) {
-      console.error('Error fetching reductions:', error);
-    }
-  }, [selectedInstrument, currentPage, rowsPerPage, orderBy, orderDirection, fiaApiUrl]);
+    const offset = currentPage * rowsPerPage;
+    const query = `limit=${rowsPerPage}&offset=${offset}&order_by=${orderBy}&order_direction=${orderDirection}&include_runs=true`;
+    fiaApi
+      .get(`/instrument/${selectedInstrument}/reductions?${query}`)
+      .then((response) => response.data)
+      .then((data) => setReductions(data))
+      .catch((error) => console.error(error));
+  }, [selectedInstrument, currentPage, rowsPerPage, orderBy, orderDirection]);
 
   useEffect(() => {
     fetchTotalCount();

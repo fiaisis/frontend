@@ -7,6 +7,7 @@ import { Box, Tabs, Tab, Typography, Button, useTheme, CircularProgress } from '
 
 // Monaco components
 import Editor from '@monaco-editor/react';
+import { fiaApi } from './api';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -38,31 +39,16 @@ const ValueEditor: React.FC = () => {
   const { reductionId } = useParams<{ reductionId: string }>();
   const [scriptValue, setScriptValue] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
-  const fiaApiUrl = process.env.REACT_APP_FIA_REST_API_URL;
 
   const fetchReduction = useCallback(async (): Promise<void> => {
-    try {
-      setLoading(true);
-      const isDev = process.env.REACT_APP_DEV_MODE === 'true';
-      const token = isDev ? null : localStorage.getItem('scigateway:token');
-      const headers: { [key: string]: string } = { 'Content-Type': 'application/json' };
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-      const response = await fetch(`${fiaApiUrl}/job/${reductionId}`, {
-        method: 'GET',
-        headers,
-      });
-      const data = await response.json();
-      if (data && data.script && data.script.value) {
-        setScriptValue(data.script.value);
-      }
-    } catch (error) {
-      console.error('Error fetching reductions:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, [fiaApiUrl, reductionId]);
+    setLoading(true);
+    fiaApi
+      .get(`/reduction/${reductionId}`)
+      .then((response) => response.data)
+      .then((data) => setScriptValue(data?.script?.value ?? ''))
+      .catch((error) => console.error(error))
+      .finally(() => setLoading(false));
+  }, [reductionId]);
 
   useEffect(() => {
     fetchReduction();
