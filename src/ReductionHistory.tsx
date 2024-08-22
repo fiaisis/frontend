@@ -95,7 +95,7 @@ const ReductionHistory: React.FC = () => {
 
   const fetchTotalCount = useCallback(async (): Promise<void> => {
     fiaApi
-      .get(`/instrument/${selectedInstrument}/reductions/count`)
+      .get(`/instrument/${selectedInstrument}/jobs/count`)
       .then((response) => response.data)
       .then((data) => setTotalRows(data))
       .catch((err) => console.error('Error fetching run count'));
@@ -105,7 +105,7 @@ const ReductionHistory: React.FC = () => {
     const offset = currentPage * rowsPerPage;
     const query = `limit=${rowsPerPage}&offset=${offset}&order_by=${orderBy}&order_direction=${orderDirection}&include_runs=true`;
     fiaApi
-      .get(`/instrument/${selectedInstrument}/reductions?${query}`)
+      .get(`/instrument/${selectedInstrument}/jobs?${query}`)
       .then((response) => response.data)
       .then((data) => setReductions(data))
       .catch((error) => console.error(error));

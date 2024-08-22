@@ -43,7 +43,7 @@ const ValueEditor: React.FC = () => {
   const fetchReduction = useCallback(async (): Promise<void> => {
     setLoading(true);
     fiaApi
-      .get(`/reduction/${reductionId}`)
+      .get(`/job/${reductionId}`)
       .then((response) => response.data)
       .then((data) => setScriptValue(data?.script?.value ?? ''))
       .catch((error) => console.error(error))
