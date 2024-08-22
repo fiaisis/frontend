@@ -103,7 +103,7 @@ const ReductionHistory: React.FC = () => {
 
   const fetchReductions = useCallback(async (): Promise<void> => {
     const offset = currentPage * rowsPerPage;
-    const query = `limit=${rowsPerPage}&offset=${offset}&order_by=${orderBy}&order_direction=${orderDirection}&include_runs=true`;
+    const query = `limit=${rowsPerPage}&offset=${offset}&order_by=${orderBy}&order_direction=${orderDirection}&include_run=true`;
     fiaApi
       .get(`/instrument/${selectedInstrument}/jobs?${query}`)
       .then((response) => response.data)
