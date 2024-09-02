@@ -54,7 +54,7 @@ export const headerStyles = (theme: Theme): CSSObject => ({
   color: theme.palette.primary.contrastText,
   backgroundColor: theme.palette.primary.main,
   fontWeight: 'bold',
-  borderRight: '1px solid #1f4996',
+  borderRight: '2px solid #1f4996',
   '&:last-child': {
     borderRight: 'none',
   },
@@ -124,6 +124,10 @@ const JobsBase: React.FC<JobsBaseProps> = ({
   maxHeight = 624,
 }) => {
   const theme = useTheme();
+
+  const baseColumnCount = 7; // Number of base columns defined in the TableHead
+  const customColumnCount = customHeaders ? 1 : 0;
+  const totalColumnCount = baseColumnCount + customColumnCount;
 
   const DATA_VIEWER_URL = process.env.REACT_APP_FIA_DATA_VIEWER_URL;
 
@@ -354,7 +358,7 @@ const JobsBase: React.FC<JobsBaseProps> = ({
         </TableRow>
         <TableRow>
           <TableCell
-            colSpan={7}
+            colSpan={totalColumnCount}
             style={{ paddingBottom: 0, paddingTop: 0, backgroundColor: rowStyles.backgroundColor }}
           >
             <Collapse in={open} timeout="auto" unmountOnExit>
