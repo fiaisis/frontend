@@ -23,11 +23,21 @@ import {
 import { useTheme, Theme } from '@mui/material';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
-import { CSSObject } from '@mui/system';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import HighlightOffIcon from '@mui/icons-material/HighlightOff';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import BuildIcon from '@mui/icons-material/Build';
+import PeopleIcon from '@mui/icons-material/People';
+import FolderIcon from '@mui/icons-material/Folder';
+import ScheduleIcon from '@mui/icons-material/Schedule';
+import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
+import VpnKeyIcon from '@mui/icons-material/VpnKey';
+import StackedBarChartIcon from '@mui/icons-material/StackedBarChart';
+import JoinFullIcon from '@mui/icons-material/JoinFull';
+import SchemaIcon from '@mui/icons-material/Schema';
+import ImageAspectRatioIcon from '@mui/icons-material/ImageAspectRatio';
+import { CSSObject } from '@mui/system';
 import { instruments } from '../InstrumentData';
 import ReactGA from 'react-ga4';
 
@@ -47,6 +57,7 @@ export interface Reduction {
   end: string;
   state: string;
   status_message: string;
+  runner_image: string;
   inputs: {
     [key: string]: string | number | boolean | null;
   };
@@ -68,8 +79,6 @@ export interface Reduction {
   };
 }
 
-const DATA_VIEWER_URL = process.env.REACT_APP_FIA_DATA_VIEWER_URL;
-
 interface ReductionsBaseProps {
   selectedInstrument: string;
   handleInstrumentChange?: (event: any) => void;
@@ -86,19 +95,6 @@ interface ReductionsBaseProps {
   customRowCells?: (reduction: Reduction) => React.ReactNode;
   children?: React.ReactNode;
 }
-
-const openMinimalWindow = (reductionId: number): void => {
-  const url = `/fia/value-editor/${reductionId}`;
-  const windowName = 'ValueEditorWindow';
-  const features = 'width=1200,height=800,resizable=no';
-  window.open(url, windowName, features);
-  ReactGA.event({
-    category: 'Button',
-    action: 'Click',
-    label: 'Value editor button',
-    value: reductionId,
-  });
-};
 
 const ReductionsBase: React.FC<ReductionsBaseProps> = ({
   selectedInstrument,
@@ -118,45 +114,87 @@ const ReductionsBase: React.FC<ReductionsBaseProps> = ({
 }) => {
   const theme = useTheme();
 
-  const ReductionStatusIcon = ({ state }: { state: string }): JSX.Element => {
-    const getIconComponent = (): JSX.Element => {
-      switch (state) {
-        case 'ERROR':
-          return <ErrorOutlineIcon color="error" />;
-        case 'SUCCESSFUL':
-          return <CheckCircleOutlineIcon color="success" />;
-        case 'UNSUCCESSFUL':
-          return <WarningAmberIcon color="warning" />;
-        case 'NOT_STARTED':
-          return <HighlightOffIcon color="action" />;
-        default:
-          return <ErrorOutlineIcon />;
-      }
-    };
-    return (
-      <Tooltip title={state}>
-        <span>{getIconComponent()}</span>
-      </Tooltip>
-    );
+  const DATA_VIEWER_URL = process.env.REACT_APP_FIA_DATA_VIEWER_URL;
+
+  const openValueEditor = (reductionId: number): void => {
+    const url = `/fia/value-editor/${reductionId}`;
+    const windowName = 'ValueEditorWindow';
+    const features = 'width=1200,height=800,resizable=no';
+    window.open(url, windowName, features);
+    ReactGA.event({
+      category: 'Button',
+      action: 'Click',
+      label: 'Value editor button',
+      value: reductionId,
+    });
   };
 
-  const formatDateTime = (dateTimeStr: string | null): string => {
-    if (!dateTimeStr) {
-      return '';
-    }
-    return dateTimeStr.replace('T', ' ');
-  };
-
-  const extractFileName = (path: string): string => {
-    const fileNameWithExtension = path.split('/').pop();
-    if (typeof fileNameWithExtension === 'undefined') {
-      return '';
-    }
-    return fileNameWithExtension.split('.')[0];
+  const openDataViewer = (
+    reductionId: number,
+    instrumentName: string,
+    experimentNumber: number,
+    output: string
+  ): void => {
+    const url = `${DATA_VIEWER_URL}/view/${instrumentName}/${experimentNumber}/${output}`;
+    window.open(url, '_blank');
+    ReactGA.event({
+      category: 'Button',
+      action: 'Click',
+      label: 'View button',
+      value: reductionId,
+    });
   };
 
   const Row: React.FC<{ reduction: Reduction; index: number }> = ({ reduction, index }) => {
     const [open, setOpen] = useState(false);
+    const theme = useTheme();
+
+    const ReductionStatusIcon = ({ state }: { state: string }): JSX.Element => {
+      const getIconComponent = (): JSX.Element => {
+        switch (state) {
+          case 'ERROR':
+            return <ErrorOutlineIcon color="error" />;
+          case 'SUCCESSFUL':
+            return <CheckCircleOutlineIcon color="success" />;
+          case 'UNSUCCESSFUL':
+            return <WarningAmberIcon color="warning" />;
+          case 'NOT_STARTED':
+            return <HighlightOffIcon color="action" />;
+          default:
+            return <ErrorOutlineIcon />;
+        }
+      };
+      return (
+        <Tooltip title={state}>
+          <span>{getIconComponent()}</span>
+        </Tooltip>
+      );
+    };
+
+    const formatDateTime = (dateTimeStr: string | null): string => {
+      if (!dateTimeStr) {
+        return '';
+      }
+      return dateTimeStr.replace('T', '\n');
+    };
+
+    const extractFileName = (path: string): string => {
+      const fileNameWithExtension = path.split('/').pop();
+      if (typeof fileNameWithExtension === 'undefined') {
+        return '';
+      }
+      return fileNameWithExtension.split('.')[0];
+    };
+
+    const getFileTypeIcon = (fileName: string): JSX.Element => {
+      if (fileName.endsWith('.nxspe') || fileName.endsWith('.nxs') || fileName.endsWith('.h5')) {
+        return <JoinFullIcon fontSize="small" style={{ marginRight: '8px' }} />;
+      } else if (fileName.endsWith('.txt')) {
+        return <InsertDriveFileIcon fontSize="small" style={{ marginRight: '8px' }} />;
+      } else {
+        return <FolderIcon fontSize="small" style={{ marginRight: '8px' }} />;
+      }
+    };
 
     const parseReductionOutputs = (): JSX.Element | JSX.Element[] | undefined => {
       try {
@@ -172,24 +210,36 @@ const ReductionsBase: React.FC<ReductionsBaseProps> = ({
           return outputs.map((output, index: number) => (
             <TableRow key={index}>
               <TableCell>
-                <Box display="flex" justifyContent="space-between" alignItems="center" maxHeight="80px" width="100%">
-                  <Box flex="1" textAlign="left" sx={{ overflowWrap: 'break-word' }}>
-                    {output}
+                <Box maxHeight="80px" display="flex" alignItems="center" justifyContent="space-between" width="100%">
+                  <Box display="flex" alignItems="center">
+                    <Box display="flex" alignItems="center" sx={{ overflow: 'hidden' }}>
+                      {getFileTypeIcon(output)}
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                          maxWidth: '200px',
+                        }}
+                        title={output}
+                      >
+                        {output}
+                      </Typography>
+                    </Box>
                   </Box>
                   <Box>
                     <Button
                       variant="contained"
                       style={{ marginLeft: '10px' }}
-                      onClick={() => {
-                        const url = `${DATA_VIEWER_URL}/view/${reduction.run.instrument_name}/${reduction.run.experiment_number}/${output}`;
-                        window.open(url, '_blank');
-                        ReactGA.event({
-                          category: 'Button',
-                          action: 'Click',
-                          label: 'View button',
-                          value: reduction.id,
-                        });
-                      }}
+                      onClick={() =>
+                        openDataViewer(
+                          reduction.id,
+                          reduction.run.instrument_name,
+                          reduction.run.experiment_number,
+                          output
+                        )
+                      }
                     >
                       View
                     </Button>
@@ -220,9 +270,13 @@ const ReductionsBase: React.FC<ReductionsBaseProps> = ({
       }
 
       return entries.map(([key, value], index) => (
-        <Typography key={index} variant="body2" sx={{ fontWeight: 'bold' }}>
-          {`${key}: ${value}`}
-        </Typography>
+        <Box key={index} sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
+          <BuildIcon fontSize="small" style={{ marginRight: '8px' }} />
+          <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
+            {key}:
+          </Typography>
+          <Typography variant="body2">{value}</Typography>
+        </Box>
       ));
     };
 
@@ -320,7 +374,7 @@ const ReductionsBase: React.FC<ReductionsBaseProps> = ({
                         </Typography>
                       ) : reduction.state === 'UNSUCCESSFUL' || reduction.state === 'ERROR' ? (
                         <Typography variant="body2" style={{ margin: 2, whiteSpace: 'pre-wrap' }}>
-                          {reduction.stacktrace}
+                          {reduction.stacktrace ? reduction.stacktrace : 'No detailed stacktrace to show'}
                         </Typography>
                       ) : (
                         <Table size="small" aria-label="details">
@@ -333,27 +387,73 @@ const ReductionsBase: React.FC<ReductionsBaseProps> = ({
                     <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
                       Run details
                     </Typography>
-                    <Typography variant="body2" gutterBottom sx={{ fontWeight: 'bold' }}>
-                      Reduction ID: {reduction.id}
-                    </Typography>
-                    <Typography variant="body2" gutterBottom sx={{ fontWeight: 'bold' }}>
-                      Instrument: {reduction.run.instrument_name}
-                    </Typography>
-                    <Typography variant="body2" gutterBottom sx={{ fontWeight: 'bold' }}>
-                      Reduction start: {formatDateTime(reduction.start)}
-                    </Typography>
-                    <Typography variant="body2" gutterBottom sx={{ fontWeight: 'bold' }}>
-                      Reduction end: {formatDateTime(reduction.end)}
-                    </Typography>
-                    <Typography variant="body2" gutterBottom sx={{ fontWeight: 'bold' }}>
-                      Good frames: {reduction.run.good_frames.toLocaleString()}
-                    </Typography>
-                    <Typography variant="body2" gutterBottom sx={{ fontWeight: 'bold' }}>
-                      Raw frames: {reduction.run.raw_frames.toLocaleString()}
-                    </Typography>
-                    <Typography variant="body2" gutterBottom sx={{ fontWeight: 'bold' }}>
-                      Users: {reduction.run.users}
-                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
+                      <VpnKeyIcon fontSize="small" style={{ marginRight: '8px' }} />
+                      <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
+                        Reduction ID:
+                      </Typography>
+                      <Typography variant="body2">{reduction.id}</Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
+                      <ImageAspectRatioIcon fontSize="small" style={{ marginRight: '8px' }} />
+                      <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
+                        Runner image:
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          maxWidth: '200px',
+                        }}
+                        title={reduction.runner_image}
+                      >
+                        {reduction.runner_image}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
+                      <SchemaIcon fontSize="small" style={{ marginRight: '8px' }} />
+                      <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
+                        Instrument:
+                      </Typography>
+                      <Typography variant="body2">{reduction.run.instrument_name}</Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
+                      <ScheduleIcon fontSize="small" style={{ marginRight: '8px' }} />
+                      <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
+                        Reduction start:
+                      </Typography>
+                      <Typography variant="body2">{formatDateTime(reduction.start)}</Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
+                      <ScheduleIcon fontSize="small" style={{ marginRight: '8px' }} />
+                      <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
+                        Reduction end:
+                      </Typography>
+                      <Typography variant="body2">{formatDateTime(reduction.end)}</Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
+                      <StackedBarChartIcon fontSize="small" style={{ marginRight: '8px' }} />
+                      <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
+                        Good frames:
+                      </Typography>
+                      <Typography variant="body2">{reduction.run.good_frames.toLocaleString()}</Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
+                      <StackedBarChartIcon fontSize="small" style={{ marginRight: '8px' }} />
+                      <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
+                        Raw frames:
+                      </Typography>
+                      <Typography variant="body2">{reduction.run.raw_frames.toLocaleString()}</Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
+                      <PeopleIcon fontSize="small" style={{ marginRight: '8px' }} />
+                      <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
+                        Users:
+                      </Typography>
+                      <Typography variant="body2">{reduction.run.users}</Typography>
+                    </Box>
                   </Grid>
                   <Grid item xs={5}>
                     <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
@@ -361,11 +461,7 @@ const ReductionsBase: React.FC<ReductionsBaseProps> = ({
                     </Typography>
                     <Box sx={{ maxHeight: 140, overflowY: 'auto', marginBottom: 2 }}>{renderReductionInputs()}</Box>
                     <Box display="flex" justifyContent="right">
-                      <Button
-                        variant="contained"
-                        sx={{ marginRight: 1 }}
-                        onClick={() => openMinimalWindow(reduction.id)}
-                      >
+                      <Button variant="contained" sx={{ marginRight: 1 }} onClick={() => openValueEditor(reduction.id)}>
                         Value editor
                       </Button>
                       <Tooltip title="Will be added in the future">
@@ -390,7 +486,7 @@ const ReductionsBase: React.FC<ReductionsBaseProps> = ({
     <div style={{ padding: '20px' }}>
       <Box display="flex" alignItems="center" justifyContent="space-between" marginBottom="20px">
         <Typography variant="h3" component="h1" style={{ color: theme.palette.text.primary }}>
-          {selectedInstrument} reduction history
+          {selectedInstrument} reductions
         </Typography>
         {handleInstrumentChange && (
           <FormControl style={{ width: '200px', marginLeft: '20px' }}>
@@ -468,4 +564,3 @@ const ReductionsBase: React.FC<ReductionsBaseProps> = ({
 };
 
 export default ReductionsBase;
-

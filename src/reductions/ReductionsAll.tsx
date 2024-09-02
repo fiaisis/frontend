@@ -97,4 +97,3 @@ const ReductionsAll: React.FC = () => {
 };
 
 export default ReductionsAll;
-

@@ -127,4 +127,3 @@ const ReductionsGeneral: React.FC = () => {
 };
 
 export default ReductionsGeneral;
-
