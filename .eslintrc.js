@@ -25,12 +25,14 @@ module.exports = {
         endOfLine: 'auto',
       },
     ],
-    // disable for all files - this means we can have plain JS files not causing errors
+    // Disable prop-types globally
+    'react/prop-types': 'off',
+    // Disable explicit-function-return-type for all files - this means we can have plain JS files not causing errors
     '@typescript-eslint/explicit-function-return-type': 'off',
   },
   overrides: [
     {
-      // and enable again specifically for TS files
+      // Whitelist explicit-function-return-type for TS files
       files: ['*.ts', '*.tsx'],
       rules: {
         '@typescript-eslint/explicit-function-return-type': [
