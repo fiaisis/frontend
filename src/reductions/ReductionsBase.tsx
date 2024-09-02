@@ -9,6 +9,7 @@ import {
   Collapse,
   FormControl,
   Grid,
+  IconButton,
   InputLabel,
   MenuItem,
   Paper,
@@ -347,19 +348,19 @@ const ReductionsBase: React.FC<ReductionsBaseProps> = ({
       <>
         <TableRow sx={{ ...rowStyles, '&:hover': hoverStyles(theme, index) }} onClick={() => setOpen(!open)}>
           <TableCell sx={{ width: '5%' }}>
-            <Button aria-label="expand row" size="small">
+            <IconButton aria-label="expand row" size="small">
               {open ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
-            </Button>
+            </IconButton>
           </TableCell>
           <TableCell sx={{ width: '5%' }}>
             <ReductionStatus state={reduction.state} />
           </TableCell>
-          {customRowCells && customRowCells(reduction)}
-          <TableCell sx={{ width: '15%' }}>{reduction.run.experiment_number}</TableCell>
-          <TableCell sx={{ width: '15%' }}>{extractFileName(reduction.run.filename)}</TableCell>
+          <TableCell sx={{ width: '12%' }}>{reduction.run.experiment_number}</TableCell>
+          <TableCell sx={{ width: '10%' }}>{extractFileName(reduction.run.filename)}</TableCell>
           <TableCell sx={{ width: '15%' }}>{formatDateTime(reduction.run.run_start)}</TableCell>
           <TableCell sx={{ width: '15%' }}>{formatDateTime(reduction.run.run_end)}</TableCell>
           <TableCell sx={{ width: '30%' }}>{reduction.run.title}</TableCell>
+          {customRowCells && customRowCells(reduction)}
         </TableRow>
         <TableRow>
           <TableCell colSpan={7} style={{ paddingBottom: 0, paddingTop: 0 }}>
@@ -539,7 +540,6 @@ const ReductionsBase: React.FC<ReductionsBaseProps> = ({
                   <TableCell sx={{ ...headerStyles(theme), width: '8%' }} colSpan={2}>
                     {selectedInstrument}
                   </TableCell>
-                  {customHeaders && customHeaders}
                   <TableCell
                     sx={{ width: '12%', ...headerStyles(theme) }}
                     onClick={() => handleSort('experiment_number')}
@@ -555,7 +555,8 @@ const ReductionsBase: React.FC<ReductionsBaseProps> = ({
                   <TableCell sx={{ width: '15%', ...headerStyles(theme) }} onClick={() => handleSort('run_end')}>
                     Run end {orderBy === 'run_end' ? (orderDirection === 'asc' ? '↑' : '↓') : ''}
                   </TableCell>
-                  <TableCell sx={{ width: '40%', ...headerStyles(theme) }}>Title</TableCell>
+                  <TableCell sx={{ width: '30', ...headerStyles(theme) }}>Title</TableCell>
+                  {customHeaders && customHeaders}
                 </TableRow>
               </TableHead>
               <TableBody>
