@@ -50,6 +50,16 @@ import { CSSObject } from '@mui/system';
 // Local data
 import { instruments } from '../InstrumentData';
 
+export const headerStyles = (theme: Theme): CSSObject => ({
+  color: theme.palette.primary.contrastText,
+  backgroundColor: theme.palette.primary.main,
+  fontWeight: 'bold',
+  borderRight: '1px solid #1f4996',
+  '&:last-child': {
+    borderRight: 'none',
+  },
+});
+
 export interface Job {
   id: number;
   start: string;
@@ -93,17 +103,8 @@ interface JobsBaseProps {
   customHeaders?: React.ReactNode;
   customRowCells?: (Job: Job) => React.ReactNode;
   children?: React.ReactNode;
+  maxHeight?: number;
 }
-
-export const headerStyles = (theme: Theme): CSSObject => ({
-  color: theme.palette.primary.contrastText,
-  backgroundColor: theme.palette.primary.main,
-  fontWeight: 'bold',
-  borderRight: `1px solid #1f4996`,
-  '&:last-child': {
-    borderRight: 'none',
-  },
-});
 
 const JobsBase: React.FC<JobsBaseProps> = ({
   selectedInstrument,
@@ -120,6 +121,7 @@ const JobsBase: React.FC<JobsBaseProps> = ({
   customHeaders,
   customRowCells,
   children,
+  maxHeight = 624,
 }) => {
   const theme = useTheme();
 
@@ -524,7 +526,7 @@ const JobsBase: React.FC<JobsBaseProps> = ({
             rowsPerPage={rowsPerPage}
             onRowsPerPageChange={handleChangeRowsPerPage}
           />
-          <TableContainer component={Paper}>
+          <TableContainer component={Paper} style={{ maxHeight }}>
             <Table stickyHeader>
               <TableHead>
                 <TableRow>
@@ -546,7 +548,7 @@ const JobsBase: React.FC<JobsBaseProps> = ({
                   <TableCell sx={{ width: '15%', ...headerStyles(theme) }} onClick={() => handleSort('run_end')}>
                     Run end {orderBy === 'run_end' ? (orderDirection === 'asc' ? '↑' : '↓') : ''}
                   </TableCell>
-                  <TableCell sx={{ width: '32', ...headerStyles(theme) }}>Title</TableCell>
+                  <TableCell sx={{ width: '32%', ...headerStyles(theme) }}>Title</TableCell>
                   {customHeaders && customHeaders}
                 </TableRow>
               </TableHead>

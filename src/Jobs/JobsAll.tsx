@@ -97,6 +97,7 @@ const JobsAll: React.FC = () => {
           </Link>
         </TableCell>
       )}
+      maxHeight={650}
     />
   );
 };
