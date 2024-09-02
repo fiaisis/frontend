@@ -7,13 +7,13 @@ import { useTheme } from '@mui/material/styles';
 import { TableCell } from '@mui/material';
 
 // Local data
-import ReductionsBase, { Reduction, headerStyles } from './ReductionsBase';
+import JobsBase, { Job, headerStyles } from './JobsBase';
 
-const ReductionsAll: React.FC = () => {
+const JobsAll: React.FC = () => {
   const fiaApiUrl = process.env.REACT_APP_FIA_REST_API_URL;
   const theme = useTheme();
 
-  const [reductions, setReductions] = useState<Reduction[]>([]);
+  const [jobs, setJobs] = useState<Job[]>([]);
   const [totalRows, setTotalRows] = useState(0);
   const [currentPage, setCurrentPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -30,7 +30,7 @@ const ReductionsAll: React.FC = () => {
     }
   }, [fiaApiUrl]);
 
-  const fetchReductions = useCallback(async (): Promise<void> => {
+  const fetchJobs = useCallback(async (): Promise<void> => {
     try {
       const token = localStorage.getItem('scigateway:token');
       const offset = currentPage * rowsPerPage;
@@ -42,9 +42,9 @@ const ReductionsAll: React.FC = () => {
       const data = await response.json();
 
       // Filter out any reductions that don't have a valid run object
-      const filteredData = data.filter((reduction: Reduction) => reduction.run !== null);
+      const filteredData = data.filter((job: Job) => job.run !== null);
 
-      setReductions(filteredData);
+      setJobs(filteredData);
     } catch (error) {
       console.error('Error fetching reductions:', error);
     }
@@ -52,8 +52,8 @@ const ReductionsAll: React.FC = () => {
 
   useEffect(() => {
     fetchTotalCount();
-    fetchReductions();
-  }, [fetchTotalCount, fetchReductions]);
+    fetchJobs();
+  }, [fetchTotalCount, fetchJobs]);
 
   const handleChangePage = (event: unknown, newPage: number): void => {
     setCurrentPage(newPage);
@@ -72,9 +72,9 @@ const ReductionsAll: React.FC = () => {
   };
 
   return (
-    <ReductionsBase
+    <JobsBase
       selectedInstrument="All"
-      reductions={reductions}
+      jobs={jobs}
       totalRows={totalRows}
       currentPage={currentPage}
       rowsPerPage={rowsPerPage}
@@ -84,16 +84,16 @@ const ReductionsAll: React.FC = () => {
       orderBy={orderBy}
       orderDirection={orderDirection}
       customHeaders={<TableCell sx={{ width: '10%', ...headerStyles(theme) }}>Instrument</TableCell>}
-      customRowCells={(reduction: Reduction) => (
+      customRowCells={(job: Job) => (
         <TableCell sx={{ width: '10%' }}>
           <Link
-            to={`/reduction-history/${reduction.run.instrument_name}`}
+            to={`/reduction-history/${job.run.instrument_name}`}
             style={{
               color: theme.palette.mode === 'dark' ? '#86b4ff' : theme.palette.primary.main,
               textDecoration: 'none',
             }}
           >
-            {reduction.run.instrument_name}
+            {job.run.instrument_name}
           </Link>
         </TableCell>
       )}
@@ -101,4 +101,4 @@ const ReductionsAll: React.FC = () => {
   );
 };
 
-export default ReductionsAll;
+export default JobsAll;

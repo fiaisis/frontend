@@ -50,7 +50,7 @@ import { CSSObject } from '@mui/system';
 // Local data
 import { instruments } from '../InstrumentData';
 
-export interface Reduction {
+export interface Job {
   id: number;
   start: string;
   end: string;
@@ -78,10 +78,10 @@ export interface Reduction {
   };
 }
 
-interface ReductionsBaseProps {
+interface JobsBaseProps {
   selectedInstrument: string;
   handleInstrumentChange?: (event: SelectChangeEvent<string>, child: React.ReactNode) => void;
-  reductions: Reduction[];
+  jobs: Job[];
   totalRows: number;
   currentPage: number;
   rowsPerPage: number;
@@ -91,7 +91,7 @@ interface ReductionsBaseProps {
   orderBy: string;
   orderDirection: 'asc' | 'desc';
   customHeaders?: React.ReactNode;
-  customRowCells?: (reduction: Reduction) => React.ReactNode;
+  customRowCells?: (Job: Job) => React.ReactNode;
   children?: React.ReactNode;
 }
 
@@ -105,10 +105,10 @@ export const headerStyles = (theme: Theme): CSSObject => ({
   },
 });
 
-const ReductionsBase: React.FC<ReductionsBaseProps> = ({
+const JobsBase: React.FC<JobsBaseProps> = ({
   selectedInstrument,
   handleInstrumentChange,
-  reductions,
+  jobs,
   totalRows,
   currentPage,
   rowsPerPage,
@@ -125,8 +125,8 @@ const ReductionsBase: React.FC<ReductionsBaseProps> = ({
 
   const DATA_VIEWER_URL = process.env.REACT_APP_FIA_DATA_VIEWER_URL;
 
-  const openValueEditor = (reductionId: number): void => {
-    const url = `/fia/value-editor/${reductionId}`;
+  const openValueEditor = (jobId: number): void => {
+    const url = `/fia/value-editor/${jobId}`;
     const windowName = 'ValueEditorWindow';
     const features = 'width=1200,height=800,resizable=no';
     window.open(url, windowName, features);
@@ -134,31 +134,26 @@ const ReductionsBase: React.FC<ReductionsBaseProps> = ({
       category: 'Button',
       action: 'Click',
       label: 'Value editor button',
-      value: reductionId,
+      value: jobId,
     });
   };
 
-  const openDataViewer = (
-    reductionId: number,
-    instrumentName: string,
-    experimentNumber: number,
-    output: string
-  ): void => {
+  const openDataViewer = (jobId: number, instrumentName: string, experimentNumber: number, output: string): void => {
     const url = `${DATA_VIEWER_URL}/view/${instrumentName}/${experimentNumber}/${output}`;
     window.open(url, '_blank');
     ReactGA.event({
       category: 'Button',
       action: 'Click',
       label: 'View button',
-      value: reductionId,
+      value: jobId,
     });
   };
 
-  const Row: React.FC<{ reduction: Reduction; index: number }> = ({ reduction, index }) => {
+  const Row: React.FC<{ job: Job; index: number }> = ({ job, index }) => {
     const [open, setOpen] = useState(false);
     const theme = useTheme();
 
-    const ReductionStatus = ({ state }: { state: string }): JSX.Element => {
+    const JobStatus = ({ state }: { state: string }): JSX.Element => {
       const getComponent = (): JSX.Element => {
         switch (state) {
           case 'ERROR':
@@ -205,14 +200,14 @@ const ReductionsBase: React.FC<ReductionsBaseProps> = ({
       }
     };
 
-    const parseReductionOutputs = (): JSX.Element | JSX.Element[] | undefined => {
+    const parseJobOutputs = (): JSX.Element | JSX.Element[] | undefined => {
       try {
         let outputs;
-        if (reduction.outputs.startsWith('[') && reduction.outputs.endsWith(']')) {
-          const preParsedOutputs = reduction.outputs.replace(/'/g, '"');
+        if (job.outputs.startsWith('[') && job.outputs.endsWith(']')) {
+          const preParsedOutputs = job.outputs.replace(/'/g, '"');
           outputs = JSON.parse(preParsedOutputs);
         } else {
-          outputs = [reduction.outputs];
+          outputs = [job.outputs];
         }
 
         if (Array.isArray(outputs)) {
@@ -241,14 +236,7 @@ const ReductionsBase: React.FC<ReductionsBaseProps> = ({
                     <Button
                       variant="contained"
                       style={{ marginLeft: '10px' }}
-                      onClick={() =>
-                        openDataViewer(
-                          reduction.id,
-                          reduction.run.instrument_name,
-                          reduction.run.experiment_number,
-                          output
-                        )
-                      }
+                      onClick={() => openDataViewer(job.id, job.run.instrument_name, job.run.experiment_number, output)}
                     >
                       View
                     </Button>
@@ -266,14 +254,14 @@ const ReductionsBase: React.FC<ReductionsBaseProps> = ({
           ));
         }
       } catch (error) {
-        console.error('Failed to parse job outputs as JSON:', reduction.outputs);
+        console.error('Failed to parse job outputs as JSON:', job.outputs);
         console.error('Error:', error);
-        return <TableCell>{reduction.outputs}</TableCell>;
+        return <TableCell>{job.outputs}</TableCell>;
       }
     };
 
-    const renderReductionInputs = (): JSX.Element | JSX.Element[] => {
-      const entries = Object.entries(reduction.inputs);
+    const renderJobInputs = (): JSX.Element | JSX.Element[] => {
+      const entries = Object.entries(job.inputs);
       if (entries.length === 0) {
         return <Typography sx={{ fontWeight: 'bold' }}>No input data available</Typography>;
       }
@@ -289,12 +277,12 @@ const ReductionsBase: React.FC<ReductionsBaseProps> = ({
       ));
     };
 
-    const renderReductionStatus = (): JSX.Element => {
-      switch (reduction.state) {
+    const renderJobStatus = (): JSX.Element => {
+      switch (job.state) {
         case 'ERROR':
           return (
             <Typography variant="subtitle1" style={{ color: theme.palette.error.dark, fontWeight: 'bold' }}>
-              [ERROR] {reduction.status_message}
+              [ERROR] {job.status_message}
             </Typography>
           );
         case 'SUCCESSFUL':
@@ -312,7 +300,7 @@ const ReductionsBase: React.FC<ReductionsBaseProps> = ({
         case 'UNSUCCESSFUL':
           return (
             <Typography variant="subtitle1" style={{ color: theme.palette.warning.main, fontWeight: 'bold' }}>
-              [UNSUCCESSFUL] {reduction.status_message}
+              [UNSUCCESSFUL] {job.status_message}
             </Typography>
           );
         default:
@@ -347,47 +335,50 @@ const ReductionsBase: React.FC<ReductionsBaseProps> = ({
     return (
       <>
         <TableRow sx={{ ...rowStyles, '&:hover': hoverStyles(theme, index) }} onClick={() => setOpen(!open)}>
-          <TableCell sx={{ width: '5%' }}>
+          <TableCell sx={{ width: '4%' }}>
             <IconButton aria-label="expand row" size="small">
               {open ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
             </IconButton>
           </TableCell>
-          <TableCell sx={{ width: '5%' }}>
-            <ReductionStatus state={reduction.state} />
+          <TableCell sx={{ width: '4%' }}>
+            <JobStatus state={job.state} />
           </TableCell>
-          <TableCell sx={{ width: '12%' }}>{reduction.run.experiment_number}</TableCell>
-          <TableCell sx={{ width: '10%' }}>{extractFileName(reduction.run.filename)}</TableCell>
-          <TableCell sx={{ width: '15%' }}>{formatDateTime(reduction.run.run_start)}</TableCell>
-          <TableCell sx={{ width: '15%' }}>{formatDateTime(reduction.run.run_end)}</TableCell>
-          <TableCell sx={{ width: '30%' }}>{reduction.run.title}</TableCell>
-          {customRowCells && customRowCells(reduction)}
+          <TableCell sx={{ width: '12%' }}>{job.run.experiment_number}</TableCell>
+          <TableCell sx={{ width: '10%' }}>{extractFileName(job.run.filename)}</TableCell>
+          <TableCell sx={{ width: '15%' }}>{formatDateTime(job.run.run_start)}</TableCell>
+          <TableCell sx={{ width: '15%' }}>{formatDateTime(job.run.run_end)}</TableCell>
+          <TableCell sx={{ width: '32%' }}>{job.run.title}</TableCell>
+          {customRowCells && customRowCells(job)}
         </TableRow>
         <TableRow>
-          <TableCell colSpan={7} style={{ paddingBottom: 0, paddingTop: 0 }}>
+          <TableCell
+            colSpan={7}
+            style={{ paddingBottom: 0, paddingTop: 0, backgroundColor: rowStyles.backgroundColor }}
+          >
             <Collapse in={open} timeout="auto" unmountOnExit>
               <Box margin={2}>
                 <Typography variant="h6" gutterBottom>
-                  {renderReductionStatus()}
+                  {renderJobStatus()}
                 </Typography>
                 <Grid container spacing={3}>
                   <Grid item xs={4}>
                     <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
-                      {reduction.state === 'UNSUCCESSFUL' || reduction.state === 'ERROR'
+                      {job.state === 'UNSUCCESSFUL' || job.state === 'ERROR'
                         ? 'Stacktrace output'
                         : 'Reduction outputs'}
                     </Typography>
                     <Box sx={{ maxHeight: 200, overflowY: 'auto' }}>
-                      {reduction.state === 'NOT_STARTED' ? (
+                      {job.state === 'NOT_STARTED' ? (
                         <Typography variant="body2" style={{ margin: 2 }}>
                           No output files to show
                         </Typography>
-                      ) : reduction.state === 'UNSUCCESSFUL' || reduction.state === 'ERROR' ? (
+                      ) : job.state === 'UNSUCCESSFUL' || job.state === 'ERROR' ? (
                         <Typography variant="body2" style={{ margin: 2, whiteSpace: 'pre-wrap' }}>
-                          {reduction.stacktrace ? reduction.stacktrace : 'No detailed stacktrace to show'}
+                          {job.stacktrace ? job.stacktrace : 'No detailed stacktrace to show'}
                         </Typography>
                       ) : (
                         <Table size="small" aria-label="details">
-                          <TableBody>{parseReductionOutputs()}</TableBody>
+                          <TableBody>{parseJobOutputs()}</TableBody>
                         </Table>
                       )}
                     </Box>
@@ -401,7 +392,7 @@ const ReductionsBase: React.FC<ReductionsBaseProps> = ({
                       <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
                         Reduction ID:
                       </Typography>
-                      <Typography variant="body2">{reduction.id}</Typography>
+                      <Typography variant="body2">{job.id}</Typography>
                     </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
                       <ImageAspectRatio fontSize="small" style={{ marginRight: '8px' }} />
@@ -416,9 +407,9 @@ const ReductionsBase: React.FC<ReductionsBaseProps> = ({
                           textOverflow: 'ellipsis',
                           maxWidth: '200px',
                         }}
-                        title={reduction.runner_image}
+                        title={job.runner_image}
                       >
-                        {reduction.runner_image}
+                        {job.runner_image}
                       </Typography>
                     </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
@@ -426,51 +417,51 @@ const ReductionsBase: React.FC<ReductionsBaseProps> = ({
                       <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
                         Instrument:
                       </Typography>
-                      <Typography variant="body2">{reduction.run.instrument_name}</Typography>
+                      <Typography variant="body2">{job.run.instrument_name}</Typography>
                     </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
                       <Schedule fontSize="small" style={{ marginRight: '8px' }} />
                       <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
                         Reduction start:
                       </Typography>
-                      <Typography variant="body2">{formatDateTime(reduction.start)}</Typography>
+                      <Typography variant="body2">{formatDateTime(job.start)}</Typography>
                     </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
                       <Schedule fontSize="small" style={{ marginRight: '8px' }} />
                       <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
                         Reduction end:
                       </Typography>
-                      <Typography variant="body2">{formatDateTime(reduction.end)}</Typography>
+                      <Typography variant="body2">{formatDateTime(job.end)}</Typography>
                     </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
                       <StackedBarChart fontSize="small" style={{ marginRight: '8px' }} />
                       <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
                         Good frames:
                       </Typography>
-                      <Typography variant="body2">{reduction.run.good_frames.toLocaleString()}</Typography>
+                      <Typography variant="body2">{job.run.good_frames.toLocaleString()}</Typography>
                     </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
                       <StackedBarChart fontSize="small" style={{ marginRight: '8px' }} />
                       <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
                         Raw frames:
                       </Typography>
-                      <Typography variant="body2">{reduction.run.raw_frames.toLocaleString()}</Typography>
+                      <Typography variant="body2">{job.run.raw_frames.toLocaleString()}</Typography>
                     </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
                       <People fontSize="small" style={{ marginRight: '8px' }} />
                       <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
                         Users:
                       </Typography>
-                      <Typography variant="body2">{reduction.run.users}</Typography>
+                      <Typography variant="body2">{job.run.users}</Typography>
                     </Box>
                   </Grid>
                   <Grid item xs={5}>
                     <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
                       Reduction inputs
                     </Typography>
-                    <Box sx={{ maxHeight: 140, overflowY: 'auto', marginBottom: 2 }}>{renderReductionInputs()}</Box>
+                    <Box sx={{ maxHeight: 140, overflowY: 'auto', marginBottom: 2 }}>{renderJobInputs()}</Box>
                     <Box display="flex" justifyContent="right">
-                      <Button variant="contained" sx={{ marginRight: 1 }} onClick={() => openValueEditor(reduction.id)}>
+                      <Button variant="contained" sx={{ marginRight: 1 }} onClick={() => openValueEditor(job.id)}>
                         Value editor
                       </Button>
                       <Tooltip title="Will be added in the future">
@@ -519,7 +510,7 @@ const ReductionsBase: React.FC<ReductionsBaseProps> = ({
       {/* Render children passed from parent */}
       {children}
 
-      {reductions.length === 0 ? (
+      {jobs.length === 0 ? (
         <Typography variant="h6" style={{ textAlign: 'center', marginTop: '20px', color: theme.palette.text.primary }}>
           No reductions to show for this instrument
         </Typography>
@@ -537,7 +528,7 @@ const ReductionsBase: React.FC<ReductionsBaseProps> = ({
             <Table stickyHeader>
               <TableHead>
                 <TableRow>
-                  <TableCell sx={{ ...headerStyles(theme), width: '8%' }} colSpan={2}>
+                  <TableCell sx={{ ...headerStyles(theme), width: '4%' }} colSpan={2}>
                     {selectedInstrument}
                   </TableCell>
                   <TableCell
@@ -555,13 +546,13 @@ const ReductionsBase: React.FC<ReductionsBaseProps> = ({
                   <TableCell sx={{ width: '15%', ...headerStyles(theme) }} onClick={() => handleSort('run_end')}>
                     Run end {orderBy === 'run_end' ? (orderDirection === 'asc' ? '↑' : '↓') : ''}
                   </TableCell>
-                  <TableCell sx={{ width: '30', ...headerStyles(theme) }}>Title</TableCell>
+                  <TableCell sx={{ width: '32', ...headerStyles(theme) }}>Title</TableCell>
                   {customHeaders && customHeaders}
                 </TableRow>
               </TableHead>
               <TableBody>
-                {reductions.map((reduction, index) => (
-                  <Row key={reduction.id} reduction={reduction} index={index} />
+                {jobs.map((job, index) => (
+                  <Row key={job.id} job={job} index={index} />
                 ))}
               </TableBody>
             </Table>
@@ -572,4 +563,4 @@ const ReductionsBase: React.FC<ReductionsBaseProps> = ({
   );
 };
 
-export default ReductionsBase;
+export default JobsBase;

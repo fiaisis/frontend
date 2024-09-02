@@ -8,16 +8,16 @@ import { ArrowBack } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
 
 // Local data
-import ReductionsBase, { Reduction } from './ReductionsBase';
+import JobsBase, { Job } from './JobsBase';
 import { instruments } from '../InstrumentData';
 
-const ReductionsGeneral: React.FC = () => {
+const JobsGeneral: React.FC = () => {
   const fiaApiUrl = process.env.REACT_APP_FIA_REST_API_URL;
   const { instrumentName } = useParams<{ instrumentName: string }>();
   const history = useHistory();
   const theme = useTheme();
 
-  const [reductions, setReductions] = useState<Reduction[]>([]);
+  const [job, setJobs] = useState<Job[]>([]);
   const [totalRows, setTotalRows] = useState(0);
   const [selectedInstrument, setSelectedInstrument] = useState<string>(instrumentName || instruments[0].name);
   const [currentPage, setCurrentPage] = useState(0);
@@ -59,7 +59,7 @@ const ReductionsGeneral: React.FC = () => {
         headers,
       });
       const data = await response.json();
-      setReductions(data);
+      setJobs(data);
     } catch (error) {
       console.error('Error fetching reductions:', error);
     }
@@ -96,10 +96,10 @@ const ReductionsGeneral: React.FC = () => {
   };
 
   return (
-    <ReductionsBase
+    <JobsBase
       selectedInstrument={selectedInstrument}
       handleInstrumentChange={handleInstrumentChange}
-      reductions={reductions}
+      jobs={job}
       totalRows={totalRows}
       currentPage={currentPage}
       rowsPerPage={rowsPerPage}
@@ -124,8 +124,8 @@ const ReductionsGeneral: React.FC = () => {
         <ArrowBack style={{ marginRight: '4px' }} />
         View reductions for all instruments
       </Typography>
-    </ReductionsBase>
+    </JobsBase>
   );
 };
 
-export default ReductionsGeneral;
+export default JobsGeneral;
