@@ -1,8 +1,13 @@
+// React components
 import React, { useCallback, useEffect, useState } from 'react';
-import ReductionsBase, { Reduction, headerStyles } from './ReductionsBase';
+import { Link } from 'react-router-dom';
+
+// Material UI components
 import { useTheme } from '@mui/material/styles';
 import { TableCell } from '@mui/material';
-import { Link } from 'react-router-dom';
+
+// Local data
+import ReductionsBase, { Reduction, headerStyles } from './ReductionsBase';
 
 const ReductionsAll: React.FC = () => {
   const fiaApiUrl = process.env.REACT_APP_FIA_REST_API_URL;

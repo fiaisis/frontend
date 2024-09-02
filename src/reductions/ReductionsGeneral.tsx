@@ -1,13 +1,15 @@
+// React components
 import React, { useCallback, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import ReductionsBase from './ReductionsBase';
-import { useHistory, useParams } from 'react-router-dom';
-import { instruments } from '../InstrumentData';
+import { Link, useHistory, useParams } from 'react-router-dom';
+
+// Material UI components
 import { SelectChangeEvent, Typography } from '@mui/material';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import { ArrowBack } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
 
-import { Reduction } from './ReductionsBase';
+// Local data
+import ReductionsBase, { Reduction } from './ReductionsBase';
+import { instruments } from '../InstrumentData';
 
 const ReductionsGeneral: React.FC = () => {
   const fiaApiUrl = process.env.REACT_APP_FIA_REST_API_URL;
@@ -119,7 +121,7 @@ const ReductionsGeneral: React.FC = () => {
           marginTop: '10px',
         }}
       >
-        <ArrowBackIcon style={{ marginRight: '4px' }} />
+        <ArrowBack style={{ marginRight: '4px' }} />
         View reductions for all instruments
       </Typography>
     </ReductionsBase>

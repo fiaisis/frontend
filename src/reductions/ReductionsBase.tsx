@@ -1,55 +1,52 @@
+// React components
 import React, { useState } from 'react';
+import ReactGA from 'react-ga4';
+
+// Material UI components
 import {
+  Box,
+  Button,
+  Collapse,
+  FormControl,
+  Grid,
+  InputLabel,
+  MenuItem,
+  Paper,
+  Select,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
-  TableRow,
-  Paper,
-  IconButton,
-  Collapse,
-  Box,
-  Typography,
-  Grid,
-  Button,
-  Tooltip,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   TablePagination,
+  TableRow,
+  Theme,
+  Tooltip,
+  Typography,
+  useTheme,
 } from '@mui/material';
-import { useTheme, Theme } from '@mui/material';
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
-import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
-import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
-import HighlightOffIcon from '@mui/icons-material/HighlightOff';
-import WarningAmberIcon from '@mui/icons-material/WarningAmber';
-import BuildIcon from '@mui/icons-material/Build';
-import PeopleIcon from '@mui/icons-material/People';
-import FolderIcon from '@mui/icons-material/Folder';
-import ScheduleIcon from '@mui/icons-material/Schedule';
-import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
-import VpnKeyIcon from '@mui/icons-material/VpnKey';
-import StackedBarChartIcon from '@mui/icons-material/StackedBarChart';
-import JoinFullIcon from '@mui/icons-material/JoinFull';
-import SchemaIcon from '@mui/icons-material/Schema';
-import ImageAspectRatioIcon from '@mui/icons-material/ImageAspectRatio';
+import {
+  KeyboardArrowDown,
+  KeyboardArrowUp,
+  ErrorOutline,
+  CheckCircleOutline,
+  HighlightOff,
+  WarningAmber,
+  Build,
+  People,
+  Folder,
+  Schedule,
+  InsertDriveFile,
+  VpnKey,
+  StackedBarChart,
+  JoinFull,
+  Schema,
+  ImageAspectRatio,
+} from '@mui/icons-material';
 import { CSSObject } from '@mui/system';
-import { instruments } from '../InstrumentData';
-import ReactGA from 'react-ga4';
 
-export const headerStyles = (theme: Theme): CSSObject => ({
-  color: theme.palette.primary.contrastText,
-  backgroundColor: theme.palette.primary.main,
-  fontWeight: 'bold',
-  borderRight: `1px solid #1f4996`,
-  '&:last-child': {
-    borderRight: 'none',
-  },
-});
+// Local data
+import { instruments } from '../InstrumentData';
 
 export interface Reduction {
   id: number;
@@ -95,6 +92,16 @@ interface ReductionsBaseProps {
   customRowCells?: (reduction: Reduction) => React.ReactNode;
   children?: React.ReactNode;
 }
+
+export const headerStyles = (theme: Theme): CSSObject => ({
+  color: theme.palette.primary.contrastText,
+  backgroundColor: theme.palette.primary.main,
+  fontWeight: 'bold',
+  borderRight: `1px solid #1f4996`,
+  '&:last-child': {
+    borderRight: 'none',
+  },
+});
 
 const ReductionsBase: React.FC<ReductionsBaseProps> = ({
   selectedInstrument,
@@ -149,24 +156,24 @@ const ReductionsBase: React.FC<ReductionsBaseProps> = ({
     const [open, setOpen] = useState(false);
     const theme = useTheme();
 
-    const ReductionStatusIcon = ({ state }: { state: string }): JSX.Element => {
-      const getIconComponent = (): JSX.Element => {
+    const ReductionStatus = ({ state }: { state: string }): JSX.Element => {
+      const getComponent = (): JSX.Element => {
         switch (state) {
           case 'ERROR':
-            return <ErrorOutlineIcon color="error" />;
+            return <ErrorOutline color="error" />;
           case 'SUCCESSFUL':
-            return <CheckCircleOutlineIcon color="success" />;
+            return <CheckCircleOutline color="success" />;
           case 'UNSUCCESSFUL':
-            return <WarningAmberIcon color="warning" />;
+            return <WarningAmber color="warning" />;
           case 'NOT_STARTED':
-            return <HighlightOffIcon color="action" />;
+            return <HighlightOff color="action" />;
           default:
-            return <ErrorOutlineIcon />;
+            return <ErrorOutline />;
         }
       };
       return (
         <Tooltip title={state}>
-          <span>{getIconComponent()}</span>
+          <span>{getComponent()}</span>
         </Tooltip>
       );
     };
@@ -186,13 +193,13 @@ const ReductionsBase: React.FC<ReductionsBaseProps> = ({
       return fileNameWithExtension.split('.')[0];
     };
 
-    const getFileTypeIcon = (fileName: string): JSX.Element => {
+    const getFileType = (fileName: string): JSX.Element => {
       if (fileName.endsWith('.nxspe') || fileName.endsWith('.nxs') || fileName.endsWith('.h5')) {
-        return <JoinFullIcon fontSize="small" style={{ marginRight: '8px' }} />;
+        return <JoinFull fontSize="small" style={{ marginRight: '8px' }} />;
       } else if (fileName.endsWith('.txt')) {
-        return <InsertDriveFileIcon fontSize="small" style={{ marginRight: '8px' }} />;
+        return <InsertDriveFile fontSize="small" style={{ marginRight: '8px' }} />;
       } else {
-        return <FolderIcon fontSize="small" style={{ marginRight: '8px' }} />;
+        return <Folder fontSize="small" style={{ marginRight: '8px' }} />;
       }
     };
 
@@ -213,7 +220,7 @@ const ReductionsBase: React.FC<ReductionsBaseProps> = ({
                 <Box maxHeight="80px" display="flex" alignItems="center" justifyContent="space-between" width="100%">
                   <Box display="flex" alignItems="center">
                     <Box display="flex" alignItems="center" sx={{ overflow: 'hidden' }}>
-                      {getFileTypeIcon(output)}
+                      {getFileType(output)}
                       <Typography
                         variant="body2"
                         sx={{
@@ -271,7 +278,7 @@ const ReductionsBase: React.FC<ReductionsBaseProps> = ({
 
       return entries.map(([key, value], index) => (
         <Box key={index} sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
-          <BuildIcon fontSize="small" style={{ marginRight: '8px' }} />
+          <Build fontSize="small" style={{ marginRight: '8px' }} />
           <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
             {key}:
           </Typography>
@@ -339,12 +346,12 @@ const ReductionsBase: React.FC<ReductionsBaseProps> = ({
       <>
         <TableRow sx={{ ...rowStyles, '&:hover': hoverStyles(theme, index) }} onClick={() => setOpen(!open)}>
           <TableCell sx={{ width: '5%' }}>
-            <IconButton aria-label="expand row" size="small">
-              {open ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
-            </IconButton>
+            <Button aria-label="expand row" size="small">
+              {open ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
+            </Button>
           </TableCell>
           <TableCell sx={{ width: '5%' }}>
-            <ReductionStatusIcon state={reduction.state} />
+            <ReductionStatus state={reduction.state} />
           </TableCell>
           {customRowCells && customRowCells(reduction)}
           <TableCell sx={{ width: '15%' }}>{reduction.run.experiment_number}</TableCell>
@@ -388,14 +395,14 @@ const ReductionsBase: React.FC<ReductionsBaseProps> = ({
                       Run details
                     </Typography>
                     <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
-                      <VpnKeyIcon fontSize="small" style={{ marginRight: '8px' }} />
+                      <VpnKey fontSize="small" style={{ marginRight: '8px' }} />
                       <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
                         Reduction ID:
                       </Typography>
                       <Typography variant="body2">{reduction.id}</Typography>
                     </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
-                      <ImageAspectRatioIcon fontSize="small" style={{ marginRight: '8px' }} />
+                      <ImageAspectRatio fontSize="small" style={{ marginRight: '8px' }} />
                       <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
                         Runner image:
                       </Typography>
@@ -413,42 +420,42 @@ const ReductionsBase: React.FC<ReductionsBaseProps> = ({
                       </Typography>
                     </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
-                      <SchemaIcon fontSize="small" style={{ marginRight: '8px' }} />
+                      <Schema fontSize="small" style={{ marginRight: '8px' }} />
                       <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
                         Instrument:
                       </Typography>
                       <Typography variant="body2">{reduction.run.instrument_name}</Typography>
                     </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
-                      <ScheduleIcon fontSize="small" style={{ marginRight: '8px' }} />
+                      <Schedule fontSize="small" style={{ marginRight: '8px' }} />
                       <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
                         Reduction start:
                       </Typography>
                       <Typography variant="body2">{formatDateTime(reduction.start)}</Typography>
                     </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
-                      <ScheduleIcon fontSize="small" style={{ marginRight: '8px' }} />
+                      <Schedule fontSize="small" style={{ marginRight: '8px' }} />
                       <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
                         Reduction end:
                       </Typography>
                       <Typography variant="body2">{formatDateTime(reduction.end)}</Typography>
                     </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
-                      <StackedBarChartIcon fontSize="small" style={{ marginRight: '8px' }} />
+                      <StackedBarChart fontSize="small" style={{ marginRight: '8px' }} />
                       <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
                         Good frames:
                       </Typography>
                       <Typography variant="body2">{reduction.run.good_frames.toLocaleString()}</Typography>
                     </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
-                      <StackedBarChartIcon fontSize="small" style={{ marginRight: '8px' }} />
+                      <StackedBarChart fontSize="small" style={{ marginRight: '8px' }} />
                       <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
                         Raw frames:
                       </Typography>
                       <Typography variant="body2">{reduction.run.raw_frames.toLocaleString()}</Typography>
                     </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
-                      <PeopleIcon fontSize="small" style={{ marginRight: '8px' }} />
+                      <People fontSize="small" style={{ marginRight: '8px' }} />
                       <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
                         Users:
                       </Typography>
