@@ -13,6 +13,7 @@ import {
   MenuItem,
   Paper,
   Select,
+  SelectChangeEvent,
   Table,
   TableBody,
   TableCell,
@@ -78,7 +79,7 @@ export interface Reduction {
 
 interface ReductionsBaseProps {
   selectedInstrument: string;
-  handleInstrumentChange?: (event: any) => void;
+  handleInstrumentChange?: (event: SelectChangeEvent<string>, child: React.ReactNode) => void;
   reductions: Reduction[];
   totalRows: number;
   currentPage: number;
@@ -329,7 +330,7 @@ const ReductionsBase: React.FC<ReductionsBaseProps> = ({
           : theme.palette.background.default, // Odd rows (default background color)
     };
 
-    const hoverStyles = (theme: any, index: number): React.CSSProperties => {
+    const hoverStyles = (theme: Theme, index: number): React.CSSProperties => {
       return {
         backgroundColor:
           theme.palette.mode === 'light'

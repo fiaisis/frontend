@@ -48,7 +48,7 @@ const ReductionsAll: React.FC = () => {
     } catch (error) {
       console.error('Error fetching reductions:', error);
     }
-  }, [currentPage, rowsPerPage, orderBy, orderDirection, fiaApiUrl]);
+  }, [currentPage, rowsPerPage, orderDirection, fiaApiUrl]);
 
   useEffect(() => {
     fetchTotalCount();
