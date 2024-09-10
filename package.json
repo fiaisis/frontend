@@ -29,7 +29,7 @@
     "react-router-dom": "5.3.0",
     "react-scripts": "5.0.0",
     "single-spa-react": "4.6.1",
-    "typescript": "5.6.2",
+    "typescript": "5.5.x",
     "ws": "8.18.0"
   },
   "resolutions": {
@@ -95,7 +95,7 @@
     "@typescript-eslint/parser": "8.5.0",
     "cypress": "^13.14.2",
     "cypress-real-events": "^1.13.0",
-    "eslint": "9.10.0",
+    "eslint": "8.x",
     "eslint-config-prettier": "9.1.0",
     "eslint-config-react-app": "7.0.0",
     "eslint-plugin-cypress": "3.5.0",
