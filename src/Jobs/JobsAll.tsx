@@ -41,10 +41,7 @@ const JobsAll: React.FC = () => {
       });
       const data = await response.json();
 
-      // Filter out any reductions that don't have a valid run object
-      const filteredData = data.filter((job: Job) => job.run !== null);
-
-      setJobs(filteredData);
+      setJobs(data);
     } catch (error) {
       console.error('Error fetching reductions:', error);
     }
@@ -86,15 +83,19 @@ const JobsAll: React.FC = () => {
       customHeaders={<TableCell sx={{ width: '10%', ...headerStyles(theme) }}>Instrument</TableCell>}
       customRowCells={(job: Job) => (
         <TableCell sx={{ width: '10%' }}>
-          <Link
-            to={`/reduction-history/${job.run.instrument_name}`}
-            style={{
-              color: theme.palette.mode === 'dark' ? '#86b4ff' : theme.palette.primary.main,
-              textDecoration: 'none',
-            }}
-          >
-            {job.run.instrument_name}
-          </Link>
+          {job.run?.instrument_name ? (
+            <Link
+              to={`/reduction-history/${job.run.instrument_name}`}
+              style={{
+                color: theme.palette.mode === 'dark' ? '#86b4ff' : theme.palette.primary.main,
+                textDecoration: 'none',
+              }}
+            >
+              {job.run.instrument_name}
+            </Link>
+          ) : (
+            'Unknown'
+          )}
         </TableCell>
       )}
       maxHeight={650}

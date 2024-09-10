@@ -35,6 +35,7 @@ import {
   HighlightOff,
   WarningAmber,
   Build,
+  WorkOutline,
   People,
   Folder,
   Schedule,
@@ -67,6 +68,7 @@ export interface Job {
   state: string;
   status_message: string;
   runner_image: string;
+  type: string;
   inputs: {
     [key: string]: string | number | boolean | null;
   };
@@ -242,7 +244,14 @@ const JobsBase: React.FC<JobsBaseProps> = ({
                     <Button
                       variant="contained"
                       style={{ marginLeft: '10px' }}
-                      onClick={() => openDataViewer(job.id, job.run.instrument_name, job.run.experiment_number, output)}
+                      onClick={() =>
+                        openDataViewer(
+                          job.id,
+                          job.run?.instrument_name || 'unknown',
+                          job.run?.experiment_number || 0,
+                          output
+                        )
+                      }
                     >
                       View
                     </Button>
@@ -269,7 +278,11 @@ const JobsBase: React.FC<JobsBaseProps> = ({
     const renderJobInputs = (): JSX.Element | JSX.Element[] => {
       const entries = Object.entries(job.inputs);
       if (entries.length === 0) {
-        return <Typography sx={{ fontWeight: 'bold' }}>No input data available</Typography>;
+        return (
+          <Typography variant="body2" style={{ margin: 2 }}>
+            No input data available
+          </Typography>
+        );
       }
 
       return entries.map(([key, value], index) => (
@@ -338,6 +351,11 @@ const JobsBase: React.FC<JobsBaseProps> = ({
       };
     };
 
+    const formatJobType = (jobType: string): string => {
+      const formattedType = jobType.replace('JobType.', '');
+      return formattedType.charAt(0).toUpperCase() + formattedType.slice(1).toLowerCase();
+    };
+
     return (
       <>
         <TableRow sx={{ ...rowStyles, '&:hover': hoverStyles(theme, index) }} onClick={() => setOpen(!open)}>
@@ -349,11 +367,11 @@ const JobsBase: React.FC<JobsBaseProps> = ({
           <TableCell sx={{ width: '4%' }}>
             <JobStatus state={job.state} />
           </TableCell>
-          <TableCell sx={{ width: '12%' }}>{job.run.experiment_number}</TableCell>
-          <TableCell sx={{ width: '10%' }}>{extractFileName(job.run.filename)}</TableCell>
-          <TableCell sx={{ width: '15%' }}>{formatDateTime(job.run.run_start)}</TableCell>
-          <TableCell sx={{ width: '15%' }}>{formatDateTime(job.run.run_end)}</TableCell>
-          <TableCell sx={{ width: '32%' }}>{job.run.title}</TableCell>
+          <TableCell sx={{ width: '12%' }}>{job.run?.experiment_number || 'N/A'}</TableCell>
+          <TableCell sx={{ width: '10%' }}>{extractFileName(job.run?.filename || 'N/A')}</TableCell>
+          <TableCell sx={{ width: '15%' }}>{formatDateTime(job.run?.run_start || 'N/A')}</TableCell>
+          <TableCell sx={{ width: '15%' }}>{formatDateTime(job.run?.run_end || 'N/A')}</TableCell>
+          <TableCell sx={{ width: '32%' }}>{job.run?.title || 'N/A'}</TableCell>
           {customRowCells && customRowCells(job)}
         </TableRow>
         <TableRow>
@@ -401,6 +419,13 @@ const JobsBase: React.FC<JobsBaseProps> = ({
                       <Typography variant="body2">{job.id}</Typography>
                     </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
+                      <WorkOutline fontSize="small" style={{ marginRight: '8px' }} />
+                      <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
+                        Job type:
+                      </Typography>
+                      <Typography variant="body2">{job.type ? formatJobType(job.type) : 'N/A'}</Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
                       <ImageAspectRatio fontSize="small" style={{ marginRight: '8px' }} />
                       <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
                         Runner image:
@@ -415,7 +440,7 @@ const JobsBase: React.FC<JobsBaseProps> = ({
                         }}
                         title={job.runner_image}
                       >
-                        {job.runner_image}
+                        {job.runner_image ? job.runner_image : 'N/A'}
                       </Typography>
                     </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
@@ -423,49 +448,49 @@ const JobsBase: React.FC<JobsBaseProps> = ({
                       <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
                         Instrument:
                       </Typography>
-                      <Typography variant="body2">{job.run.instrument_name}</Typography>
+                      <Typography variant="body2">{job.run?.instrument_name || 'N/A'}</Typography>
                     </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
                       <Schedule fontSize="small" style={{ marginRight: '8px' }} />
                       <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
                         Reduction start:
                       </Typography>
-                      <Typography variant="body2">{formatDateTime(job.start)}</Typography>
+                      <Typography variant="body2">{job.start ? formatDateTime(job.start) : 'N/A'}</Typography>
                     </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
                       <Schedule fontSize="small" style={{ marginRight: '8px' }} />
                       <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
                         Reduction end:
                       </Typography>
-                      <Typography variant="body2">{formatDateTime(job.end)}</Typography>
+                      <Typography variant="body2">{job.end ? formatDateTime(job.end) : 'N/A'}</Typography>
                     </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
                       <StackedBarChart fontSize="small" style={{ marginRight: '8px' }} />
                       <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
                         Good frames:
                       </Typography>
-                      <Typography variant="body2">{job.run.good_frames.toLocaleString()}</Typography>
+                      <Typography variant="body2">{job.run?.good_frames?.toLocaleString() || 'N/A'}</Typography>
                     </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
                       <StackedBarChart fontSize="small" style={{ marginRight: '8px' }} />
                       <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
                         Raw frames:
                       </Typography>
-                      <Typography variant="body2">{job.run.raw_frames.toLocaleString()}</Typography>
+                      <Typography variant="body2">{job.run?.raw_frames?.toLocaleString() || 'N/A'}</Typography>
                     </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
                       <People fontSize="small" style={{ marginRight: '8px' }} />
                       <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
                         Users:
                       </Typography>
-                      <Typography variant="body2">{job.run.users}</Typography>
+                      <Typography variant="body2">{job.run?.users || 'N/A'}</Typography>
                     </Box>
                   </Grid>
                   <Grid item xs={5}>
                     <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
                       Reduction inputs
                     </Typography>
-                    <Box sx={{ maxHeight: 140, overflowY: 'auto', marginBottom: 2 }}>{renderJobInputs()}</Box>
+                    <Box sx={{ maxHeight: 160, overflowY: 'auto', marginBottom: 2 }}>{renderJobInputs()}</Box>
                     <Box display="flex" justifyContent="right">
                       <Button variant="contained" sx={{ marginRight: 1 }} onClick={() => openValueEditor(job.id)}>
                         Value editor
@@ -541,7 +566,7 @@ const JobsBase: React.FC<JobsBaseProps> = ({
                     sx={{ width: '12%', ...headerStyles(theme) }}
                     onClick={() => handleSort('experiment_number')}
                   >
-                    Experiment Number {orderBy === 'experiment_number' ? (orderDirection === 'asc' ? '↑' : '↓') : ''}
+                    Experiment number {orderBy === 'experiment_number' ? (orderDirection === 'asc' ? '↑' : '↓') : ''}
                   </TableCell>
                   <TableCell sx={{ width: '10%', ...headerStyles(theme) }} onClick={() => handleSort('filename')}>
                     Filename {orderBy === 'filename' ? (orderDirection === 'asc' ? '↑' : '↓') : ''}
