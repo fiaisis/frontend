@@ -412,8 +412,8 @@ function Row({ reduction, index }: { reduction: Reduction; index: number }): JSX
         ? theme.palette.mode === 'light'
           ? '#f0f0f0' // Light mode, odd rows
           : theme.palette.mode === 'dark'
-          ? '#2d2d2d' // Dark mode, odd rows
-          : '#000000' // High contrast mode,  odd rows
+            ? '#2d2d2d' // Dark mode, odd rows
+            : '#000000' // High contrast mode,  odd rows
         : theme.palette.background.default, // All even rows (default background color)
   };
 
@@ -423,10 +423,10 @@ function Row({ reduction, index }: { reduction: Reduction; index: number }): JSX
         theme.palette.mode === 'light'
           ? '#e0e0e0' // Light mode hover color
           : theme.palette.mode === 'dark'
-          ? index % 2 === 0
-            ? '#4c4c4c' // Dark mode, even rows
-            : '#4a4a4a' // Dark mode, odd rows
-          : '#ffffff', // High contrast mode hover color
+            ? index % 2 === 0
+              ? '#4c4c4c' // Dark mode, even rows
+              : '#4a4a4a' // Dark mode, odd rows
+            : '#ffffff', // High contrast mode hover color
     };
   };
 
