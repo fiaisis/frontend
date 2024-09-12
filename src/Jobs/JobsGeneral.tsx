@@ -113,12 +113,15 @@ const JobsGeneral: React.FC = () => {
         variant="body1"
         component={Link}
         to="/reduction-history/all"
-        style={{
+        sx={{
           color: theme.palette.mode === 'dark' ? '#86b4ff' : theme.palette.primary.main,
           display: 'flex',
           alignItems: 'center',
           textDecoration: 'none',
           marginTop: '10px',
+          '&:hover': {
+            textDecoration: 'underline',
+          },
         }}
       >
         <ArrowBack style={{ marginRight: '4px' }} />
