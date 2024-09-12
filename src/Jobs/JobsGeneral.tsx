@@ -112,7 +112,7 @@ const JobsGeneral: React.FC = () => {
       <Typography
         variant="body1"
         component={Link}
-        to="/reduction-history/all"
+        to="/reduction-history/ALL"
         sx={{
           color: theme.palette.mode === 'dark' ? '#86b4ff' : theme.palette.primary.main,
           display: 'flex',

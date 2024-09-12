@@ -1,17 +1,20 @@
 // React components
 import React, { useCallback, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useHistory } from 'react-router-dom';
 
 // Material UI components
 import { useTheme } from '@mui/material/styles';
 import { TableCell } from '@mui/material';
+import { SelectChangeEvent } from '@mui/material';
 
 // Local data
 import JobsBase, { Job, headerStyles } from './JobsBase';
+import { instruments } from '../InstrumentData';
 
 const JobsAll: React.FC = () => {
   const fiaApiUrl = process.env.REACT_APP_FIA_REST_API_URL;
   const theme = useTheme();
+  const history = useHistory();
 
   const [jobs, setJobs] = useState<Job[]>([]);
   const [totalRows, setTotalRows] = useState(0);
@@ -19,6 +22,7 @@ const JobsAll: React.FC = () => {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [orderDirection, setOrderDirection] = useState<'asc' | 'desc'>('desc');
   const [orderBy, setOrderBy] = useState<string>('run_start');
+  const [selectedInstrument, setSelectedInstrument] = useState<string>('ALL');
 
   const fetchTotalCount = useCallback(async (): Promise<void> => {
     try {
@@ -52,6 +56,13 @@ const JobsAll: React.FC = () => {
     fetchJobs();
   }, [fetchTotalCount, fetchJobs]);
 
+  const handleInstrumentChange = (event: SelectChangeEvent<string>): void => {
+    const newInstrument = event.target.value;
+    setSelectedInstrument(newInstrument);
+    setCurrentPage(0);
+    history.push(`/reduction-history/${newInstrument}`);
+  };
+
   const handleChangePage = (event: unknown, newPage: number): void => {
     setCurrentPage(newPage);
   };
@@ -70,7 +81,8 @@ const JobsAll: React.FC = () => {
 
   return (
     <JobsBase
-      selectedInstrument="All"
+      selectedInstrument={selectedInstrument}
+      handleInstrumentChange={handleInstrumentChange}
       jobs={jobs}
       totalRows={totalRows}
       currentPage={currentPage}

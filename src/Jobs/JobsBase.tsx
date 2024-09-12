@@ -34,7 +34,6 @@ import {
   CheckCircleOutline,
   HighlightOff,
   WarningAmber,
-  Build,
   WorkOutline,
   People,
   Folder,
@@ -126,7 +125,7 @@ const JobsBase: React.FC<JobsBaseProps> = ({
   maxHeight = 624,
 }) => {
   const theme = useTheme();
-
+  const allInstruments = [{ name: 'ALL' }, ...instruments]; // Add 'ALL' option to the instruments list
   const baseColumnCount = 7; // Number of base columns defined in the TableHead
   const customColumnCount = customHeaders ? 1 : 0;
   const totalColumnCount = baseColumnCount + customColumnCount;
@@ -287,7 +286,6 @@ const JobsBase: React.FC<JobsBaseProps> = ({
 
       return entries.map(([key, value], index) => (
         <Box key={index} sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
-          <Build fontSize="small" style={{ marginRight: '8px' }} />
           <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
             {key}:
           </Typography>
@@ -528,7 +526,7 @@ const JobsBase: React.FC<JobsBaseProps> = ({
               label="Instrument"
               onChange={handleInstrumentChange}
             >
-              {instruments.map((instrument) => (
+              {allInstruments.map((instrument) => (
                 <MenuItem key={instrument.name} value={instrument.name}>
                   {instrument.name}
                 </MenuItem>
