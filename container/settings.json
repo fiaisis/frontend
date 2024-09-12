@@ -55,7 +55,7 @@
     }
   ],
   "auth-provider": "jwt",
-  "authUrl": "/auth",
+  "authUrl": "https://dev.reduce.isis.cclrc.ac.uk/auth",
   "ui-strings": "res/default.json",
   "autoLogin": true,
   "ga-tracking-id": "G-7XJBCP6P75",
