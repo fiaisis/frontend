@@ -9,7 +9,6 @@ import { SelectChangeEvent } from '@mui/material';
 
 // Local data
 import JobsBase, { Job, headerStyles } from './JobsBase';
-import { instruments } from '../InstrumentData';
 
 const JobsAll: React.FC = () => {
   const fiaApiUrl = process.env.REACT_APP_FIA_REST_API_URL;
