@@ -1,4 +1,4 @@
-FROM harbor.stfc.ac.uk/datagateway/scigateway:2.0.0
+FROM harbor.stfc.ac.uk/datagateway/scigateway:v2.0.0
 
 ENV AUTH_URL /auth
 ENV AUTH_PROVIDER jwt
