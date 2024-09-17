@@ -1,5 +1,5 @@
 // React components
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import ReactGA from 'react-ga4';
 
 // Material UI components
@@ -36,9 +36,12 @@ import {
   WarningAmber,
   WorkOutline,
   People,
+  Folder,
   Schedule,
+  InsertDriveFile,
   VpnKey,
   StackedBarChart,
+  JoinFull,
   Schema,
   ImageAspectRatio,
 } from '@mui/icons-material';
@@ -86,6 +89,42 @@ export interface Job {
   };
 }
 
+export const useFetchJobs = (
+  apiUrl: string,
+  queryParams: string,
+  setJobs: React.Dispatch<React.SetStateAction<Job[]>>,
+  token: string | null
+): (() => Promise<void>) => {
+  return useCallback(async () => {
+    try {
+      const headers: { [key: string]: string } = { 'Content-Type': 'application/json' };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      const response = await fetch(`${apiUrl}?${queryParams}`, { method: 'GET', headers });
+      const data = await response.json();
+      setJobs(data);
+    } catch (error) {
+      console.error('Error fetching jobs:', error);
+    }
+  }, [apiUrl, queryParams, token, setJobs]);
+};
+
+export const useFetchTotalCount = (
+  apiUrl: string,
+  setTotalRows: React.Dispatch<React.SetStateAction<number>>
+): (() => Promise<void>) => {
+  return useCallback(async () => {
+    try {
+      const response = await fetch(apiUrl);
+      const data = await response.json();
+      setTotalRows(data.count);
+    } catch (error) {
+      console.error('Error fetching total count:', error);
+    }
+  }, [apiUrl, setTotalRows]);
+};
+
 interface JobsBaseProps {
   selectedInstrument: string;
   handleInstrumentChange?: (event: SelectChangeEvent<string>, child: React.ReactNode) => void;
@@ -101,6 +140,8 @@ interface JobsBaseProps {
   customHeaders?: React.ReactNode;
   customRowCells?: (Job: Job) => React.ReactNode;
   children?: React.ReactNode;
+  fetchJobs: () => Promise<void>; // Fetch jobs prop
+  fetchTotalCount: () => Promise<void>; // Fetch total count prop
   maxHeight?: number;
 }
 
@@ -119,6 +160,8 @@ const JobsBase: React.FC<JobsBaseProps> = ({
   customHeaders,
   customRowCells,
   children,
+  fetchJobs,
+  fetchTotalCount,
   maxHeight = 624,
 }) => {
   const theme = useTheme();
@@ -126,6 +169,11 @@ const JobsBase: React.FC<JobsBaseProps> = ({
   const baseColumnCount = 7; // Number of base columns defined in the TableHead
   const customColumnCount = customHeaders ? 1 : 0;
   const totalColumnCount = baseColumnCount + customColumnCount;
+
+  useEffect(() => {
+    fetchTotalCount();
+    fetchJobs();
+  }, [fetchTotalCount, fetchJobs]);
 
   const DATA_VIEWER_URL = process.env.REACT_APP_FIA_DATA_VIEWER_URL;
 
@@ -194,6 +242,16 @@ const JobsBase: React.FC<JobsBaseProps> = ({
       return fileNameWithExtension.split('.')[0];
     };
 
+    const getFileType = (fileName: string): JSX.Element => {
+      if (fileName.endsWith('.nxspe') || fileName.endsWith('.nxs') || fileName.endsWith('.h5')) {
+        return <JoinFull fontSize="small" style={{ marginRight: '8px' }} />;
+      } else if (fileName.endsWith('.txt')) {
+        return <InsertDriveFile fontSize="small" style={{ marginRight: '8px' }} />;
+      } else {
+        return <Folder fontSize="small" style={{ marginRight: '8px' }} />;
+      }
+    };
+
     const parseJobOutputs = (): JSX.Element | JSX.Element[] | undefined => {
       try {
         let outputs;
@@ -211,13 +269,14 @@ const JobsBase: React.FC<JobsBaseProps> = ({
                 <Box maxHeight="80px" display="flex" alignItems="center" justifyContent="space-between" width="100%">
                   <Box display="flex" alignItems="center">
                     <Box display="flex" alignItems="center" sx={{ overflow: 'hidden' }}>
+                      {getFileType(output)}
                       <Typography
                         variant="body2"
                         sx={{
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap',
-                          maxWidth: '260px',
+                          maxWidth: '200px',
                         }}
                         title={output}
                       >

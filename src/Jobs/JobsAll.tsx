@@ -1,19 +1,17 @@
 // React components
-import React, { useCallback, useEffect, useState } from 'react';
-import { Link, useHistory } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 
 // Material UI components
 import { useTheme } from '@mui/material/styles';
 import { TableCell } from '@mui/material';
-import { SelectChangeEvent } from '@mui/material';
 
 // Local data
-import JobsBase, { Job, headerStyles } from './JobsBase';
+import JobsBase, { useFetchJobs, useFetchTotalCount, Job, headerStyles } from './JobsBase';
 
 const JobsAll: React.FC = () => {
   const fiaApiUrl = process.env.REACT_APP_FIA_REST_API_URL;
   const theme = useTheme();
-  const history = useHistory();
 
   const [jobs, setJobs] = useState<Job[]>([]);
   const [totalRows, setTotalRows] = useState(0);
@@ -21,76 +19,32 @@ const JobsAll: React.FC = () => {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [orderDirection, setOrderDirection] = useState<'asc' | 'desc'>('desc');
   const [orderBy, setOrderBy] = useState<string>('run_start');
-  const [selectedInstrument, setSelectedInstrument] = useState<string>('ALL');
-
-  const fetchTotalCount = useCallback(async (): Promise<void> => {
-    try {
-      const response = await fetch(`${fiaApiUrl}/jobs/count`);
-      const data = await response.json();
-      setTotalRows(data.count);
-    } catch (error) {
-      console.error('Error fetching run count:', error);
-    }
-  }, [fiaApiUrl]);
-
-  const fetchJobs = useCallback(async (): Promise<void> => {
-    try {
-      const token = localStorage.getItem('scigateway:token');
-      const offset = currentPage * rowsPerPage;
-      const query = `limit=${rowsPerPage}&offset=${offset}&order_direction=${orderDirection}&include_run=true`;
-      const response = await fetch(`${fiaApiUrl}/jobs?${query}`, {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      });
-      const data = await response.json();
-
-      setJobs(data);
-    } catch (error) {
-      console.error('Error fetching reductions:', error);
-    }
-  }, [currentPage, rowsPerPage, orderDirection, fiaApiUrl]);
-
-  useEffect(() => {
-    fetchTotalCount();
-    fetchJobs();
-  }, [fetchTotalCount, fetchJobs]);
-
-  const handleInstrumentChange = (event: SelectChangeEvent<string>): void => {
-    const newInstrument = event.target.value;
-    setSelectedInstrument(newInstrument);
-    setCurrentPage(0);
-    history.push(`/reduction-history/${newInstrument}`);
-  };
-
-  const handleChangePage = (event: unknown, newPage: number): void => {
-    setCurrentPage(newPage);
-  };
-
-  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>): void => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setCurrentPage(0);
-  };
-
-  const handleSort = (property: string): void => {
-    const isAsc = orderBy === property && orderDirection === 'asc';
-    setOrderDirection(isAsc ? 'desc' : 'asc');
-    setOrderBy(property);
-    setCurrentPage(0);
-  };
+  const offset = currentPage * rowsPerPage;
+  const query = `limit=${rowsPerPage}&offset=${offset}&order_direction=${orderDirection}&include_run=true`;
+  const token = localStorage.getItem('scigateway:token');
+  const fetchJobs = useFetchJobs(`${fiaApiUrl}/jobs`, query, setJobs, token);
+  const fetchTotalCount = useFetchTotalCount(`${fiaApiUrl}/jobs/count`, setTotalRows);
 
   return (
     <JobsBase
-      selectedInstrument={selectedInstrument}
-      handleInstrumentChange={handleInstrumentChange}
+      selectedInstrument="ALL"
+      handleInstrumentChange={undefined}
       jobs={jobs}
       totalRows={totalRows}
       currentPage={currentPage}
       rowsPerPage={rowsPerPage}
-      handleChangePage={handleChangePage}
-      handleChangeRowsPerPage={handleChangeRowsPerPage}
-      handleSort={handleSort}
+      handleChangePage={(_, newPage) => setCurrentPage(newPage)}
+      handleChangeRowsPerPage={(e) => setRowsPerPage(parseInt(e.target.value, 10))}
+      handleSort={(property) => {
+        const isAsc = orderBy === property && orderDirection === 'asc';
+        setOrderDirection(isAsc ? 'desc' : 'asc');
+        setOrderBy(property);
+        setCurrentPage(0);
+      }}
       orderBy={orderBy}
       orderDirection={orderDirection}
+      fetchJobs={fetchJobs}
+      fetchTotalCount={fetchTotalCount}
       customHeaders={<TableCell sx={{ width: '10%', ...headerStyles(theme) }}>Instrument</TableCell>}
       customRowCells={(job: Job) => (
         <TableCell sx={{ width: '10%' }}>
