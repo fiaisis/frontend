@@ -5,7 +5,8 @@ import ReactGA from 'react-ga4';
 
 // Local data
 import Instruments from './Instruments';
-import ReductionHistory from './ReductionHistory';
+import JobsAll from './Jobs/JobsAll';
+import JobsGeneral from './Jobs/JobsGeneral';
 import HomePage from './HomePage';
 import ValueEditor from './ValueEditor';
 import GlobalStyles from './GlobalStyles';
@@ -46,10 +47,13 @@ const App: FC = () => {
           <Route path="/instruments">
             <Instruments />
           </Route>
-          <Route path="/reduction-history/:instrumentName">
-            <ReductionHistory />
+          <Route path="/reduction-history/ALL">
+            <JobsAll />
           </Route>
-          <Route path="/value-editor/:reductionId">
+          <Route path="/reduction-history/:instrumentName">
+            <JobsGeneral />
+          </Route>
+          <Route path="/value-editor/:jobId">
             <ValueEditor />
           </Route>
         </Switch>
