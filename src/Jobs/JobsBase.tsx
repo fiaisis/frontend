@@ -36,12 +36,9 @@ import {
   WarningAmber,
   WorkOutline,
   People,
-  Folder,
   Schedule,
-  InsertDriveFile,
   VpnKey,
   StackedBarChart,
-  JoinFull,
   Schema,
   ImageAspectRatio,
 } from '@mui/icons-material';
