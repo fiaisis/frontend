@@ -140,8 +140,8 @@ interface JobsBaseProps {
   customHeaders?: React.ReactNode;
   customRowCells?: (Job: Job) => React.ReactNode;
   children?: React.ReactNode;
-  fetchJobs: () => Promise<void>; // Fetch jobs prop
-  fetchTotalCount: () => Promise<void>; // Fetch total count prop
+  fetchJobs: () => Promise<void>;
+  fetchTotalCount: () => Promise<void>;
   maxHeight?: number;
 }
 
@@ -242,16 +242,6 @@ const JobsBase: React.FC<JobsBaseProps> = ({
       return fileNameWithExtension.split('.')[0];
     };
 
-    const getFileType = (fileName: string): JSX.Element => {
-      if (fileName.endsWith('.nxspe') || fileName.endsWith('.nxs') || fileName.endsWith('.h5')) {
-        return <JoinFull fontSize="small" style={{ marginRight: '8px' }} />;
-      } else if (fileName.endsWith('.txt')) {
-        return <InsertDriveFile fontSize="small" style={{ marginRight: '8px' }} />;
-      } else {
-        return <Folder fontSize="small" style={{ marginRight: '8px' }} />;
-      }
-    };
-
     const parseJobOutputs = (): JSX.Element | JSX.Element[] | undefined => {
       try {
         let outputs;
@@ -269,14 +259,13 @@ const JobsBase: React.FC<JobsBaseProps> = ({
                 <Box maxHeight="80px" display="flex" alignItems="center" justifyContent="space-between" width="100%">
                   <Box display="flex" alignItems="center">
                     <Box display="flex" alignItems="center" sx={{ overflow: 'hidden' }}>
-                      {getFileType(output)}
                       <Typography
                         variant="body2"
                         sx={{
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap',
-                          maxWidth: '200px',
+                          maxWidth: '260px',
                         }}
                         title={output}
                       >
