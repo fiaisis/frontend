@@ -20,7 +20,7 @@ const JobsAll: React.FC = () => {
   const [orderDirection, setOrderDirection] = useState<'asc' | 'desc'>('desc');
   const [orderBy, setOrderBy] = useState<string>('run_start');
   const offset = currentPage * rowsPerPage;
-  const query = `limit=${rowsPerPage}&offset=${offset}&order_direction=${orderDirection}&include_run=true`;
+  const query = `limit=${rowsPerPage}&offset=${offset}&order_by=${orderBy}&order_direction=${orderDirection}&include_run=true`;
   const token = localStorage.getItem('scigateway:token');
   const fetchJobs = useFetchJobs(`${fiaApiUrl}/jobs`, query, setJobs, token);
   const fetchTotalCount = useFetchTotalCount(`${fiaApiUrl}/jobs/count`, setTotalRows);
