@@ -1,8 +1,7 @@
 name: Image Scan
 on:
   schedule:
-    - cron: "49 8 * * *"
-
+    - cron: '49 8 * * *'
 
 env:
   REGISTRY: ghcr.io
