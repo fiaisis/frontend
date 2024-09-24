@@ -368,8 +368,8 @@ const JobsBase: React.FC<JobsBaseProps> = ({
           ? theme.palette.mode === 'light'
             ? '#f0f0f0' // Light mode, even rows
             : theme.palette.mode === 'dark'
-              ? '#2d2d2d' // Dark mode, even rows
-              : '#000000' // High contrast mode, even rows
+            ? '#2d2d2d' // Dark mode, even rows
+            : '#000000' // High contrast mode, even rows
           : theme.palette.background.default, // Odd rows (default background color)
     };
 
@@ -379,10 +379,10 @@ const JobsBase: React.FC<JobsBaseProps> = ({
           theme.palette.mode === 'light'
             ? '#e0e0e0' // Light mode hover color
             : theme.palette.mode === 'dark'
-              ? index % 2 === 0
-                ? '#4c4c4c' // Dark mode, even rows
-                : '#4a4a4a' // Dark mode, odd rows
-              : '#ffffff', // High contrast mode hover color
+            ? index % 2 === 0
+              ? '#4c4c4c' // Dark mode, even rows
+              : '#4a4a4a' // Dark mode, odd rows
+            : '#ffffff', // High contrast mode hover color
       };
     };
 
@@ -555,7 +555,7 @@ const JobsBase: React.FC<JobsBaseProps> = ({
           {selectedInstrument} reductions
         </Typography>
         <Box display="flex" alignItems="center">
-          <Button variant="outlined" onClick={openConfigSettings} style={{ marginRight: '20px' }}>
+          <Button variant="contained" onClick={openConfigSettings} style={{ marginRight: '20px' }}>
             Open config settings...
           </Button>
           {handleInstrumentChange && (
