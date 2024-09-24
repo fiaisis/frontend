@@ -2,33 +2,32 @@
 version: 2
 updates:
   # Maintain dependencies for GitHub Actions
-  - package-ecosystem: "github-actions"
-    directory: "/"
+  - package-ecosystem: 'github-actions'
+    directory: '/'
     schedule:
-      interval: "daily"
+      interval: 'daily'
     groups:
       action-packages:
         patterns:
-          - "*"
+          - '*'
 
   # Maintain dependencies for yarn
-  - package-ecosystem: "npm" # npm is correct even for yarn, see: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file#package-ecosystem
-    directory: "/"
+  - package-ecosystem: 'npm' # npm is correct even for yarn, see: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file#package-ecosystem
+    directory: '/'
     schedule:
-      interval: "daily"
+      interval: 'daily'
     groups:
       JS-packages:
         patterns:
-          - "*"
+          - '*'
     ignore:
-      - dependency-name: "*react*"
-      
+      - dependency-name: '*react*'
 
-  - package-ecosystem: "docker"
-    directory: "/"
+  - package-ecosystem: 'docker'
+    directory: '/'
     schedule:
-      interval: "daily"
+      interval: 'daily'
     groups:
       docker-packages:
         patterns:
-          - "*"
+          - '*'
