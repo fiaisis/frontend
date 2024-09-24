@@ -198,6 +198,12 @@ const JobsBase: React.FC<JobsBaseProps> = ({
     });
   };
 
+  const openConfigSettings = (): void => {
+    const url = `/fia/${selectedInstrument}/config-settings`;
+    const features = 'width=400,height=300,left=200,top=200,resizable=no';
+    window.open(url, 'ConfigSettingsWindow', features);
+  };
+
   const Row: React.FC<{ job: Job; index: number }> = ({ job, index }) => {
     const [open, setOpen] = useState(false);
     const theme = useTheme();
@@ -362,8 +368,8 @@ const JobsBase: React.FC<JobsBaseProps> = ({
           ? theme.palette.mode === 'light'
             ? '#f0f0f0' // Light mode, even rows
             : theme.palette.mode === 'dark'
-            ? '#2d2d2d' // Dark mode, even rows
-            : '#000000' // High contrast mode, even rows
+              ? '#2d2d2d' // Dark mode, even rows
+              : '#000000' // High contrast mode, even rows
           : theme.palette.background.default, // Odd rows (default background color)
     };
 
@@ -373,10 +379,10 @@ const JobsBase: React.FC<JobsBaseProps> = ({
           theme.palette.mode === 'light'
             ? '#e0e0e0' // Light mode hover color
             : theme.palette.mode === 'dark'
-            ? index % 2 === 0
-              ? '#4c4c4c' // Dark mode, even rows
-              : '#4a4a4a' // Dark mode, odd rows
-            : '#ffffff', // High contrast mode hover color
+              ? index % 2 === 0
+                ? '#4c4c4c' // Dark mode, even rows
+                : '#4a4a4a' // Dark mode, odd rows
+              : '#ffffff', // High contrast mode hover color
       };
     };
 
@@ -548,23 +554,28 @@ const JobsBase: React.FC<JobsBaseProps> = ({
         <Typography variant="h3" component="h1" style={{ color: theme.palette.text.primary }}>
           {selectedInstrument} reductions
         </Typography>
-        {handleInstrumentChange && (
-          <FormControl style={{ width: '200px', marginLeft: '20px' }}>
-            <InputLabel id="instrument-select-label">Instrument</InputLabel>
-            <Select
-              labelId="instrument-select-label"
-              value={selectedInstrument}
-              label="Instrument"
-              onChange={handleInstrumentChange}
-            >
-              {allInstruments.map((instrument) => (
-                <MenuItem key={instrument.name} value={instrument.name}>
-                  {instrument.name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        )}
+        <Box display="flex" alignItems="center">
+          <Button variant="outlined" onClick={openConfigSettings} style={{ marginRight: '20px' }}>
+            Open config settings...
+          </Button>
+          {handleInstrumentChange && (
+            <FormControl style={{ width: '200px', marginLeft: '20px' }}>
+              <InputLabel id="instrument-select-label">Instrument</InputLabel>
+              <Select
+                labelId="instrument-select-label"
+                value={selectedInstrument}
+                label="Instrument"
+                onChange={handleInstrumentChange}
+              >
+                {allInstruments.map((instrument) => (
+                  <MenuItem key={instrument.name} value={instrument.name}>
+                    {instrument.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          )}
+        </Box>
       </Box>
 
       {/* Render children passed from parent */}
