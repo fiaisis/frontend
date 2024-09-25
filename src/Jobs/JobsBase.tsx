@@ -40,6 +40,7 @@ import {
   VpnKey,
   StackedBarChart,
   Schema,
+  Settings,
   ImageAspectRatio,
 } from '@mui/icons-material';
 import { CSSObject } from '@mui/system';
@@ -140,6 +141,7 @@ interface JobsBaseProps {
   fetchJobs: () => Promise<void>;
   fetchTotalCount: () => Promise<void>;
   maxHeight?: number;
+  showConfigButton?: boolean;
 }
 
 const JobsBase: React.FC<JobsBaseProps> = ({
@@ -160,6 +162,7 @@ const JobsBase: React.FC<JobsBaseProps> = ({
   fetchJobs,
   fetchTotalCount,
   maxHeight = 624,
+  showConfigButton = true,
 }) => {
   const theme = useTheme();
   const allInstruments = [{ name: 'ALL' }, ...instruments]; // Add 'ALL' option to the instruments list
@@ -200,7 +203,7 @@ const JobsBase: React.FC<JobsBaseProps> = ({
 
   const openConfigSettings = (): void => {
     const url = `/fia/${selectedInstrument}/config-settings`;
-    const features = 'width=400,height=300,left=200,top=200,resizable=no';
+    const features = 'width=900,height=800,resizable=no';
     window.open(url, 'ConfigSettingsWindow', features);
   };
 
@@ -555,9 +558,16 @@ const JobsBase: React.FC<JobsBaseProps> = ({
           {selectedInstrument} reductions
         </Typography>
         <Box display="flex" alignItems="center">
-          <Button variant="contained" onClick={openConfigSettings} style={{ marginRight: '20px' }}>
-            Open config settings...
-          </Button>
+          {showConfigButton && (
+            <Button
+              variant="contained"
+              startIcon={<Settings />}
+              onClick={openConfigSettings}
+              style={{ marginRight: '20px' }}
+            >
+              Open config settings...
+            </Button>
+          )}
           {handleInstrumentChange && (
             <FormControl style={{ width: '200px', marginLeft: '20px' }}>
               <InputLabel id="instrument-select-label">Instrument</InputLabel>
