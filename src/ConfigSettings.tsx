@@ -1,5 +1,5 @@
 // React components
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 
 // Material UI components
@@ -8,6 +8,8 @@ import { Info, UploadFile, Edit } from '@mui/icons-material';
 
 // Monaco components
 import MonacoEditor from '@monaco-editor/react';
+
+const fiaApiUrl = process.env.REACT_APP_FIA_REST_API_URL;
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -42,8 +44,53 @@ const ConfigSettings: React.FC = () => {
     }`);
   const [tabValue, setTabValue] = useState(0);
 
-  const toggleReductionStatus = (): void => {
-    setReductionStatus(reductionStatus === 'ON' ? 'OFF' : 'ON');
+  // Fetch the current specification and set the reduction status
+  useEffect(() => {
+    const fetchSpecification = async (): Promise<void> => {
+      try {
+        const response = await fetch(`${fiaApiUrl}/instrument/${instrumentName}/specification`, {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('scigateway:token')}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch specification');
+        }
+
+        const data = await response.json();
+        setReductionStatus(data.enabled ? 'ON' : 'OFF');
+      } catch (error) {
+        console.error('Error fetching specification:', error);
+      }
+    };
+
+    if (instrumentName) {
+      fetchSpecification();
+    }
+  }, [instrumentName]);
+
+  const toggleReductionStatus = async (): Promise<void> => {
+    const newStatus = reductionStatus === 'ON' ? 'OFF' : 'ON';
+    const statusValue = newStatus === 'ON' ? 'true' : 'false';
+
+    try {
+      const response = await fetch(`${fiaApiUrl}/instrument/${instrumentName}/status?status=${statusValue}`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('scigateway:token')}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update reduction status');
+      }
+
+      setReductionStatus(newStatus);
+    } catch (error) {
+      console.error('Error updating reduction status:', error);
+    }
   };
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number): void => {
