@@ -203,7 +203,7 @@ const JobsBase: React.FC<JobsBaseProps> = ({
 
   const openConfigSettings = (): void => {
     const url = `/fia/${selectedInstrument}/config-settings`;
-    const features = 'width=900,height=800,resizable=no';
+    const features = 'width=1028,height=900,resizable=no';
     window.open(url, 'ConfigSettingsWindow', features);
   };
 
