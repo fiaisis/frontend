@@ -159,6 +159,7 @@ const ConfigSettings: React.FC = () => {
       setUnsavedChanges(false);
     } catch (error) {
       setApplyMessage('Error applying spec changes');
+      console.error('Error applying spec changes:', error);
     }
   };
 
