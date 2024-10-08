@@ -175,7 +175,7 @@ const ConfigSettings: React.FC = () => {
         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', mb: 2 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
             <Typography variant="body1" sx={{ lineHeight: '1.5', mr: 1 }}>
-              Toggle reduction status:
+              Reduction status:
             </Typography>
             <Button
               variant="contained"
