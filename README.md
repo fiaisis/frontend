@@ -43,7 +43,7 @@ A `dev-plugin-settings.json` file is also needed in SciGateway's `micro-frontend
 
 ### Specifying environment variables
 
-Unless you have a working API and data viewer set-up locally you will want the frontend to point to the ones in staging which require your machine to be on the company VPN. The URLs for the `REST_API` and `DATA_VIEWER` are found in [`.env`](https://github.com/fiaisis/frontend/blob/main/.env).
+Unless you have a working API and data-viewer set-up locally you will want the frontend to point to the ones in staging which require your machine to be on the company VPN. The URLs for the `REST_API` and `DATA_VIEWER` are found in [`.env`](https://github.com/fiaisis/frontend/blob/main/.env).
 
 ## Running the frontend for the first time
 
@@ -61,7 +61,7 @@ Builds the app for production. You will need to do this every time the frontend 
 
 You can now open a terminal in SciGateway and have it act as a parent application for running the frontend. You only need to run `yarn start` and the FIA frontend will be running on http://localhost:3000/fia.
 
-If you're testing something doens't strictly need SciGateway, you can run the frontend on its own by running `yarn start` in the frontend directory. This will also be running on http://localhost:3000/fia.
+If you're testing changes that don't strictly need SciGateway, the API, or the data-viewer, you can run the frontend on its own by running `yarn start` in the frontend directory. This will also be running on http://localhost:3000/fia.
 
 ## Container files
 
