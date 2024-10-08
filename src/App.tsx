@@ -9,6 +9,7 @@ import JobsAll from './Jobs/JobsAll';
 import JobsGeneral from './Jobs/JobsGeneral';
 import HomePage from './HomePage';
 import ValueEditor from './ValueEditor';
+import ConfigSettings from './ConfigSettings';
 import GlobalStyles from './GlobalStyles';
 
 // Initialize Google Analytics
@@ -55,6 +56,9 @@ const App: FC = () => {
           </Route>
           <Route path="/value-editor/:jobId">
             <ValueEditor />
+          </Route>
+          <Route path="/:instrumentName/config-settings">
+            <ConfigSettings />
           </Route>
         </Switch>
       </Router>
