@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 
 // Material UI components
-import { Box, Button, Typography, Tabs, Tab, useTheme, Grid, Input, Tooltip, IconButton } from '@mui/material';
+import { Box, Button, Typography, Tabs, Tab, useTheme, Grid, Tooltip, IconButton } from '@mui/material';
 import { Info, UploadFile, Edit } from '@mui/icons-material';
 
 // Monaco components
@@ -34,10 +34,12 @@ const ConfigSettings: React.FC = () => {
   const theme = useTheme();
   const { instrumentName } = useParams<{ instrumentName: string }>();
   const [reductionStatus, setReductionStatus] = useState<'ON' | 'OFF'>('ON');
-  const [jsonContent, setJsonContent] = useState<string>('{}'); // Default JSON content
+  const [jsonContent, setJsonContent] = useState<string>('{}');
   const [formFields, setFormFields] = useState<{ [key: string]: string }>({}); // Dynamic form fields
-  const [enabledStatus, setEnabledStatus] = useState<boolean>(true); // Separate state for "enabled"
+  const [enabledStatus, setEnabledStatus] = useState<boolean>(true); // State for "enabled" tag
   const [tabValue, setTabValue] = useState(0);
+  const [unsavedChanges, setUnsavedChanges] = useState(false); // State for tracking changes
+  const [applyMessage, setApplyMessage] = useState<string>(''); // State for applying status messages
 
   // Fetch the current specification and set the reduction status
   useEffect(() => {
@@ -56,7 +58,7 @@ const ConfigSettings: React.FC = () => {
 
         const data = await response.json();
 
-        // Exclude the "enabled" key from the JSON
+        // Exclude the "enabled" key from the JSON -- gets added later when settings applied
         const { enabled, ...filteredData } = data;
 
         // Set the reduction status button on/off based on the "enabled" field
@@ -84,7 +86,7 @@ const ConfigSettings: React.FC = () => {
   const syncFormWithJson = (jsonString: string): void => {
     try {
       const json = JSON.parse(jsonString);
-      // Exclude the "enabled" field from syncing -- gets added later when settings applied
+      // Exclude the "enabled" field from syncing -- handling this separately
       const { enabled, ...otherFields } = json;
       setFormFields(otherFields);
     } catch (error) {
@@ -109,35 +111,54 @@ const ConfigSettings: React.FC = () => {
     const updatedFields = { ...formFields, [key]: value };
     setFormFields(updatedFields);
     syncJsonWithForm(updatedFields);
+    setUnsavedChanges(true);
+    setApplyMessage('');
   };
 
-  const handleMonacoChange = (value: string | undefined): void => {
+  const handleEditorChange = (value: string | undefined): void => {
     const updatedJson = value || '{}';
     setJsonContent(updatedJson);
     syncFormWithJson(updatedJson);
+    setUnsavedChanges(true);
+    setApplyMessage('');
   };
 
   const toggleEnabledStatus = (): void => {
     setEnabledStatus(!enabledStatus);
     setReductionStatus(enabledStatus ? 'OFF' : 'ON');
+    setUnsavedChanges(true);
+    setApplyMessage('');
   };
 
   const handleApplySettings = async (): Promise<void> => {
     try {
-      // Parse the current JSON content
-      const currentJson = JSON.parse(jsonContent);
-
-      // Add the "enabled" field based on the current state of the toggle button
-      const updatedJson = {
-        ...currentJson,
+      // Parse the current JSON content add the "enabled" field based on the current state of the toggle button
+      const updatedJsonContent = {
+        ...JSON.parse(jsonContent),
         enabled: enabledStatus ? true : false,
       };
 
-      // Log for now
-      const finalJsonContent = JSON.stringify(updatedJson, null, 2);
-      console.log('JSON:', finalJsonContent);
+      // Convert the final JSON content to a string for the request body
+      const finalJsonContent = JSON.stringify(updatedJsonContent, null, 2);
+
+      // Send a PUT request to update the instrument specification
+      const response = await fetch(`${fiaApiUrl}/instrument/${instrumentName}/specification`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('scigateway:token')}`,
+        },
+        body: finalJsonContent,
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update the specification');
+      }
+
+      setApplyMessage('Changes applied successfully');
+      setUnsavedChanges(false);
     } catch (error) {
-      console.error('Error preparing settings:', error);
+      setApplyMessage('Error applying spec changes');
     }
   };
 
@@ -149,15 +170,42 @@ const ConfigSettings: React.FC = () => {
           {instrumentName} config settings
         </Typography>
 
+        {/* Reduction status */}
         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', mb: 2 }}>
-          {/* Upload file button */}
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+            <Typography variant="body1" sx={{ lineHeight: '1.5', mr: 1 }}>
+              Toggle reduction status:
+            </Typography>
+            <Button
+              variant="contained"
+              onClick={toggleEnabledStatus}
+              sx={{
+                backgroundColor: reductionStatus === 'ON' ? 'green' : theme.palette.error.main,
+                color: 'white',
+                '&:hover': {
+                  backgroundColor: reductionStatus === 'ON' ? 'darkgreen' : theme.palette.error.dark,
+                },
+              }}
+            >
+              {reductionStatus}
+            </Button>
+
+            {/* Tooltip */}
+            <Tooltip title="Click to toggle the reduction process on or off">
+              <IconButton sx={{ ml: 1 }}>
+                <Info sx={{ color: theme.palette.text.secondary }} />
+              </IconButton>
+            </Tooltip>
+          </Box>
+
+          {/* Upload file button -- disabled for now */}
           <Box sx={{ mb: 2 }}>
             <Button variant="contained" disabled startIcon={<UploadFile />}>
               Upload file...
             </Button>
           </Box>
 
-          {/* Change script button */}
+          {/* Change script button -- disabled for now */}
           <Box>
             <Button variant="contained" disabled startIcon={<Edit />}>
               Change script...
@@ -203,35 +251,7 @@ const ConfigSettings: React.FC = () => {
 
       {/* Simple panel */}
       <TabPanel value={tabValue} index={0}>
-        {/* Fixed enabled field with toggle button */}
         <Grid container direction="column" spacing={2}>
-          <Grid item>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <Typography variant="body1" sx={{ width: '150px', mb: 0 }}>
-                enabled:
-              </Typography>
-              <Button
-                variant="contained"
-                onClick={toggleEnabledStatus}
-                sx={{
-                  backgroundColor: enabledStatus ? 'green' : theme.palette.error.main,
-                  color: 'white',
-                  '&:hover': {
-                    backgroundColor: enabledStatus ? 'darkgreen' : theme.palette.error.dark,
-                  },
-                }}
-              >
-                {enabledStatus ? 'ON' : 'OFF'}
-              </Button>
-              {/* Tooltip */}
-              <Tooltip title="Click to toggle the reduction process on or off">
-                <IconButton sx={{ ml: 1 }}>
-                  <Info sx={{ color: theme.palette.text.secondary }} />
-                </IconButton>
-              </Tooltip>
-            </Box>
-          </Grid>
-
           {/* Dynamically generated form fields */}
           {Object.keys(formFields).map((key) => (
             <Grid item key={key}>
@@ -252,13 +272,13 @@ const ConfigSettings: React.FC = () => {
 
       {/* Advanced panel */}
       <TabPanel value={tabValue} index={1}>
-        <Box sx={{ height: '35vh' }}>
+        <Box sx={{ height: '30vh' }}>
           <MonacoEditor
             height="100%"
             defaultLanguage="json"
             value={jsonContent}
             theme={theme.palette.mode === 'dark' ? 'vs-dark' : 'vs-light'}
-            onChange={handleMonacoChange}
+            onChange={handleEditorChange}
           />
         </Box>
       </TabPanel>
@@ -269,6 +289,26 @@ const ConfigSettings: React.FC = () => {
           Apply settings
         </Button>
       </Box>
+
+      {/* Display unsaved changes message */}
+      {unsavedChanges && (
+        <Typography
+          variant="body2"
+          sx={{ textAlign: 'center', fontStyle: 'italic', color: theme.palette.warning.main }}
+        >
+          You have changes which haven&apos;t been applied yet
+        </Typography>
+      )}
+
+      {/* Display apply status message if no unsaved changes */}
+      {!unsavedChanges && applyMessage && (
+        <Typography
+          variant="body2"
+          sx={{ textAlign: 'center', fontStyle: 'italic', color: theme.palette.success.main }}
+        >
+          {applyMessage}
+        </Typography>
+      )}
     </Box>
   );
 };
