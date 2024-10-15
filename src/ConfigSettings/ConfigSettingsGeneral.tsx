@@ -30,7 +30,12 @@ const a11yProps = (index: number): { id: string; 'aria-controls': string } => ({
   'aria-controls': `tabpanel-${index}`,
 });
 
-const ConfigSettings: React.FC = () => {
+interface ConfigSettingsGeneralProps {
+  // Allow children to be passed for features specific to certain instruments
+  children?: React.ReactNode;
+}
+
+const ConfigSettingsGeneral: React.FC<ConfigSettingsGeneralProps> = ({ children }) => {
   const theme = useTheme();
   const { instrumentName } = useParams<{ instrumentName: string }>();
   const [reductionStatus, setReductionStatus] = useState<'ON' | 'OFF'>('ON');
@@ -132,7 +137,7 @@ const ConfigSettings: React.FC = () => {
 
   const handleApplySettings = async (): Promise<void> => {
     try {
-      // Parse the current JSON content add the "enabled" field based on the current state of the toggle button
+      // Parse the current JSON content and add the missing "enabled" field
       const updatedJsonContent = {
         ...JSON.parse(jsonContent),
         enabled: enabledStatus ? true : false,
@@ -199,19 +204,8 @@ const ConfigSettings: React.FC = () => {
             </Tooltip>
           </Box>
 
-          {/* Upload file button -- disabled for now */}
-          <Box sx={{ mb: 2 }}>
-            <Button variant="contained" disabled startIcon={<UploadFile />}>
-              Upload file...
-            </Button>
-          </Box>
-
-          {/* Change script button -- disabled for now */}
-          <Box>
-            <Button variant="contained" disabled startIcon={<Edit />}>
-              Change script...
-            </Button>
-          </Box>
+          {/* Allow children to be passed for features specific to certain instruments */}
+          {children}
         </Box>
       </Box>
 
@@ -314,4 +308,4 @@ const ConfigSettings: React.FC = () => {
   );
 };
 
-export default ConfigSettings;
+export default ConfigSettingsGeneral;

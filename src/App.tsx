@@ -1,6 +1,6 @@
 // React components
 import React, { FC } from 'react';
-import { BrowserRouter as Router, Route, Switch } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Switch, useParams } from 'react-router-dom';
 import ReactGA from 'react-ga4';
 
 // Local data
@@ -9,7 +9,8 @@ import JobsAll from './Jobs/JobsAll';
 import JobsGeneral from './Jobs/JobsGeneral';
 import HomePage from './HomePage';
 import ValueEditor from './ValueEditor';
-import ConfigSettings from './ConfigSettings';
+import ConfigSettingsGeneral from './ConfigSettings/ConfigSettingsGeneral';
+import ConfigSettingsLOQ from './ConfigSettings/ConfigSettingsLOQ';
 import GlobalStyles from './GlobalStyles';
 
 // Initialize Google Analytics
@@ -38,6 +39,16 @@ const App: FC = () => {
     };
   }, []);
 
+  // Conditionally render the appropriate ConfigSettings page
+  const ConfigSettingsPage: FC = () => {
+    const { instrumentName } = useParams<{ instrumentName: string }>();
+
+    if (instrumentName === 'LOQ') {
+      return <ConfigSettingsLOQ />;
+    }
+    return <ConfigSettingsGeneral />;
+  };
+
   return (
     <GlobalStyles>
       <Router basename="/fia">
@@ -58,7 +69,7 @@ const App: FC = () => {
             <ValueEditor />
           </Route>
           <Route path="/:instrumentName/config-settings">
-            <ConfigSettings />
+            <ConfigSettingsPage />
           </Route>
         </Switch>
       </Router>
