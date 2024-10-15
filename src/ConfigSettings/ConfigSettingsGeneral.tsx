@@ -4,7 +4,7 @@ import { useParams } from 'react-router-dom';
 
 // Material UI components
 import { Box, Button, Typography, Tabs, Tab, useTheme, Grid, Tooltip, IconButton } from '@mui/material';
-import { Info, UploadFile, Edit } from '@mui/icons-material';
+import { Info } from '@mui/icons-material';
 
 // Monaco components
 import MonacoEditor from '@monaco-editor/react';
