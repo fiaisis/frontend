@@ -71,7 +71,6 @@ const JobsAll: React.FC = () => {
         </TableCell>
       )}
       maxHeight={650}
-      showConfigButton={false}
     />
   );
 };
