@@ -43,10 +43,12 @@ const App: FC = () => {
   const ConfigSettingsPage: FC = () => {
     const { instrumentName } = useParams<{ instrumentName: string }>();
 
-    if (instrumentName === 'LOQ') {
-      return <ConfigSettingsLOQ />;
+    switch (instrumentName) {
+      case 'LOQ':
+        return <ConfigSettingsLOQ />;
+      default:
+        return <ConfigSettingsGeneral />;
     }
-    return <ConfigSettingsGeneral />;
   };
 
   return (
