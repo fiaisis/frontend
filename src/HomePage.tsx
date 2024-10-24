@@ -4,8 +4,9 @@ import { Link } from 'react-router-dom';
 import { Trans, useTranslation } from 'react-i18next';
 
 // Material UI imports
-import { Avatar, Box, Button, Grid, Paper, Typography, alpha, styled, useMediaQuery, useTheme } from '@mui/material';
+import { Avatar, Box, Button, Paper, Typography, alpha, styled, useMediaQuery, useTheme } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
+import Grid from '@mui/material/Grid2';
 
 // Local data
 import BackgroundImage from './images/background.jpg';
@@ -114,9 +115,9 @@ const BrowseDecal = styled('div', {
     theme.palette.mode === 'light'
       ? `url(${decal2Image})`
       : // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (theme as any).colours?.type === 'default'
-      ? `url(${decal2DarkImage})`
-      : `url(${decal2DarkHCImage})`,
+        (theme as any).colours?.type === 'default'
+        ? `url(${decal2DarkImage})`
+        : `url(${decal2DarkHCImage})`,
   backgroundRepeat: 'no-repeat',
   backgroundPosition: 'top left',
   backgroundSize: 'auto 100%',
@@ -190,7 +191,12 @@ const HomePage = (): React.ReactElement => {
       >
         <Paper sx={paperStyles} elevation={1}>
           <Grid container style={{ height: '100%' }}>
-            <Grid item xs={12} md={6}>
+            <Grid
+              size={{
+                xs: 12,
+                md: 6,
+              }}
+            >
               <Box sx={paperContentStyles}>
                 <Typography
                   variant="h3"
@@ -229,7 +235,11 @@ const HomePage = (): React.ReactElement => {
               </Box>
             </Grid>
             {isViewportMdOrLager && (
-              <Grid item md={6}>
+              <Grid
+                size={{
+                  md: 6,
+                }}
+              >
                 <div
                   style={{
                     backgroundImage: `url(${FacilityImage})`,
@@ -252,7 +262,12 @@ const HomePage = (): React.ReactElement => {
           </Grid>
         </Paper>
         <Grid container spacing={2}>
-          <Grid item xs={12} md={4}>
+          <Grid
+            size={{
+              xs: 12,
+              md: 4,
+            }}
+          >
             <Paper sx={paperStyles} elevation={1}>
               <Box sx={paperContentStyles}>
                 <Avatar sx={avatarStyles}>
@@ -276,7 +291,12 @@ const HomePage = (): React.ReactElement => {
               </Box>
             </Paper>
           </Grid>
-          <Grid item xs={12} md={4}>
+          <Grid
+            size={{
+              xs: 12,
+              md: 4,
+            }}
+          >
             <Paper sx={paperStyles} elevation={1}>
               <Box sx={paperContentStyles}>
                 <Avatar sx={avatarStyles}>
@@ -300,7 +320,12 @@ const HomePage = (): React.ReactElement => {
               </Box>
             </Paper>
           </Grid>
-          <Grid item xs={12} md={4}>
+          <Grid
+            size={{
+              xs: 12,
+              md: 4,
+            }}
+          >
             <Paper sx={{ ...paperStyles, backgroundColor: '#003088' }} elevation={1}>
               <div
                 style={{

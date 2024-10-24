@@ -8,7 +8,6 @@ import {
   Button,
   Collapse,
   FormControl,
-  Grid,
   IconButton,
   InputLabel,
   MenuItem,
@@ -43,6 +42,7 @@ import {
   Settings,
   ImageAspectRatio,
 } from '@mui/icons-material';
+import Grid from '@mui/material/Grid2';
 import { CSSObject } from '@mui/system';
 
 // Local data
@@ -371,8 +371,8 @@ const JobsBase: React.FC<JobsBaseProps> = ({
           ? theme.palette.mode === 'light'
             ? '#f0f0f0' // Light mode, even rows
             : theme.palette.mode === 'dark'
-            ? '#2d2d2d' // Dark mode, even rows
-            : '#000000' // High contrast mode, even rows
+              ? '#2d2d2d' // Dark mode, even rows
+              : '#000000' // High contrast mode, even rows
           : theme.palette.background.default, // Odd rows (default background color)
     };
 
@@ -382,10 +382,10 @@ const JobsBase: React.FC<JobsBaseProps> = ({
           theme.palette.mode === 'light'
             ? '#e0e0e0' // Light mode hover color
             : theme.palette.mode === 'dark'
-            ? index % 2 === 0
-              ? '#4c4c4c' // Dark mode, even rows
-              : '#4a4a4a' // Dark mode, odd rows
-            : '#ffffff', // High contrast mode hover color
+              ? index % 2 === 0
+                ? '#4c4c4c' // Dark mode, even rows
+                : '#4a4a4a' // Dark mode, odd rows
+              : '#ffffff', // High contrast mode hover color
       };
     };
 
@@ -423,7 +423,7 @@ const JobsBase: React.FC<JobsBaseProps> = ({
                   {renderJobStatus()}
                 </Typography>
                 <Grid container spacing={3}>
-                  <Grid item xs={4}>
+                  <Grid size={4}>
                     <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
                       {job.state === 'UNSUCCESSFUL' || job.state === 'ERROR'
                         ? 'Stacktrace output'
@@ -445,7 +445,7 @@ const JobsBase: React.FC<JobsBaseProps> = ({
                       )}
                     </Box>
                   </Grid>
-                  <Grid item xs={3}>
+                  <Grid size={3}>
                     <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
                       Run details
                     </Typography>
@@ -524,7 +524,7 @@ const JobsBase: React.FC<JobsBaseProps> = ({
                       <Typography variant="body2">{job.run?.users || 'N/A'}</Typography>
                     </Box>
                   </Grid>
-                  <Grid item xs={5}>
+                  <Grid size={5}>
                     <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
                       Reduction inputs
                     </Typography>
