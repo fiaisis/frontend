@@ -8,7 +8,6 @@ import {
   Button,
   Collapse,
   FormControl,
-  Grid,
   IconButton,
   InputLabel,
   MenuItem,
@@ -42,6 +41,7 @@ import {
   Schema,
   ImageAspectRatio,
 } from '@mui/icons-material';
+import Grid from '@mui/material/Grid2';
 import { CSSObject } from '@mui/system';
 
 // Local data
@@ -414,7 +414,7 @@ const JobsBase: React.FC<JobsBaseProps> = ({
                   {renderJobStatus()}
                 </Typography>
                 <Grid container spacing={3}>
-                  <Grid item xs={4}>
+                  <Grid size={4}>
                     <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
                       {job.state === 'UNSUCCESSFUL' || job.state === 'ERROR'
                         ? 'Stacktrace output'
@@ -436,7 +436,7 @@ const JobsBase: React.FC<JobsBaseProps> = ({
                       )}
                     </Box>
                   </Grid>
-                  <Grid item xs={3}>
+                  <Grid size={3}>
                     <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
                       Run details
                     </Typography>
@@ -515,7 +515,7 @@ const JobsBase: React.FC<JobsBaseProps> = ({
                       <Typography variant="body2">{job.run?.users || 'N/A'}</Typography>
                     </Box>
                   </Grid>
-                  <Grid item xs={5}>
+                  <Grid size={5}>
                     <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
                       Reduction inputs
                     </Typography>
