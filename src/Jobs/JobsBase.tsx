@@ -39,6 +39,7 @@ import {
   VpnKey,
   StackedBarChart,
   Schema,
+  Settings,
   ImageAspectRatio,
 } from '@mui/icons-material';
 import Grid from '@mui/material/Grid2';
@@ -140,6 +141,7 @@ interface JobsBaseProps {
   fetchJobs: () => Promise<void>;
   fetchTotalCount: () => Promise<void>;
   maxHeight?: number;
+  showConfigButton?: boolean;
 }
 
 const JobsBase: React.FC<JobsBaseProps> = ({
@@ -160,6 +162,7 @@ const JobsBase: React.FC<JobsBaseProps> = ({
   fetchJobs,
   fetchTotalCount,
   maxHeight = 624,
+  showConfigButton = false,
 }) => {
   const theme = useTheme();
   const allInstruments = [{ name: 'ALL' }, ...instruments]; // Add 'ALL' option to the instruments list
@@ -196,6 +199,12 @@ const JobsBase: React.FC<JobsBaseProps> = ({
       label: 'View button',
       value: jobId,
     });
+  };
+
+  const openConfigSettings = (): void => {
+    const url = `/fia/${selectedInstrument}/config-settings`;
+    const features = 'width=1028,height=900,resizable=no';
+    window.open(url, 'ConfigSettingsWindow', features);
   };
 
   const Row: React.FC<{ job: Job; index: number }> = ({ job, index }) => {
@@ -548,23 +557,35 @@ const JobsBase: React.FC<JobsBaseProps> = ({
         <Typography variant="h3" component="h1" style={{ color: theme.palette.text.primary }}>
           {selectedInstrument} reductions
         </Typography>
-        {handleInstrumentChange && (
-          <FormControl style={{ width: '200px', marginLeft: '20px' }}>
-            <InputLabel id="instrument-select-label">Instrument</InputLabel>
-            <Select
-              labelId="instrument-select-label"
-              value={selectedInstrument}
-              label="Instrument"
-              onChange={handleInstrumentChange}
+        <Box display="flex" alignItems="center">
+          {showConfigButton && (
+            <Button
+              variant="contained"
+              startIcon={<Settings />}
+              onClick={openConfigSettings}
+              style={{ marginRight: '20px' }}
             >
-              {allInstruments.map((instrument) => (
-                <MenuItem key={instrument.name} value={instrument.name}>
-                  {instrument.name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        )}
+              Config
+            </Button>
+          )}
+          {handleInstrumentChange && (
+            <FormControl style={{ width: '200px', marginLeft: '20px' }}>
+              <InputLabel id="instrument-select-label">Instrument</InputLabel>
+              <Select
+                labelId="instrument-select-label"
+                value={selectedInstrument}
+                label="Instrument"
+                onChange={handleInstrumentChange}
+              >
+                {allInstruments.map((instrument) => (
+                  <MenuItem key={instrument.name} value={instrument.name}>
+                    {instrument.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          )}
+        </Box>
       </Box>
 
       {/* Render children passed from parent */}

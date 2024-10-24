@@ -53,6 +53,7 @@ const JobsGeneral: React.FC = () => {
       orderDirection={orderDirection}
       fetchJobs={fetchJobs}
       fetchTotalCount={fetchTotalCount}
+      showConfigButton={selectedInstrument === 'LOQ'}
     >
       <Typography
         variant="body1"
