@@ -565,7 +565,7 @@ const JobsBase: React.FC<JobsBaseProps> = ({
               onClick={openConfigSettings}
               style={{ marginRight: '20px' }}
             >
-              Open config settings...
+              Config
             </Button>
           )}
           {handleInstrumentChange && (
