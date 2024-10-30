@@ -618,9 +618,7 @@ const JobsBase: React.FC<JobsBaseProps> = ({
           },
         }}
       >
-        <Box>
-          {renderConfigSettings()}
-        </Box>
+        <Box>{renderConfigSettings()}</Box>
       </Drawer>
 
       {jobs.length === 0 ? (
