@@ -274,6 +274,10 @@ const ConfigSettingsGeneral: React.FC<ConfigSettingsGeneralProps> = ({ children 
             value={jsonContent}
             theme={theme.palette.mode === 'dark' ? 'vs-dark' : 'vs-light'}
             onChange={handleEditorChange}
+            options={{
+              wordWrap: 'on',
+              minimap: { enabled: false },
+            }}
           />
         </Box>
       </TabPanel>
