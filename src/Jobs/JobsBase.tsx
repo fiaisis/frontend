@@ -7,6 +7,7 @@ import {
   Box,
   Button,
   Collapse,
+  Drawer,
   FormControl,
   IconButton,
   InputLabel,
@@ -47,6 +48,8 @@ import { CSSObject } from '@mui/system';
 
 // Local data
 import { instruments } from '../InstrumentData';
+import ConfigSettingsGeneral from '../ConfigSettings/ConfigSettingsGeneral';
+import ConfigSettingsLOQ from '../ConfigSettings/ConfigSettingsLOQ';
 
 export const headerStyles = (theme: Theme): CSSObject => ({
   color: theme.palette.primary.contrastText,
@@ -169,6 +172,7 @@ const JobsBase: React.FC<JobsBaseProps> = ({
   const baseColumnCount = 7; // Number of base columns defined in the TableHead
   const customColumnCount = customHeaders ? 1 : 0;
   const totalColumnCount = baseColumnCount + customColumnCount;
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   useEffect(() => {
     fetchTotalCount();
@@ -202,9 +206,20 @@ const JobsBase: React.FC<JobsBaseProps> = ({
   };
 
   const openConfigSettings = (): void => {
-    const url = `/fia/${selectedInstrument}/config-settings`;
-    const features = 'width=1028,height=900,resizable=no';
-    window.open(url, 'ConfigSettingsWindow', features);
+    setDrawerOpen(true);
+  };
+
+  const closeConfigSettings = (): void => {
+    setDrawerOpen(false);
+  };
+
+  const renderConfigSettings = (): JSX.Element => {
+    switch (selectedInstrument) {
+      case 'LOQ':
+        return <ConfigSettingsLOQ />;
+      default:
+        return <ConfigSettingsGeneral />;
+    }
   };
 
   const Row: React.FC<{ job: Job; index: number }> = ({ job, index }) => {
@@ -590,6 +605,21 @@ const JobsBase: React.FC<JobsBaseProps> = ({
 
       {/* Render children passed from parent */}
       {children}
+
+      <Drawer
+        anchor="right"
+        open={drawerOpen}
+        onClose={closeConfigSettings}
+        sx={{
+          '& .MuiDrawer-paper': {
+            width: '600px',
+            padding: '16px',
+            backgroundColor: theme.palette.background.default,
+          },
+        }}
+      >
+        <Box>{renderConfigSettings()}</Box>
+      </Drawer>
 
       {jobs.length === 0 ? (
         <Typography variant="h6" style={{ textAlign: 'center', marginTop: '20px', color: theme.palette.text.primary }}>
