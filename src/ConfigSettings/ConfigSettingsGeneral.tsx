@@ -50,11 +50,16 @@ const ConfigSettingsGeneral: React.FC<ConfigSettingsGeneralProps> = ({ children 
   useEffect(() => {
     const fetchSpecification = async (): Promise<void> => {
       try {
+        const isDev = process.env.REACT_APP_DEV_MODE === 'true';
+        const token = isDev ? null : localStorage.getItem('scigateway:token');
+        const headers: { [key: string]: string } = { 'Content-Type': 'application/json' };
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+
         const response = await fetch(`${fiaApiUrl}/instrument/${instrumentName}/specification`, {
           method: 'GET',
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('scigateway:token')}`,
-          },
+          headers,
         });
 
         if (!response.ok) {
