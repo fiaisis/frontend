@@ -635,7 +635,7 @@ const JobsBase: React.FC<JobsBaseProps> = ({
             rowsPerPage={rowsPerPage}
             onRowsPerPageChange={handleChangeRowsPerPage}
           />
-          <TableContainer component={Paper} style={{ maxHeight }}>
+          <TableContainer component={Paper} style={{ maxHeight, overflowY: 'scroll' }}>
             <Table stickyHeader>
               <TableHead>
                 <TableRow>
