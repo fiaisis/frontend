@@ -172,7 +172,7 @@ const JobsBase: React.FC<JobsBaseProps> = ({
   const baseColumnCount = 7; // Number of base columns defined in the TableHead
   const customColumnCount = customHeaders ? 1 : 0;
   const totalColumnCount = baseColumnCount + customColumnCount;
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   useEffect(() => {
     fetchTotalCount();
@@ -206,11 +206,11 @@ const JobsBase: React.FC<JobsBaseProps> = ({
   };
 
   const openConfigSettings = (): void => {
-    setIsDrawerOpen(true);
+    setDrawerOpen(true);
   };
 
   const closeConfigSettings = (): void => {
-    setIsDrawerOpen(false);
+    setDrawerOpen(false);
   };
 
   const renderConfigSettings = (): JSX.Element => {
@@ -608,7 +608,7 @@ const JobsBase: React.FC<JobsBaseProps> = ({
 
       <Drawer
         anchor="right"
-        open={isDrawerOpen}
+        open={drawerOpen}
         onClose={closeConfigSettings}
         sx={{
           '& .MuiDrawer-paper': {
