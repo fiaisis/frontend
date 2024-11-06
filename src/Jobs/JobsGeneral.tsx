@@ -66,6 +66,7 @@ const JobsGeneral: React.FC = () => {
           alignItems: 'center',
           textDecoration: 'none',
           marginTop: '10px',
+          width: 'fit-content',
           '&:hover': {
             textDecoration: 'underline',
           },
