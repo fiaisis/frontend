@@ -6,6 +6,7 @@ import ReactGA from 'react-ga4';
 import {
   Box,
   Button,
+  CircularProgress,
   Collapse,
   Drawer,
   FormControl,
@@ -225,6 +226,7 @@ const JobsBase: React.FC<JobsBaseProps> = ({
   const Row: React.FC<{ job: Job; index: number }> = ({ job, index }) => {
     const [open, setOpen] = useState(false);
     const theme = useTheme();
+    const [loading, setLoading] = useState(false);
     const fiaApiUrl = process.env.REACT_APP_FIA_REST_API_URL;
 
     const JobStatus = ({ state }: { state: string }): JSX.Element => {
@@ -382,11 +384,12 @@ const JobsBase: React.FC<JobsBaseProps> = ({
     };
 
     const handleRerun = async (): Promise<void> => {
+      setLoading(true);
+
       try {
         const isDev = process.env.REACT_APP_DEV_MODE === 'true';
         const token = isDev ? null : localStorage.getItem('scigateway:token');
         const headers: { [key: string]: string } = { 'Content-Type': 'application/json' };
-
         if (token) {
           headers['Authorization'] = `Bearer ${token}`;
         }
@@ -409,6 +412,8 @@ const JobsBase: React.FC<JobsBaseProps> = ({
         console.log('Rerun successful:', result);
       } catch (error) {
         console.error('Error rerunning job:', error);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -580,8 +585,8 @@ const JobsBase: React.FC<JobsBaseProps> = ({
                       <Button variant="contained" onClick={() => openValueEditor(job.id)}>
                         Value editor
                       </Button>
-                      <Button variant="contained" sx={{ marginLeft: 1 }} onClick={handleRerun}>
-                        Rerun
+                      <Button variant="contained" sx={{ marginLeft: 1 }} disabled={loading} onClick={handleRerun}>
+                        {loading ? <CircularProgress size={24} color="inherit" /> : 'Rerun'}
                       </Button>
                     </Box>
                   </Grid>
