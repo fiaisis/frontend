@@ -297,7 +297,7 @@ const JobsBase: React.FC<JobsBaseProps> = ({
                   <Box>
                     <Button
                       variant="contained"
-                      style={{ marginLeft: '10px' }}
+                      sx={{ marginLeft: 1 }}
                       onClick={() =>
                         openDataViewer(
                           job.id,
@@ -311,7 +311,7 @@ const JobsBase: React.FC<JobsBaseProps> = ({
                     </Button>
                     <Tooltip title="Will be added in the future">
                       <span>
-                        <Button variant="contained" style={{ marginLeft: '10px' }} disabled>
+                        <Button variant="contained" sx={{ marginLeft: 1 }} disabled>
                           Download
                         </Button>
                       </span>
@@ -545,16 +545,12 @@ const JobsBase: React.FC<JobsBaseProps> = ({
                     </Typography>
                     <Box sx={{ maxHeight: 160, overflowY: 'auto', marginBottom: 2 }}>{renderJobInputs()}</Box>
                     <Box display="flex" justifyContent="right">
-                      <Button variant="contained" sx={{ marginRight: 1 }} onClick={() => openValueEditor(job.id)}>
+                      <Button variant="contained" onClick={() => openValueEditor(job.id)}>
                         Value editor
                       </Button>
-                      <Tooltip title="Will be added in the future">
-                        <span>
-                          <Button variant="contained" color="primary" disabled>
-                            Rerun
-                          </Button>
-                        </span>
-                      </Tooltip>
+                      <Button variant="contained" sx={{ marginLeft: 1 }}>
+                        Rerun
+                      </Button>
                     </Box>
                   </Grid>
                 </Grid>
