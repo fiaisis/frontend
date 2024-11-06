@@ -225,6 +225,7 @@ const JobsBase: React.FC<JobsBaseProps> = ({
   const Row: React.FC<{ job: Job; index: number }> = ({ job, index }) => {
     const [open, setOpen] = useState(false);
     const theme = useTheme();
+    const fiaApiUrl = process.env.REACT_APP_FIA_REST_API_URL;
 
     const JobStatus = ({ state }: { state: string }): JSX.Element => {
       const getComponent = (): JSX.Element => {
@@ -377,6 +378,37 @@ const JobsBase: React.FC<JobsBaseProps> = ({
           );
         default:
           return <></>;
+      }
+    };
+
+    const handleRerun = async (): Promise<void> => {
+      try {
+        const isDev = process.env.REACT_APP_DEV_MODE === 'true';
+        const token = isDev ? null : localStorage.getItem('scigateway:token');
+        const headers: { [key: string]: string } = { 'Content-Type': 'application/json' };
+
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        const response = await fetch(`${fiaApiUrl}/job/rerun`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            job_id: job.id,
+            runner_image: job.runner_image,
+            script: job.script.value,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to rerun job: ${response.statusText}`);
+        }
+
+        const result = await response.json();
+        console.log('Rerun successful:', result);
+      } catch (error) {
+        console.error('Error rerunning job:', error);
       }
     };
 
@@ -548,7 +580,7 @@ const JobsBase: React.FC<JobsBaseProps> = ({
                       <Button variant="contained" onClick={() => openValueEditor(job.id)}>
                         Value editor
                       </Button>
-                      <Button variant="contained" sx={{ marginLeft: 1 }}>
+                      <Button variant="contained" sx={{ marginLeft: 1 }} onClick={handleRerun}>
                         Rerun
                       </Button>
                     </Box>
