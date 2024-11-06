@@ -585,7 +585,12 @@ const JobsBase: React.FC<JobsBaseProps> = ({
                       <Button variant="contained" onClick={() => openValueEditor(job.id)}>
                         Value editor
                       </Button>
-                      <Button variant="contained" sx={{ marginLeft: 1 }} disabled={loading} onClick={handleRerun}>
+                      <Button
+                        variant="contained"
+                        sx={{ marginLeft: 1, width: 40 }}
+                        disabled={loading}
+                        onClick={handleRerun}
+                      >
                         {loading ? <CircularProgress size={24} color="inherit" /> : 'Rerun'}
                       </Button>
                     </Box>
