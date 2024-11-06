@@ -407,9 +407,6 @@ const JobsBase: React.FC<JobsBaseProps> = ({
         if (!response.ok) {
           throw new Error(`Failed to rerun job: ${response.statusText}`);
         }
-
-        const result = await response.json();
-        console.log('Rerun successful:', result);
       } catch (error) {
         console.error('Error rerunning job:', error);
       } finally {
