@@ -29,20 +29,20 @@ import {
   useTheme,
 } from '@mui/material';
 import {
+  CheckCircleOutline,
+  ErrorOutline,
+  ImageAspectRatio,
+  HighlightOff,
   KeyboardArrowDown,
   KeyboardArrowUp,
-  ErrorOutline,
-  CheckCircleOutline,
-  HighlightOff,
-  WarningAmber,
-  WorkOutline,
   People,
   Schedule,
-  VpnKey,
-  StackedBarChart,
   Schema,
   Settings,
-  ImageAspectRatio,
+  StackedBarChart,
+  VpnKey,
+  WarningAmber,
+  WorkOutline,
 } from '@mui/icons-material';
 import Grid from '@mui/material/Grid2';
 import { CSSObject } from '@mui/system';
