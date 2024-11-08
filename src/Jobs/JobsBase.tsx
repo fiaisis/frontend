@@ -1,9 +1,10 @@
 // React components
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, useRef } from 'react';
 import ReactGA from 'react-ga4';
 
 // Material UI components
 import {
+  Alert,
   Box,
   Button,
   CircularProgress,
@@ -16,6 +17,7 @@ import {
   Paper,
   Select,
   SelectChangeEvent,
+  Snackbar,
   Table,
   TableBody,
   TableCell,
@@ -174,6 +176,8 @@ const JobsBase: React.FC<JobsBaseProps> = ({
   const customColumnCount = customHeaders ? 1 : 0;
   const totalColumnCount = baseColumnCount + customColumnCount;
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const snackbarOpen = useRef(false);
+  const rerunSuccessful = useRef<boolean | null>(null);
 
   useEffect(() => {
     fetchTotalCount();
@@ -300,7 +304,7 @@ const JobsBase: React.FC<JobsBaseProps> = ({
                   <Box>
                     <Button
                       variant="contained"
-                      sx={{ marginLeft: 1 }}
+                      sx={{ marginLeft: 2 }}
                       onClick={() =>
                         openDataViewer(
                           job.id,
@@ -314,7 +318,7 @@ const JobsBase: React.FC<JobsBaseProps> = ({
                     </Button>
                     <Tooltip title="Will be added in the future">
                       <span>
-                        <Button variant="contained" sx={{ marginLeft: 1 }} disabled>
+                        <Button variant="contained" sx={{ marginLeft: 2 }} disabled>
                           Download
                         </Button>
                       </span>
@@ -405,12 +409,20 @@ const JobsBase: React.FC<JobsBaseProps> = ({
         });
 
         if (!response.ok) {
+          rerunSuccessful.current = false;
           throw new Error(`Failed to rerun job: ${response.statusText}`);
         }
+
+        rerunSuccessful.current = true;
       } catch (error) {
         console.error('Error rerunning job:', error);
+        rerunSuccessful.current = false;
       } finally {
-        setLoading(false);
+        setTimeout(async () => {
+          setLoading(false);
+          snackbarOpen.current = true;
+          await fetchJobs();
+        }, 2000);
       }
     };
 
@@ -584,7 +596,7 @@ const JobsBase: React.FC<JobsBaseProps> = ({
                       </Button>
                       <Button
                         variant="contained"
-                        sx={{ marginLeft: 1, width: 60 }}
+                        sx={{ marginLeft: 2, width: 60 }}
                         disabled={loading}
                         onClick={handleRerun}
                       >
@@ -637,6 +649,21 @@ const JobsBase: React.FC<JobsBaseProps> = ({
           )}
         </Box>
       </Box>
+
+      <Snackbar
+        open={snackbarOpen.current}
+        autoHideDuration={4000}
+        onClose={() => {
+          snackbarOpen.current = false;
+        }}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        {rerunSuccessful.current ? (
+          <Alert severity="success">Rerun started successfully</Alert>
+        ) : (
+          <Alert severity="error">Rerun could not be started - please try again later or contact staff</Alert>
+        )}
+      </Snackbar>
 
       {/* Render children passed from parent */}
       {children}
