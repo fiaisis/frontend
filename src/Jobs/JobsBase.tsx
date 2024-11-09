@@ -457,6 +457,23 @@ const JobsBase: React.FC<JobsBaseProps> = ({
 
     return (
       <>
+        <Snackbar
+          open={snackbarOpen.current}
+          autoHideDuration={4000}
+          onClose={() => {
+            snackbarOpen.current = false;
+          }}
+          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        >
+          {rerunSuccessful.current ? (
+            <Alert severity="success">Rerun started successfully for reduction {job.id}</Alert>
+          ) : (
+            <Alert severity="error">
+              Rerun could not be started for {job.id} — please try again later or contact staff
+            </Alert>
+          )}
+        </Snackbar>
+
         <TableRow sx={{ ...rowStyles, '&:hover': hoverStyles(theme, index) }} onClick={() => setOpen(!open)}>
           <TableCell sx={{ width: '4%' }}>
             <IconButton aria-label="expand row" size="small">
@@ -649,21 +666,6 @@ const JobsBase: React.FC<JobsBaseProps> = ({
           )}
         </Box>
       </Box>
-
-      <Snackbar
-        open={snackbarOpen.current}
-        autoHideDuration={4000}
-        onClose={() => {
-          snackbarOpen.current = false;
-        }}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-      >
-        {rerunSuccessful.current ? (
-          <Alert severity="success">Rerun started successfully</Alert>
-        ) : (
-          <Alert severity="error">Rerun could not be started - please try again later or contact staff</Alert>
-        )}
-      </Snackbar>
 
       {/* Render children passed from parent */}
       {children}
