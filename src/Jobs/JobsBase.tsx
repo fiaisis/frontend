@@ -176,7 +176,7 @@ const JobsBase: React.FC<JobsBaseProps> = ({
   const customColumnCount = customHeaders ? 1 : 0;
   const totalColumnCount = baseColumnCount + customColumnCount;
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const snackbarOpen = useRef(false);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
   const rerunSuccessful = useRef<boolean | null>(null);
 
   useEffect(() => {
@@ -420,7 +420,7 @@ const JobsBase: React.FC<JobsBaseProps> = ({
       } finally {
         setTimeout(async () => {
           setLoading(false);
-          snackbarOpen.current = true;
+          setSnackbarOpen(true);
           await fetchJobs();
         }, 2000);
       }
@@ -458,10 +458,10 @@ const JobsBase: React.FC<JobsBaseProps> = ({
     return (
       <>
         <Snackbar
-          open={snackbarOpen.current}
+          open={snackbarOpen}
           autoHideDuration={4000}
           onClose={() => {
-            snackbarOpen.current = false;
+            setSnackbarOpen(false);
           }}
           anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
         >
