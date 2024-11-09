@@ -178,6 +178,7 @@ const JobsBase: React.FC<JobsBaseProps> = ({
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const rerunSuccessful = useRef<boolean | null>(null);
+  const rerunJobId = useRef<number | null>(null);
 
   useEffect(() => {
     fetchTotalCount();
@@ -389,7 +390,7 @@ const JobsBase: React.FC<JobsBaseProps> = ({
 
     const handleRerun = async (): Promise<void> => {
       setLoading(true);
-
+      rerunJobId.current = job.id;
       try {
         const isDev = process.env.REACT_APP_DEV_MODE === 'true';
         const token = isDev ? null : localStorage.getItem('scigateway:token');
@@ -459,19 +460,34 @@ const JobsBase: React.FC<JobsBaseProps> = ({
       <>
         <Snackbar
           open={snackbarOpen}
-          autoHideDuration={4000}
-          onClose={() => {
-            setSnackbarOpen(false);
+          autoHideDuration={5000}
+          onClose={(event, reason) => {
+            if (reason !== 'clickaway') {
+              setSnackbarOpen(false);
+            }
           }}
+          disableWindowBlurListener={false}
           anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
         >
-          {rerunSuccessful.current ? (
-            <Alert severity="success">Rerun started successfully for reduction {job.id}</Alert>
-          ) : (
-            <Alert severity="error">
-              Rerun could not be started for {job.id} — please try again later or contact staff
-            </Alert>
-          )}
+          <Alert
+            sx={{
+              padding: '10px 14px',
+              fontSize: '1rem',
+              width: '100%',
+              maxWidth: '600px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              border: '2px solid',
+              borderRadius: '8px',
+              fontWeight: 'bold',
+            }}
+            severity={rerunSuccessful.current ? 'success' : 'error'}
+          >
+            {rerunSuccessful.current
+              ? `Rerun started successfully for reduction ${rerunJobId.current}`
+              : `Rerun could not be started for ${rerunJobId.current} — please try again later or contact staff`}
+          </Alert>
         </Snackbar>
 
         <TableRow sx={{ ...rowStyles, '&:hover': hoverStyles(theme, index) }} onClick={() => setOpen(!open)}>
