@@ -34,11 +34,13 @@ const a11yProps = (index: number): { id: string; 'aria-controls': string } => {
 const ValueEditor: React.FC = () => {
   const theme = useTheme();
   const [value, setValue] = useState<number>(0);
-  const [runnerVersion, setRunnerVersion] = useState<string>('1');
+  const [runnerVersion, setRunnerVersion] = useState<string>('');
+  const [runnerVersions, setRunnerVersions] = useState<string[]>([]);
   const { jobId } = useParams<{ jobId: string }>();
   const [scriptValue, setScriptValue] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
   const fiaApiUrl = process.env.REACT_APP_FIA_REST_API_URL;
+  const githubToken = process.env.REACT_APP_GITHUB_TOKEN;
 
   const fetchReduction = useCallback(async (): Promise<void> => {
     try {
@@ -70,6 +72,34 @@ const ValueEditor: React.FC = () => {
     fetchReduction();
   }, [fetchReduction]);
 
+  const fetchRunnerVersions = useCallback(async (): Promise<void> => {
+    try {
+      const response = await fetch('https://api.github.com/orgs/fiaisis/packages/container/mantid/versions', {
+        headers: {
+          Authorization: `Bearer ${githubToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch runner versions: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const tags = data.flatMap((item: any) => item.metadata?.container?.tags || []);
+
+      setRunnerVersions(tags);
+    } catch (error) {
+      console.error('Error fetching runner versions:', error);
+    }
+  }, [githubToken]);
+
+  useEffect(() => {
+    fetchReduction();
+    fetchRunnerVersions();
+  }, [fetchReduction, fetchRunnerVersions]);
+
   const handleChange = (event: React.SyntheticEvent, newValue: number): void => {
     setValue(newValue);
   };
@@ -81,6 +111,7 @@ const ValueEditor: React.FC = () => {
   const handleRerun = async (): Promise<void> => {
     setLoading(true);
     try {
+      const runnerImage = `ghcr.io/fiaisis/mantid:${runnerVersion}`;
       const isDev = process.env.REACT_APP_DEV_MODE === 'true';
       const token = isDev ? null : localStorage.getItem('scigateway:token');
       const headers: { [key: string]: string } = { 'Content-Type': 'application/json' };
@@ -93,7 +124,7 @@ const ValueEditor: React.FC = () => {
         headers,
         body: JSON.stringify({
           job_id: jobId,
-          runner_image: runnerVersion,
+          runner_image: runnerImage,
           script: scriptValue,
         }),
       });
@@ -126,9 +157,11 @@ const ValueEditor: React.FC = () => {
                 borderRadius: '4px',
               }}
             >
-              <option value="1">Mantid 6.9.1</option>
-              <option value="2">Mantid 6.8.0</option>
-              <option value="3">Mantid Imaging 2.8</option>
+              {runnerVersions.map((version) => (
+                <option key={version} value={version}>
+                  {version}
+                </option>
+              ))}
             </select>
           </Box>
           <Button variant="contained" color="primary" onClick={handleRerun} disabled={loading}>
@@ -169,7 +202,7 @@ const ValueEditor: React.FC = () => {
           <Editor
             height="100%"
             defaultLanguage="python"
-            value={'# User script \n' + scriptValue}
+            value={scriptValue}
             theme={theme.palette.mode === 'dark' ? 'vs-dark' : 'vs-light'}
           />
         )}
