@@ -629,7 +629,7 @@ const JobsBase: React.FC<JobsBaseProps> = ({
                       </Button>
                       <Button
                         variant="contained"
-                        sx={{ marginLeft: 2, width: 60 }}
+                        sx={{ marginLeft: 2, width: 60, height: 38 }}
                         disabled={loading}
                         onClick={handleRerun}
                       >
