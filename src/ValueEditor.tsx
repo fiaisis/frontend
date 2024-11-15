@@ -35,7 +35,7 @@ const ValueEditor: React.FC = () => {
   const theme = useTheme();
   const [value, setValue] = useState<number>(0);
   const [runnerVersion, setRunnerVersion] = useState<string>('1');
-  const { jobId: jobId } = useParams<{ jobId: string }>();
+  const { jobId } = useParams<{ jobId: string }>();
   const [scriptValue, setScriptValue] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
   const fiaApiUrl = process.env.REACT_APP_FIA_REST_API_URL;
