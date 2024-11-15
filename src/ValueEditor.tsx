@@ -194,7 +194,7 @@ const ValueEditor: React.FC = () => {
             >
               {runnerVersions.map((version) => (
                 <option key={version} value={version}>
-                  {version}
+                  Mantid {version}
                 </option>
               ))}
             </select>
