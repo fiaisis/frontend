@@ -478,7 +478,7 @@ const JobsBase: React.FC<JobsBaseProps> = ({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              border: '2px solid',
+              border: '1px solid',
               borderRadius: '8px',
               fontWeight: 'bold',
             }}
