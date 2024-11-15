@@ -78,6 +78,40 @@ const ValueEditor: React.FC = () => {
     setRunnerVersion(event.target.value);
   };
 
+  const handleRerun = async (): Promise<void> => {
+    setLoading(true);
+    try {
+      const isDev = process.env.REACT_APP_DEV_MODE === 'true';
+      const token = isDev ? null : localStorage.getItem('scigateway:token');
+      const headers: { [key: string]: string } = { 'Content-Type': 'application/json' };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(`${fiaApiUrl}/job/rerun`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          job_id: jobId,
+          runner_image: runnerVersion,
+          script: scriptValue,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to rerun job: ${response.statusText}`);
+      }
+
+      console.log('Rerun successful');
+    } catch (error) {
+      console.error('Error rerunning job:', error);
+    } finally {
+      setTimeout(() => {
+        setLoading(false);
+      }, 2000);
+    }
+  };
+
   return (
     <Box sx={{ width: '100%', height: '85vh', overflow: 'hidden' }}>
       <Box sx={{ p: 2, backgroundColor: theme.palette.background.default }}>
@@ -97,17 +131,12 @@ const ValueEditor: React.FC = () => {
               <option value="3">Mantid Imaging 2.8</option>
             </select>
           </Box>
-          <Button variant="contained" color="primary" disabled>
-            Rerun with changes
+          <Button variant="contained" color="primary" onClick={handleRerun} disabled={loading}>
+            {loading ? <CircularProgress size={24} /> : 'Rerun with changes'}
           </Button>
         </Box>
       </Box>
-      <Box
-        sx={{
-          borderTop: 3,
-          borderColor: 'divider',
-        }}
-      >
+      <Box sx={{ borderTop: 3, borderColor: 'divider' }}>
         <Tabs
           value={value}
           onChange={handleChange}
@@ -116,7 +145,6 @@ const ValueEditor: React.FC = () => {
           sx={{
             '& .MuiTab-root': {
               color: theme.palette.mode === 'dark' ? theme.palette.common.white : undefined,
-
               '&.Mui-selected': {
                 color: theme.palette.mode === 'dark' ? theme.palette.common.white : undefined,
                 backgroundColor: theme.palette.mode === 'dark' ? theme.palette.grey[800] : undefined,
