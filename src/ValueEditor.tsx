@@ -35,7 +35,7 @@ const ValueEditor: React.FC = () => {
   const theme = useTheme();
   const [value, setValue] = useState<number>(0);
   const [runnerVersion, setRunnerVersion] = useState<string>('1');
-  const { reductionId } = useParams<{ reductionId: string }>();
+  const { jobId: jobId } = useParams<{ jobId: string }>();
   const [scriptValue, setScriptValue] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
   const fiaApiUrl = process.env.REACT_APP_FIA_REST_API_URL;
@@ -46,13 +46,15 @@ const ValueEditor: React.FC = () => {
       const isDev = process.env.REACT_APP_DEV_MODE === 'true';
       const token = isDev ? null : localStorage.getItem('scigateway:token');
       const headers: { [key: string]: string } = { 'Content-Type': 'application/json' };
+
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
       }
-      const response = await fetch(`${fiaApiUrl}/job/${reductionId}`, {
+      const response = await fetch(`${fiaApiUrl}/job/${jobId}`, {
         method: 'GET',
         headers,
       });
+
       const data = await response.json();
       if (data && data.script && data.script.value) {
         setScriptValue(data.script.value);
@@ -62,7 +64,7 @@ const ValueEditor: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [fiaApiUrl, reductionId]);
+  }, [fiaApiUrl, jobId]);
 
   useEffect(() => {
     fetchReduction();
