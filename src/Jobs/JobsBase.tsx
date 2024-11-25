@@ -1,11 +1,13 @@
 // React components
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, useRef } from 'react';
 import ReactGA from 'react-ga4';
 
 // Material UI components
 import {
+  Alert,
   Box,
   Button,
+  CircularProgress,
   Collapse,
   Drawer,
   FormControl,
@@ -15,6 +17,7 @@ import {
   Paper,
   Select,
   SelectChangeEvent,
+  Snackbar,
   Table,
   TableBody,
   TableCell,
@@ -28,20 +31,20 @@ import {
   useTheme,
 } from '@mui/material';
 import {
+  CheckCircleOutline,
+  ErrorOutline,
+  ImageAspectRatio,
+  HighlightOff,
   KeyboardArrowDown,
   KeyboardArrowUp,
-  ErrorOutline,
-  CheckCircleOutline,
-  HighlightOff,
-  WarningAmber,
-  WorkOutline,
   People,
   Schedule,
-  VpnKey,
-  StackedBarChart,
   Schema,
   Settings,
-  ImageAspectRatio,
+  StackedBarChart,
+  VpnKey,
+  WarningAmber,
+  WorkOutline,
 } from '@mui/icons-material';
 import Grid from '@mui/material/Grid2';
 import { CSSObject } from '@mui/system';
@@ -173,6 +176,9 @@ const JobsBase: React.FC<JobsBaseProps> = ({
   const customColumnCount = customHeaders ? 1 : 0;
   const totalColumnCount = baseColumnCount + customColumnCount;
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const rerunSuccessful = useRef<boolean | null>(null);
+  const rerunJobId = useRef<number | null>(null);
 
   useEffect(() => {
     fetchTotalCount();
@@ -225,6 +231,8 @@ const JobsBase: React.FC<JobsBaseProps> = ({
   const Row: React.FC<{ job: Job; index: number }> = ({ job, index }) => {
     const [open, setOpen] = useState(false);
     const theme = useTheme();
+    const [loading, setLoading] = useState(false);
+    const fiaApiUrl = process.env.REACT_APP_FIA_REST_API_URL;
 
     const JobStatus = ({ state }: { state: string }): JSX.Element => {
       const getComponent = (): JSX.Element => {
@@ -297,7 +305,7 @@ const JobsBase: React.FC<JobsBaseProps> = ({
                   <Box>
                     <Button
                       variant="contained"
-                      style={{ marginLeft: '10px' }}
+                      sx={{ marginLeft: 2 }}
                       onClick={() =>
                         openDataViewer(
                           job.id,
@@ -311,7 +319,7 @@ const JobsBase: React.FC<JobsBaseProps> = ({
                     </Button>
                     <Tooltip title="Will be added in the future">
                       <span>
-                        <Button variant="contained" style={{ marginLeft: '10px' }} disabled>
+                        <Button variant="contained" sx={{ marginLeft: 2 }} disabled>
                           Download
                         </Button>
                       </span>
@@ -380,6 +388,45 @@ const JobsBase: React.FC<JobsBaseProps> = ({
       }
     };
 
+    const handleRerun = async (): Promise<void> => {
+      setLoading(true);
+      rerunJobId.current = job.id;
+      try {
+        const isDev = process.env.REACT_APP_DEV_MODE === 'true';
+        const token = isDev ? null : localStorage.getItem('scigateway:token');
+        const headers: { [key: string]: string } = { 'Content-Type': 'application/json' };
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        const response = await fetch(`${fiaApiUrl}/job/rerun`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            job_id: job.id,
+            runner_image: job.runner_image,
+            script: job.script.value,
+          }),
+        });
+
+        if (!response.ok) {
+          rerunSuccessful.current = false;
+          throw new Error(`Failed to rerun job: ${response.statusText}`);
+        }
+
+        rerunSuccessful.current = true;
+      } catch (error) {
+        console.error('Error rerunning job:', error);
+        rerunSuccessful.current = false;
+      } finally {
+        setTimeout(async () => {
+          setLoading(false);
+          setSnackbarOpen(true);
+          await fetchJobs();
+        }, 2000);
+      }
+    };
+
     const rowStyles = {
       backgroundColor:
         index % 2 === 0
@@ -411,6 +458,38 @@ const JobsBase: React.FC<JobsBaseProps> = ({
 
     return (
       <>
+        <Snackbar
+          open={snackbarOpen}
+          autoHideDuration={5000}
+          onClose={(event, reason) => {
+            if (reason !== 'clickaway') {
+              setSnackbarOpen(false);
+            }
+          }}
+          disableWindowBlurListener={false}
+          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        >
+          <Alert
+            sx={{
+              padding: '10px 14px',
+              fontSize: '1rem',
+              width: '100%',
+              maxWidth: '600px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              border: '1px solid',
+              borderRadius: '8px',
+              fontWeight: 'bold',
+            }}
+            severity={rerunSuccessful.current ? 'success' : 'error'}
+          >
+            {rerunSuccessful.current
+              ? `Rerun started successfully for reduction ${rerunJobId.current}`
+              : `Rerun could not be started for ${rerunJobId.current} — please try again later or contact staff`}
+          </Alert>
+        </Snackbar>
+
         <TableRow sx={{ ...rowStyles, '&:hover': hoverStyles(theme, index) }} onClick={() => setOpen(!open)}>
           <TableCell sx={{ width: '4%' }}>
             <IconButton aria-label="expand row" size="small">
@@ -545,16 +624,17 @@ const JobsBase: React.FC<JobsBaseProps> = ({
                     </Typography>
                     <Box sx={{ maxHeight: 160, overflowY: 'auto', marginBottom: 2 }}>{renderJobInputs()}</Box>
                     <Box display="flex" justifyContent="right">
-                      <Button variant="contained" sx={{ marginRight: 1 }} onClick={() => openValueEditor(job.id)}>
+                      <Button variant="contained" onClick={() => openValueEditor(job.id)}>
                         Value editor
                       </Button>
-                      <Tooltip title="Will be added in the future">
-                        <span>
-                          <Button variant="contained" color="primary" disabled>
-                            Rerun
-                          </Button>
-                        </span>
-                      </Tooltip>
+                      <Button
+                        variant="contained"
+                        sx={{ marginLeft: 2, width: 60, height: 38 }}
+                        disabled={loading}
+                        onClick={handleRerun}
+                      >
+                        {loading ? <CircularProgress size={24} color="inherit" /> : 'Rerun'}
+                      </Button>
                     </Box>
                   </Grid>
                 </Grid>
