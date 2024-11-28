@@ -653,17 +653,17 @@ const JobsBase: React.FC<JobsBaseProps> = ({
                   <TableCell sx={{ width: '10%', ...headerStyles(theme) }} onClick={() => handleSort('filename')}>
                     Filename {orderBy === 'filename' ? (orderDirection === 'asc' ? '↑' : '↓') : ''}
                   </TableCell>
-                  <TableCell sx={{ width: '15%', ...headerStyles(theme) }} onClick={() => handleSort('start')}>
-                    Job start {orderBy === 'start' ? (orderDirection === 'asc' ? '↑' : '↓') : ''}
-                  </TableCell>
-                  <TableCell sx={{ width: '15%', ...headerStyles(theme) }} onClick={() => handleSort('end')}>
-                    Job end {orderBy === 'end' ? (orderDirection === 'asc' ? '↑' : '↓') : ''}
-                  </TableCell>
                   <TableCell sx={{ width: '15%', ...headerStyles(theme) }} onClick={() => handleSort('run_start')}>
                     Run start {orderBy === 'run_start' ? (orderDirection === 'asc' ? '↑' : '↓') : ''}
                   </TableCell>
                   <TableCell sx={{ width: '15%', ...headerStyles(theme) }} onClick={() => handleSort('run_end')}>
                     Run end {orderBy === 'run_end' ? (orderDirection === 'asc' ? '↑' : '↓') : ''}
+                  </TableCell>
+                  <TableCell sx={{ width: '15%', ...headerStyles(theme) }} onClick={() => handleSort('start')}>
+                    Job start {orderBy === 'start' ? (orderDirection === 'asc' ? '↑' : '↓') : ''}
+                  </TableCell>
+                  <TableCell sx={{ width: '15%', ...headerStyles(theme) }} onClick={() => handleSort('end')}>
+                    Job end {orderBy === 'end' ? (orderDirection === 'asc' ? '↑' : '↓') : ''}
                   </TableCell>
                   <TableCell sx={{ width: '32%', ...headerStyles(theme) }}>Title</TableCell>
                   {customHeaders && customHeaders}
