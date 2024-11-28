@@ -35,14 +35,14 @@ const ValueEditor: React.FC = () => {
   const theme = useTheme();
   const [value, setValue] = useState<number>(0);
   const [runnerVersion, setRunnerVersion] = useState<string>('');
-  const [runnerVersions, setRunnerVersions] = useState<string[]>([]);
+  const [runners, setRunners] = useState<string[]>([]);
   const { jobId } = useParams<{ jobId: string }>();
   const [scriptValue, setScriptValue] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
   const rerunSuccessful = useRef<boolean | null>(null);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const fiaApiUrl = process.env.REACT_APP_FIA_REST_API_URL;
-  const githubToken = process.env.REACT_APP_GITHUB_TOKEN;
+  //const githubToken = process.env.REACT_APP_GITHUB_TOKEN;
 
   const fetchReduction = useCallback(async (): Promise<void> => {
     try {
@@ -74,33 +74,36 @@ const ValueEditor: React.FC = () => {
     fetchReduction();
   }, [fetchReduction]);
 
-  const fetchRunnerVersions = useCallback(async (): Promise<void> => {
+  const fetchRunners = useCallback(async (): Promise<void> => {
     try {
-      const response = await fetch('https://api.github.com/orgs/fiaisis/packages/container/mantid/versions', {
-        headers: {
-          Authorization: `Bearer ${githubToken}`,
-        },
+      const isDev = process.env.REACT_APP_DEV_MODE === 'true';
+      const token = isDev ? null : localStorage.getItem('scigateway:token');
+      const headers: { [key: string]: string } = { 'Content-Type': 'application/json' };
+
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(`${fiaApiUrl}/jobs/runners`, {
+        method: 'GET',
+        headers,
       });
 
       if (!response.ok) {
         throw new Error(`Failed to fetch runner versions: ${response.statusText}`);
       }
 
-      const data = await response.json();
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const tags = data.flatMap((item: any) => item.metadata?.container?.tags || []);
-
-      setRunnerVersions(tags);
+      const runners = await response.json();
+      setRunners(runners);
     } catch (error) {
       console.error('Error fetching runner versions:', error);
     }
-  }, [githubToken]);
+  }, [fiaApiUrl]);
 
   useEffect(() => {
     fetchReduction();
-    fetchRunnerVersions();
-  }, [fetchReduction, fetchRunnerVersions]);
+    fetchRunners();
+  }, [fetchReduction, fetchRunners]);
 
   const handleChange = (event: React.SyntheticEvent, newValue: number): void => {
     setValue(newValue);
@@ -192,7 +195,7 @@ const ValueEditor: React.FC = () => {
                 borderRadius: '4px',
               }}
             >
-              {runnerVersions.map((version) => (
+              {runners.map((version) => (
                 <option key={version} value={version}>
                   Mantid {version}
                 </option>
