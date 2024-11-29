@@ -3611,12 +3611,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:22.10.0":
-  version: 22.10.0
-  resolution: "@types/node@npm:22.10.0"
+"@types/node@npm:22.10.1":
+  version: 22.10.1
+  resolution: "@types/node@npm:22.10.1"
   dependencies:
     undici-types: ~6.20.0
-  checksum: 72b1314ba9dfbabaf1ba01480086399ff3831c8fc30ce82be4755d87cfc25f2ef17ec43d528e655797bbe4de4dd7d3eb7fa7ce2f91dccb8d434865a72870a149
+  checksum: 5a9b81500f288a8fb757b61bd939f99f72b6cb59347a5bae52dd1c2c87100ebbaa9da4256ef3cb9add2090e8704cda1d9a1ffc14ccd5db47a6466c8bae10ebcb
   languageName: node
   linkType: hard
 
@@ -8075,7 +8075,7 @@ __metadata:
     "@mui/icons-material": 6.1.9
     "@mui/material": 6.1.9
     "@types/jest": 29.5.14
-    "@types/node": 22.10.0
+    "@types/node": 22.10.1
     "@types/react": 17.0.39
     "@types/react-dom": 17.0.11
     "@types/react-router-dom": 5.3.3
