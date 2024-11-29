@@ -42,7 +42,6 @@ const ValueEditor: React.FC = () => {
   const rerunSuccessful = useRef<boolean | null>(null);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const fiaApiUrl = process.env.REACT_APP_FIA_REST_API_URL;
-  //const githubToken = process.env.REACT_APP_GITHUB_TOKEN;
 
   const fetchReduction = useCallback(async (): Promise<void> => {
     try {
@@ -95,6 +94,7 @@ const ValueEditor: React.FC = () => {
 
       const runners = await response.json();
       setRunners(runners);
+      setRunnerVersion(runners[0]);
     } catch (error) {
       console.error('Error fetching runner versions:', error);
     }
