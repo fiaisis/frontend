@@ -41,6 +41,7 @@ const ValueEditor: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const rerunSuccessful = useRef<boolean | null>(null);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const userModified = useRef(false);
   const fiaApiUrl = process.env.REACT_APP_FIA_REST_API_URL;
 
   const fetchReduction = useCallback(async (): Promise<void> => {
@@ -59,7 +60,9 @@ const ValueEditor: React.FC = () => {
       });
 
       const data = await response.json();
-      if (data && data.script && data.script.value) {
+
+      // Only set the script value if the user hasn't modified it
+      if (data?.script?.value && !userModified.current) {
         setScriptValue(data.script.value);
       }
     } catch (error) {
@@ -101,7 +104,6 @@ const ValueEditor: React.FC = () => {
   }, [fiaApiUrl]);
 
   useEffect(() => {
-    fetchReduction();
     fetchRunners();
   }, [fetchReduction, fetchRunners]);
 
@@ -244,6 +246,12 @@ const ValueEditor: React.FC = () => {
           </Box>
         ) : (
           <Editor
+            onChange={(newValue) => {
+              if (newValue !== null) {
+                setScriptValue(newValue ?? '');
+                userModified.current = true; // Indicates that the user has modified the script
+              }
+            }}
             height="100%"
             defaultLanguage="python"
             value={scriptValue}
