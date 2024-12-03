@@ -33,9 +33,10 @@ const a11yProps = (index: number): { id: string; 'aria-controls': string } => ({
 interface ConfigSettingsGeneralProps {
   // Allow children to be passed for features specific to certain instruments
   children?: React.ReactNode;
+  onFileUpload?: () => Promise<void>;
 }
 
-const ConfigSettingsGeneral: React.FC<ConfigSettingsGeneralProps> = ({ children }) => {
+const ConfigSettingsGeneral: React.FC<ConfigSettingsGeneralProps> = ({ children, onFileUpload }) => {
   const theme = useTheme();
   const { instrumentName } = useParams<{ instrumentName: string }>();
   const [reductionStatus, setReductionStatus] = useState<'ON' | 'OFF'>('ON');
@@ -163,6 +164,10 @@ const ConfigSettingsGeneral: React.FC<ConfigSettingsGeneralProps> = ({ children 
 
       if (!response.ok) {
         throw new Error('Failed to update the specification');
+      }
+
+      if (onFileUpload) {
+        await onFileUpload();
       }
 
       setApplyMessage('Changes applied successfully');
