@@ -348,11 +348,30 @@ const JobsBase: React.FC<JobsBaseProps> = ({
       }
 
       return entries.map(([key, value], index) => (
-        <Box key={index} sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
-          <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
+        <Box
+          key={index}
+          sx={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            marginBottom: '4px',
+            wordBreak: 'break-word',
+            maxWidth: '100%',
+          }}
+        >
+          <Typography
+            variant="body2"
+            sx={{
+              fontWeight: 'bold',
+              marginRight: '4px',
+              whiteSpace: 'nowrap', // Stops the key from wrapping
+            }}
+          >
             {key}:
           </Typography>
-          <Typography variant="body2">{value}</Typography>
+          <Typography variant="body2" sx={{ flex: '1 1 auto' }}>
+            {value}
+          </Typography>
         </Box>
       ));
     };
@@ -622,7 +641,15 @@ const JobsBase: React.FC<JobsBaseProps> = ({
                     <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
                       Reduction inputs
                     </Typography>
-                    <Box sx={{ maxHeight: 160, overflowY: 'auto', marginBottom: 2 }}>{renderJobInputs()}</Box>
+                    <Box
+                      sx={{
+                        height: 160,
+                        overflowY: 'auto',
+                        marginBottom: 2,
+                      }}
+                    >
+                      {renderJobInputs()}
+                    </Box>
                     <Box display="flex" justifyContent="right">
                       <Button variant="contained" onClick={() => openValueEditor(job.id)}>
                         Value editor
