@@ -1,45 +1,19 @@
 // React components
-import React, { useState } from 'react';
+import React from 'react';
 
 // Material UI components
 import { Box, Button } from '@mui/material';
 import { UploadFile, Edit } from '@mui/icons-material';
 
 // Local data
-import axios from 'axios';
 import ConfigSettingsGeneral from './ConfigSettingsGeneral';
+import FileUploader from './FileUploader';
 
 const fiaApiUrl = process.env.REACT_APP_FIA_REST_API_URL;
-
+const instrument_url = `${fiaApiUrl}/extras/loq`;
 const ConfigSettingsLOQ: React.FC = () => {
-  const instrument_url = `${fiaApiUrl}/extras/loq`;
   // Insert LOQ specifc buttons into the ConfigSettingsGeneral component
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [uploadMessage, setUploadMessage] = useState<string>('');
-
-  // File selection
-  const handleFileSelection = (event: React.ChangeEvent<HTMLInputElement>): void => {
-    const file = event.target.files ? event.target.files[0] : null;
-    setSelectedFile(file);
-    const newUploadMessage = file ? `Selected file: ${file.name}` : '';
-    setUploadMessage(newUploadMessage);
-  };
-
-  // Callback for uploading the selected file
-  const handleFileUpload = async (): Promise<void> => {
-    if (!selectedFile) return; // Do nothing if no file selected
-
-    try {
-      const formData = new FormData();
-      formData.append('file', selectedFile);
-      await axios.post(`${instrument_url}/${selectedFile.name}`, formData);
-      setUploadMessage(`Uploaded file: ${selectedFile.name}`);
-    } catch (error) {
-      console.error('Error uploading file:', error);
-      throw new Error('Failed to upload the file');
-    }
-  };
-
+  const { selectedFile, uploadMessage, handleFileSelection, handleFileUpload } = FileUploader(instrument_url);
   return (
     <ConfigSettingsGeneral onFileUpload={handleFileUpload}>
       <Box sx={{ mb: 2 }}>
