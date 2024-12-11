@@ -16,12 +16,12 @@ const ConfigSettingsLOQ: React.FC = () => {
   const { selectedFile, uploadMessage, handleFileSelection, handleFileUpload } = FileUploader(instrument_url);
   return (
     <ConfigSettingsGeneral onFileUpload={handleFileUpload}>
-      <Box sx={{ mb: 2 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
         <Button component="label" variant="contained" startIcon={<UploadFile />}>
           Upload file...
           <input type="file" multiple hidden onChange={handleFileSelection} />
         </Button>
-        {selectedFile && <Box sx={{ mt: 1 }}>{uploadMessage}</Box>}
+        {selectedFile && <Box sx={{ mt: 1, ml: 2 }}>{uploadMessage}</Box>}
       </Box>
 
       {/* Change script button -- disabled for now */}
