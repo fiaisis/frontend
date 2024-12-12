@@ -1,9 +1,9 @@
 // React components
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 
 // Material UI components
-import { Box, Tabs, Tab, Typography, Button, useTheme, CircularProgress } from '@mui/material';
+import { Alert, Box, Button, CircularProgress, Snackbar, Tab, Tabs, Typography, useTheme } from '@mui/material';
 
 // Monaco components
 import Editor from '@monaco-editor/react';
@@ -34,10 +34,14 @@ const a11yProps = (index: number): { id: string; 'aria-controls': string } => {
 const ValueEditor: React.FC = () => {
   const theme = useTheme();
   const [value, setValue] = useState<number>(0);
-  const [runnerVersion, setRunnerVersion] = useState<string>('1');
-  const { reductionId } = useParams<{ reductionId: string }>();
+  const [runnerVersion, setRunnerVersion] = useState<string>('');
+  const [runners, setRunners] = useState<string[]>([]);
+  const { jobId } = useParams<{ jobId: string }>();
   const [scriptValue, setScriptValue] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
+  const rerunSuccessful = useRef<boolean | null>(null);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const userModified = useRef(false);
   const fiaApiUrl = process.env.REACT_APP_FIA_REST_API_URL;
 
   const fetchReduction = useCallback(async (): Promise<void> => {
@@ -46,15 +50,19 @@ const ValueEditor: React.FC = () => {
       const isDev = process.env.REACT_APP_DEV_MODE === 'true';
       const token = isDev ? null : localStorage.getItem('scigateway:token');
       const headers: { [key: string]: string } = { 'Content-Type': 'application/json' };
+
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
       }
-      const response = await fetch(`${fiaApiUrl}/job/${reductionId}`, {
+      const response = await fetch(`${fiaApiUrl}/job/${jobId}`, {
         method: 'GET',
         headers,
       });
+
       const data = await response.json();
-      if (data && data.script && data.script.value) {
+
+      // Only set the script value if the user hasn't modified it
+      if (data?.script?.value && !userModified.current) {
         setScriptValue(data.script.value);
       }
     } catch (error) {
@@ -62,11 +70,42 @@ const ValueEditor: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [fiaApiUrl, reductionId]);
+  }, [fiaApiUrl, jobId]);
 
   useEffect(() => {
     fetchReduction();
   }, [fetchReduction]);
+
+  const fetchRunners = useCallback(async (): Promise<void> => {
+    try {
+      const isDev = process.env.REACT_APP_DEV_MODE === 'true';
+      const token = isDev ? null : localStorage.getItem('scigateway:token');
+      const headers: { [key: string]: string } = { 'Content-Type': 'application/json' };
+
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(`${fiaApiUrl}/jobs/runners`, {
+        method: 'GET',
+        headers,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch runner versions: ${response.statusText}`);
+      }
+
+      const runners = await response.json();
+      setRunners(runners);
+      setRunnerVersion(runners[0]);
+    } catch (error) {
+      console.error('Error fetching runner versions:', error);
+    }
+  }, [fiaApiUrl]);
+
+  useEffect(() => {
+    fetchRunners();
+  }, [fetchReduction, fetchRunners]);
 
   const handleChange = (event: React.SyntheticEvent, newValue: number): void => {
     setValue(newValue);
@@ -76,11 +115,79 @@ const ValueEditor: React.FC = () => {
     setRunnerVersion(event.target.value);
   };
 
+  const handleRerun = async (): Promise<void> => {
+    setLoading(true);
+    try {
+      const runnerImage = `ghcr.io/fiaisis/mantid:${runnerVersion}`;
+      const isDev = process.env.REACT_APP_DEV_MODE === 'true';
+      const token = isDev ? null : localStorage.getItem('scigateway:token');
+      const headers: { [key: string]: string } = { 'Content-Type': 'application/json' };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(`${fiaApiUrl}/job/rerun`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          job_id: jobId,
+          runner_image: runnerImage,
+          script: scriptValue,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to rerun job: ${response.statusText}`);
+      }
+
+      rerunSuccessful.current = true;
+    } catch (error) {
+      console.error('Error rerunning job:', error);
+      rerunSuccessful.current = false;
+    } finally {
+      setTimeout(() => {
+        setLoading(false);
+        setSnackbarOpen(true);
+      }, 2000);
+    }
+  };
+
   return (
     <Box sx={{ width: '100%', height: '85vh', overflow: 'hidden' }}>
       <Box sx={{ p: 2, backgroundColor: theme.palette.background.default }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <Snackbar
+              open={snackbarOpen}
+              autoHideDuration={5000}
+              onClose={(event, reason) => {
+                if (reason !== 'clickaway') {
+                  setSnackbarOpen(false);
+                }
+              }}
+              disableWindowBlurListener={false}
+              anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+            >
+              <Alert
+                sx={{
+                  padding: '10px 14px',
+                  fontSize: '1rem',
+                  width: '100%',
+                  maxWidth: '600px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  border: '1px solid',
+                  borderRadius: '8px',
+                  fontWeight: 'bold',
+                }}
+                severity={rerunSuccessful.current ? 'success' : 'error'}
+              >
+                {rerunSuccessful.current
+                  ? `Rerun started successfully for reduction ${jobId}`
+                  : `Rerun could not be started for ${jobId} — please try again later or contact staff`}
+              </Alert>
+            </Snackbar>
             <Typography sx={{ color: theme.palette.text.primary, mr: 2 }}>Runner version:</Typography>
             <select
               value={runnerVersion}
@@ -90,22 +197,25 @@ const ValueEditor: React.FC = () => {
                 borderRadius: '4px',
               }}
             >
-              <option value="1">Mantid 6.9.1</option>
-              <option value="2">Mantid 6.8.0</option>
-              <option value="3">Mantid Imaging 2.8</option>
+              {runners.map((version) => (
+                <option key={version} value={version}>
+                  Mantid {version}
+                </option>
+              ))}
             </select>
           </Box>
-          <Button variant="contained" color="primary" disabled>
-            Rerun with changes
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleRerun}
+            disabled={loading}
+            sx={{ width: 170, height: 38 }}
+          >
+            {loading ? <CircularProgress size={24} color="inherit" /> : 'Rerun with changes'}
           </Button>
         </Box>
       </Box>
-      <Box
-        sx={{
-          borderTop: 3,
-          borderColor: 'divider',
-        }}
-      >
+      <Box sx={{ borderTop: 3, borderColor: 'divider' }}>
         <Tabs
           value={value}
           onChange={handleChange}
@@ -114,7 +224,6 @@ const ValueEditor: React.FC = () => {
           sx={{
             '& .MuiTab-root': {
               color: theme.palette.mode === 'dark' ? theme.palette.common.white : undefined,
-
               '&.Mui-selected': {
                 color: theme.palette.mode === 'dark' ? theme.palette.common.white : undefined,
                 backgroundColor: theme.palette.mode === 'dark' ? theme.palette.grey[800] : undefined,
@@ -137,9 +246,15 @@ const ValueEditor: React.FC = () => {
           </Box>
         ) : (
           <Editor
+            onChange={(newValue) => {
+              if (newValue !== null) {
+                setScriptValue(newValue ?? '');
+                userModified.current = true; // Indicates that the user has modified the script
+              }
+            }}
             height="100%"
             defaultLanguage="python"
-            value={'# User script \n' + scriptValue}
+            value={scriptValue}
             theme={theme.palette.mode === 'dark' ? 'vs-dark' : 'vs-light'}
           />
         )}
