@@ -1,6 +1,5 @@
 // React components
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { useParams } from 'react-router-dom';
 
 // Material UI components
 import { Alert, Box, Button, CircularProgress, Snackbar, Tab, Tabs, Typography, useTheme } from '@mui/material';
@@ -31,12 +30,15 @@ const a11yProps = (index: number): { id: string; 'aria-controls': string } => {
   };
 };
 
-const ValueEditor: React.FC = () => {
+interface ValueEditorProps {
+  jobId: number;
+}
+
+const ValueEditor: React.FC<ValueEditorProps> = ({ jobId }) => {
   const theme = useTheme();
   const [value, setValue] = useState<number>(0);
   const [runnerVersion, setRunnerVersion] = useState<string>('');
   const [runners, setRunners] = useState<string[]>([]);
-  const { jobId } = useParams<{ jobId: string }>();
   const [scriptValue, setScriptValue] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
   const rerunSuccessful = useRef<boolean | null>(null);
@@ -154,7 +156,7 @@ const ValueEditor: React.FC = () => {
 
   return (
     <Box sx={{ width: '100%', height: '85vh', overflow: 'hidden' }}>
-      <Box sx={{ p: 2, backgroundColor: theme.palette.background.default }}>
+      <Box sx={{ p: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <Snackbar

@@ -55,6 +55,7 @@ import { CSSObject } from '@mui/system';
 import { instruments } from '../InstrumentData';
 import ConfigSettingsGeneral from '../ConfigSettings/ConfigSettingsGeneral';
 import ConfigSettingsLOQ from '../ConfigSettings/ConfigSettingsLOQ';
+import ValueEditor from '../ValueEditor';
 
 export const headerStyles = (theme: Theme): CSSObject => ({
   color: theme.palette.primary.contrastText,
@@ -682,8 +683,9 @@ const JobsBase: React.FC<JobsBaseProps> = ({
                   </Box>
                 )}
                 {activeTab === 1 && (
-                  <Box sx={{ padding: 2 }}>
-                    <Typography variant="body2">Tab for value editor content to go.</Typography>
+                  <Box sx={{ width: '100%', overflow: 'hidden' }}>
+                    {/* Integrated ValueEditor */}
+                    <ValueEditor jobId={job.id} />
                   </Box>
                 )}
               </Box>

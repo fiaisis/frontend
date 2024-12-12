@@ -8,7 +8,6 @@ import Instruments from './Instruments';
 import JobsAll from './Jobs/JobsAll';
 import JobsGeneral from './Jobs/JobsGeneral';
 import HomePage from './HomePage';
-import ValueEditor from './ValueEditor';
 import GlobalStyles from './GlobalStyles';
 
 // Initialize Google Analytics
@@ -52,9 +51,6 @@ const App: FC = () => {
           </Route>
           <Route path="/reduction-history/:instrumentName">
             <JobsGeneral />
-          </Route>
-          <Route path="/value-editor/:jobId">
-            <ValueEditor />
           </Route>
         </Switch>
       </Router>
