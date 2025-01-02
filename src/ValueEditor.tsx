@@ -11,6 +11,7 @@ interface TabPanelProps {
   children?: React.ReactNode;
   index: number;
   value: number;
+  style?: React.CSSProperties;
 }
 
 const TabPanel = (props: TabPanelProps): JSX.Element => {
@@ -18,7 +19,7 @@ const TabPanel = (props: TabPanelProps): JSX.Element => {
 
   return (
     <div role="tabpanel" hidden={value !== index} id={`tabpanel-${index}`} aria-labelledby={`tab-${index}`} {...other}>
-      {value === index && <Box sx={{ p: 3, height: 'calc(85vh - 48px - 48px - 24px)' }}>{children}</Box>}
+      {value === index && <Box sx={{ p: 3, height: '50vh' }}>{children}</Box>}
     </div>
   );
 };
@@ -155,7 +156,7 @@ const ValueEditor: React.FC<ValueEditorProps> = ({ jobId }) => {
   };
 
   return (
-    <Box sx={{ width: '100%', height: '85vh', overflow: 'hidden' }}>
+    <Box sx={{ width: '100%', height: '70vh', overflow: 'hidden' }}>
       <Box sx={{ p: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -243,7 +244,7 @@ const ValueEditor: React.FC<ValueEditorProps> = ({ jobId }) => {
         {/* Loading state necessary so that page contents don't load before
         scriptValue is set */}
         {loading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
             <CircularProgress />
           </Box>
         ) : (
@@ -254,7 +255,6 @@ const ValueEditor: React.FC<ValueEditorProps> = ({ jobId }) => {
                 userModified.current = true; // Indicates that the user has modified the script
               }
             }}
-            height="100%"
             defaultLanguage="python"
             value={scriptValue}
             theme={theme.palette.mode === 'dark' ? 'vs-dark' : 'vs-light'}
