@@ -190,19 +190,6 @@ const JobsBase: React.FC<JobsBaseProps> = ({
 
   const DATA_VIEWER_URL = process.env.REACT_APP_FIA_DATA_VIEWER_URL;
 
-  const openValueEditor = (jobId: number): void => {
-    const url = `/fia/value-editor/${jobId}`;
-    const windowName = 'ValueEditorWindow';
-    const features = 'width=1200,height=800,resizable=no';
-    window.open(url, windowName, features);
-    ReactGA.event({
-      category: 'Button',
-      action: 'Click',
-      label: 'Value editor button',
-      value: jobId,
-    });
-  };
-
   const openDataViewer = (jobId: number, instrumentName: string, experimentNumber: number, output: string): void => {
     const url = `${DATA_VIEWER_URL}/view/${instrumentName}/${experimentNumber}/${output}`;
     window.open(url, '_blank');
@@ -679,9 +666,6 @@ const JobsBase: React.FC<JobsBaseProps> = ({
                           {renderJobInputs()}
                         </Box>
                         <Box display="flex" justifyContent="right">
-                          <Button variant="contained" onClick={() => openValueEditor(job.id)}>
-                            Value editor
-                          </Button>
                           <Button
                             variant="contained"
                             sx={{ marginLeft: 2, width: 60, height: 38 }}
