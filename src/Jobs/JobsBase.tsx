@@ -540,7 +540,20 @@ const JobsBase: React.FC<JobsBaseProps> = ({
           >
             <Collapse in={open} timeout="auto" unmountOnExit>
               <Box margin={2}>
-                <Tabs value={activeTab} onChange={handleTabChange}>
+                <Tabs
+                  value={activeTab}
+                  onChange={handleTabChange}
+                  color="primary"
+                  sx={{
+                    '& .MuiTab-root': {
+                      color: theme.palette.mode === 'dark' ? theme.palette.common.white : undefined,
+                      '&.Mui-selected': {
+                        color: theme.palette.mode === 'dark' ? theme.palette.common.white : undefined,
+                        backgroundColor: theme.palette.mode === 'dark' ? theme.palette.grey[800] : undefined,
+                      },
+                    },
+                  }}
+                >
                   <Tab label="Reduction details" />
                   <Tab label="Edit values" />
                 </Tabs>
