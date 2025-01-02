@@ -7,21 +7,16 @@ import { UploadFile, Edit } from '@mui/icons-material';
 
 // Local data
 import ConfigSettingsGeneral from './ConfigSettingsGeneral';
-import FileUploader from './FileUploader';
 
-const fiaApiUrl = process.env.REACT_APP_FIA_REST_API_URL;
-const instrument_url = `${fiaApiUrl}/extras/loq`;
 const ConfigSettingsLOQ: React.FC = () => {
   // Insert LOQ specifc buttons into the ConfigSettingsGeneral component
-  const { selectedFile, uploadMessage, handleFileSelection, handleFileUpload } = FileUploader(instrument_url);
   return (
-    <ConfigSettingsGeneral onFileUpload={handleFileUpload}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-        <Button component="label" variant="contained" startIcon={<UploadFile />}>
+    <ConfigSettingsGeneral>
+      {/* Upload file button -- disabled for now */}
+      <Box sx={{ mb: 2 }}>
+        <Button variant="contained" disabled startIcon={<UploadFile />}>
           Upload file...
-          <input type="file" multiple hidden onChange={handleFileSelection} />
         </Button>
-        {selectedFile && <Box sx={{ mt: 1, ml: 2 }}>{uploadMessage}</Box>}
       </Box>
 
       {/* Change script button -- disabled for now */}
