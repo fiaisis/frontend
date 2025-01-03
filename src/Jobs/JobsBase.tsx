@@ -175,7 +175,7 @@ const JobsBase: React.FC<JobsBaseProps> = ({
 }) => {
   const theme = useTheme();
   const allInstruments = [{ name: 'ALL' }, ...instruments]; // Add 'ALL' option to the instruments list
-  const baseColumnCount = 7; // Number of base columns defined in the TableHead
+  const baseColumnCount = 9; // Number of base columns defined in the TableHead
   const customColumnCount = customHeaders ? 1 : 0;
   const totalColumnCount = baseColumnCount + customColumnCount;
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -289,7 +289,7 @@ const JobsBase: React.FC<JobsBaseProps> = ({
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap',
-                          maxWidth: '260px',
+                          maxWidth: '240px',
                         }}
                         title={output}
                       >
@@ -517,6 +517,8 @@ const JobsBase: React.FC<JobsBaseProps> = ({
           <TableCell sx={{ width: '10%' }}>{extractFileName(job.run?.filename || 'N/A')}</TableCell>
           <TableCell sx={{ width: '15%' }}>{formatDateTime(job.run?.run_start || 'N/A')}</TableCell>
           <TableCell sx={{ width: '15%' }}>{formatDateTime(job.run?.run_end || 'N/A')}</TableCell>
+          <TableCell sx={{ width: '15%' }}>{job.start ? formatDateTime(job.start) : 'N/A'}</TableCell>
+          <TableCell sx={{ width: '15%' }}>{job.end ? formatDateTime(job.end) : 'N/A'}</TableCell>
           <TableCell sx={{ width: '32%' }}>{job.run?.title || 'N/A'}</TableCell>
           {customRowCells && customRowCells(job)}
         </TableRow>
@@ -783,6 +785,12 @@ const JobsBase: React.FC<JobsBaseProps> = ({
                   </TableCell>
                   <TableCell sx={{ width: '15%', ...headerStyles(theme) }} onClick={() => handleSort('run_end')}>
                     Run end {orderBy === 'run_end' ? (orderDirection === 'asc' ? '↑' : '↓') : ''}
+                  </TableCell>
+                  <TableCell sx={{ width: '15%', ...headerStyles(theme) }} onClick={() => handleSort('start')}>
+                    Job start {orderBy === 'start' ? (orderDirection === 'asc' ? '↑' : '↓') : ''}
+                  </TableCell>
+                  <TableCell sx={{ width: '15%', ...headerStyles(theme) }} onClick={() => handleSort('end')}>
+                    Job end {orderBy === 'end' ? (orderDirection === 'asc' ? '↑' : '↓') : ''}
                   </TableCell>
                   <TableCell sx={{ width: '32%', ...headerStyles(theme) }}>Title</TableCell>
                   {customHeaders && customHeaders}
