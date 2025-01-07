@@ -24,9 +24,7 @@ const JobsGeneral: React.FC = () => {
   const [orderBy, setOrderBy] = useState<string>('run_start');
   const offset = currentPage * rowsPerPage;
   const query = `limit=${rowsPerPage}&offset=${offset}&order_by=${orderBy}&order_direction=${orderDirection}&include_run=true`;
-  const isDev = process.env.REACT_APP_DEV_MODE === 'true';
-  const token = isDev ? null : localStorage.getItem('scigateway:token');
-  const fetchJobs = useFetchJobs(`${fiaApiUrl}/instrument/${selectedInstrument}/jobs`, query, setJobs, token);
+  const fetchJobs = useFetchJobs(`${fiaApiUrl}/instrument/${selectedInstrument}/jobs`, query, setJobs);
   const fetchTotalCount = useFetchTotalCount(`${fiaApiUrl}/instrument/${selectedInstrument}/jobs/count`, setTotalRows);
 
   return (
