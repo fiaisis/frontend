@@ -137,6 +137,10 @@ Opens the Cypress Test Runner. This provides a graphical display for running end
 
 Runs Cypress tests headlessly in the terminal. This is useful for running tests in a CI/CD pipeline (currently there are no e2e spec files so shouldn't do anything).
 
+### `yarn run-frontend`
+
+Builds the frontend and then navigates to the `SciGateway` folder (assuming it's in an adjacent directory) and runs `yarn start` there. Makes testing easier.
+
 ## Learn More
 
 You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
