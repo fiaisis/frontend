@@ -1,6 +1,5 @@
 // React components
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { useParams } from 'react-router-dom';
 
 // Material UI components
 import { Alert, Box, Button, CircularProgress, Snackbar, Tab, Tabs, Typography, useTheme } from '@mui/material';
@@ -12,6 +11,7 @@ interface TabPanelProps {
   children?: React.ReactNode;
   index: number;
   value: number;
+  style?: React.CSSProperties;
 }
 
 const TabPanel = (props: TabPanelProps): JSX.Element => {
@@ -19,7 +19,7 @@ const TabPanel = (props: TabPanelProps): JSX.Element => {
 
   return (
     <div role="tabpanel" hidden={value !== index} id={`tabpanel-${index}`} aria-labelledby={`tab-${index}`} {...other}>
-      {value === index && <Box sx={{ p: 3, height: 'calc(85vh - 48px - 48px - 24px)' }}>{children}</Box>}
+      {value === index && <Box sx={{ p: 3, height: '50vh' }}>{children}</Box>}
     </div>
   );
 };
@@ -31,12 +31,15 @@ const a11yProps = (index: number): { id: string; 'aria-controls': string } => {
   };
 };
 
-const ValueEditor: React.FC = () => {
+interface ValueEditorProps {
+  jobId: number;
+}
+
+const ValueEditor: React.FC<ValueEditorProps> = ({ jobId }) => {
   const theme = useTheme();
   const [value, setValue] = useState<number>(0);
   const [runnerVersion, setRunnerVersion] = useState<string>('');
   const [runners, setRunners] = useState<string[]>([]);
-  const { jobId } = useParams<{ jobId: string }>();
   const [scriptValue, setScriptValue] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
   const rerunSuccessful = useRef<boolean | null>(null);
@@ -153,8 +156,8 @@ const ValueEditor: React.FC = () => {
   };
 
   return (
-    <Box sx={{ width: '100%', height: '85vh', overflow: 'hidden' }}>
-      <Box sx={{ p: 2, backgroundColor: theme.palette.background.default }}>
+    <Box sx={{ width: '100%', height: '70vh', overflow: 'hidden' }}>
+      <Box sx={{ p: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <Snackbar
@@ -241,7 +244,7 @@ const ValueEditor: React.FC = () => {
         {/* Loading state necessary so that page contents don't load before
         scriptValue is set */}
         {loading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
             <CircularProgress />
           </Box>
         ) : (
@@ -252,7 +255,6 @@ const ValueEditor: React.FC = () => {
                 userModified.current = true; // Indicates that the user has modified the script
               }
             }}
-            height="100%"
             defaultLanguage="python"
             value={scriptValue}
             theme={theme.palette.mode === 'dark' ? 'vs-dark' : 'vs-light'}

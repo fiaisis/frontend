@@ -18,6 +18,8 @@ import {
   Select,
   SelectChangeEvent,
   Snackbar,
+  Tabs,
+  Tab,
   Table,
   TableBody,
   TableCell,
@@ -53,6 +55,7 @@ import { CSSObject } from '@mui/system';
 import { instruments } from '../InstrumentData';
 import ConfigSettingsGeneral from '../ConfigSettings/ConfigSettingsGeneral';
 import ConfigSettingsLOQ from '../ConfigSettings/ConfigSettingsLOQ';
+import ValueEditor from '../ValueEditor';
 
 export const headerStyles = (theme: Theme): CSSObject => ({
   color: theme.palette.primary.contrastText,
@@ -187,19 +190,6 @@ const JobsBase: React.FC<JobsBaseProps> = ({
 
   const DATA_VIEWER_URL = process.env.REACT_APP_FIA_DATA_VIEWER_URL;
 
-  const openValueEditor = (jobId: number): void => {
-    const url = `/fia/value-editor/${jobId}`;
-    const windowName = 'ValueEditorWindow';
-    const features = 'width=1200,height=800,resizable=no';
-    window.open(url, windowName, features);
-    ReactGA.event({
-      category: 'Button',
-      action: 'Click',
-      label: 'Value editor button',
-      value: jobId,
-    });
-  };
-
   const openDataViewer = (jobId: number, instrumentName: string, experimentNumber: number, output: string): void => {
     const url = `${DATA_VIEWER_URL}/view/${instrumentName}/${experimentNumber}/${output}`;
     window.open(url, '_blank');
@@ -232,7 +222,12 @@ const JobsBase: React.FC<JobsBaseProps> = ({
     const [open, setOpen] = useState(false);
     const theme = useTheme();
     const [loading, setLoading] = useState(false);
+    const [activeTab, setActiveTab] = useState(0); // State to manage active tab
     const fiaApiUrl = process.env.REACT_APP_FIA_REST_API_URL;
+
+    const handleTabChange = (event: React.SyntheticEvent, newValue: number): void => {
+      setActiveTab(newValue);
+    };
 
     const JobStatus = ({ state }: { state: string }): JSX.Element => {
       const getComponent = (): JSX.Element => {
@@ -534,139 +529,164 @@ const JobsBase: React.FC<JobsBaseProps> = ({
           >
             <Collapse in={open} timeout="auto" unmountOnExit>
               <Box margin={2}>
-                <Typography variant="h6" gutterBottom>
-                  {renderJobStatus()}
-                </Typography>
-                <Grid container spacing={3}>
-                  <Grid size={4}>
-                    <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
-                      {job.state === 'UNSUCCESSFUL' || job.state === 'ERROR'
-                        ? 'Stacktrace output'
-                        : 'Reduction outputs'}
+                <Tabs
+                  value={activeTab}
+                  onChange={handleTabChange}
+                  color="primary"
+                  sx={{
+                    '& .MuiTab-root': {
+                      color: theme.palette.mode === 'dark' ? theme.palette.common.white : undefined,
+                      '&.Mui-selected': {
+                        color: theme.palette.mode === 'dark' ? theme.palette.common.white : undefined,
+                        backgroundColor: theme.palette.mode === 'dark' ? theme.palette.grey[800] : undefined,
+                      },
+                    },
+                  }}
+                >
+                  <Tab label="Reduction details" />
+                  <Tab label="Edit values" />
+                </Tabs>
+                {activeTab === 0 && (
+                  <Box sx={{ padding: 2 }}>
+                    {/* Current content for the row */}
+                    <Typography variant="h6" gutterBottom>
+                      {renderJobStatus()}
                     </Typography>
-                    <Box sx={{ maxHeight: 200, overflowY: 'auto' }}>
-                      {job.state === 'NOT_STARTED' ? (
-                        <Typography variant="body2" style={{ margin: 2 }}>
-                          No output files to show
+                    <Grid container spacing={3}>
+                      <Grid size={4}>
+                        <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
+                          {job.state === 'UNSUCCESSFUL' || job.state === 'ERROR'
+                            ? 'Stacktrace output'
+                            : 'Reduction outputs'}
                         </Typography>
-                      ) : job.state === 'UNSUCCESSFUL' || job.state === 'ERROR' ? (
-                        <Typography variant="body2" style={{ margin: 2, whiteSpace: 'pre-wrap' }}>
-                          {job.stacktrace ? job.stacktrace : 'No detailed stacktrace to show'}
+                        <Box sx={{ maxHeight: 200, overflowY: 'auto' }}>
+                          {job.state === 'NOT_STARTED' ? (
+                            <Typography variant="body2" style={{ margin: 2 }}>
+                              No output files to show
+                            </Typography>
+                          ) : job.state === 'UNSUCCESSFUL' || job.state === 'ERROR' ? (
+                            <Typography variant="body2" style={{ margin: 2, whiteSpace: 'pre-wrap' }}>
+                              {job.stacktrace ? job.stacktrace : 'No detailed stacktrace to show'}
+                            </Typography>
+                          ) : (
+                            <Table size="small" aria-label="details">
+                              <TableBody>{parseJobOutputs()}</TableBody>
+                            </Table>
+                          )}
+                        </Box>
+                      </Grid>
+                      <Grid size={3}>
+                        <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
+                          Run details
                         </Typography>
-                      ) : (
-                        <Table size="small" aria-label="details">
-                          <TableBody>{parseJobOutputs()}</TableBody>
-                        </Table>
-                      )}
-                    </Box>
-                  </Grid>
-                  <Grid size={3}>
-                    <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
-                      Run details
-                    </Typography>
-                    <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
-                      <VpnKey fontSize="small" style={{ marginRight: '8px' }} />
-                      <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
-                        Reduction ID:
-                      </Typography>
-                      <Typography variant="body2">{job.id}</Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
-                      <WorkOutline fontSize="small" style={{ marginRight: '8px' }} />
-                      <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
-                        Job type:
-                      </Typography>
-                      <Typography variant="body2">{job.type ? formatJobType(job.type) : 'N/A'}</Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
-                      <ImageAspectRatio fontSize="small" style={{ marginRight: '8px' }} />
-                      <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
-                        Runner image:
-                      </Typography>
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          maxWidth: '200px',
-                        }}
-                        title={job.runner_image}
-                      >
-                        {job.runner_image ? job.runner_image : 'N/A'}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
-                      <Schema fontSize="small" style={{ marginRight: '8px' }} />
-                      <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
-                        Instrument:
-                      </Typography>
-                      <Typography variant="body2">{job.run?.instrument_name || 'N/A'}</Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
-                      <Schedule fontSize="small" style={{ marginRight: '8px' }} />
-                      <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
-                        Reduction start:
-                      </Typography>
-                      <Typography variant="body2">{job.start ? formatDateTime(job.start) : 'N/A'}</Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
-                      <Schedule fontSize="small" style={{ marginRight: '8px' }} />
-                      <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
-                        Reduction end:
-                      </Typography>
-                      <Typography variant="body2">{job.end ? formatDateTime(job.end) : 'N/A'}</Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
-                      <StackedBarChart fontSize="small" style={{ marginRight: '8px' }} />
-                      <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
-                        Good frames:
-                      </Typography>
-                      <Typography variant="body2">{job.run?.good_frames?.toLocaleString() || 'N/A'}</Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
-                      <StackedBarChart fontSize="small" style={{ marginRight: '8px' }} />
-                      <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
-                        Raw frames:
-                      </Typography>
-                      <Typography variant="body2">{job.run?.raw_frames?.toLocaleString() || 'N/A'}</Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
-                      <People fontSize="small" style={{ marginRight: '8px' }} />
-                      <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
-                        Users:
-                      </Typography>
-                      <Typography variant="body2">{job.run?.users || 'N/A'}</Typography>
-                    </Box>
-                  </Grid>
-                  <Grid size={5}>
-                    <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
-                      Reduction inputs
-                    </Typography>
-                    <Box
-                      sx={{
-                        height: 160,
-                        overflowY: 'auto',
-                        marginBottom: 2,
-                      }}
-                    >
-                      {renderJobInputs()}
-                    </Box>
-                    <Box display="flex" justifyContent="right">
-                      <Button variant="contained" onClick={() => openValueEditor(job.id)}>
-                        Value editor
-                      </Button>
-                      <Button
-                        variant="contained"
-                        sx={{ marginLeft: 2, width: 60, height: 38 }}
-                        disabled={loading}
-                        onClick={handleRerun}
-                      >
-                        {loading ? <CircularProgress size={24} color="inherit" /> : 'Rerun'}
-                      </Button>
-                    </Box>
-                  </Grid>
-                </Grid>
+                        <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
+                          <VpnKey fontSize="small" style={{ marginRight: '8px' }} />
+                          <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
+                            Reduction ID:
+                          </Typography>
+                          <Typography variant="body2">{job.id}</Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
+                          <WorkOutline fontSize="small" style={{ marginRight: '8px' }} />
+                          <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
+                            Job type:
+                          </Typography>
+                          <Typography variant="body2">{job.type ? formatJobType(job.type) : 'N/A'}</Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
+                          <ImageAspectRatio fontSize="small" style={{ marginRight: '8px' }} />
+                          <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
+                            Runner image:
+                          </Typography>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              maxWidth: '200px',
+                            }}
+                            title={job.runner_image}
+                          >
+                            {job.runner_image ? job.runner_image : 'N/A'}
+                          </Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
+                          <Schema fontSize="small" style={{ marginRight: '8px' }} />
+                          <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
+                            Instrument:
+                          </Typography>
+                          <Typography variant="body2">{job.run?.instrument_name || 'N/A'}</Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
+                          <Schedule fontSize="small" style={{ marginRight: '8px' }} />
+                          <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
+                            Reduction start:
+                          </Typography>
+                          <Typography variant="body2">{job.start ? formatDateTime(job.start) : 'N/A'}</Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
+                          <Schedule fontSize="small" style={{ marginRight: '8px' }} />
+                          <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
+                            Reduction end:
+                          </Typography>
+                          <Typography variant="body2">{job.end ? formatDateTime(job.end) : 'N/A'}</Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
+                          <StackedBarChart fontSize="small" style={{ marginRight: '8px' }} />
+                          <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
+                            Good frames:
+                          </Typography>
+                          <Typography variant="body2">{job.run?.good_frames?.toLocaleString() || 'N/A'}</Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
+                          <StackedBarChart fontSize="small" style={{ marginRight: '8px' }} />
+                          <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
+                            Raw frames:
+                          </Typography>
+                          <Typography variant="body2">{job.run?.raw_frames?.toLocaleString() || 'N/A'}</Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
+                          <People fontSize="small" style={{ marginRight: '8px' }} />
+                          <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
+                            Users:
+                          </Typography>
+                          <Typography variant="body2">{job.run?.users || 'N/A'}</Typography>
+                        </Box>
+                      </Grid>
+                      <Grid size={5}>
+                        <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
+                          Reduction inputs
+                        </Typography>
+                        <Box
+                          sx={{
+                            height: 160,
+                            overflowY: 'auto',
+                            marginBottom: 2,
+                          }}
+                        >
+                          {renderJobInputs()}
+                        </Box>
+                        <Box display="flex" justifyContent="right">
+                          <Button
+                            variant="contained"
+                            sx={{ marginLeft: 2, width: 60, height: 38 }}
+                            disabled={loading}
+                            onClick={handleRerun}
+                          >
+                            {loading ? <CircularProgress size={24} color="inherit" /> : 'Rerun'}
+                          </Button>
+                        </Box>
+                      </Grid>
+                    </Grid>
+                  </Box>
+                )}
+                {activeTab === 1 && (
+                  <Box sx={{ width: '100%', overflow: 'hidden' }}>
+                    {/* Integrated ValueEditor */}
+                    <ValueEditor jobId={job.id} />
+                  </Box>
+                )}
               </Box>
             </Collapse>
           </TableCell>
