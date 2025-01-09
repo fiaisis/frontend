@@ -8,13 +8,13 @@ FIA is in the early stages of development and is continuously being worked on.
 
 ### Downloading the code
 
-To get started developing for the frontend, first you will need to have [Node.js](https://nodejs.org/en/download/package-manager) and [Yarn](https://classic.yarnpkg.com/en/docs/install) installed and set-up on your machine. When following the install wizards just keep to default settings. You will then want to clone the [SciGateway](https://github.com/ral-facilities/scigateway) repository. From now on stick to SciGateway's `develop` branch (which is the default) and pull from it regularly to keep up to date with changes.
+To get started developing for the frontend, first you will need to have [Node.js](https://nodejs.org/en/download/package-manager) and [Yarn](https://classic.yarnpkg.com/en/docs/install) installed and set-up on your machine. When following the install wizards just keep to default settings. You will then want to clone the [SciGateway](https://github.com/ral-facilities/scigateway) repository. From now on stick to SciGateway's `release/v2.0.0` branch (worth noting that `develop` is the repository's default branch).
 
 With that done, you can now clone the FIA frontend repository.
 
 ### Setting up FIA as a plugin
 
-The frontend works by building the project and then running it through SciGateway as a plugin. To get started developing locally, you will want to create a `settings.json` file in SciGateway's `public` folder. Do this by simply duplicating [`settings.example.json`](https://github.com/ral-facilities/scigateway/blob/develop/public/settings.example.json), renaming it, then adding FIA as a plugin with what port to listen on:
+The frontend works by building the project and then running it through SciGateway as a plugin. You will want to create a `settings.json` file in SciGateway's `public` folder. Do this by simply duplicating [`settings.example.json`](https://github.com/ral-facilities/scigateway/tree/release/v2.0.0/public/settings.example.json), renaming it, then adding FIA as a plugin with what port to listen on:
 
 ```json
 // settings.json
@@ -28,7 +28,7 @@ The frontend works by building the project and then running it through SciGatewa
 ]
 ```
 
-A `dev-plugin-settings.json` file is also needed in SciGateway's `micro-frontend-tools` folder. Like before, simply duplicate [`dev-plugin-settings.example.json`](https://github.com/ral-facilities/scigateway/blob/develop/micro-frontend-tools/dev-plugin-settings.example.json), rename it, and add the path to the FIA frontend build folder:
+A `dev-plugin-settings.json` file is also needed in SciGateway's `micro-frontend-tools` folder. Like before, simply duplicate [`dev-plugin-settings.example.json`](https://github.com/ral-facilities/scigateway/blob/release/v2.0.0/micro-frontend-tools/dev-plugin-settings.example.json), rename it, and add the path to the FIA frontend build folder:
 
 ```json
 // dev-plugin-settings.json
@@ -95,7 +95,7 @@ To access the websites made by the above containers navigate to http://localhost
 
 ### Container alternative
 
-As an alternative to testing using containers, you can replace the contents of SciGateway's [`res`](https://github.com/ral-facilities/scigateway/tree/develop/public/res) folder with the frontend's [`default.json`](https://github.com/fiaisis/frontend/blob/main/container/default.json) file and [`images`](https://github.com/fiaisis/frontend/tree/main/container/images) folder. This will allow you to see the changes made by running `yarn start`.
+As an alternative to testing using containers, you can replace the contents of SciGateway's [`res`](https://github.com/ral-facilities/scigateway/tree/release/v2.0.0/public/res) folder with the frontend's [`default.json`](https://github.com/fiaisis/frontend/blob/main/container/default.json) file and [`images`](https://github.com/fiaisis/frontend/tree/main/container/images) folder. This will allow you to see the changes made by running `yarn start`.
 
 <span style="color:red">BEWARE:</span> this can give false positives. And do not push changes to SciGateway.
 
@@ -136,6 +136,10 @@ Opens the Cypress Test Runner. This provides a graphical display for running end
 ### `yarn cypress run`
 
 Runs Cypress tests headlessly in the terminal. This is useful for running tests in a CI/CD pipeline (currently there are no e2e spec files so shouldn't do anything).
+
+### `yarn run-frontend`
+
+Builds the frontend and then navigates to the `SciGateway` folder (assuming it's in an adjacent directory) and runs `yarn start` there. Makes testing easier.
 
 ## Learn More
 
