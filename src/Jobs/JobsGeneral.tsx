@@ -11,7 +11,6 @@ import { useTheme } from '@mui/material/styles';
 import JobsBase, { useFetchJobs, useFetchTotalCount, Job } from './JobsBase';
 
 const JobsGeneral: React.FC = () => {
-  const fiaApiUrl = process.env.REACT_APP_FIA_REST_API_URL;
   const { instrumentName } = useParams<{ instrumentName: string }>();
   const history = useHistory();
   const theme = useTheme();
@@ -24,8 +23,8 @@ const JobsGeneral: React.FC = () => {
   const [orderBy, setOrderBy] = useState<string>('run_start');
   const offset = currentPage * rowsPerPage;
   const query = `limit=${rowsPerPage}&offset=${offset}&order_by=${orderBy}&order_direction=${orderDirection}&include_run=true`;
-  const fetchJobs = useFetchJobs(`${fiaApiUrl}/instrument/${selectedInstrument}/jobs`, query, setJobs);
-  const fetchTotalCount = useFetchTotalCount(`${fiaApiUrl}/instrument/${selectedInstrument}/jobs/count`, setTotalRows);
+  const fetchJobs = useFetchJobs(`/instrument/${selectedInstrument}/jobs`, query, setJobs);
+  const fetchTotalCount = useFetchTotalCount(`/instrument/${selectedInstrument}/jobs/count`, setTotalRows);
 
   return (
     <JobsBase
