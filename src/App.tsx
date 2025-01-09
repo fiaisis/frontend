@@ -10,6 +10,7 @@ import JobsGeneral from './Jobs/JobsGeneral';
 import HomePage from './HomePage';
 import ValueEditor from './ValueEditor';
 import GlobalStyles from './GlobalStyles';
+import YourData from './YourData';
 
 // Initialize Google Analytics
 ReactGA.initialize('G-7XJBCP6P75');
@@ -55,6 +56,9 @@ const App: FC = () => {
           </Route>
           <Route path="/value-editor/:jobId">
             <ValueEditor />
+          </Route>
+          <Route path="/your-data/">
+            <YourData />
           </Route>
         </Switch>
       </Router>
