@@ -57,7 +57,7 @@ const App: FC = () => {
           <Route path="/value-editor/:jobId">
             <ValueEditor />
           </Route>
-          <Route path="/your-data/">
+          <Route path="/user-reductions/">
             <YourData />
           </Route>
         </Switch>
