@@ -32,12 +32,14 @@ fiaApi.interceptors.response.use(
   (response) => response,
   (error) => {
     const originalRequest = error.config;
-
+    console.log('hello');
     // Check if the response is a 403 error
     if (error.response?.status === 403) {
       // Prevent multiple refresh requests
+      console.log('error status was 403');
       if (!isFetchingAccessToken) {
         isFetchingAccessToken = true;
+        console.log('fetching access token');
 
         // Request SciGateway to refresh the token
         document.dispatchEvent(
