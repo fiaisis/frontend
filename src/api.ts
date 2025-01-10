@@ -59,6 +59,6 @@ fiaApi.interceptors.response.use(
           else resolve(fiaApi(originalRequest));
         });
       });
-    }
+    } else return Promise.reject(error);
   }
 );
