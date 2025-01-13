@@ -22,6 +22,8 @@ export const clearFailedAuthRequestsQueue = (): void => {
   failedAuthRequestQueue = [];
 };
 
+// We need to configure axios via interceptors because if the access token changes without a refresh the previous will
+// still be used
 fiaApi.interceptors.request.use(async (config) => {
   config.baseURL = process.env.REACT_APP_FIA_REST_API_URL;
   config.headers['Authorization'] = `Bearer ${!isDev ? localStorage.getItem('scigateway:token') : ''}`;
