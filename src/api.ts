@@ -1,9 +1,6 @@
 import axios from 'axios';
 const isDev = process.env.REACT_APP_DEV_MODE === 'true';
-export const fiaApi = axios.create({
-  baseURL: process.env.REACT_APP_FIA_REST_API_URL,
-  headers: { Authorization: `Bearer ${!isDev ? localStorage.getItem('scigateway:token') : ''}` },
-});
+export const fiaApi = axios.create();
 
 let isFetchingAccessToken = false;
 let failedAuthRequestQueue: ((shouldReject?: boolean) => void)[] = [];
@@ -25,9 +22,14 @@ export const clearFailedAuthRequestsQueue = (): void => {
   failedAuthRequestQueue = [];
 };
 
+fiaApi.interceptors.request.use(async (config) => {
+  config.baseURL = process.env.REACT_APP_FIA_REST_API_URL;
+  config.headers['Authorization'] = `Bearer ${!isDev ? localStorage.getItem('scigateway:token') : ''}`;
+  return config;
+});
+
 /* This should be called when SciGateway successfully refreshes the access token - it retries
    all requests that failed due to an invalid token */
-
 fiaApi.interceptors.response.use(
   (response) => response,
   (error) => {
