@@ -10,7 +10,6 @@ import { TableCell } from '@mui/material';
 import JobsBase, { useFetchJobs, useFetchTotalCount, Job, headerStyles } from './JobsBase';
 
 const JobsAll: React.FC = () => {
-  const fiaApiUrl = process.env.REACT_APP_FIA_REST_API_URL;
   const { instrumentName } = useParams<{ instrumentName: string }>();
   const theme = useTheme();
   const history = useHistory();
@@ -23,10 +22,8 @@ const JobsAll: React.FC = () => {
   const [orderBy, setOrderBy] = useState<string>('run_start');
   const offset = currentPage * rowsPerPage;
   const query = `limit=${rowsPerPage}&offset=${offset}&order_by=${orderBy}&order_direction=${orderDirection}&include_run=true`;
-  const isDev = process.env.REACT_APP_DEV_MODE === 'true';
-  const token = isDev ? null : localStorage.getItem('scigateway:token');
-  const fetchJobs = useFetchJobs(`${fiaApiUrl}/jobs`, query, setJobs, token);
-  const fetchTotalCount = useFetchTotalCount(`${fiaApiUrl}/jobs/count`, setTotalRows);
+  const fetchJobs = useFetchJobs(`/jobs`, query, setJobs);
+  const fetchTotalCount = useFetchTotalCount(`/jobs/count`, setTotalRows);
 
   return (
     <JobsBase
