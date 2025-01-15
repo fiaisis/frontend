@@ -39,6 +39,7 @@ const App: FC = () => {
 
   return (
     <GlobalStyles>
+      {/* Ensures SciGateway's style changes are applied to every route  */}
       <Router basename="/fia">
         <Switch>
           <Route exact path="/">
