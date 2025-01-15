@@ -748,6 +748,7 @@ const JobsBase: React.FC<JobsBaseProps> = ({
             <Table stickyHeader>
               <TableHead>
                 <TableRow>
+                  {/* Widths should add up to 100% */}
                   <TableCell sx={{ ...headerStyles(theme), width: '4%' }} colSpan={2}>
                     {selectedInstrument}
                   </TableCell>
