@@ -8,6 +8,8 @@ import { Info } from '@mui/icons-material';
 
 // Monaco components
 import MonacoEditor from '@monaco-editor/react';
+
+// Local components
 import { fiaApi } from '../api';
 
 interface TabPanelProps {
