@@ -10,6 +10,7 @@ import JobsGeneral from './Jobs/JobsGeneral';
 import HomePage from './HomePage';
 import ValueEditor from './ValueEditor';
 import GlobalStyles from './GlobalStyles';
+import { clearFailedAuthRequestsQueue, retryFailedAuthRequests } from './api';
 
 // Initialize Google Analytics
 ReactGA.initialize('G-7XJBCP6P75');
@@ -27,6 +28,12 @@ const App: FC = () => {
     const action = (e as CustomEvent).detail;
     if ('scigateway:api:plugin_rerender'.match(action)) {
       forceUpdate();
+    }
+    if ('scigateway:api:invalidate_token'.match(action)) {
+      retryFailedAuthRequests();
+    }
+    if ('scigateway:api:signout'.match(action)) {
+      clearFailedAuthRequestsQueue();
     }
   }
 

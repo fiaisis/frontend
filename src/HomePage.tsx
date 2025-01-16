@@ -18,18 +18,6 @@ import Decal2DarkImage from './images/decal2-dark.svg';
 import Decal2DarkHCImage from './images/decal2-darkhc.svg';
 import FacilityImage from './images/facility.jpg';
 
-export interface HomePageProps {
-  logo: string;
-  backgroundImage: string;
-  greenSwirl1Image: string;
-  greenSwirl2Image: string;
-  decal1Image: string;
-  decal2Image: string;
-  decal2DarkImage: string;
-  decal2DarkHCImage: string;
-  facilityImage: string;
-}
-
 const backgroundTitleStyles = {
   color: '#FFFFFF',
   margin: 'auto',

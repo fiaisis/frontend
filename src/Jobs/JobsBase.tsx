@@ -53,6 +53,7 @@ import { CSSObject } from '@mui/system';
 import { instruments } from '../InstrumentData';
 import ConfigSettingsGeneral from '../ConfigSettings/ConfigSettingsGeneral';
 import ConfigSettingsLOQ from '../ConfigSettings/ConfigSettingsLOQ';
+import { fiaApi } from '../api';
 
 export const headerStyles = (theme: Theme): CSSObject => ({
   color: theme.palette.primary.contrastText,
@@ -94,39 +95,29 @@ export interface Job {
 }
 
 export const useFetchJobs = (
-  apiUrl: string,
+  apiPath: string,
   queryParams: string,
-  setJobs: React.Dispatch<React.SetStateAction<Job[]>>,
-  token: string | null
+  setJobs: React.Dispatch<React.SetStateAction<Job[]>>
 ): (() => Promise<void>) => {
   return useCallback(async () => {
-    try {
-      const headers: { [key: string]: string } = { 'Content-Type': 'application/json' };
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-      const response = await fetch(`${apiUrl}?${queryParams}`, { method: 'GET', headers });
-      const data = await response.json();
-      setJobs(data);
-    } catch (error) {
-      console.error('Error fetching jobs:', error);
-    }
-  }, [apiUrl, queryParams, token, setJobs]);
+    fiaApi
+      .get(`${apiPath}?${queryParams}`)
+      .then((res) => res.data)
+      .then((jobs) => setJobs(jobs))
+      .catch((err) => console.error('Error fetching jobs:', err));
+  }, [apiPath, queryParams, setJobs]);
 };
 
 export const useFetchTotalCount = (
-  apiUrl: string,
+  apiPath: string,
   setTotalRows: React.Dispatch<React.SetStateAction<number>>
 ): (() => Promise<void>) => {
   return useCallback(async () => {
-    try {
-      const response = await fetch(apiUrl);
-      const data = await response.json();
-      setTotalRows(data.count);
-    } catch (error) {
-      console.error('Error fetching total count:', error);
-    }
-  }, [apiUrl, setTotalRows]);
+    fiaApi
+      .get(apiPath)
+      .then((res) => setTotalRows(res.data.count))
+      .catch((err) => console.error('Error fetching row count', err));
+  }, [apiPath, setTotalRows]);
 };
 
 interface JobsBaseProps {
@@ -232,7 +223,6 @@ const JobsBase: React.FC<JobsBaseProps> = ({
     const [open, setOpen] = useState(false);
     const theme = useTheme();
     const [loading, setLoading] = useState(false);
-    const fiaApiUrl = process.env.REACT_APP_FIA_REST_API_URL;
 
     const JobStatus = ({ state }: { state: string }): JSX.Element => {
       const getComponent = (): JSX.Element => {
@@ -410,40 +400,20 @@ const JobsBase: React.FC<JobsBaseProps> = ({
     const handleRerun = async (): Promise<void> => {
       setLoading(true);
       rerunJobId.current = job.id;
-      try {
-        const isDev = process.env.REACT_APP_DEV_MODE === 'true';
-        const token = isDev ? null : localStorage.getItem('scigateway:token');
-        const headers: { [key: string]: string } = { 'Content-Type': 'application/json' };
-        if (token) {
-          headers['Authorization'] = `Bearer ${token}`;
-        }
-
-        const response = await fetch(`${fiaApiUrl}/job/rerun`, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify({
-            job_id: job.id,
-            runner_image: job.runner_image,
-            script: job.script.value,
-          }),
-        });
-
-        if (!response.ok) {
+      fiaApi
+        .post('/job/rerun', { job_id: job.id, runner_image: job.runner_image, script: job.script.value })
+        .then(() => (rerunSuccessful.current = true))
+        .catch((err) => {
+          console.error('Error rerunning job', err);
           rerunSuccessful.current = false;
-          throw new Error(`Failed to rerun job: ${response.statusText}`);
-        }
-
-        rerunSuccessful.current = true;
-      } catch (error) {
-        console.error('Error rerunning job:', error);
-        rerunSuccessful.current = false;
-      } finally {
-        setTimeout(async () => {
-          setLoading(false);
-          setSnackbarOpen(true);
-          await fetchJobs();
-        }, 2000);
-      }
+        })
+        .finally(() => {
+          setTimeout(() => {
+            setLoading(false);
+            setSnackbarOpen(true);
+            Promise.resolve(fetchJobs());
+          }, 2000);
+        });
     };
 
     const rowStyles = {

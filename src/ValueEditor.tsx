@@ -7,6 +7,7 @@ import { Alert, Box, Button, CircularProgress, Snackbar, Tab, Tabs, Typography, 
 
 // Monaco components
 import Editor from '@monaco-editor/react';
+import { fiaApi } from './api';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -42,66 +43,35 @@ const ValueEditor: React.FC = () => {
   const rerunSuccessful = useRef<boolean | null>(null);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const userModified = useRef(false);
-  const fiaApiUrl = process.env.REACT_APP_FIA_REST_API_URL;
 
   const fetchReduction = useCallback(async (): Promise<void> => {
-    try {
-      setLoading(true);
-      const isDev = process.env.REACT_APP_DEV_MODE === 'true';
-      const token = isDev ? null : localStorage.getItem('scigateway:token');
-      const headers: { [key: string]: string } = { 'Content-Type': 'application/json' };
-
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-      const response = await fetch(`${fiaApiUrl}/job/${jobId}`, {
-        method: 'GET',
-        headers,
-      });
-
-      const data = await response.json();
-
-      // Only set the script value if the user hasn't modified it
-      if (data?.script?.value && !userModified.current) {
-        setScriptValue(data.script.value);
-      }
-    } catch (error) {
-      console.error('Error fetching reductions:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, [fiaApiUrl, jobId]);
+    setLoading(true);
+    fiaApi
+      .get(`/job/${jobId}`)
+      .then((res) => res.data)
+      .then((data) => {
+        if (data?.script?.value && !userModified.current) {
+          setScriptValue(data.script.value);
+        }
+      })
+      .catch((err) => console.error('Error fetching reductions:', err))
+      .finally(() => setLoading(false));
+  }, [jobId]);
 
   useEffect(() => {
     fetchReduction();
   }, [fetchReduction]);
 
   const fetchRunners = useCallback(async (): Promise<void> => {
-    try {
-      const isDev = process.env.REACT_APP_DEV_MODE === 'true';
-      const token = isDev ? null : localStorage.getItem('scigateway:token');
-      const headers: { [key: string]: string } = { 'Content-Type': 'application/json' };
-
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
-      const response = await fetch(`${fiaApiUrl}/jobs/runners`, {
-        method: 'GET',
-        headers,
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch runner versions: ${response.statusText}`);
-      }
-
-      const runners = await response.json();
-      setRunners(runners);
-      setRunnerVersion(runners[0]);
-    } catch (error) {
-      console.error('Error fetching runner versions:', error);
-    }
-  }, [fiaApiUrl]);
+    fiaApi
+      .get('/jobs/runners')
+      .then((res) => res.data)
+      .then((data) => {
+        setRunners(data);
+        setRunnerVersion(data[0]);
+      })
+      .catch((err) => console.error('Failed to fetch runner versions:', err));
+  }, []);
 
   useEffect(() => {
     fetchRunners();
@@ -117,39 +87,20 @@ const ValueEditor: React.FC = () => {
 
   const handleRerun = async (): Promise<void> => {
     setLoading(true);
-    try {
-      const runnerImage = `ghcr.io/fiaisis/mantid:${runnerVersion}`;
-      const isDev = process.env.REACT_APP_DEV_MODE === 'true';
-      const token = isDev ? null : localStorage.getItem('scigateway:token');
-      const headers: { [key: string]: string } = { 'Content-Type': 'application/json' };
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
-      const response = await fetch(`${fiaApiUrl}/job/rerun`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          job_id: jobId,
-          runner_image: runnerImage,
-          script: scriptValue,
-        }),
+    const runnerImage = `ghcr.io/fiaisis/mantid:${runnerVersion}`;
+    fiaApi
+      .post('/job/rerun', { job_id: jobId, runner_image: runnerImage, script: scriptValue })
+      .then(() => (rerunSuccessful.current = true))
+      .catch((err) => {
+        console.error('Failed to rerun job:', err);
+        rerunSuccessful.current = false;
+      })
+      .finally(() => {
+        setTimeout(() => {
+          setLoading(false);
+          setSnackbarOpen(true);
+        }, 2000);
       });
-
-      if (!response.ok) {
-        throw new Error(`Failed to rerun job: ${response.statusText}`);
-      }
-
-      rerunSuccessful.current = true;
-    } catch (error) {
-      console.error('Error rerunning job:', error);
-      rerunSuccessful.current = false;
-    } finally {
-      setTimeout(() => {
-        setLoading(false);
-        setSnackbarOpen(true);
-      }, 2000);
-    }
   };
 
   return (

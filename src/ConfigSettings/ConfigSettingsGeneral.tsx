@@ -9,7 +9,8 @@ import { Info } from '@mui/icons-material';
 // Monaco components
 import MonacoEditor from '@monaco-editor/react';
 
-const fiaApiUrl = process.env.REACT_APP_FIA_REST_API_URL;
+// Local components
+import { fiaApi } from '../api';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -50,38 +51,20 @@ const ConfigSettingsGeneral: React.FC<ConfigSettingsGeneralProps> = ({ children,
   // Fetch the current specification and set the reduction status
   useEffect(() => {
     const fetchSpecification = async (): Promise<void> => {
-      try {
-        const isDev = process.env.REACT_APP_DEV_MODE === 'true';
-        const token = isDev ? null : localStorage.getItem('scigateway:token');
-        const headers: { [key: string]: string } = { 'Content-Type': 'application/json' };
-        if (token) {
-          headers['Authorization'] = `Bearer ${token}`;
-        }
+      fiaApi
+        .get(`/instrument/${instrumentName}/specification`)
+        .then((res) => res.data)
+        .then((data) => {
+          const { enabled, ...filteredData } = data;
+          // Set the reduction status button on/off based on the "enabled" field
+          setReductionStatus(enabled ? 'ON' : 'OFF');
+          setEnabledStatus(enabled);
 
-        const response = await fetch(`${fiaApiUrl}/instrument/${instrumentName}/specification`, {
-          method: 'GET',
-          headers,
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch specification');
-        }
-
-        const data = await response.json();
-
-        // Exclude the "enabled" key from the JSON -- gets added later when settings applied
-        const { enabled, ...filteredData } = data;
-
-        // Set the reduction status button on/off based on the "enabled" field
-        setReductionStatus(enabled ? 'ON' : 'OFF');
-        setEnabledStatus(enabled);
-
-        const specJson = JSON.stringify(filteredData, null, 2);
-        setJsonContent(specJson);
-        syncFormWithJson(specJson);
-      } catch (error) {
-        console.error('Error fetching specification:', error);
-      }
+          const specJson = JSON.stringify(filteredData, null, 2);
+          setJsonContent(specJson);
+          syncFormWithJson(specJson);
+        })
+        .catch((err) => console.error('failed to  fetch specification', err));
     };
 
     if (instrumentName) {
@@ -142,40 +125,25 @@ const ConfigSettingsGeneral: React.FC<ConfigSettingsGeneralProps> = ({ children,
   };
 
   const handleApplySettings = async (): Promise<void> => {
-    try {
-      // Parse the current JSON content and add the missing "enabled" field
-      const updatedJsonContent = {
-        ...JSON.parse(jsonContent),
-        enabled: enabledStatus ? true : false,
-      };
+    // Parse the current JSON content and add the missing "enabled" field
+    const updatedJsonContent = {
+      ...JSON.parse(jsonContent),
+      enabled: enabledStatus,
+    };
 
-      // Convert the final JSON content to a string for the request body
-      const finalJsonContent = JSON.stringify(updatedJsonContent, null, 2);
-
-      // Send a PUT request to update the instrument specification
-      const response = await fetch(`${fiaApiUrl}/instrument/${instrumentName}/specification`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('scigateway:token')}`,
-        },
-        body: finalJsonContent,
+    fiaApi
+      .put(`/instrument/${instrumentName}/specification`, updatedJsonContent)
+      .then(() => {
+        if (onFileUpload) {
+          Promise.resolve(onFileUpload);
+        }
+        setApplyMessage('Changes applied successfully');
+        setUnsavedChanges(false);
+      })
+      .catch((err) => {
+        console.error('Failed to update specification', err);
+        setApplyMessage('Error applying spec changes');
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to update the specification');
-      }
-
-      if (onFileUpload) {
-        await onFileUpload();
-      }
-
-      setApplyMessage('Changes applied successfully');
-      setUnsavedChanges(false);
-    } catch (error) {
-      setApplyMessage('Error applying spec changes');
-      console.error('Error applying spec changes:', error);
-    }
   };
 
   return (
