@@ -33,7 +33,7 @@ fiaApi.interceptors.request.use(async (config) => {
 });
 
 // This should be called when SciGateway successfully refreshes the access token - it retries
-//    all requests that failed due to an invalid token
+// all requests that failed due to an invalid token
 fiaApi.interceptors.response.use(
   (response) => response,
   (error) => {
