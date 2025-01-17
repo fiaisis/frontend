@@ -1,10 +1,10 @@
 // React components
 import React, { useState } from 'react';
-import { Link, useHistory, useParams } from 'react-router-dom';
+import { useHistory, useParams } from 'react-router-dom';
 
 // Material UI components
 import { useTheme } from '@mui/material/styles';
-import { TableCell } from '@mui/material';
+import { TableCell, Link } from '@mui/material';
 
 // Local data
 import JobsBase, { useFetchJobs, useFetchTotalCount, Job, headerStyles } from './JobsBase';
@@ -55,10 +55,13 @@ const JobsAll: React.FC = () => {
         <TableCell sx={{ width: '10%' }}>
           {job.run?.instrument_name ? (
             <Link
-              to={`/reduction-history/${job.run.instrument_name}`}
-              style={{
+              href={`/reduction-history/${job.run.instrument_name}`}
+              sx={{
                 color: theme.palette.mode === 'dark' ? '#86b4ff' : theme.palette.primary.main,
                 textDecoration: 'none',
+                '&:hover': {
+                  textDecoration: 'underline',
+                },
               }}
             >
               {job.run.instrument_name}
