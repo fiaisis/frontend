@@ -363,13 +363,17 @@ const JobsBase: React.FC<JobsBaseProps> = ({
             variant="body2"
             sx={{
               fontWeight: 'bold',
-              marginRight: '4px',
+              marginRight: '16px',
               whiteSpace: 'nowrap', // Stops the key from wrapping
             }}
           >
             {key}:
           </Typography>
-          <Typography variant="body2" sx={{ flex: '1 1 auto' }}>
+          <Typography
+            variant="body2"
+            title={String(value)}
+            sx={{ flex: '1 1 auto', ...ellipsisWrap, maxWidth: `calc(${ellipsisWrap.maxWidth} + 300px)` }}
+          >
             {value}
           </Typography>
         </Box>
@@ -474,13 +478,45 @@ const JobsBase: React.FC<JobsBaseProps> = ({
       whiteSpace: 'nowrap',
       overflow: 'hidden',
       textOverflow: 'ellipsis',
-      maxWidth: '250px',
+      maxWidth: '200px',
     };
 
     const formatJobType = (jobType: string): string => {
       const formattedType = jobType.replace('JobType.', '');
       return formattedType.charAt(0).toUpperCase() + formattedType.slice(1).toLowerCase();
     };
+
+    const runDetails = [
+      { icon: <VpnKey fontSize="small" />, label: 'Reduction ID:', value: job.id },
+      { icon: <WorkOutline fontSize="small" />, label: 'Job type:', value: job.type ? formatJobType(job.type) : 'N/A' },
+      {
+        icon: <ImageAspectRatio fontSize="small" />,
+        label: 'Runner image:',
+        value: job.runner_image || 'N/A',
+      },
+      { icon: <Schema fontSize="small" />, label: 'Instrument:', value: job.run?.instrument_name || 'N/A' },
+      {
+        icon: <Schedule fontSize="small" />,
+        label: 'Reduction start:',
+        value: formatDateTime(job.start) || 'N/A',
+      },
+      {
+        icon: <Schedule fontSize="small" />,
+        label: 'Reduction end:',
+        value: formatDateTime(job.end) || 'N/A',
+      },
+      {
+        icon: <StackedBarChart fontSize="small" />,
+        label: 'Good frames:',
+        value: job.run?.good_frames?.toLocaleString() || 'N/A',
+      },
+      {
+        icon: <StackedBarChart fontSize="small" />,
+        label: 'Raw frames:',
+        value: job.run?.raw_frames?.toLocaleString() || 'N/A',
+      },
+      { icon: <People fontSize="small" />, label: 'Users:', value: job.run?.users || 'N/A' },
+    ];
 
     return (
       <>
@@ -569,14 +605,14 @@ const JobsBase: React.FC<JobsBaseProps> = ({
               ...ellipsisWrap,
             }}
           >
-            {job.start ? formatDateTime(job.start) : 'N/A'}
+            {formatDateTime(job.start) || 'N/A'}
           </TableCell>
           <TableCell
             sx={{
               ...ellipsisWrap,
             }}
           >
-            {job.end ? formatDateTime(job.end) : 'N/A'}
+            {formatDateTime(job.end) || 'N/A'}
           </TableCell>
           <TableCell
             sx={{
@@ -625,87 +661,25 @@ const JobsBase: React.FC<JobsBaseProps> = ({
                     <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
                       Run details
                     </Typography>
-                    <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
-                      <VpnKey fontSize="small" style={{ marginRight: '8px' }} />
-                      <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
-                        Reduction ID:
-                      </Typography>
-                      <Typography variant="body2" sx={{ ...ellipsisWrap }}>
-                        {job.id}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
-                      <WorkOutline fontSize="small" style={{ marginRight: '8px' }} />
-                      <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
-                        Job type:
-                      </Typography>
-                      <Typography variant="body2" sx={{ ...ellipsisWrap }}>
-                        {job.type ? formatJobType(job.type) : 'N/A'}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
-                      <ImageAspectRatio fontSize="small" style={{ marginRight: '8px' }} />
-                      <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
-                        Runner image:
-                      </Typography>
-                      <Typography variant="body2" sx={{ ...ellipsisWrap }} title={job.runner_image}>
-                        {job.runner_image || 'N/A'}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
-                      <Schema fontSize="small" style={{ marginRight: '8px' }} />
-                      <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
-                        Instrument:
-                      </Typography>
-                      <Typography variant="body2" sx={{ ...ellipsisWrap }}>
-                        {job.run?.instrument_name || 'N/A'}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
-                      <Schedule fontSize="small" style={{ marginRight: '8px' }} />
-                      <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
-                        Reduction start:
-                      </Typography>
-                      <Typography variant="body2" sx={{ ...ellipsisWrap }}>
-                        {job.start ? formatDateTime(job.start) : 'N/A'}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
-                      <Schedule fontSize="small" style={{ marginRight: '8px' }} />
-                      <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
-                        Reduction end:
-                      </Typography>
-                      <Typography variant="body2" sx={{ ...ellipsisWrap }}>
-                        {job.end ? formatDateTime(job.end) : 'N/A'}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
-                      <StackedBarChart fontSize="small" style={{ marginRight: '8px' }} />
-                      <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
-                        Good frames:
-                      </Typography>
-                      <Typography variant="body2" sx={{ ...ellipsisWrap }}>
-                        {job.run?.good_frames?.toLocaleString() || 'N/A'}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
-                      <StackedBarChart fontSize="small" style={{ marginRight: '8px' }} />
-                      <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
-                        Raw frames:
-                      </Typography>
-                      <Typography variant="body2" sx={{ ...ellipsisWrap }}>
-                        {job.run?.raw_frames?.toLocaleString() || 'N/A'}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
-                      <People fontSize="small" style={{ marginRight: '8px' }} />
-                      <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
-                        Users:
-                      </Typography>
-                      <Typography variant="body2" sx={{ ...ellipsisWrap }}>
-                        {job.run?.users || 'N/A'}
-                      </Typography>
-                    </Box>
+                    {runDetails.map(({ icon, label, value }, index) => (
+                      <Box
+                        key={index}
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 1,
+                          marginBottom: '4px',
+                        }}
+                      >
+                        {React.cloneElement(icon, { sx: { mr: 1, flexShrink: 0 } })}
+                        <Typography variant="body2" sx={{ fontWeight: 'bold', mr: 1, display: 'inline' }}>
+                          {label}
+                        </Typography>
+                        <Typography variant="body2" sx={{ ...ellipsisWrap, display: 'inline' }} title={String(value)}>
+                          {value}
+                        </Typography>
+                      </Box>
+                    ))}
                   </Grid>
                   <Grid size={5}>
                     <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
