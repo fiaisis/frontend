@@ -17,7 +17,7 @@ const JobsAll: React.FC = () => {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [totalRows, setTotalRows] = useState(0);
   const [currentPage, setCurrentPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [rowsPerPage, setRowsPerPage] = useState(25);
   const [orderDirection, setOrderDirection] = useState<'asc' | 'desc'>('desc');
   const [selectedInstrument, setSelectedInstrument] = useState(instrumentName || 'ALL');
   const [orderBy, setOrderBy] = useState<string>('run_start');
