@@ -291,10 +291,8 @@ const JobsBase: React.FC<JobsBaseProps> = ({
                       <Typography
                         variant="body2"
                         sx={{
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                          maxWidth: '240px',
+                          ...ellipsisWrap,
+                          maxWidth: `calc(${ellipsisWrap.maxWidth} + 60px)`,
                         }}
                         title={output}
                       >
