@@ -281,10 +281,8 @@ const JobsBase: React.FC<JobsBaseProps> = ({
                       <Typography
                         variant="body2"
                         sx={{
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                          maxWidth: '240px',
+                          ...ellipsisWrap,
+                          maxWidth: `calc(${ellipsisWrap.maxWidth} + 60px)`,
                         }}
                         title={output}
                       >
@@ -353,13 +351,17 @@ const JobsBase: React.FC<JobsBaseProps> = ({
             variant="body2"
             sx={{
               fontWeight: 'bold',
-              marginRight: '4px',
+              marginRight: '16px',
               whiteSpace: 'nowrap', // Stops the key from wrapping
             }}
           >
             {key}:
           </Typography>
-          <Typography variant="body2" sx={{ flex: '1 1 auto' }}>
+          <Typography
+            variant="body2"
+            title={String(value)}
+            sx={{ flex: '1 1 auto', ...ellipsisWrap, maxWidth: `calc(${ellipsisWrap.maxWidth} + 300px)` }}
+          >
             {value}
           </Typography>
         </Box>
@@ -416,7 +418,7 @@ const JobsBase: React.FC<JobsBaseProps> = ({
         });
     };
 
-    const rowStyles = {
+    const bandedRows = {
       backgroundColor:
         index % 2 === 0
           ? theme.palette.mode === 'light'
@@ -427,7 +429,7 @@ const JobsBase: React.FC<JobsBaseProps> = ({
           : theme.palette.background.default, // Odd rows (default background color)
     };
 
-    const hoverStyles = (theme: Theme, index: number): React.CSSProperties => {
+    const bandedRowsHover = (theme: Theme, index: number): React.CSSProperties => {
       return {
         backgroundColor:
           theme.palette.mode === 'light'
@@ -440,10 +442,49 @@ const JobsBase: React.FC<JobsBaseProps> = ({
       };
     };
 
+    const ellipsisWrap = {
+      whiteSpace: 'nowrap',
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
+      maxWidth: '200px',
+    };
+
     const formatJobType = (jobType: string): string => {
       const formattedType = jobType.replace('JobType.', '');
       return formattedType.charAt(0).toUpperCase() + formattedType.slice(1).toLowerCase();
     };
+
+    const runDetails = [
+      { icon: <VpnKey fontSize="small" />, label: 'Reduction ID:', value: job.id },
+      { icon: <WorkOutline fontSize="small" />, label: 'Job type:', value: job.type ? formatJobType(job.type) : 'N/A' },
+      {
+        icon: <ImageAspectRatio fontSize="small" />,
+        label: 'Runner image:',
+        value: job.runner_image || 'N/A',
+      },
+      { icon: <Schema fontSize="small" />, label: 'Instrument:', value: job.run?.instrument_name || 'N/A' },
+      {
+        icon: <Schedule fontSize="small" />,
+        label: 'Reduction start:',
+        value: formatDateTime(job.start) || 'N/A',
+      },
+      {
+        icon: <Schedule fontSize="small" />,
+        label: 'Reduction end:',
+        value: formatDateTime(job.end) || 'N/A',
+      },
+      {
+        icon: <StackedBarChart fontSize="small" />,
+        label: 'Good frames:',
+        value: job.run?.good_frames?.toLocaleString() || 'N/A',
+      },
+      {
+        icon: <StackedBarChart fontSize="small" />,
+        label: 'Raw frames:',
+        value: job.run?.raw_frames?.toLocaleString() || 'N/A',
+      },
+      { icon: <People fontSize="small" />, label: 'Users:', value: job.run?.users || 'N/A' },
+    ];
 
     return (
       <>
@@ -479,28 +520,82 @@ const JobsBase: React.FC<JobsBaseProps> = ({
           </Alert>
         </Snackbar>
 
-        <TableRow sx={{ ...rowStyles, '&:hover': hoverStyles(theme, index) }} onClick={() => setOpen(!open)}>
-          <TableCell sx={{ width: '4%' }}>
+        <TableRow
+          sx={{
+            ...bandedRows,
+            height: '50px',
+            '&:hover': bandedRowsHover(theme, index),
+          }}
+          onClick={() => setOpen(!open)}
+        >
+          <TableCell>
             <IconButton aria-label="expand row" size="small">
               {open ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
             </IconButton>
           </TableCell>
-          <TableCell sx={{ width: '4%' }}>
+          <TableCell
+            sx={{
+              ...ellipsisWrap,
+            }}
+          >
             <JobStatus state={job.state} />
           </TableCell>
-          <TableCell sx={{ width: '12%' }}>{job.run?.experiment_number || 'N/A'}</TableCell>
-          <TableCell sx={{ width: '10%' }}>{extractFileName(job.run?.filename || 'N/A')}</TableCell>
-          <TableCell sx={{ width: '15%' }}>{formatDateTime(job.run?.run_start || 'N/A')}</TableCell>
-          <TableCell sx={{ width: '15%' }}>{formatDateTime(job.run?.run_end || 'N/A')}</TableCell>
-          <TableCell sx={{ width: '15%' }}>{job.start ? formatDateTime(job.start) : 'N/A'}</TableCell>
-          <TableCell sx={{ width: '15%' }}>{job.end ? formatDateTime(job.end) : 'N/A'}</TableCell>
-          <TableCell sx={{ width: '32%' }}>{job.run?.title || 'N/A'}</TableCell>
+          <TableCell
+            sx={{
+              ...ellipsisWrap,
+            }}
+          >
+            {job.run?.experiment_number || 'N/A'}
+          </TableCell>
+          <TableCell
+            sx={{
+              ...ellipsisWrap,
+            }}
+          >
+            {extractFileName(job.run?.filename || 'N/A')}
+          </TableCell>
+          <TableCell
+            sx={{
+              ...ellipsisWrap,
+            }}
+          >
+            {formatDateTime(job.run?.run_start || 'N/A')}
+          </TableCell>
+          <TableCell
+            sx={{
+              ...ellipsisWrap,
+            }}
+          >
+            {formatDateTime(job.run?.run_end || 'N/A')}
+          </TableCell>
+          <TableCell
+            sx={{
+              ...ellipsisWrap,
+            }}
+          >
+            {formatDateTime(job.start) || 'N/A'}
+          </TableCell>
+          <TableCell
+            sx={{
+              ...ellipsisWrap,
+            }}
+          >
+            {formatDateTime(job.end) || 'N/A'}
+          </TableCell>
+          <TableCell
+            sx={{
+              ...ellipsisWrap,
+            }}
+          >
+            {job.run?.title || 'N/A'}
+          </TableCell>
           {customRowCells && customRowCells(job)}
         </TableRow>
+
         <TableRow>
           <TableCell
             colSpan={totalColumnCount}
-            style={{ paddingBottom: 0, paddingTop: 0, backgroundColor: rowStyles.backgroundColor }}
+            style={{ paddingBottom: 0, paddingTop: 0, backgroundColor: bandedRows.backgroundColor }}
           >
             <Collapse in={open} timeout="auto" unmountOnExit>
               <Box margin={2}>
@@ -534,80 +629,25 @@ const JobsBase: React.FC<JobsBaseProps> = ({
                     <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
                       Run details
                     </Typography>
-                    <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
-                      <VpnKey fontSize="small" style={{ marginRight: '8px' }} />
-                      <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
-                        Reduction ID:
-                      </Typography>
-                      <Typography variant="body2">{job.id}</Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
-                      <WorkOutline fontSize="small" style={{ marginRight: '8px' }} />
-                      <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
-                        Job type:
-                      </Typography>
-                      <Typography variant="body2">{job.type ? formatJobType(job.type) : 'N/A'}</Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
-                      <ImageAspectRatio fontSize="small" style={{ marginRight: '8px' }} />
-                      <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
-                        Runner image:
-                      </Typography>
-                      <Typography
-                        variant="body2"
+                    {runDetails.map(({ icon, label, value }, index) => (
+                      <Box
+                        key={index}
                         sx={{
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          maxWidth: '200px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 1,
+                          marginBottom: '4px',
                         }}
-                        title={job.runner_image}
                       >
-                        {job.runner_image ? job.runner_image : 'N/A'}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
-                      <Schema fontSize="small" style={{ marginRight: '8px' }} />
-                      <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
-                        Instrument:
-                      </Typography>
-                      <Typography variant="body2">{job.run?.instrument_name || 'N/A'}</Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
-                      <Schedule fontSize="small" style={{ marginRight: '8px' }} />
-                      <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
-                        Reduction start:
-                      </Typography>
-                      <Typography variant="body2">{job.start ? formatDateTime(job.start) : 'N/A'}</Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
-                      <Schedule fontSize="small" style={{ marginRight: '8px' }} />
-                      <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
-                        Reduction end:
-                      </Typography>
-                      <Typography variant="body2">{job.end ? formatDateTime(job.end) : 'N/A'}</Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
-                      <StackedBarChart fontSize="small" style={{ marginRight: '8px' }} />
-                      <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
-                        Good frames:
-                      </Typography>
-                      <Typography variant="body2">{job.run?.good_frames?.toLocaleString() || 'N/A'}</Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
-                      <StackedBarChart fontSize="small" style={{ marginRight: '8px' }} />
-                      <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
-                        Raw frames:
-                      </Typography>
-                      <Typography variant="body2">{job.run?.raw_frames?.toLocaleString() || 'N/A'}</Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
-                      <People fontSize="small" style={{ marginRight: '8px' }} />
-                      <Typography variant="body2" sx={{ fontWeight: 'bold', marginRight: '4px' }}>
-                        Users:
-                      </Typography>
-                      <Typography variant="body2">{job.run?.users || 'N/A'}</Typography>
-                    </Box>
+                        {React.cloneElement(icon, { sx: { mr: 1, flexShrink: 0 } })}
+                        <Typography variant="body2" sx={{ fontWeight: 'bold', mr: 1, display: 'inline' }}>
+                          {label}
+                        </Typography>
+                        <Typography variant="body2" sx={{ ...ellipsisWrap, display: 'inline' }} title={String(value)}>
+                          {value}
+                        </Typography>
+                      </Box>
+                    ))}
                   </Grid>
                   <Grid size={5}>
                     <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
@@ -715,10 +755,10 @@ const JobsBase: React.FC<JobsBaseProps> = ({
             onRowsPerPageChange={handleChangeRowsPerPage}
           />
           <TableContainer component={Paper} style={{ maxHeight, overflowY: 'scroll' }}>
-            <Table stickyHeader>
+            <Table stickyHeader sx={{ tableLayout: 'fixed', width: '100%' }}>
               <TableHead>
                 <TableRow>
-                  <TableCell sx={{ ...headerStyles(theme), width: '4%' }} colSpan={2}>
+                  <TableCell sx={{ ...headerStyles(theme), width: '10%' }} colSpan={2}>
                     {selectedInstrument}
                   </TableCell>
                   <TableCell
@@ -727,22 +767,22 @@ const JobsBase: React.FC<JobsBaseProps> = ({
                   >
                     Experiment number {orderBy === 'experiment_number' ? (orderDirection === 'asc' ? '↑' : '↓') : ''}
                   </TableCell>
-                  <TableCell sx={{ width: '10%', ...headerStyles(theme) }} onClick={() => handleSort('filename')}>
+                  <TableCell sx={{ width: '8%', ...headerStyles(theme) }} onClick={() => handleSort('filename')}>
                     Filename {orderBy === 'filename' ? (orderDirection === 'asc' ? '↑' : '↓') : ''}
                   </TableCell>
-                  <TableCell sx={{ width: '15%', ...headerStyles(theme) }} onClick={() => handleSort('run_start')}>
+                  <TableCell sx={{ width: '12%', ...headerStyles(theme) }} onClick={() => handleSort('run_start')}>
                     Run start {orderBy === 'run_start' ? (orderDirection === 'asc' ? '↑' : '↓') : ''}
                   </TableCell>
-                  <TableCell sx={{ width: '15%', ...headerStyles(theme) }} onClick={() => handleSort('run_end')}>
+                  <TableCell sx={{ width: '12%', ...headerStyles(theme) }} onClick={() => handleSort('run_end')}>
                     Run end {orderBy === 'run_end' ? (orderDirection === 'asc' ? '↑' : '↓') : ''}
                   </TableCell>
-                  <TableCell sx={{ width: '15%', ...headerStyles(theme) }} onClick={() => handleSort('start')}>
+                  <TableCell sx={{ width: '12%', ...headerStyles(theme) }} onClick={() => handleSort('start')}>
                     Job start {orderBy === 'start' ? (orderDirection === 'asc' ? '↑' : '↓') : ''}
                   </TableCell>
-                  <TableCell sx={{ width: '15%', ...headerStyles(theme) }} onClick={() => handleSort('end')}>
+                  <TableCell sx={{ width: '12%', ...headerStyles(theme) }} onClick={() => handleSort('end')}>
                     Job end {orderBy === 'end' ? (orderDirection === 'asc' ? '↑' : '↓') : ''}
                   </TableCell>
-                  <TableCell sx={{ width: '32%', ...headerStyles(theme) }}>Title</TableCell>
+                  <TableCell sx={{ width: '24%', ...headerStyles(theme) }}>Title</TableCell>
                   {customHeaders && customHeaders}
                 </TableRow>
               </TableHead>

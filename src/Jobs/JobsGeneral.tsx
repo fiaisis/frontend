@@ -18,7 +18,7 @@ const JobsGeneral: React.FC = () => {
   const [totalRows, setTotalRows] = useState(0);
   const [selectedInstrument, setSelectedInstrument] = useState(instrumentName);
   const [currentPage, setCurrentPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [rowsPerPage, setRowsPerPage] = useState(25);
   const [orderDirection, setOrderDirection] = useState<'asc' | 'desc'>('desc');
   const [orderBy, setOrderBy] = useState<string>('run_start');
   const offset = currentPage * rowsPerPage;
