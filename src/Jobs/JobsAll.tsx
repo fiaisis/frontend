@@ -6,22 +6,35 @@ import { useHistory, useParams, Link } from 'react-router-dom';
 import { useTheme } from '@mui/material/styles';
 import { TableCell } from '@mui/material';
 
-// Local data
+// Local data and utilities
 import JobsBase, { useFetchJobs, useFetchTotalCount, Job, headerStyles } from './JobsBase';
 
 const JobsAll: React.FC = () => {
+  // Extract instrument name from URL parameters
   const { instrumentName } = useParams<{ instrumentName: string }>();
+
+  // Retrieve the current theme for styling
   const theme = useTheme();
+
+  // Hook for handling navigation within the app
   const history = useHistory();
-  const [jobs, setJobs] = useState<Job[]>([]);
-  const [totalRows, setTotalRows] = useState(0);
-  const [currentPage, setCurrentPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(25);
-  const [orderDirection, setOrderDirection] = useState<'asc' | 'desc'>('desc');
-  const [selectedInstrument, setSelectedInstrument] = useState(instrumentName || 'ALL');
-  const [orderBy, setOrderBy] = useState<string>('run_start');
+
+  // State variables for job data and table pagination
+  const [jobs, setJobs] = useState<Job[]>([]); // Stores fetched job data
+  const [totalRows, setTotalRows] = useState(0); // Stores total number of job entries
+  const [currentPage, setCurrentPage] = useState(0); // Current page in pagination
+  const [rowsPerPage, setRowsPerPage] = useState(25); // Number of rows displayed per page
+  const [orderDirection, setOrderDirection] = useState<'asc' | 'desc'>('desc'); // Sorting order (ascending/descending)
+  const [selectedInstrument, setSelectedInstrument] = useState(instrumentName || 'ALL'); // Selected instrument filter
+  const [orderBy, setOrderBy] = useState<string>('run_start'); // Column to sort by
+
+  // Calculate the offset for API query based on current page
   const offset = currentPage * rowsPerPage;
+
+  // Construct API query string with pagination and sorting parameters
   const query = `limit=${rowsPerPage}&offset=${offset}&order_by=${orderBy}&order_direction=${orderDirection}&include_run=true`;
+
+  // Fetch job data and total count using custom hooks
   const fetchJobs = useFetchJobs(`/jobs`, query, setJobs);
   const fetchTotalCount = useFetchTotalCount(`/jobs/count`, setTotalRows);
 
@@ -32,25 +45,27 @@ const JobsAll: React.FC = () => {
         const newInstrument = event.target.value;
         setSelectedInstrument(newInstrument);
         setCurrentPage(0);
-        history.push(`/reduction-history/${newInstrument}`);
+        history.push(`/reduction-history/${newInstrument}`); // Navigate to selected instrument's history
       }}
       jobs={jobs}
       totalRows={totalRows}
       currentPage={currentPage}
       rowsPerPage={rowsPerPage}
-      handleChangePage={(_, newPage) => setCurrentPage(newPage)}
-      handleChangeRowsPerPage={(e) => setRowsPerPage(parseInt(e.target.value, 10))}
+      handleChangePage={(_, newPage) => setCurrentPage(newPage)} // Update page number
+      handleChangeRowsPerPage={(e) => setRowsPerPage(parseInt(e.target.value, 10))} // Update rows per page
       handleSort={(property) => {
         const isAsc = orderBy === property && orderDirection === 'asc';
-        setOrderDirection(isAsc ? 'desc' : 'asc');
+        setOrderDirection(isAsc ? 'desc' : 'asc'); // Toggle sorting order
         setOrderBy(property);
-        setCurrentPage(0);
+        setCurrentPage(0); // Reset to first page after sorting
       }}
       orderBy={orderBy}
       orderDirection={orderDirection}
       fetchJobs={fetchJobs}
       fetchTotalCount={fetchTotalCount}
+      // Custom table header for instrument column
       customHeaders={<TableCell sx={{ width: '10%', ...headerStyles(theme) }}>Instrument</TableCell>}
+      // Custom rendering of job row cells for instrument name with a clickable link
       customRowCells={(job: Job) => (
         <TableCell sx={{ width: '10%' }}>
           {job.run?.instrument_name ? (
@@ -60,17 +75,17 @@ const JobsAll: React.FC = () => {
                 color: theme.palette.mode === 'dark' ? '#86b4ff' : theme.palette.primary.main,
                 textDecoration: 'none',
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.textDecoration = 'underline')}
-              onMouseLeave={(e) => (e.currentTarget.style.textDecoration = 'none')}
+              onMouseEnter={(e) => (e.currentTarget.style.textDecoration = 'underline')} // Underline on hover
+              onMouseLeave={(e) => (e.currentTarget.style.textDecoration = 'none')} // Remove underline on hover out
             >
               {job.run.instrument_name}
             </Link>
           ) : (
-            'Unknown'
+            'Unknown' // Display 'Unknown' if no instrument name exists
           )}
         </TableCell>
       )}
-      maxHeight={650}
+      maxHeight={650} // Limit table height
     />
   );
 };

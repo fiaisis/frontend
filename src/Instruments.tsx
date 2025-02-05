@@ -13,9 +13,12 @@ import { instruments } from './InstrumentData';
 
 const Instruments: React.FC = () => {
   const theme = useTheme();
+  // State for tracking expanded instruments
   const [expandedIds, setExpandedIds] = React.useState<number[]>([]);
+  // State for tracking favorite instruments
   const [favoriteIds, setFavoriteIds] = React.useState<number[]>([]);
 
+  // Toggle expansion state of an instrument
   const handleToggleExpand = (id: number, event?: React.MouseEvent): void => {
     if (event) {
       event.stopPropagation();
@@ -27,6 +30,7 @@ const Instruments: React.FC = () => {
     );
   };
 
+  // Toggle favorite state of an instrument
   const handleToggleFavorite = (id: number, event: React.MouseEvent): void => {
     event.stopPropagation();
     setFavoriteIds((prevFavoriteIds) =>
@@ -36,6 +40,7 @@ const Instruments: React.FC = () => {
     );
   };
 
+  // Sort instruments based on favorite status
   const sortedInstruments = [...instruments].sort((a, b) => {
     if (favoriteIds.includes(a.id) && !favoriteIds.includes(b.id)) {
       return -1;
@@ -48,6 +53,7 @@ const Instruments: React.FC = () => {
 
   return (
     <>
+      {/* Page title */}
       <Typography variant="h3" component="h1" style={{ color: theme.palette.text.primary, padding: '20px' }}>
         ISIS instruments
       </Typography>
@@ -70,6 +76,7 @@ const Instruments: React.FC = () => {
             >
               <Box display="flex" alignItems="center" justifyContent="space-between">
                 <Box display="flex" alignItems="center">
+                  {/* Expand button */}
                   <IconButton
                     aria-expanded={expandedIds.includes(instrument.id)}
                     aria-label="show more"
@@ -80,6 +87,7 @@ const Instruments: React.FC = () => {
                     />
                   </IconButton>
                   <Box sx={{ marginLeft: 2 }}>
+                    {/* Instrument name and type */}
                     <Typography
                       variant="h6"
                       component="h1"
@@ -97,6 +105,7 @@ const Instruments: React.FC = () => {
                     </Typography>
                   </Box>
                 </Box>
+                {/* Favorite button */}
                 <IconButton
                   aria-label="add to favorites"
                   onClick={(event) => handleToggleFavorite(instrument.id, event)}
@@ -111,6 +120,7 @@ const Instruments: React.FC = () => {
               <Collapse in={expandedIds.includes(instrument.id)} timeout="auto" unmountOnExit>
                 <Box marginTop={2}>
                   <Box display="flex" justifyContent="space-between" alignItems="flex-start">
+                    {/* Instrument description */}
                     <Typography
                       variant="body2"
                       paragraph
@@ -119,6 +129,7 @@ const Instruments: React.FC = () => {
                       {instrument.description}
                     </Typography>
                     <Box sx={{ flex: 1, marginLeft: 4 }}>
+                      {/* List of associated scientists */}
                       <Typography variant="body2" sx={{ fontWeight: 'bold', color: theme.palette.text.primary }}>
                         Scientists:
                       </Typography>
@@ -131,10 +142,12 @@ const Instruments: React.FC = () => {
                       </List>
                     </Box>
                   </Box>
+                  {/* Link to more information */}
                   <Link href={instrument.infoPage} target="_blank" rel="noopener" underline="always">
                     {instrument.infoPage}
                   </Link>
                   <Box marginTop={2}>
+                    {/* Button to view reduction history */}
                     <Button
                       variant="contained"
                       component={RouterLink}
