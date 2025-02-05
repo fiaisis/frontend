@@ -52,7 +52,7 @@ const JobsAll: React.FC = () => {
       currentPage={currentPage}
       rowsPerPage={rowsPerPage}
       handleChangePage={(_, newPage) => setCurrentPage(newPage)} // Update page number
-      handleChangeRowsPerPage={(e) => setRowsPerPage(parseInt(e.target.value, 25))} // Update rows per page based on what the user has selected (10 is the radix, do not confuse for number of rows)
+      handleChangeRowsPerPage={(e) => setRowsPerPage(parseInt(e.target.value, 10))} // Update rows per page based on what the user has selected (10 is the radix, do not confuse for number of rows)
       handleSort={(property) => {
         const isAsc = orderBy === property && orderDirection === 'asc';
         setOrderDirection(isAsc ? 'desc' : 'asc'); // Toggle sorting order
