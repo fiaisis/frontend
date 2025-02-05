@@ -39,7 +39,10 @@ const JobsAll: React.FC = () => {
       currentPage={currentPage}
       rowsPerPage={rowsPerPage}
       handleChangePage={(_, newPage) => setCurrentPage(newPage)}
-      handleChangeRowsPerPage={(e) => setRowsPerPage(parseInt(e.target.value, 10))}
+      handleChangeRowsPerPage={(e) => {
+        setRowsPerPage(parseInt(e.target.value, 10));
+        setCurrentPage(Math.floor((currentPage * rowsPerPage) / parseInt(e.target.value, 10))); // Prevents the offset from going out of range
+      }}
       handleSort={(property) => {
         const isAsc = orderBy === property && orderDirection === 'asc';
         setOrderDirection(isAsc ? 'desc' : 'asc');
