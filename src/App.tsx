@@ -12,33 +12,43 @@ import ValueEditor from './ValueEditor';
 import GlobalStyles from './GlobalStyles';
 import { clearFailedAuthRequestsQueue, retryFailedAuthRequests } from './api';
 
-// Initialize Google Analytics
+// Initialize Google Analytics with the given tracking ID
 ReactGA.initialize('G-7XJBCP6P75');
+// Track the initial page load event
 ReactGA.send({ hitType: 'pageview', page: window.location.pathname });
 
 const App: FC = () => {
-  // Need to call forceUpdate if SciGateway tells us to rerender but there's no
-  // forceUpdate in functional components, so this is the hooks equivalent. See
-  // https://reactjs.org/docs/hooks-faq.html#is-there-something-like-forceupdate
+  // Force update mechanism using React's useReducer hook
+  // This is used to trigger a re-render when necessary (e.g. when SciGateway requests it)
+  // There is no direct forceUpdate in functional components, so we increment a state variable instead
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [_, forceUpdate] = React.useReducer((x) => x + 1, 0);
 
   function handler(e: Event): void {
-    // Attempt to re-render the plugin if we get told to
+    // Handle custom SciGateway events for triggering actions in the app
     const action = (e as CustomEvent).detail;
+
+    // If SciGateway requests a plugin re-render, trigger a re-render
     if ('scigateway:api:plugin_rerender'.match(action)) {
       forceUpdate();
     }
+
+    // If SciGateway invalidates the token, retry failed authentication requests
     if ('scigateway:api:invalidate_token'.match(action)) {
       retryFailedAuthRequests();
     }
+
+    // If SciGateway requests signout, clear the authentication request queue
     if ('scigateway:api:signout'.match(action)) {
       clearFailedAuthRequestsQueue();
     }
   }
 
+  // Attach event listener for SciGateway events when the component mounts
   React.useEffect(() => {
     document.addEventListener('scigateway', handler);
+
+    // Remove event listener when the component unmounts
     return () => {
       document.removeEventListener('scigateway', handler);
     };
@@ -48,20 +58,21 @@ const App: FC = () => {
     <GlobalStyles>
       <Router basename="/fia">
         <Switch>
+          {/* Define application routes */}
           <Route exact path="/">
-            <HomePage />
+            <HomePage /> {/* Renders the HomePage component on the root path */}
           </Route>
           <Route path="/instruments">
-            <Instruments />
+            <Instruments /> {/* Renders the Instruments page */}
           </Route>
           <Route path="/reduction-history/ALL">
-            <JobsAll />
+            <JobsAll /> {/* Displays all reduction jobs */}
           </Route>
           <Route path="/reduction-history/:instrumentName">
-            <JobsGeneral />
+            <JobsGeneral /> {/* Displays reduction jobs filtered by instrument name */}
           </Route>
           <Route path="/value-editor/:jobId">
-            <ValueEditor />
+            <ValueEditor /> {/* Opens the ValueEditor for a specific job */}
           </Route>
         </Switch>
       </Router>
