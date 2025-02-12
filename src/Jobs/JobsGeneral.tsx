@@ -28,12 +28,13 @@ const JobsGeneral: React.FC = () => {
   const [rowsPerPage, setRowsPerPage] = useState(25); // Number of rows displayed per page
   const [orderDirection, setOrderDirection] = useState<'asc' | 'desc'>('desc'); // Sorting order (ascending/descending)
   const [orderBy, setOrderBy] = useState<string>('run_start'); // Column to sort by
+  const [asUser, setAsUser] = useState<boolean>(false);
 
   // Calculate the offset for API query based on current page
   const offset = currentPage * rowsPerPage;
 
   // Construct API query string with pagination and sorting parameters
-  const query = `limit=${rowsPerPage}&offset=${offset}&order_by=${orderBy}&order_direction=${orderDirection}&include_run=true`;
+  const query = `limit=${rowsPerPage}&offset=${offset}&order_by=${orderBy}&order_direction=${orderDirection}&include_run=true&as_user=${asUser}`;
 
   // Fetch job data and total count using custom hooks
   const fetchJobs = useFetchJobs(`/instrument/${selectedInstrument}/jobs`, query, setJobs);
@@ -68,6 +69,8 @@ const JobsGeneral: React.FC = () => {
       fetchJobs={fetchJobs}
       fetchTotalCount={fetchTotalCount}
       showConfigButton={selectedInstrument === 'LOQ' || selectedInstrument === 'MARI'} // Show config button only for specific instruments
+      asUser={asUser}
+      handleToggleAsUser={(event) => setAsUser(event.target.checked)}
     >
       {/* Link to view reductions for all instruments */}
       <Typography

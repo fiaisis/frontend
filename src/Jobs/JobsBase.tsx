@@ -11,6 +11,7 @@ import {
   Collapse,
   Drawer,
   FormControl,
+  FormControlLabel,
   IconButton,
   InputLabel,
   MenuItem,
@@ -18,6 +19,7 @@ import {
   Select,
   SelectChangeEvent,
   Snackbar,
+  Switch,
   Table,
   TableBody,
   TableCell,
@@ -139,6 +141,8 @@ interface JobsBaseProps {
   fetchTotalCount: () => Promise<void>;
   maxHeight?: number;
   showConfigButton?: boolean;
+  asUser: boolean;
+  handleToggleAsUser: (event: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
 const JobsBase: React.FC<JobsBaseProps> = ({
@@ -160,6 +164,8 @@ const JobsBase: React.FC<JobsBaseProps> = ({
   fetchTotalCount,
   maxHeight = 624,
   showConfigButton = false,
+  asUser,
+  handleToggleAsUser,
 }) => {
   const theme = useTheme();
   const allInstruments = [{ name: 'ALL' }, ...instruments]; // Add 'ALL' option to the instruments list
@@ -702,6 +708,14 @@ const JobsBase: React.FC<JobsBaseProps> = ({
               Config
             </Button>
           )}
+          <FormControlLabel
+            control={<Switch checked={asUser} onChange={handleToggleAsUser} color="warning" />}
+            label={
+              <Typography variant="body1" color={theme.palette.text.primary}>
+                View as user
+              </Typography>
+            }
+          />
           {handleInstrumentChange && (
             <FormControl style={{ width: '200px', marginLeft: '20px' }}>
               <InputLabel id="instrument-select-label">Instrument</InputLabel>
