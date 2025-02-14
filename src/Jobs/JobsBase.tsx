@@ -57,6 +57,9 @@ import ConfigSettingsGeneral from '../ConfigSettings/ConfigSettingsGeneral';
 import ConfigSettingsLOQ from '../ConfigSettings/ConfigSettingsLOQ';
 import { fiaApi } from '../api';
 
+// JWT decoder
+import { jwtDecode } from 'jwt-decode';
+
 export const headerStyles = (theme: Theme): CSSObject => ({
   color: theme.palette.primary.contrastText,
   backgroundColor: theme.palette.primary.main,
@@ -174,15 +177,30 @@ const JobsBase: React.FC<JobsBaseProps> = ({
   const totalColumnCount = baseColumnCount + customColumnCount;
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [userRole, setUserRole] = useState<'staff' | 'user' | null>(null);
   const rerunSuccessful = useRef<boolean | null>(null);
   const rerunJobId = useRef<number | null>(null);
 
   useEffect(() => {
     fetchTotalCount();
     fetchJobs();
+    setUserRole(getUserRole());
   }, [fetchTotalCount, fetchJobs]);
 
   const DATA_VIEWER_URL = process.env.REACT_APP_FIA_DATA_VIEWER_URL;
+
+  const getUserRole = (): 'staff' | 'user' | null => {
+    const token = localStorage.getItem('scigateway:token');
+    if (!token) return null;
+
+    try {
+      const decoded = jwtDecode<{ role?: 'staff' | 'user' }>(token);
+      return decoded.role || 'user';
+    } catch (error) {
+      console.error('Error decoding token:', error);
+      return null;
+    }
+  };
 
   const openValueEditor = (jobId: number): void => {
     const url = `/fia/value-editor/${jobId}`;
@@ -708,14 +726,16 @@ const JobsBase: React.FC<JobsBaseProps> = ({
               Config
             </Button>
           )}
-          <FormControlLabel
-            control={<Switch checked={asUser} onChange={handleToggleAsUser} color="warning" />}
-            label={
-              <Typography variant="body1" color={theme.palette.text.primary}>
-                View as user
-              </Typography>
-            }
-          />
+          {userRole === 'staff' && (
+            <FormControlLabel
+              control={<Switch checked={asUser} onChange={handleToggleAsUser} color="warning" />}
+              label={
+                <Typography variant="body1" color={theme.palette.text.primary}>
+                  View as user
+                </Typography>
+              }
+            />
+          )}
           {handleInstrumentChange && (
             <FormControl style={{ width: '200px', marginLeft: '20px' }}>
               <InputLabel id="instrument-select-label">Instrument</InputLabel>
