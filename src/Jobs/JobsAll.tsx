@@ -27,16 +27,27 @@ const JobsAll: React.FC = () => {
   const [orderDirection, setOrderDirection] = useState<'asc' | 'desc'>('desc'); // Sorting order (ascending/descending)
   const [selectedInstrument, setSelectedInstrument] = useState(instrumentName || 'ALL'); // Selected instrument filter
   const [orderBy, setOrderBy] = useState<string>('run_start'); // Column to sort by
+  const [asUser, setAsUser] = useState<boolean>(() => {
+    // Whether to display jobs as a user or not
+    const storedValue = localStorage.getItem('asUser');
+    return storedValue ? JSON.parse(storedValue) : false; // Default to false
+  });
 
   // Calculate the offset for API query based on current page
   const offset = currentPage * rowsPerPage;
 
   // Construct API query string with pagination and sorting parameters
-  const query = `limit=${rowsPerPage}&offset=${offset}&order_by=${orderBy}&order_direction=${orderDirection}&include_run=true`;
+  const query = `limit=${rowsPerPage}&offset=${offset}&order_by=${orderBy}&order_direction=${orderDirection}&include_run=true&as_user=${asUser}`;
 
   // Fetch job data and total count using custom hooks
   const fetchJobs = useFetchJobs(`/jobs`, query, setJobs);
   const fetchTotalCount = useFetchTotalCount(`/jobs/count`, setTotalRows);
+
+  const handleToggleAsUser = (event: React.ChangeEvent<HTMLInputElement>): void => {
+    const newValue = event.target.checked;
+    setAsUser(newValue);
+    localStorage.setItem('asUser', JSON.stringify(newValue)); // Save to localStorage
+  };
 
   return (
     <JobsBase
@@ -89,6 +100,8 @@ const JobsAll: React.FC = () => {
         </TableCell>
       )}
       maxHeight={650} // Limit table height
+      asUser={asUser}
+      handleToggleAsUser={handleToggleAsUser}
     />
   );
 };
