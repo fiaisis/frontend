@@ -28,7 +28,11 @@ const JobsGeneral: React.FC = () => {
   const [rowsPerPage, setRowsPerPage] = useState(25); // Number of rows displayed per page
   const [orderDirection, setOrderDirection] = useState<'asc' | 'desc'>('desc'); // Sorting order (ascending/descending)
   const [orderBy, setOrderBy] = useState<string>('run_start'); // Column to sort by
-  const [asUser, setAsUser] = useState<boolean>(false);
+  const [asUser, setAsUser] = useState<boolean>(() => {
+    // Whether to display jobs as a user or not
+    const storedValue = localStorage.getItem('asUser');
+    return storedValue ? JSON.parse(storedValue) : false; // Default to false
+  });
 
   // Calculate the offset for API query based on current page
   const offset = currentPage * rowsPerPage;
@@ -39,6 +43,12 @@ const JobsGeneral: React.FC = () => {
   // Fetch job data and total count using custom hooks
   const fetchJobs = useFetchJobs(`/instrument/${selectedInstrument}/jobs`, query, setJobs);
   const fetchTotalCount = useFetchTotalCount(`/instrument/${selectedInstrument}/jobs/count`, setTotalRows);
+
+  const handleToggleAsUser = (event: React.ChangeEvent<HTMLInputElement>): void => {
+    const newValue = event.target.checked;
+    setAsUser(newValue);
+    localStorage.setItem('asUser', JSON.stringify(newValue)); // Save to localStorage
+  };
 
   return (
     <JobsBase
@@ -70,7 +80,7 @@ const JobsGeneral: React.FC = () => {
       fetchTotalCount={fetchTotalCount}
       showConfigButton={selectedInstrument === 'LOQ' || selectedInstrument === 'MARI'} // Show config button only for specific instruments
       asUser={asUser}
-      handleToggleAsUser={(event) => setAsUser(event.target.checked)}
+      handleToggleAsUser={handleToggleAsUser}
     >
       {/* Link to view reductions for all instruments */}
       <Typography
