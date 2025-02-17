@@ -18,7 +18,7 @@ const Instruments: React.FC = () => {
   // State for tracking favorite instruments
   const [favoriteIds, setFavoriteIds] = React.useState<number[]>([]);
 
-  // Load favorites from local storage on component mount
+  // Load favorites from local storage
   React.useEffect(() => {
     const storedFavorites = localStorage.getItem('favoriteInstruments');
     if (storedFavorites) {
