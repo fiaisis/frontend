@@ -229,14 +229,26 @@ const ConfigSettingsGeneral: React.FC<ConfigSettingsGeneralProps> = ({ children,
           {Object.keys(formFields).map((key) => (
             <Grid item key={key}>
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <Typography variant="body1" sx={{ width: '150px', mb: 0 }}>
+                <Typography
+                  noWrap
+                  sx={{
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    width: '150px',
+                    maxWidth: '100%',
+                  }}
+                  title={key}
+                >
                   {key}:
                 </Typography>
-                <input
-                  value={formFields[key]}
-                  onChange={(e) => handleFormInputChange(key, e.target.value)}
-                  style={{ margin: 0, height: '20px', width: '160px' }}
-                />
+                <Box sx={{ ml: 3 }}>
+                  <input
+                    value={formFields[key]}
+                    onChange={(e) => handleFormInputChange(key, e.target.value)}
+                    style={{ height: '20px', width: '160px' }}
+                  />
+                </Box>
               </Box>
             </Grid>
           ))}
