@@ -55,6 +55,7 @@ import { CSSObject } from '@mui/system';
 import { instruments } from '../InstrumentData';
 import ConfigSettingsGeneral from '../ConfigSettings/ConfigSettingsGeneral';
 import ConfigSettingsLOQ from '../ConfigSettings/ConfigSettingsLOQ';
+import ConfigSettingsSANS2D from '../ConfigSettings/ConfigSettingsSANS2D';
 import { fiaApi } from '../api';
 
 // JWT decoder
@@ -238,6 +239,8 @@ const JobsBase: React.FC<JobsBaseProps> = ({
     switch (selectedInstrument) {
       case 'LOQ':
         return <ConfigSettingsLOQ />;
+      case 'SANS2D':
+        return <ConfigSettingsSANS2D />;
       default:
         return <ConfigSettingsGeneral />;
     }

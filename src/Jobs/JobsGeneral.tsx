@@ -78,7 +78,9 @@ const JobsGeneral: React.FC = () => {
       orderDirection={orderDirection}
       fetchJobs={fetchJobs}
       fetchTotalCount={fetchTotalCount}
-      showConfigButton={selectedInstrument === 'LOQ' || selectedInstrument === 'MARI'} // Show config button only for specific instruments
+      showConfigButton={
+        selectedInstrument === 'LOQ' || selectedInstrument === 'MARI' || selectedInstrument === 'SANS2D'
+      } // Show config button only for specific instruments
       asUser={asUser}
       handleToggleAsUser={handleToggleAsUser}
     >
