@@ -7,7 +7,7 @@ import { Alert, Box, Button, CircularProgress, Snackbar, Tab, Tabs, Typography, 
 
 // Monaco components
 import Editor from '@monaco-editor/react';
-import { fiaApi } from './lib/api';
+import { fiaApi } from '../lib/api';
 
 interface TabPanelProps {
   children?: React.ReactNode;
