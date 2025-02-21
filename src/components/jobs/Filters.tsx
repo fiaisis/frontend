@@ -16,7 +16,7 @@ import {
   TextField,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers';
-import { reductionStates } from '../../lib/types';
+import { JobQueryFilters, reductionStates } from '../../lib/types';
 import { instruments } from '../../lib/InstrumentData';
 
 const itemHeight = 48;
@@ -29,24 +29,6 @@ const menuProps = {
     },
   },
 };
-
-export interface JobQueryFilters {
-  experiment_number_in?: number[];
-  title?: string;
-  job_state_in?: string[];
-  filename?: string;
-  instrument_in?: string[];
-  job_start_before?: string;
-  job_start_after?: string;
-  job_end_before?: string;
-  job_end_after?: string;
-  run_start_before?: string;
-  run_start_after?: string;
-  run_end_before?: string;
-  run_end_after?: string;
-  experiment_number_after?: number;
-  experiment_number_before?: number;
-}
 
 const DatePickerPair: FC<{
   label: string;
