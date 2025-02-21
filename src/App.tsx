@@ -2,15 +2,16 @@
 import React, { FC } from 'react';
 import { BrowserRouter as Router, Route, Switch } from 'react-router-dom';
 import ReactGA from 'react-ga4';
-
+import 'dayjs/locale/en-gb';
 // Local data
-import Instruments from './Instruments';
-import JobsAll from './Jobs/JobsAll';
-import JobsGeneral from './Jobs/JobsGeneral';
-import HomePage from './HomePage';
-import ValueEditor from './ValueEditor';
+import Instruments from './pages/Instruments';
+import HomePage from './pages/HomePage';
+import ValueEditor from './components/ValueEditor';
 import GlobalStyles from './GlobalStyles';
-import { clearFailedAuthRequestsQueue, retryFailedAuthRequests } from './api';
+import { clearFailedAuthRequestsQueue, retryFailedAuthRequests } from './lib/api';
+import JobsPage from './pages/JobsPage';
+import { LocalizationProvider } from '@mui/x-date-pickers';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 
 // Initialize Google Analytics
 ReactGA.initialize('G-7XJBCP6P75');
@@ -45,27 +46,26 @@ const App: FC = () => {
   }, []);
 
   return (
-    <GlobalStyles>
-      <Router basename="/fia">
-        <Switch>
-          <Route exact path="/">
-            <HomePage />
-          </Route>
-          <Route path="/instruments">
-            <Instruments />
-          </Route>
-          <Route path="/reduction-history/ALL">
-            <JobsAll />
-          </Route>
-          <Route path="/reduction-history/:instrumentName">
-            <JobsGeneral />
-          </Route>
-          <Route path="/value-editor/:jobId">
-            <ValueEditor />
-          </Route>
-        </Switch>
-      </Router>
-    </GlobalStyles>
+    <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale={'en-gb'}>
+      <GlobalStyles>
+        <Router basename="/fia">
+          <Switch>
+            <Route exact path="/">
+              <HomePage />
+            </Route>
+            <Route path="/instruments">
+              <Instruments />
+            </Route>
+            <Route path="/reduction-history/:instrumentName">
+              <JobsPage />
+            </Route>
+            <Route path="/value-editor/:jobId">
+              <ValueEditor />
+            </Route>
+          </Switch>
+        </Router>
+      </GlobalStyles>
+    </LocalizationProvider>
   );
 };
 
