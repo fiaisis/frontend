@@ -198,7 +198,7 @@ const Row: React.FC<{
   showInstrumentColumn: boolean;
   index: number;
   submitRerun: (job: Job) => Promise<void>;
-  refreshJobs: () => Promise<void>;
+  refreshJobs: () => void;
 }> = ({ job, showInstrumentColumn, index, submitRerun, refreshJobs }) => {
   const [open, setOpen] = useState(false);
   const theme = useTheme();
