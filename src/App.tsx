@@ -6,7 +6,7 @@ import ReactGA from 'react-ga4';
 // Local data
 import Instruments from './pages/Instruments';
 import HomePage from './pages/HomePage';
-import ValueEditor from './ValueEditor';
+import ValueEditor from './pages/ValueEditor';
 import GlobalStyles from './GlobalStyles';
 import { clearFailedAuthRequestsQueue, retryFailedAuthRequests } from './lib/api';
 import 'dayjs/locale/en-gb';
