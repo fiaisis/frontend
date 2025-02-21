@@ -13,12 +13,12 @@ import {
 } from '@mui/material';
 import { KeyboardArrowDown, KeyboardArrowUp } from '@mui/icons-material';
 import React, { useEffect, useState } from 'react';
-import { Job } from '../../lib/types';
+import { Job, JobQueryFilters } from '../../lib/types';
 import Row from './Row';
 import JobTableHead from './JobTableHead';
 import { useFetchJobs, useFetchTotalCount } from '../../lib/hooks';
 import { fiaApi } from '../../lib/api';
-import FilterContainer, { JobQueryFilters } from './Filters';
+import FilterContainer from './Filters';
 
 const JobTable: React.FC<{
   selectedInstrument: string;
