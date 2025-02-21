@@ -24,7 +24,8 @@ const JobTable: React.FC<{
   selectedInstrument: string;
   currentPage: number;
   handlePageChange: (currentPage: number) => void;
-}> = ({ selectedInstrument, currentPage, handlePageChange }) => {
+  asUser: boolean;
+}> = ({ selectedInstrument, currentPage, handlePageChange, asUser }) => {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [totalRows, setTotalRows] = useState<number>(0);
   const [filtersOpen, setFiltersOpen] = useState<boolean>(false);
@@ -34,7 +35,7 @@ const JobTable: React.FC<{
   const [loading, setLoading] = useState<boolean>(true);
   const offset = currentPage * rowsPerPage;
   const [filters, setFilters] = useState<JobQueryFilters>({});
-  const query = `limit=${rowsPerPage}&offset=${offset}&order_by=${orderBy}&order_direction=${orderDirection}&include_run=true&filters=${JSON.stringify(filters)}`;
+  const query = `limit=${rowsPerPage}&offset=${offset}&order_by=${orderBy}&order_direction=${orderDirection}&include_run=true&filters=${JSON.stringify(filters)}&as_user=${asUser}`;
   const queryPath = selectedInstrument === 'ALL' ? '/jobs' : `/instrument/${selectedInstrument}/jobs`;
   const countQueryPath = selectedInstrument === 'ALL' ? '/jobs/count' : `/instrument/${selectedInstrument}/jobs/count`;
   const fetchJobs = useFetchJobs(queryPath, query, setJobs);

@@ -1,10 +1,11 @@
 import { Link, useHistory, useParams } from 'react-router-dom';
 import JobTable from '../components/jobs/JobTable';
-import { Box, Button, SelectChangeEvent, Typography, useTheme } from '@mui/material';
+import { Box, Button, FormControlLabel, SelectChangeEvent, Switch, Typography, useTheme } from '@mui/material';
 import { ArrowBack, Settings } from '@mui/icons-material';
-import React, { ReactElement } from 'react';
+import React, { ReactElement, useState } from 'react';
 import InstrumentSelector from '../components/jobs/InstrumentSelector';
 import InstrumentConfigDrawer from '../components/configsettings/InstrumentConfigDrawer';
+import { jwtDecode } from 'jwt-decode';
 
 const JobsPage: React.FC = (): ReactElement => {
   const { instrumentName } = useParams<{ instrumentName: string }>();
@@ -12,15 +13,33 @@ const JobsPage: React.FC = (): ReactElement => {
   const [selectedInstrument, setSelectedInstrument] = React.useState<string>(instrumentName || 'ALL');
   const theme = useTheme();
   const [currentPage, setCurrentPage] = React.useState<number>(0); // This must be pulled up for navigation
+  const [asUser, setAsUser] = useState<boolean>(() => {
+    // Whether to display jobs as a user or not
+    const storedValue = localStorage.getItem('asUser');
+    return storedValue ? JSON.parse(storedValue) : false; // Default to false
+  });
+  const [userRole, setUserRole] = useState<'staff' | 'user' | null>(null);
   const handleInstrumentChange = (event: SelectChangeEvent<string>): void => {
     const newInstrument = event.target.value;
     setSelectedInstrument(newInstrument);
     history.push(`/reduction-history/${newInstrument}`);
   };
+  const getUserRole = (): 'staff' | 'user' | null => {
+    const token = localStorage.getItem('scigateway:token');
+    if (!token) return null;
+    try {
+      const decoded = jwtDecode<{ role?: 'staff' | 'user' }>(token);
+      return decoded.role || 'user';
+    } catch (error) {
+      console.error('Error decoding token:', error);
+      return null;
+    }
+  };
 
   React.useEffect(() => {
     setSelectedInstrument(instrumentName || 'ALL');
     setCurrentPage(0);
+    setUserRole(getUserRole());
   }, [instrumentName, selectedInstrument]);
 
   const [configDrawerOpen, setConfigDrawerOpen] = React.useState<boolean>(false);
@@ -64,6 +83,16 @@ const JobsPage: React.FC = (): ReactElement => {
               Config
             </Button>
           )}
+          {userRole === 'staff' && (
+            <FormControlLabel
+              control={<Switch checked={asUser} onChange={() => setAsUser(!asUser)} color="warning" />}
+              label={
+                <Typography variant="body1" color={theme.palette.text.primary}>
+                  View as user
+                </Typography>
+              }
+            />
+          )}
           <InstrumentSelector selectedInstrument={selectedInstrument} handleInstrumentChange={handleInstrumentChange} />
         </Box>
       </Box>
@@ -72,7 +101,12 @@ const JobsPage: React.FC = (): ReactElement => {
         setDrawerOpen={setConfigDrawerOpen}
         selectedInstrument={selectedInstrument}
       />
-      <JobTable selectedInstrument={selectedInstrument} currentPage={currentPage} handlePageChange={setCurrentPage} />
+      <JobTable
+        selectedInstrument={selectedInstrument}
+        currentPage={currentPage}
+        handlePageChange={setCurrentPage}
+        asUser={asUser}
+      />
     </div>
   );
 };
