@@ -4,13 +4,15 @@ import { BrowserRouter as Router, Route, Switch } from 'react-router-dom';
 import ReactGA from 'react-ga4';
 
 // Local data
-import Instruments from './Instruments';
-import JobsAll from './Jobs/JobsAll';
-import JobsGeneral from './Jobs/JobsGeneral';
-import HomePage from './HomePage';
+import Instruments from './pages/Instruments';
+import HomePage from './pages/HomePage';
 import ValueEditor from './ValueEditor';
 import GlobalStyles from './GlobalStyles';
-import { clearFailedAuthRequestsQueue, retryFailedAuthRequests } from './api';
+import { clearFailedAuthRequestsQueue, retryFailedAuthRequests } from './lib/api';
+import 'dayjs/locale/en-gb';
+import { LocalizationProvider } from '@mui/x-date-pickers';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import JobsPage from './pages/JobsPage';
 
 // Initialize Google Analytics with the given tracking ID
 ReactGA.initialize('G-7XJBCP6P75');
@@ -55,28 +57,26 @@ const App: FC = () => {
   }, []);
 
   return (
-    <GlobalStyles>
-      <Router basename="/fia">
-        <Switch>
-          {/* Define application routes */}
-          <Route exact path="/">
-            <HomePage /> {/* Renders the HomePage component on the root path */}
-          </Route>
-          <Route path="/instruments">
-            <Instruments /> {/* Renders the Instruments page */}
-          </Route>
-          <Route path="/reduction-history/ALL">
-            <JobsAll /> {/* Displays all reduction jobs */}
-          </Route>
-          <Route path="/reduction-history/:instrumentName">
-            <JobsGeneral /> {/* Displays reduction jobs filtered by instrument name */}
-          </Route>
-          <Route path="/value-editor/:jobId">
-            <ValueEditor /> {/* Opens the ValueEditor for a specific job */}
-          </Route>
-        </Switch>
-      </Router>
-    </GlobalStyles>
+    <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale={'en-gb'}>
+      <GlobalStyles>
+        <Router basename="/fia">
+          <Switch>
+            <Route exact path="/">
+              <HomePage />
+            </Route>
+            <Route path="/instruments">
+              <Instruments />
+            </Route>
+            <Route path="/reduction-history/:instrumentName">
+              <JobsPage />
+            </Route>
+            <Route path="/value-editor/:jobId">
+              <ValueEditor />
+            </Route>
+          </Switch>
+        </Router>
+      </GlobalStyles>
+    </LocalizationProvider>
   );
 };
 
