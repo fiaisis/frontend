@@ -9,7 +9,7 @@ import StarBorderIcon from '@mui/icons-material/StarBorder';
 import StarIcon from '@mui/icons-material/Star';
 
 // Local data
-import { instruments } from './InstrumentData';
+import { instruments } from './lib/InstrumentData';
 
 const Instruments: React.FC = () => {
   const theme = useTheme();
