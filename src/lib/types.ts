@@ -29,3 +29,22 @@ export interface Job {
     instrument_name: string;
   };
 }
+
+// if this needs exporting, move it to types
+export interface JobQueryFilters {
+  experiment_number_in?: number[];
+  title?: string;
+  job_state_in?: string[];
+  filename?: string;
+  instrument_in?: string[];
+  job_start_before?: string;
+  job_start_after?: string;
+  job_end_before?: string;
+  job_end_after?: string;
+  run_start_before?: string;
+  run_start_after?: string;
+  run_end_before?: string;
+  run_end_after?: string;
+  experiment_number_after?: number;
+  experiment_number_before?: number;
+}
