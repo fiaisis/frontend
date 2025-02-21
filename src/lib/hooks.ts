@@ -19,12 +19,13 @@ export const useFetchJobs = (
 
 export const useFetchTotalCount = (
   apiPath: string,
+  query: string,
   setTotalRows: React.Dispatch<React.SetStateAction<number>>
 ): (() => Promise<void>) => {
   return useCallback(async () => {
     fiaApi
-      .get(apiPath)
+      .get(`${apiPath}?${query}`)
       .then((res) => setTotalRows(res.data.count))
       .catch((err) => console.error('Error fetching row count', err.message));
-  }, [apiPath, setTotalRows]);
+  }, [apiPath, setTotalRows, query]);
 };

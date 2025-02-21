@@ -36,17 +36,21 @@ const JobTable: React.FC<{
   const offset = currentPage * rowsPerPage;
   const [filters, setFilters] = useState<JobQueryFilters>({});
   const query = `limit=${rowsPerPage}&offset=${offset}&order_by=${orderBy}&order_direction=${orderDirection}&include_run=true&filters=${JSON.stringify(filters)}&as_user=${asUser}`;
+  const countQuery = `filters=${JSON.stringify(filters)}`;
   const queryPath = selectedInstrument === 'ALL' ? '/jobs' : `/instrument/${selectedInstrument}/jobs`;
   const countQueryPath = selectedInstrument === 'ALL' ? '/jobs/count' : `/instrument/${selectedInstrument}/jobs/count`;
   const fetchJobs = useFetchJobs(queryPath, query, setJobs);
-  const fetchTotalCount = useFetchTotalCount(countQueryPath, setTotalRows);
+  const fetchTotalCount = useFetchTotalCount(countQueryPath, countQuery, setTotalRows);
 
   useEffect(() => {
     fetchJobs().then(() => setLoading(false));
     void fetchTotalCount();
   }, [fetchTotalCount, fetchJobs]);
 
-  const refreshJobs = (): Promise<void> => Promise.resolve(fetchJobs());
+  const refreshJobs = (): void => {
+    void Promise.resolve(fetchJobs());
+    void Promise.resolve(fetchTotalCount);
+  };
   const handleRerun = async (job: Job): Promise<void> => {
     await fiaApi.post('/job/rerun', { job_id: job.id, runner_image: job.runner_image, script: job.script.value });
   };
