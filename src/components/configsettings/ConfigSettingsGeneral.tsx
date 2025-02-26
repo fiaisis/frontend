@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
-import { Box, Button, Grid, IconButton, Tab, Tabs, Tooltip, Typography, useTheme } from '@mui/material';
+import { Box, Button, Grid2, IconButton, Tab, Tabs, Tooltip, Typography, useTheme } from '@mui/material';
 import { Info } from '@mui/icons-material';
 
 import MonacoEditor from '@monaco-editor/react';
@@ -196,10 +196,10 @@ const ConfigSettingsGeneral: React.FC<ConfigSettingsGeneralProps> = ({ children,
       </Box>
       {/* Simple panel */}
       <TabPanel value={tabValue} index={0}>
-        <Grid container direction="column" spacing={2}>
+        <Grid2 container direction="column" spacing={2}>
           {/* Dynamically generated form fields */}
           {Object.keys(formFields).map((key) => (
-            <Grid item key={key}>
+            <Grid2 item key={key}>
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
                 <Typography variant="body1" sx={{ width: '150px', mb: 0 }}>
                   {key}:
@@ -210,9 +210,9 @@ const ConfigSettingsGeneral: React.FC<ConfigSettingsGeneralProps> = ({ children,
                   style={{ margin: 0, height: '20px', width: '160px' }}
                 />
               </Box>
-            </Grid>
+            </Grid2>
           ))}
-        </Grid>
+        </Grid2>
       </TabPanel>
       {/* Advanced panel */}
       <TabPanel value={tabValue} index={1}>
