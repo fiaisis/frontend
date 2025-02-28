@@ -1,23 +1,18 @@
-// React components
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
-// Material UI components
-import { Box, Button, Typography, Tabs, Tab, useTheme, Grid, Tooltip, IconButton } from '@mui/material';
+import { Box, Button, Grid, IconButton, Tab, Tabs, Tooltip, Typography, useTheme } from '@mui/material';
 import { Info } from '@mui/icons-material';
 
-// Monaco components
 import MonacoEditor from '@monaco-editor/react';
 
-// Local components
-import { fiaApi } from '../api';
+import { fiaApi } from '../../lib/api';
 
 interface TabPanelProps {
   children?: React.ReactNode;
   index: number;
   value: number;
 }
-
 const TabPanel: React.FC<TabPanelProps> = ({ children, value, index, ...other }): JSX.Element => {
   return (
     <div role="tabpanel" hidden={value !== index} id={`tabpanel-${index}`} aria-labelledby={`tab-${index}`} {...other}>
@@ -25,18 +20,15 @@ const TabPanel: React.FC<TabPanelProps> = ({ children, value, index, ...other })
     </div>
   );
 };
-
 const a11yProps = (index: number): { id: string; 'aria-controls': string } => ({
   id: `tab-${index}`,
   'aria-controls': `tabpanel-${index}`,
 });
-
 interface ConfigSettingsGeneralProps {
   // Allow children to be passed for features specific to certain instruments
   children?: React.ReactNode;
   onFileUpload?: () => Promise<void>;
 }
-
 const ConfigSettingsGeneral: React.FC<ConfigSettingsGeneralProps> = ({ children, onFileUpload }) => {
   const theme = useTheme();
   const { instrumentName } = useParams<{ instrumentName: string }>();
@@ -47,7 +39,6 @@ const ConfigSettingsGeneral: React.FC<ConfigSettingsGeneralProps> = ({ children,
   const [tabValue, setTabValue] = useState(0);
   const [unsavedChanges, setUnsavedChanges] = useState(false); // State for tracking changes
   const [applyMessage, setApplyMessage] = useState<string>(''); // State for applying status messages
-
   // Fetch the current specification and set the reduction status
   useEffect(() => {
     const fetchSpecification = async (): Promise<void> => {
@@ -59,23 +50,19 @@ const ConfigSettingsGeneral: React.FC<ConfigSettingsGeneralProps> = ({ children,
           // Set the reduction status button on/off based on the "enabled" field
           setReductionStatus(enabled ? 'ON' : 'OFF');
           setEnabledStatus(enabled);
-
           const specJson = JSON.stringify(filteredData, null, 2);
           setJsonContent(specJson);
           syncFormWithJson(specJson);
         })
         .catch((err) => console.error('failed to  fetch specification', err));
     };
-
     if (instrumentName) {
       fetchSpecification();
     }
   }, [instrumentName]);
-
   const handleTabChange = (event: React.SyntheticEvent, newValue: number): void => {
     setTabValue(newValue);
   };
-
   // Sync form fields when JSON content is edited
   const syncFormWithJson = (jsonString: string): void => {
     try {
@@ -87,7 +74,6 @@ const ConfigSettingsGeneral: React.FC<ConfigSettingsGeneralProps> = ({ children,
       console.error('Error parsing JSON:', error);
     }
   };
-
   // Sync JSON when form fields are edited
   const syncJsonWithForm = (updatedFields: { [key: string]: string }): void => {
     try {
@@ -100,7 +86,6 @@ const ConfigSettingsGeneral: React.FC<ConfigSettingsGeneralProps> = ({ children,
       console.error('Error syncing JSON with form:', error);
     }
   };
-
   const handleFormInputChange = (key: string, value: string): void => {
     const updatedFields = { ...formFields, [key]: value };
     setFormFields(updatedFields);
@@ -108,7 +93,6 @@ const ConfigSettingsGeneral: React.FC<ConfigSettingsGeneralProps> = ({ children,
     setUnsavedChanges(true);
     setApplyMessage('');
   };
-
   const handleEditorChange = (value: string | undefined): void => {
     const updatedJson = value || '{}';
     setJsonContent(updatedJson);
@@ -116,21 +100,18 @@ const ConfigSettingsGeneral: React.FC<ConfigSettingsGeneralProps> = ({ children,
     setUnsavedChanges(true);
     setApplyMessage('');
   };
-
   const toggleEnabledStatus = (): void => {
     setEnabledStatus(!enabledStatus);
     setReductionStatus(enabledStatus ? 'OFF' : 'ON');
     setUnsavedChanges(true);
     setApplyMessage('');
   };
-
   const handleApplySettings = async (): Promise<void> => {
     // Parse the current JSON content and add the missing "enabled" field
     const updatedJsonContent = {
       ...JSON.parse(jsonContent),
       enabled: enabledStatus,
     };
-
     fiaApi
       .put(`/instrument/${instrumentName}/specification`, updatedJsonContent)
       .then(() => {
@@ -145,7 +126,6 @@ const ConfigSettingsGeneral: React.FC<ConfigSettingsGeneralProps> = ({ children,
         setApplyMessage('Error applying spec changes');
       });
   };
-
   return (
     <Box sx={{ width: '100%', height: '85vh', color: theme.palette.text.primary, overflowY: 'auto' }}>
       <Box sx={{ m: 2, backgroundColor: theme.palette.background.default }}>
@@ -153,7 +133,6 @@ const ConfigSettingsGeneral: React.FC<ConfigSettingsGeneralProps> = ({ children,
         <Typography variant="h4" gutterBottom>
           {instrumentName} config settings
         </Typography>
-
         {/* Reduction status */}
         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', mb: 2 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
@@ -173,7 +152,6 @@ const ConfigSettingsGeneral: React.FC<ConfigSettingsGeneralProps> = ({ children,
             >
               {reductionStatus}
             </Button>
-
             {/* Tooltip */}
             <Tooltip title="Click to toggle the reduction process on or off">
               <IconButton sx={{ ml: 1 }}>
@@ -181,17 +159,14 @@ const ConfigSettingsGeneral: React.FC<ConfigSettingsGeneralProps> = ({ children,
               </IconButton>
             </Tooltip>
           </Box>
-
           {/* Allow children to be passed for features specific to certain instruments */}
           {children}
         </Box>
       </Box>
-
       {/* Specification editor subheading */}
       <Typography variant="h6" gutterBottom sx={{ ml: 2, mt: 4 }}>
         Specification editor
       </Typography>
-
       {/* Divider line */}
       <Box
         sx={{
@@ -199,7 +174,6 @@ const ConfigSettingsGeneral: React.FC<ConfigSettingsGeneralProps> = ({ children,
           borderColor: 'divider',
         }}
       />
-
       {/* Tabs */}
       <Box>
         <Tabs
@@ -209,7 +183,6 @@ const ConfigSettingsGeneral: React.FC<ConfigSettingsGeneralProps> = ({ children,
           sx={{
             '& .MuiTab-root': {
               color: theme.palette.mode === 'dark' ? theme.palette.common.white : undefined,
-
               '&.Mui-selected': {
                 color: theme.palette.mode === 'dark' ? theme.palette.common.white : undefined,
                 backgroundColor: theme.palette.mode === 'dark' ? theme.palette.grey[800] : undefined,
@@ -221,7 +194,6 @@ const ConfigSettingsGeneral: React.FC<ConfigSettingsGeneralProps> = ({ children,
           <Tab label="Advanced" {...a11yProps(1)} />
         </Tabs>
       </Box>
-
       {/* Simple panel */}
       <TabPanel value={tabValue} index={0}>
         <Grid container direction="column" spacing={2}>
@@ -229,32 +201,19 @@ const ConfigSettingsGeneral: React.FC<ConfigSettingsGeneralProps> = ({ children,
           {Object.keys(formFields).map((key) => (
             <Grid item key={key}>
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <Typography
-                  noWrap
-                  sx={{
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                    width: '150px',
-                    maxWidth: '100%',
-                  }}
-                  title={key}
-                >
+                <Typography variant="body1" sx={{ width: '150px', mb: 0 }}>
                   {key}:
                 </Typography>
-                <Box sx={{ ml: 3 }}>
-                  <input
-                    value={formFields[key]}
-                    onChange={(e) => handleFormInputChange(key, e.target.value)}
-                    style={{ height: '20px', width: '160px' }}
-                  />
-                </Box>
+                <input
+                  value={formFields[key]}
+                  onChange={(e) => handleFormInputChange(key, e.target.value)}
+                  style={{ margin: 0, height: '20px', width: '160px' }}
+                />
               </Box>
             </Grid>
           ))}
         </Grid>
       </TabPanel>
-
       {/* Advanced panel */}
       <TabPanel value={tabValue} index={1}>
         <Box sx={{ height: '30vh' }}>
@@ -271,14 +230,12 @@ const ConfigSettingsGeneral: React.FC<ConfigSettingsGeneralProps> = ({ children,
           />
         </Box>
       </TabPanel>
-
       {/* Apply settings button */}
       <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3, mb: 3 }}>
         <Button variant="contained" onClick={handleApplySettings}>
           Apply settings
         </Button>
       </Box>
-
       {/* Display unsaved changes message */}
       {unsavedChanges && (
         <Typography
@@ -288,7 +245,6 @@ const ConfigSettingsGeneral: React.FC<ConfigSettingsGeneralProps> = ({ children,
           You have changes which haven&apos;t been applied yet
         </Typography>
       )}
-
       {/* Display apply status message if no unsaved changes */}
       {!unsavedChanges && applyMessage && (
         <Typography
@@ -301,5 +257,4 @@ const ConfigSettingsGeneral: React.FC<ConfigSettingsGeneralProps> = ({ children,
     </Box>
   );
 };
-
 export default ConfigSettingsGeneral;
