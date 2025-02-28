@@ -43,8 +43,7 @@ const JobsPage: React.FC = (): ReactElement => {
   }, [instrumentName, selectedInstrument]);
 
   const [configDrawerOpen, setConfigDrawerOpen] = React.useState<boolean>(false);
-  const showConfigButton =
-    selectedInstrument === 'LOQ' || selectedInstrument === 'MARI' || selectedInstrument === 'SANS2D';
+  const showConfigButton = ['LOQ', 'MARI', 'SANS2D'].includes(selectedInstrument);
 
   return (
     <div style={{ padding: '20px', height: '100%' }}>
