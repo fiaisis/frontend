@@ -28,14 +28,14 @@ const SortableHeaderCell: React.FC<SortableHeaderCellProps> = ({
   orderBy,
   orderDirection,
   onSort,
-  align = 'center',
+  align = 'left',
   sx,
 }) => {
   const isActive = orderBy === sortKey; // Check if the column is actively sorted
 
   return (
     <TableCell align={align} sx={sx} onClick={() => onSort(sortKey)}>
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center' }}>
         {headerName}
         {isActive && (
           <TableSortLabel
@@ -74,12 +74,10 @@ const JobTableHead: React.FC<JobTableHeadProps> = ({ selectedInstrument, handleS
           orderBy={orderBy}
           orderDirection={orderDirection}
           onSort={handleSort}
-          align="center"
           sx={{ width: '12%', ...headerStyles(theme) }}
         />
         <SortableHeaderCell
           headerName="Filename"
-          align="center"
           sortKey="filename"
           orderBy={orderBy}
           orderDirection={orderDirection}
@@ -92,7 +90,6 @@ const JobTableHead: React.FC<JobTableHeadProps> = ({ selectedInstrument, handleS
           orderBy={orderBy}
           orderDirection={orderDirection}
           onSort={handleSort}
-          align="center"
           sx={{ width: '12%', ...headerStyles(theme) }}
         />
         <SortableHeaderCell
@@ -105,7 +102,6 @@ const JobTableHead: React.FC<JobTableHeadProps> = ({ selectedInstrument, handleS
           sx={{ width: '12%', ...headerStyles(theme) }}
         />
         <SortableHeaderCell
-          align={'center'}
           headerName="Job Start"
           sortKey="start"
           orderBy={orderBy}
@@ -114,7 +110,6 @@ const JobTableHead: React.FC<JobTableHeadProps> = ({ selectedInstrument, handleS
           sx={{ width: '12%', ...headerStyles(theme) }}
         />
         <SortableHeaderCell
-          align={'center'}
           headerName="Job End"
           sortKey="end"
           orderBy={orderBy}
