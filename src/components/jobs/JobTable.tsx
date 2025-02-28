@@ -73,11 +73,10 @@ const JobTable: React.FC<{
       <>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
           <Typography
-            color={'#0000EE'}
             display={'flex'}
             alignItems={'center'}
             onClick={() => setFiltersOpen(!filtersOpen)}
-            sx={{ cursor: 'pointer' }}
+            sx={{ cursor: 'pointer', color: theme.palette.mode === 'dark' ? '#86b4ff' : theme.palette.primary.main }}
           >
             Advanced Filters {filtersOpen ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
           </Typography>
