@@ -139,9 +139,10 @@ const JobInput: React.FC<{ job: Job }> = ({ job }: { job: Job }): ReactElement =
           sx={{
             display: 'flex',
             flexWrap: 'wrap',
-            alignItems: 'between',
+            alignItems: 'center',
             marginBottom: '4px',
             wordBreak: 'break-word',
+            maxWidth: '100%',
           }}
         >
           <Typography
@@ -150,9 +151,6 @@ const JobInput: React.FC<{ job: Job }> = ({ job }: { job: Job }): ReactElement =
               fontWeight: 'bold',
               marginRight: '16px',
               whiteSpace: 'nowrap', // Stops the key from wrapping
-              textAlign: 'right',
-              // flexGrow: '1',
-              // alignSelf: 'end',
             }}
           >
             {key}:
@@ -161,11 +159,9 @@ const JobInput: React.FC<{ job: Job }> = ({ job }: { job: Job }): ReactElement =
             variant="body2"
             title={value as string}
             sx={{
-              // flex: '1 1 auto',
-              flexGrow: '1',
+              flex: '1 1 auto',
               ...ellipsisWrap,
               maxWidth: `calc(${ellipsisWrap.maxWidth} + 300px)`,
-              textAlign: 'right',
             }}
           >
             {`${value}`}
@@ -359,7 +355,6 @@ const Row: React.FC<{
           sx={{
             ...ellipsisWrap,
           }}
-          align={'center'}
         >
           {job.run?.experiment_number || 'N/A'}
         </TableCell>
@@ -367,12 +362,10 @@ const Row: React.FC<{
           sx={{
             ...ellipsisWrap,
           }}
-          align={'center'}
         >
           {extractFilename(job.run?.filename || 'N/A')}
         </TableCell>
         <TableCell
-          align={'center'}
           sx={{
             ...ellipsisWrap,
           }}
@@ -380,7 +373,6 @@ const Row: React.FC<{
           {formatDateTime(job.run?.run_start || 'N/A')}
         </TableCell>
         <TableCell
-          align={'center'}
           sx={{
             ...ellipsisWrap,
           }}
@@ -391,7 +383,6 @@ const Row: React.FC<{
           sx={{
             ...ellipsisWrap,
           }}
-          align={'center'}
         >
           {formatDateTime(job.start) || 'N/A'}
         </TableCell>
@@ -399,7 +390,6 @@ const Row: React.FC<{
           sx={{
             ...ellipsisWrap,
           }}
-          align={'center'}
         >
           {formatDateTime(job.end) || 'N/A'}
         </TableCell>
