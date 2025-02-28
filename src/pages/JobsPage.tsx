@@ -51,7 +51,7 @@ const JobsPage: React.FC = (): ReactElement => {
       <Box display="flex" alignItems="center" justifyContent="space-between">
         <Box display={'flex'} flexDirection={'column'}>
           <Typography variant="h3" component="h1" style={{ color: theme.palette.text.primary }}>
-            {selectedInstrument} Reductions
+            {selectedInstrument} reductions
           </Typography>
           {selectedInstrument !== 'ALL' ? (
             <Typography
