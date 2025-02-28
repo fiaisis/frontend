@@ -63,7 +63,7 @@ interface JobTableHeadProps {
 const JobTableHead: React.FC<JobTableHeadProps> = ({ selectedInstrument, handleSort, orderBy, orderDirection }) => {
   const theme = useTheme();
   return (
-    <TableHead sx={{ '& th': { py: 0.5 } }}>
+    <TableHead sx={{ '& th': { py: 0.5 }, height: '54px' }}>
       <TableRow>
         <TableCell sx={{ ...headerStyles(theme), width: '10%' }} colSpan={2}>
           {selectedInstrument}
@@ -74,7 +74,7 @@ const JobTableHead: React.FC<JobTableHeadProps> = ({ selectedInstrument, handleS
           orderBy={orderBy}
           orderDirection={orderDirection}
           onSort={handleSort}
-          sx={{ width: '12%', ...headerStyles(theme) }}
+          sx={{ width: '18%', ...headerStyles(theme) }}
         />
         <SortableHeaderCell
           headerName="Filename"
