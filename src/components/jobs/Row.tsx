@@ -407,7 +407,11 @@ const Row: React.FC<{
               component={Link}
               onClick={(evt) => evt.stopPropagation()}
               to={`/reduction-history/${job.run.instrument_name}`}
-              sx={{ textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
+              sx={{
+                textDecoration: 'none',
+                '&:hover': { textDecoration: 'underline' },
+                color: theme.palette.mode === 'dark' ? '#86b4ff' : theme.palette.primary.main,
+              }}
             >
               {job.run.instrument_name}
             </Typography>
