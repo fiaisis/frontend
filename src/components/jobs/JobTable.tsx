@@ -69,7 +69,7 @@ const JobTable: React.FC<{
   return loading ? (
     <CircularProgress />
   ) : (
-    <Box sx={{ maxHeight: 650 }}>
+    <Box sx={{ maxHeight: 660, pb: 1 }}>
       <>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
           <Typography
