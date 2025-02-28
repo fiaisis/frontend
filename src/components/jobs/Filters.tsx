@@ -56,13 +56,12 @@ const MultipleSelectCheckmarks: FC<{
   handleChange: (items: string[]) => void;
 }> = ({ name, items, selectedItems, handleChange }): ReactElement => {
   return (
-    <FormControl sx={{ width: 175 }}>
+    <FormControl sx={{ width: 175 }} size={'small'}>
       <InputLabel id="demo-multiple-checkbox-label">{name}</InputLabel>
       <Select
         labelId="demo-multiple-checkbox-label"
         id="demo-multiple-checkbox"
         multiple
-        hiddenLabel
         size={'small'}
         value={selectedItems}
         onChange={(event: SelectChangeEvent<string[]>) => {
