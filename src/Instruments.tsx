@@ -18,6 +18,19 @@ const Instruments: React.FC = () => {
   // State for tracking favorite instruments
   const [favoriteIds, setFavoriteIds] = React.useState<number[]>([]);
 
+  // Load favorites from local storage
+  React.useEffect(() => {
+    const storedFavorites = localStorage.getItem('favoriteInstruments');
+    if (storedFavorites) {
+      setFavoriteIds(JSON.parse(storedFavorites));
+    }
+  }, []);
+
+  // Save favorites to local storage whenever they change
+  React.useEffect(() => {
+    localStorage.setItem('favoriteInstruments', JSON.stringify(favoriteIds));
+  }, [favoriteIds]);
+
   // Toggle expansion state of an instrument
   const handleToggleExpand = (id: number, event?: React.MouseEvent): void => {
     if (event) {
