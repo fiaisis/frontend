@@ -18,6 +18,7 @@ import {
 import { DatePicker } from '@mui/x-date-pickers';
 import { JobQueryFilters, reductionStates } from '../../lib/types';
 import { instruments } from '../../lib/InstrumentData';
+import dayjs from 'dayjs';
 
 const itemHeight = 48;
 const itemPaddingTop = 8;
@@ -34,17 +35,21 @@ const DatePickerPair: FC<{
   label: string;
   handleAfterChange: (date: string | null) => void;
   handleBeforeChange: (date: string | null) => void;
-}> = ({ label, handleAfterChange, handleBeforeChange }) => (
+  beforeValue: string | null;
+  afterValue: string | null;
+}> = ({ label, handleAfterChange, handleBeforeChange, beforeValue, afterValue }) => (
   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, alignItems: 'center' }}>
     <DatePicker
-      slotProps={{ textField: { size: 'small', sx: { width: 175 } } }}
+      slotProps={{ textField: { size: 'small', sx: { width: 175 }, error: false } }}
       label={`${label} After`}
       onChange={(date) => handleAfterChange(date?.toISOString() ?? null)}
+      value={dayjs(afterValue)}
     />
     <DatePicker
-      slotProps={{ textField: { size: 'small', sx: { width: 175 } } }}
+      slotProps={{ textField: { size: 'small', sx: { width: 175 }, error: false } }}
       label={`${label} Before`}
       onChange={(date) => handleBeforeChange(date?.toISOString() ?? null)}
+      value={dayjs(beforeValue)}
     />
   </Box>
 );
@@ -183,6 +188,28 @@ const FilterContainer: React.FC<{
 
   const clearAndCloseFilters = (): void => {
     handleFiltersChange(Object());
+    setSelectedInstruments([]);
+    setSelectedStates([]);
+    setExperimentNumberIn([]);
+    setExperimentNumberAfter(null);
+    setExperimentNumberBefore(null);
+    setTitle(null);
+    setFilename(null);
+    setJobStartBefore(null);
+    setJobStartAfter(null);
+    setRunStartBefore(null);
+    setRunStartAfter(null);
+    setJobEndBefore(null);
+    setJobEndAfter(null);
+    setRunEndBefore(null);
+    setRunEndAfter(null);
+    setDebouncedExperimentNumberIn([]);
+    setDebouncedTitle(null);
+    setDebouncedFilename(null);
+    setDebouncedExperimentNumberAfter(null);
+    setDebouncedExperimentNumberBefore(null);
+    setRunEndBefore(null);
+    setRunEndAfter(null);
   };
 
   return (
@@ -204,6 +231,7 @@ const FilterContainer: React.FC<{
                   size={'small'}
                   sx={{ width: 175 }}
                   label={'Filename'}
+                  value={filename ?? ''}
                   placeholder={'loq123.nxs'}
                   onChange={(event) => setFilename(event.target.value)}
                 />
@@ -212,6 +240,7 @@ const FilterContainer: React.FC<{
                   sx={{ width: 175 }}
                   label={'Title'}
                   placeholder={'Title'}
+                  value={title ?? ''}
                   onChange={(event) => setTitle(event.target.value)}
                 />
 
@@ -233,6 +262,7 @@ const FilterContainer: React.FC<{
                   size={'small'}
                   sx={{ width: 175 }}
                   label={'Search'}
+                  value={experimentNumberIn ?? ''}
                   placeholder={'12345, 54321'}
                   onChange={(event) => {
                     try {
@@ -251,6 +281,7 @@ const FilterContainer: React.FC<{
                   sx={{ width: 175 }}
                   label={'After'}
                   placeholder={'12345'}
+                  value={experimentNumberAfter ?? ''}
                   onChange={(event) => setExperimentNumberAfter(parseInt(event.target.value, 10))}
                 />
                 <TextField
@@ -258,6 +289,7 @@ const FilterContainer: React.FC<{
                   sx={{ width: 175 }}
                   label={'Before'}
                   placeholder={'54321'}
+                  value={experimentNumberBefore ?? ''}
                   onChange={(event) => setExperimentNumberBefore(parseInt(event.target.value, 10))}
                 />
               </Box>
@@ -271,21 +303,29 @@ const FilterContainer: React.FC<{
                 handleBeforeChange={setRunStartBefore}
                 handleAfterChange={setRunStartAfter}
                 label={'Run Start'}
+                beforeValue={runStartBefore}
+                afterValue={runStartAfter}
               />
               <DatePickerPair
                 handleBeforeChange={setRunEndBefore}
                 handleAfterChange={setRunEndAfter}
                 label={'Run End'}
+                beforeValue={runEndBefore}
+                afterValue={runEndAfter}
               />
               <DatePickerPair
                 handleBeforeChange={setJobStartBefore}
                 handleAfterChange={setJobStartAfter}
                 label={'Job Start'}
+                beforeValue={jobStartBefore}
+                afterValue={jobStartAfter}
               />
               <DatePickerPair
                 handleBeforeChange={setJobEndBefore}
                 handleAfterChange={setJobEndAfter}
                 label={'Job End'}
+                beforeValue={jobEndBefore}
+                afterValue={jobEndAfter}
               />
             </Box>
           </Box>
