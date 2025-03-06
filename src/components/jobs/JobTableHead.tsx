@@ -69,7 +69,7 @@ const JobTableHead: React.FC<JobTableHeadProps> = ({ selectedInstrument, handleS
           {selectedInstrument}
         </TableCell>
         <SortableHeaderCell
-          headerName="Experiment Number"
+          headerName="Experiment number"
           sortKey="experiment_number"
           orderBy={orderBy}
           orderDirection={orderDirection}
@@ -85,7 +85,7 @@ const JobTableHead: React.FC<JobTableHeadProps> = ({ selectedInstrument, handleS
           sx={{ width: '8%', ...headerStyles(theme) }}
         />
         <SortableHeaderCell
-          headerName="Run Start"
+          headerName="Run start"
           sortKey="run_start"
           orderBy={orderBy}
           orderDirection={orderDirection}
@@ -94,7 +94,7 @@ const JobTableHead: React.FC<JobTableHeadProps> = ({ selectedInstrument, handleS
         />
         <SortableHeaderCell
           align={'center'}
-          headerName="Run End"
+          headerName="Run end"
           sortKey="run_end"
           orderBy={orderBy}
           orderDirection={orderDirection}
@@ -102,7 +102,7 @@ const JobTableHead: React.FC<JobTableHeadProps> = ({ selectedInstrument, handleS
           sx={{ width: '12%', ...headerStyles(theme) }}
         />
         <SortableHeaderCell
-          headerName="Job Start"
+          headerName="Job start"
           sortKey="start"
           orderBy={orderBy}
           orderDirection={orderDirection}
@@ -110,7 +110,7 @@ const JobTableHead: React.FC<JobTableHeadProps> = ({ selectedInstrument, handleS
           sx={{ width: '12%', ...headerStyles(theme) }}
         />
         <SortableHeaderCell
-          headerName="Job End"
+          headerName="Job end"
           sortKey="end"
           orderBy={orderBy}
           orderDirection={orderDirection}

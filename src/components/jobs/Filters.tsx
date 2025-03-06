@@ -41,13 +41,13 @@ const DatePickerPair: FC<{
   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, alignItems: 'center' }}>
     <DatePicker
       slotProps={{ textField: { size: 'small', sx: { width: 175 }, error: false } }}
-      label={`${label} After`}
+      label={`${label} after`}
       onChange={(date) => handleAfterChange(date?.toISOString() ?? null)}
       value={dayjs(afterValue)}
     />
     <DatePicker
       slotProps={{ textField: { size: 'small', sx: { width: 175 }, error: false } }}
-      label={`${label} Before`}
+      label={`${label} before`}
       onChange={(date) => handleBeforeChange(date?.toISOString() ?? null)}
       value={dayjs(beforeValue)}
     />
@@ -221,7 +221,7 @@ const FilterContainer: React.FC<{
               <span>General</span>
               <Box display={'flex'} gap={1}>
                 <MultipleSelectCheckmarks
-                  name={'Reduction State'}
+                  name={'Reduction state'}
                   items={(reductionStates as unknown as string[]) ?? []}
                   selectedItems={selectedStates}
                   handleChange={setSelectedStates}
@@ -256,7 +256,7 @@ const FilterContainer: React.FC<{
             </Box>
             <Divider orientation={'vertical'} flexItem />
             <Box display={'flex'} flexDirection={'column'} gap={1}>
-              <span>Experiment Numbers</span>
+              <span>Experiment numbers</span>
               <Box display={'flex'} gap={1}>
                 <TextField
                   size={'small'}
@@ -302,28 +302,28 @@ const FilterContainer: React.FC<{
               <DatePickerPair
                 handleBeforeChange={setRunStartBefore}
                 handleAfterChange={setRunStartAfter}
-                label={'Run Start'}
+                label={'Run start'}
                 beforeValue={runStartBefore}
                 afterValue={runStartAfter}
               />
               <DatePickerPair
                 handleBeforeChange={setRunEndBefore}
                 handleAfterChange={setRunEndAfter}
-                label={'Run End'}
+                label={'Run end'}
                 beforeValue={runEndBefore}
                 afterValue={runEndAfter}
               />
               <DatePickerPair
                 handleBeforeChange={setJobStartBefore}
                 handleAfterChange={setJobStartAfter}
-                label={'Job Start'}
+                label={'Job start'}
                 beforeValue={jobStartBefore}
                 afterValue={jobStartAfter}
               />
               <DatePickerPair
                 handleBeforeChange={setJobEndBefore}
                 handleAfterChange={setJobEndAfter}
-                label={'Job End'}
+                label={'Job end'}
                 beforeValue={jobEndBefore}
                 afterValue={jobEndAfter}
               />
