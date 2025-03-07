@@ -9,7 +9,7 @@ import StarBorderIcon from '@mui/icons-material/StarBorder';
 import StarIcon from '@mui/icons-material/Star';
 
 // Local data
-import { instruments } from './InstrumentData';
+import { instruments } from '../lib/InstrumentData';
 
 const Instruments: React.FC = () => {
   const theme = useTheme();
@@ -136,7 +136,7 @@ const Instruments: React.FC = () => {
                     {/* Instrument description */}
                     <Typography
                       variant="body2"
-                      paragraph
+                      component={'p'}
                       sx={{ flex: 2, marginRight: 2, color: theme.palette.text.primary, textAlign: 'justify' }}
                     >
                       {instrument.description}
