@@ -6,20 +6,20 @@ import ConfigSettingsGeneral from './ConfigSettingsGeneral';
 import FileUploader from './FileUploader';
 import UploadButton from './UploadButton';
 
-// API base URL for LOQ-specific requests
+// API base URL for VESUVIO-specific requests
 const fiaApiUrl = process.env.REACT_APP_FIA_REST_API_URL;
-const instrument_url = `${fiaApiUrl}/extras/loq`;
+const instrument_url = `${fiaApiUrl}/extras/vesuvio`;
 
-const ConfigSettingsLOQ: React.FC = () => {
-  // File uploader logic for LOQ
+const ConfigSettingsVESUVIO: React.FC = () => {
+  // File uploader logic for VESUVIO
   const { selectedFile, uploadMessage, handleFileSelection, handleFileUpload } = FileUploader(instrument_url);
 
   return (
-    // Render ConfigSettingsGeneral with additional LOQ-specific elements
+    // Render ConfigSettingsGeneral with additional VESUVIO-specific elements
     <ConfigSettingsGeneral onFileUpload={handleFileUpload}>
       <UploadButton onChange={handleFileSelection} selectedFile={selectedFile} uploadMessage={uploadMessage} />
     </ConfigSettingsGeneral>
   );
 };
 
-export default ConfigSettingsLOQ;
+export default ConfigSettingsVESUVIO;

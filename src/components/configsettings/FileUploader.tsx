@@ -19,12 +19,15 @@ const FileUploader = (instrument_url: string) => {
 
   // Callback for uploading the chosen file
   const handleFileUpload = async (): Promise<void> => {
+    console.log('Before SelectedFile');
     if (!selectedFile) return;
-
+    console.log('After selectedFileCheck');
     try {
       const formData = new FormData();
       formData.append('file', selectedFile);
+      console.log('FormDataSet');
       await axios.post(`${instrument_url}/${selectedFile.name}`, formData);
+      console.log('Axios post made');
       setUploadMessage(`Uploaded file: ${selectedFile.name}`);
     } catch (error) {
       console.error('Error uploading file:', error);

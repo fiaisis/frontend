@@ -3,6 +3,7 @@ import ConfigSettingsGeneral from './ConfigSettingsGeneral';
 import { Drawer, useTheme } from '@mui/material';
 import React from 'react';
 import ConfigSettingsSANS2D from './ConfigSettingsSANS2D';
+import ConfigSettingsVESUVIO from './ConfigSettingsVESUVIO';
 
 const InstrumentConfigDrawer: React.FC<{
   selectedInstrument: string;
@@ -27,6 +28,8 @@ const InstrumentConfigDrawer: React.FC<{
         <ConfigSettingsLOQ />
       ) : selectedInstrument === 'SANS2D' ? (
         <ConfigSettingsSANS2D />
+      ) : selectedInstrument === 'VESUVIO' ? (
+        <ConfigSettingsVESUVIO />
       ) : (
         <ConfigSettingsGeneral />
       )}
