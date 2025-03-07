@@ -78,7 +78,7 @@ const JobTable: React.FC<{
             onClick={() => setFiltersOpen(!filtersOpen)}
             sx={{ cursor: 'pointer', color: theme.palette.mode === 'dark' ? '#86b4ff' : theme.palette.primary.main }}
           >
-            Advanced Filters {filtersOpen ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
+            Advanced filters {filtersOpen ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
           </Typography>
           <TablePagination
             component="div"
