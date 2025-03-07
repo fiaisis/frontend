@@ -7,8 +7,7 @@ import FileUploader from './FileUploader';
 import UploadButton from './UploadButton';
 
 // API base URL for LOQ-specific requests
-const fiaApiUrl = process.env.REACT_APP_FIA_REST_API_URL;
-const instrument_url = `${fiaApiUrl}/extras/loq`;
+const instrument_url = `/extras/loq`;
 
 const ConfigSettingsLOQ: React.FC = () => {
   // File uploader logic for LOQ

@@ -117,7 +117,7 @@ const ConfigSettingsGeneral: React.FC<ConfigSettingsGeneralProps> = ({ children,
       .then(() => {
         if (onFileUpload) {
           console.log('Promises are being made!!!!!!!!!');
-          Promise.resolve(onFileUpload);
+          Promise.resolve(onFileUpload());
         }
         setApplyMessage('Changes applied successfully');
         setUnsavedChanges(false);

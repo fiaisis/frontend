@@ -6,9 +6,8 @@ import ConfigSettingsGeneral from './ConfigSettingsGeneral';
 import FileUploader from './FileUploader';
 import UploadButton from './UploadButton';
 
-// API base URL for VESUVIO-specific requests
-const fiaApiUrl = process.env.REACT_APP_FIA_REST_API_URL;
-const instrument_url = `${fiaApiUrl}/extras/vesuvio`;
+// API base URL for VESUVIO-specific request
+const instrument_url = `extras/vesuvio`;
 
 const ConfigSettingsVESUVIO: React.FC = () => {
   // File uploader logic for VESUVIO
