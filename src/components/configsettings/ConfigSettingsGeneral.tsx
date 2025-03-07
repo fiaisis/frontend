@@ -116,7 +116,7 @@ const ConfigSettingsGeneral: React.FC<ConfigSettingsGeneralProps> = ({ children,
       .put(`/instrument/${instrumentName}/specification`, updatedJsonContent)
       .then(() => {
         if (onFileUpload) {
-          Promise.resolve(onFileUpload);
+          Promise.resolve(onFileUpload());
         }
         setApplyMessage('Changes applied successfully');
         setUnsavedChanges(false);

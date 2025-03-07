@@ -1,8 +1,7 @@
 // React components
 import { useState } from 'react';
 
-// Axios components
-import axios from 'axios';
+import { fiaApi } from '../../lib/api';
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 const FileUploader = (instrument_url: string) => {
@@ -20,11 +19,10 @@ const FileUploader = (instrument_url: string) => {
   // Callback for uploading the chosen file
   const handleFileUpload = async (): Promise<void> => {
     if (!selectedFile) return;
-
     try {
       const formData = new FormData();
       formData.append('file', selectedFile);
-      await axios.post(`${instrument_url}/${selectedFile.name}`, formData);
+      await fiaApi.post(`${instrument_url}/${selectedFile.name}`, formData);
       setUploadMessage(`Uploaded file: ${selectedFile.name}`);
     } catch (error) {
       console.error('Error uploading file:', error);
