@@ -286,6 +286,7 @@ const FilterContainer: React.FC<{
                 />
                 <TextField
                   size={'small'}
+                  inputMode={'numeric'}
                   sx={{ width: 175 }}
                   label={'Before'}
                   placeholder={'54321'}
