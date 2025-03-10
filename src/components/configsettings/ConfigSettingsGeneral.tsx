@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
-import { Box, Button, Grid, IconButton, Tab, Tabs, Tooltip, Typography, useTheme } from '@mui/material';
+import { Box, Button, IconButton, Tab, Tabs, Tooltip, Typography, useTheme } from '@mui/material';
+import Grid from '@mui/material/Grid2';
 import { Info } from '@mui/icons-material';
 
 import MonacoEditor from '@monaco-editor/react';
@@ -199,7 +200,7 @@ const ConfigSettingsGeneral: React.FC<ConfigSettingsGeneralProps> = ({ children,
         <Grid container direction="column" spacing={2}>
           {/* Dynamically generated form fields */}
           {Object.keys(formFields).map((key) => (
-            <Grid item key={key}>
+            <Grid key={key}>
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
                 <Typography variant="body1" sx={{ width: '150px', mb: 0 }}>
                   {key}:
