@@ -67,6 +67,35 @@ const JobStatusIcon: React.FC<{ state: string }> = ({ state }: { state: string }
   return <Tooltip title={state}>{icons[state] || <ErrorOutline />}</Tooltip>;
 };
 
+const handleDownload = async (job: Job, output: string): Promise<void> => {
+  const apiUrl = `${process.env.REACT_APP_FIA_REST_API_URL}/find_file/instrument/${job.run.instrument_name}/experiment_number/${job.run.experiment_number}?filename=${encodeURIComponent(output)}`;
+
+  try {
+    const response = await fetch(apiUrl, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('scigateway:token')}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`API request failed with status ${response.status}`);
+    }
+
+    const fileContent = await response.text();
+    const blob = new Blob([fileContent], { type: 'text/plain' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `${output}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  } catch (error) {
+    console.error('Failed to download file:', error);
+  }
+};
+
 const JobOutput: React.FC<{ job: Job }> = ({ job }: { job: Job }): ReactElement => {
   try {
     let parsedOutputs;
@@ -103,13 +132,9 @@ const JobOutput: React.FC<{ job: Job }> = ({ job }: { job: Job }): ReactElement 
               >
                 View
               </Button>
-              <Tooltip title="Will be added in the future">
-                <span>
-                  <Button variant="contained" sx={{ marginLeft: 2 }} disabled>
-                    Download
-                  </Button>
-                </span>
-              </Tooltip>
+              <Button variant="contained" sx={{ marginLeft: 2 }} onClick={() => handleDownload(job, output)}>
+                Download
+              </Button>
             </Box>
           </Box>
         </TableCell>
