@@ -68,7 +68,7 @@ const JobStatusIcon: React.FC<{ state: string }> = ({ state }: { state: string }
 };
 
 const handleDownload = async (job: Job, output: string): Promise<void> => {
-  const apiUrl = `${process.env.REACT_APP_FIA_REST_API_URL}/find_file/instrument/${job.run.instrument_name}/experiment_number/${job.run.experiment_number}?filename=${encodeURIComponent(output)}`;
+  const apiUrl = `${process.env.REACT_APP_FIA_REST_API_URL}/job/${job.id}/filename/${encodeURIComponent(output)}`;
 
   try {
     const response = await fetch(apiUrl, {
@@ -83,11 +83,10 @@ const handleDownload = async (job: Job, output: string): Promise<void> => {
       throw new Error(`API request failed with status ${response.status}`);
     }
 
-    const fileContent = await response.text();
-    const blob = new Blob([fileContent], { type: 'text/plain' });
+    const blob = await response.blob();
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `${output}.txt`;
+    link.download = output;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
