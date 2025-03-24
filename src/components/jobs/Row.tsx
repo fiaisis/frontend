@@ -75,7 +75,6 @@ const handleDownload = async (job: Job, output: string): Promise<void> => {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${localStorage.getItem('scigateway:token')}`,
-        'Content-Type': 'application/json',
       },
     });
 
