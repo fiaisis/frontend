@@ -97,6 +97,14 @@ const handleDownload = async (job: Job, output: string): Promise<void> => {
 
 const JobOutput: React.FC<{ job: Job }> = ({ job }: { job: Job }): ReactElement => {
   try {
+    if (typeof job.outputs !== 'string') {
+      return (
+        <TableRow>
+          <TableCell>No outputs to show</TableCell>
+        </TableRow>
+      );
+    }
+
     let parsedOutputs;
     if (job.outputs.startsWith('[') && job.outputs.endsWith(']')) {
       parsedOutputs = JSON.parse(job.outputs.replace(/'/g, '"'));
