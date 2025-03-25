@@ -97,11 +97,7 @@ const handleDownload = async (job: Job, output: string): Promise<void> => {
 const JobOutput: React.FC<{ job: Job }> = ({ job }: { job: Job }): ReactElement => {
   try {
     if (typeof job.outputs !== 'string') {
-      return (
-        <TableRow>
-          <TableCell>No outputs to show</TableCell>
-        </TableRow>
-      );
+      return <Typography>No outputs to show</Typography>;
     }
 
     let parsedOutputs;
