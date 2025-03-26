@@ -86,7 +86,13 @@ const JobTable: React.FC<{
             page={currentPage}
             onPageChange={(_, newPage) => handlePageChange(newPage)}
             rowsPerPage={rowsPerPage}
-            onRowsPerPageChange={(e) => setRowsPerPage(parseInt(e.target.value, 10))}
+            onRowsPerPageChange={(e) => {
+              // Prevents the offset from going out of range and showing an empty table
+              const newRowsPerPage = parseInt(e.target.value, 10);
+              const newPage = Math.floor((currentPage * rowsPerPage) / newRowsPerPage);
+              setRowsPerPage(newRowsPerPage);
+              handlePageChange(newPage);
+            }}
           />
         </Box>
         <FilterContainer
