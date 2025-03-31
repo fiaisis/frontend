@@ -35,6 +35,7 @@ import {
 import ReactGA from 'react-ga4';
 import { Link } from 'react-router-dom';
 import Grid from '@mui/material/Grid2';
+import { fiaApi } from '../../lib/api';
 
 const ellipsisWrap = {
   whiteSpace: 'nowrap',
@@ -68,21 +69,12 @@ const JobStatusIcon: React.FC<{ state: string }> = ({ state }: { state: string }
 };
 
 const handleDownload = async (job: Job, output: string): Promise<void> => {
-  const apiUrl = `${process.env.REACT_APP_FIA_REST_API_URL}/job/${job.id}/filename/${encodeURIComponent(output)}`;
-
   try {
-    const response = await fetch(apiUrl, {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('scigateway:token')}`,
-      },
+    const response = await fiaApi.get(`/job/${job.id}/filename/${encodeURIComponent(output)}`, {
+      responseType: 'blob',
     });
 
-    if (!response.ok) {
-      throw new Error(`API request failed with status ${response.status}`);
-    }
-
-    const blob = await response.blob();
+    const blob = response.data;
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
     link.download = output;
