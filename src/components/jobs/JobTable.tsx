@@ -12,6 +12,7 @@ import {
   useTheme,
 } from '@mui/material';
 import { KeyboardArrowDown, KeyboardArrowUp } from '@mui/icons-material';
+import { Snackbar, Alert } from '@mui/material';
 import React, { useEffect, useState } from 'react';
 import { Job, JobQueryFilters } from '../../lib/types';
 import Row from './Row';
@@ -41,6 +42,9 @@ const JobTable: React.FC<{
   const countQueryPath = selectedInstrument === 'ALL' ? '/jobs/count' : `/instrument/${selectedInstrument}/jobs/count`;
   const fetchJobs = useFetchJobs(queryPath, query, setJobs);
   const fetchTotalCount = useFetchTotalCount(countQueryPath, countQuery, setTotalRows);
+  const [isBulkRerunning, setIsBulkRerunning] = useState(false);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [bulkRerunSuccessful, setBulkRerunSuccessful] = useState(true);
 
   useEffect(() => {
     fetchJobs().then(() => setLoading(false));
@@ -51,8 +55,27 @@ const JobTable: React.FC<{
     void Promise.resolve(fetchJobs());
     void Promise.resolve(fetchTotalCount);
   };
-  const handleRerun = async (job: Job): Promise<void> => {
+  const submitRerun = async (job: Job): Promise<void> => {
     await fiaApi.post('/job/rerun', { job_id: job.id, runner_image: job.runner_image, script: job.script.value });
+  };
+
+  const handleBulkRerun = async (): Promise<void> => {
+    setIsBulkRerunning(true);
+    let allSuccessful = true;
+
+    for (const job of jobs) {
+      console.log(`Rerunning job ${job.id}`);
+      try {
+        await submitRerun(job);
+      } catch (error) {
+        console.error(`Failed to rerun job ${job.id}`, error);
+        allSuccessful = false;
+      }
+    }
+    setBulkRerunSuccessful(allSuccessful);
+    setSnackbarOpen(true);
+    refreshJobs();
+    setIsBulkRerunning(false);
   };
 
   const handleSort = (sortKey: string): void => {
@@ -71,6 +94,37 @@ const JobTable: React.FC<{
   ) : (
     <Box sx={{ maxHeight: 660, pb: 1 }}>
       <>
+        <Snackbar
+          open={snackbarOpen}
+          autoHideDuration={5000}
+          onClose={(event, reason) => {
+            if (reason !== 'clickaway') {
+              setSnackbarOpen(false);
+            }
+          }}
+          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        >
+          <Alert
+            sx={{
+              padding: '10px 14px',
+              fontSize: '1rem',
+              width: '100%',
+              maxWidth: '600px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              border: '1px solid',
+              borderRadius: '8px',
+              fontWeight: 'bold',
+            }}
+            severity={bulkRerunSuccessful ? 'success' : 'error'}
+          >
+            {bulkRerunSuccessful
+              ? `All reductions rerun successfully`
+              : `Some reductions could not be rerun — please check the console for details`}
+          </Alert>
+        </Snackbar>
+
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
           <Typography
             display={'flex'}
@@ -94,6 +148,9 @@ const JobTable: React.FC<{
           visible={filtersOpen}
           handleFiltersClose={() => setFiltersOpen(false)}
           handleFiltersChange={setFilters}
+          jobs={jobs}
+          handleBulkRerun={handleBulkRerun}
+          isBulkRerunning={isBulkRerunning}
         />
         <TableContainer component={Paper} sx={{ maxHeight: 624, overflowY: 'scroll' }}>
           <Table stickyHeader sx={{ tableLayout: 'fixed', width: '100%' }}>
@@ -122,7 +179,7 @@ const JobTable: React.FC<{
                   index={index}
                   job={job}
                   showInstrumentColumn={selectedInstrument === 'ALL'}
-                  submitRerun={handleRerun}
+                  submitRerun={submitRerun}
                   refreshJobs={refreshJobs}
                 />
               ))}
