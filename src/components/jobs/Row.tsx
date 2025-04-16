@@ -35,6 +35,7 @@ import {
 import ReactGA from 'react-ga4';
 import { Link } from 'react-router-dom';
 import Grid from '@mui/material/Grid2';
+import { fiaApi } from '../../lib/api';
 
 const ellipsisWrap = {
   whiteSpace: 'nowrap',
@@ -67,8 +68,30 @@ const JobStatusIcon: React.FC<{ state: string }> = ({ state }: { state: string }
   return <Tooltip title={state}>{icons[state] || <ErrorOutline />}</Tooltip>;
 };
 
+const handleDownload = async (job: Job, output: string): Promise<void> => {
+  try {
+    const response = await fiaApi.get(`/job/${job.id}/filename/${encodeURIComponent(output)}`, {
+      responseType: 'blob',
+    });
+
+    const blob = response.data;
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = output;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  } catch (error) {
+    console.error('Failed to download file:', error);
+  }
+};
+
 const JobOutput: React.FC<{ job: Job }> = ({ job }: { job: Job }): ReactElement => {
   try {
+    if (typeof job.outputs !== 'string') {
+      return <Typography>No outputs to show</Typography>;
+    }
+
     let parsedOutputs;
     if (job.outputs.startsWith('[') && job.outputs.endsWith(']')) {
       parsedOutputs = JSON.parse(job.outputs.replace(/'/g, '"'));
@@ -103,13 +126,9 @@ const JobOutput: React.FC<{ job: Job }> = ({ job }: { job: Job }): ReactElement 
               >
                 View
               </Button>
-              <Tooltip title="Will be added in the future">
-                <span>
-                  <Button variant="contained" sx={{ marginLeft: 2 }} disabled>
-                    Download
-                  </Button>
-                </span>
-              </Tooltip>
+              <Button variant="contained" sx={{ marginLeft: 2 }} onClick={() => handleDownload(job, output)}>
+                Download
+              </Button>
             </Box>
           </Box>
         </TableCell>
