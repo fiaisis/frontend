@@ -16,7 +16,7 @@ import {
   TextField,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers';
-import { JobQueryFilters, reductionStates } from '../../lib/types';
+import { JobQueryFilters, reductionStates, Job } from '../../lib/types';
 import { instruments } from '../../lib/InstrumentData';
 import dayjs from 'dayjs';
 
@@ -98,7 +98,10 @@ const FilterContainer: React.FC<{
   handleFiltersClose: () => void;
   showInstrumentFilter: boolean;
   handleFiltersChange: (filters: JobQueryFilters) => void;
-}> = ({ visible, showInstrumentFilter, handleFiltersChange }): ReactElement => {
+  jobs: Job[];
+  handleBulkRerun: () => void;
+  isBulkRerunning: boolean;
+}> = ({ visible, showInstrumentFilter, handleFiltersChange, jobs, handleBulkRerun, isBulkRerunning }): ReactElement => {
   const [selectedInstruments, setSelectedInstruments] = React.useState<string[]>([]);
   const [selectedStates, setSelectedStates] = React.useState<string[]>([]);
   const [title, setTitle] = React.useState<string | null>(null);
@@ -330,14 +333,18 @@ const FilterContainer: React.FC<{
               />
             </Box>
           </Box>
-          <Box sx={{ alignSelf: 'end' }}>
-            <Button
-              variant={'contained'}
-              color={'warning'}
-              sx={{ width: 150, alignSelf: 'end' }}
-              onClick={clearAndCloseFilters}
-            >
+          <Box sx={{ alignSelf: 'end', display: 'flex', gap: 1 }}>
+            <Button variant="contained" color="warning" sx={{ width: 150 }} onClick={clearAndCloseFilters}>
               Clear
+            </Button>
+            <Button
+              variant="contained"
+              color="primary"
+              sx={{ width: 220 }}
+              disabled={jobs.length === 0 || isBulkRerunning}
+              onClick={handleBulkRerun}
+            >
+              {isBulkRerunning ? 'Rerunning...' : `Rerun ${jobs.length} reduction${jobs.length === 1 ? '' : 's'}`}
             </Button>
           </Box>
         </Paper>
