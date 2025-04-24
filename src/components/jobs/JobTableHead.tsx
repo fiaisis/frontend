@@ -65,7 +65,7 @@ const JobTableHead: React.FC<JobTableHeadProps> = ({ selectedInstrument, handleS
   return (
     <TableHead sx={{ '& th': { py: 0.5 }, height: '54px' }}>
       <TableRow>
-        <TableCell sx={{ ...headerStyles(theme), width: '10%' }} colSpan={2}>
+        <TableCell sx={{ ...headerStyles(theme), width: '10%' }} colSpan={3}>
           {selectedInstrument}
         </TableCell>
         <SortableHeaderCell
@@ -74,7 +74,7 @@ const JobTableHead: React.FC<JobTableHeadProps> = ({ selectedInstrument, handleS
           orderBy={orderBy}
           orderDirection={orderDirection}
           onSort={handleSort}
-          sx={{ width: '18%', ...headerStyles(theme) }}
+          sx={{ width: '14%', ...headerStyles(theme) }}
         />
         <SortableHeaderCell
           headerName="Filename"
@@ -82,7 +82,7 @@ const JobTableHead: React.FC<JobTableHeadProps> = ({ selectedInstrument, handleS
           orderBy={orderBy}
           orderDirection={orderDirection}
           onSort={handleSort}
-          sx={{ width: '8%', ...headerStyles(theme) }}
+          sx={{ width: '12%', ...headerStyles(theme) }}
         />
         <SortableHeaderCell
           headerName="Run start"

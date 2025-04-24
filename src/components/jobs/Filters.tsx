@@ -333,18 +333,9 @@ const FilterContainer: React.FC<{
               />
             </Box>
           </Box>
-          <Box sx={{ alignSelf: 'end', display: 'flex', gap: 1 }}>
+          <Box sx={{ alignSelf: 'end' }}>
             <Button variant="contained" color="warning" sx={{ width: 150 }} onClick={clearAndCloseFilters}>
               Clear
-            </Button>
-            <Button
-              variant="contained"
-              color="primary"
-              sx={{ width: 220 }}
-              disabled={jobs.length === 0 || isBulkRerunning}
-              onClick={handleBulkRerun}
-            >
-              {isBulkRerunning ? 'Rerunning...' : `Rerun ${jobs.length} reduction${jobs.length === 1 ? '' : 's'}`}
             </Button>
           </Box>
         </Paper>

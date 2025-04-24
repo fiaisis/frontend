@@ -4,6 +4,7 @@ import {
   Box,
   Button,
   CircularProgress,
+  Checkbox,
   Collapse,
   IconButton,
   Snackbar,
@@ -193,9 +194,11 @@ const Row: React.FC<{
   job: Job;
   showInstrumentColumn: boolean;
   index: number;
+  isSelected: boolean;
+  toggleSelection: (jobId: number) => void;
   submitRerun: (job: Job) => Promise<void>;
   refreshJobs: () => void;
-}> = ({ job, showInstrumentColumn, index, submitRerun, refreshJobs }) => {
+}> = ({ job, showInstrumentColumn, index, submitRerun, refreshJobs, isSelected, toggleSelection }) => {
   const [open, setOpen] = useState(false);
   const theme = useTheme();
   const [loading, setLoading] = useState(false);
@@ -339,16 +342,21 @@ const Row: React.FC<{
         }}
         onClick={() => setOpen(!open)}
       >
+        <TableCell padding="checkbox">
+          <Checkbox
+            color="primary"
+            checked={isSelected}
+            onChange={() => toggleSelection(job.id)}
+            onClick={(e) => e.stopPropagation()}
+          />
+        </TableCell>
+
         <TableCell>
           <IconButton aria-label="expand row" size="small">
             {open ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
           </IconButton>
         </TableCell>
-        <TableCell
-          sx={{
-            ...ellipsisWrap,
-          }}
-        >
+        <TableCell>
           <JobStatusIcon state={job.state} />
         </TableCell>
         <TableCell
@@ -420,7 +428,7 @@ const Row: React.FC<{
       </TableRow>
       <TableRow>
         <TableCell
-          colSpan={showInstrumentColumn ? 10 : 9}
+          colSpan={showInstrumentColumn ? 11 : 10}
           style={{ paddingBottom: 0, paddingTop: 0, backgroundColor: bandedRows.backgroundColor }}
         >
           <Collapse in={open} timeout="auto" unmountOnExit>
