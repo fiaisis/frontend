@@ -33,7 +33,11 @@ const JobTable: React.FC<{
   const [jobs, setJobs] = useState<Job[]>([]);
   const [totalRows, setTotalRows] = useState<number>(0);
   const [filtersOpen, setFiltersOpen] = useState<boolean>(false);
-  const [rowsPerPage, setRowsPerPage] = useState<number>(25);
+  const getInitialRowsPerPage = (): number => {
+    const stored = localStorage.getItem('jobTableRowsPerPage');
+    return stored ? parseInt(stored, 10) : 25;
+  };
+  const [rowsPerPage, setRowsPerPage] = useState<number>(getInitialRowsPerPage);
   const [orderDirection, setOrderDirection] = useState<'asc' | 'desc'>('desc');
   const [orderBy, setOrderBy] = useState<string>('run_start');
   const [loading, setLoading] = useState<boolean>(true);
@@ -182,7 +186,14 @@ const JobTable: React.FC<{
             page={currentPage}
             onPageChange={(_, newPage) => handlePageChange(newPage)}
             rowsPerPage={rowsPerPage}
-            onRowsPerPageChange={(e) => setRowsPerPage(parseInt(e.target.value, 10))}
+            onRowsPerPageChange={(e) => {
+              // Prevents the offset from going out of range and showing an empty table
+              const newRowsPerPage = parseInt(e.target.value, 10);
+              const newPage = Math.floor((currentPage * rowsPerPage) / newRowsPerPage);
+              setRowsPerPage(newRowsPerPage);
+              localStorage.setItem('jobTableRowsPerPage', newRowsPerPage.toString());
+              handlePageChange(newPage);
+            }}
           />
         </Box>
 

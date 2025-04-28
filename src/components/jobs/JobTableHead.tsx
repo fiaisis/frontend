@@ -74,7 +74,7 @@ const JobTableHead: React.FC<JobTableHeadProps> = ({ selectedInstrument, handleS
           orderBy={orderBy}
           orderDirection={orderDirection}
           onSort={handleSort}
-          sx={{ width: '14%', ...headerStyles(theme) }}
+          sx={{ width: '12%', ...headerStyles(theme) }}
         />
         <SortableHeaderCell
           headerName="Filename"
