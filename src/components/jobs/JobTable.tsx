@@ -162,22 +162,30 @@ const JobTable: React.FC<{
             </Typography>
 
             {/* Bulk rerun button */}
-            <Button
-              variant="contained"
-              color="primary"
-              disabled={selectedJobIds.length === 0 || isBulkRerunning}
-              onClick={handleBulkRerun}
-              sx={{ height: '36px' }}
-            >
-              {isBulkRerunning ? 'Rerunning...' : `Rerun selected reductions (${selectedJobIds.length})`}
-            </Button>
+            {selectedJobIds.length > 0 && (
+              <>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={handleBulkRerun}
+                  sx={{ height: '36px', width: 260 }}
+                  disabled={isBulkRerunning}
+                >
+                  {isBulkRerunning ? (
+                    <CircularProgress size={24} color="inherit" />
+                  ) : (
+                    `Rerun selected reductions (${selectedJobIds.length})`
+                  )}
+                </Button>
 
-            {/* Clear selection button */}
-            <Tooltip title="Clear selection">
-              <IconButton onClick={clearSelectedJobs} disabled={selectedJobIds.length === 0}>
-                <Close />
-              </IconButton>
-            </Tooltip>
+                {/* Clear selection button */}
+                <Tooltip title="Clear selection">
+                  <IconButton onClick={clearSelectedJobs}>
+                    <Close />
+                  </IconButton>
+                </Tooltip>
+              </>
+            )}
           </Box>
 
           <TablePagination
