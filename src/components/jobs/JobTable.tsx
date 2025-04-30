@@ -40,7 +40,6 @@ const JobTable: React.FC<{
   const [rowsPerPage, setRowsPerPage] = useState<number>(getInitialRowsPerPage);
   const [orderDirection, setOrderDirection] = useState<'asc' | 'desc'>('desc');
   const [orderBy, setOrderBy] = useState<string>('run_start');
-  const [loading, setLoading] = useState<boolean>(true);
   const offset = currentPage * rowsPerPage;
   const [filters, setFilters] = useState<JobQueryFilters>({});
   const query = `limit=${rowsPerPage}&offset=${offset}&order_by=${orderBy}&order_direction=${orderDirection}&include_run=true&filters=${JSON.stringify(filters)}&as_user=${asUser}`;
@@ -55,7 +54,7 @@ const JobTable: React.FC<{
   const [selectedJobIds, setSelectedJobIds] = useState<number[]>([]);
 
   useEffect(() => {
-    fetchJobs().then(() => setLoading(false));
+    fetchJobs();
     void fetchTotalCount();
   }, [fetchTotalCount, fetchJobs]);
 
@@ -63,6 +62,11 @@ const JobTable: React.FC<{
     // Clear selections when the View as user toggle changes
     setSelectedJobIds([]);
   }, [asUser]);
+
+  useEffect(() => {
+    // Clear selections when the page changes
+    setSelectedJobIds([]);
+  }, [currentPage]);
 
   const refreshJobs = (): void => {
     void Promise.resolve(fetchJobs());
@@ -114,10 +118,8 @@ const JobTable: React.FC<{
 
   const theme = useTheme();
 
-  return loading ? (
-    <CircularProgress />
-  ) : (
-    <Box sx={{ maxHeight: 660, pb: 1 }}>
+  return (
+    <Box sx={{ maxHeight: 700, pb: 1 }}>
       <>
         <Snackbar
           open={snackbarOpen}
@@ -214,14 +216,24 @@ const JobTable: React.FC<{
           handleBulkRerun={handleBulkRerun}
           isBulkRerunning={isBulkRerunning}
         />
-        <TableContainer component={Paper} sx={{ maxHeight: 624, overflowY: 'scroll' }}>
+        <TableContainer component={Paper} sx={{ maxHeight: 660, overflowY: 'scroll' }}>
           <Table stickyHeader sx={{ tableLayout: 'fixed', width: '100%' }}>
             <JobTableHead
               selectedInstrument={selectedInstrument}
               orderBy={orderBy}
               orderDirection={orderDirection}
               handleSort={handleSort}
+              allSelected={jobs.length > 0 && selectedJobIds.length === jobs.length}
+              someSelected={selectedJobIds.length > 0 && selectedJobIds.length < jobs.length}
+              toggleSelectAll={() => {
+                if (selectedJobIds.length === jobs.length) {
+                  setSelectedJobIds([]);
+                } else {
+                  setSelectedJobIds(jobs.map((job) => job.id));
+                }
+              }}
             />
+
             <TableBody>
               {jobs.length === 0 && (
                 <TableRow>

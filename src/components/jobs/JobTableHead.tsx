@@ -1,4 +1,14 @@
-import { Box, CSSObject, SxProps, TableCell, TableHead, TableRow, TableSortLabel, useTheme } from '@mui/material';
+import {
+  Box,
+  Checkbox,
+  CSSObject,
+  SxProps,
+  TableCell,
+  TableHead,
+  TableRow,
+  TableSortLabel,
+  useTheme,
+} from '@mui/material';
 import React from 'react';
 import { Theme } from '@mui/material/styles';
 
@@ -58,15 +68,33 @@ interface JobTableHeadProps {
   orderBy: string;
   orderDirection: 'asc' | 'desc';
   handleSort: (key: string) => void;
+  allSelected: boolean;
+  someSelected: boolean;
+  toggleSelectAll: () => void;
 }
 
-const JobTableHead: React.FC<JobTableHeadProps> = ({ selectedInstrument, handleSort, orderBy, orderDirection }) => {
+const JobTableHead: React.FC<JobTableHeadProps> = ({
+  selectedInstrument,
+  handleSort,
+  orderBy,
+  orderDirection,
+  allSelected,
+  someSelected,
+  toggleSelectAll,
+}) => {
   const theme = useTheme();
   return (
     <TableHead sx={{ '& th': { py: 0.5 }, height: '54px' }}>
       <TableRow>
-        <TableCell sx={{ ...headerStyles(theme), width: '10%' }} colSpan={3}>
-          {selectedInstrument}
+        <TableCell sx={{ ...headerStyles(theme), width: '12%' }} colSpan={3}>
+          Select all
+          <Checkbox
+            color="primary"
+            checked={allSelected}
+            indeterminate={!allSelected && someSelected}
+            onChange={toggleSelectAll}
+            size="small"
+          />
         </TableCell>
         <SortableHeaderCell
           headerName="Experiment number"
