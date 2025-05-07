@@ -147,7 +147,7 @@ const JobTable: React.FC<{
             severity={bulkRerunSuccessful ? 'success' : 'error'}
           >
             {bulkRerunSuccessful
-              ? `All reductions rerun successfully`
+              ? `Reruns started successfully for all selected reductions`
               : `Some reductions could not be rerun — please check the console for details`}
           </Alert>
         </Snackbar>
