@@ -105,6 +105,7 @@ const JobTable: React.FC<{
           visible={filtersOpen}
           handleFiltersClose={() => setFiltersOpen(false)}
           handleFiltersChange={setFilters}
+          resetPageNumber={() => handlePageChange(0)} // Reset page number when filters change
         />
         <TableContainer component={Paper} sx={{ maxHeight: 624, overflowY: 'scroll' }}>
           <Table stickyHeader sx={{ tableLayout: 'fixed', width: '100%' }}>

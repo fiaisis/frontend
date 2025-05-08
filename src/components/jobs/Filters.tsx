@@ -1,4 +1,4 @@
-import React, { FC, ReactElement, useEffect } from 'react';
+import React, { FC, ReactElement, useEffect, useState, Dispatch, SetStateAction } from 'react';
 import {
   Box,
   Button,
@@ -30,6 +30,18 @@ const menuProps = {
     },
   },
 };
+
+// Hook for page-resetting when a filter is changed
+function useFilterWithReset<T>(initialValue: T, resetPageNumber: () => void): [T, Dispatch<SetStateAction<T>>] {
+  const [value, setValue] = useState<T>(initialValue);
+
+  const setValueAndReset: Dispatch<SetStateAction<T>> = (newValue) => {
+    setValue(newValue);
+    resetPageNumber();
+  };
+
+  return [value, setValueAndReset];
+}
 
 const DatePickerPair: FC<{
   label: string;
@@ -98,27 +110,33 @@ const FilterContainer: React.FC<{
   handleFiltersClose: () => void;
   showInstrumentFilter: boolean;
   handleFiltersChange: (filters: JobQueryFilters) => void;
-}> = ({ visible, showInstrumentFilter, handleFiltersChange }): ReactElement => {
-  const [selectedInstruments, setSelectedInstruments] = React.useState<string[]>([]);
-  const [selectedStates, setSelectedStates] = React.useState<string[]>([]);
-  const [title, setTitle] = React.useState<string | null>(null);
-  const [debouncedTitle, setDebouncedTitle] = React.useState<string | null>(null);
-  const [experimentNumberIn, setExperimentNumberIn] = React.useState<string[]>([]);
-  const [debouncedExperimentNumberIn, setDebouncedExperimentNumberIn] = React.useState<string[]>([]);
-  const [filename, setFilename] = React.useState<string | null>(null);
+  resetPageNumber: () => void;
+}> = ({ visible, showInstrumentFilter, handleFiltersChange, resetPageNumber }): ReactElement => {
+  const [selectedInstruments, setSelectedInstruments] = useFilterWithReset<string[]>([], resetPageNumber);
+  const [selectedStates, setSelectedStates] = useFilterWithReset<string[]>([], resetPageNumber);
+  const [title, setTitle] = useFilterWithReset<string | null>(null, resetPageNumber);
+  const [filename, setFilename] = useFilterWithReset<string | null>(null, resetPageNumber);
+
+  const [experimentNumberIn, setExperimentNumberIn] = useFilterWithReset<string[]>([], resetPageNumber);
+  const [experimentNumberAfter, setExperimentNumberAfter] = useFilterWithReset<number | null>(null, resetPageNumber);
+  const [experimentNumberBefore, setExperimentNumberBefore] = useFilterWithReset<number | null>(null, resetPageNumber);
+
+  const [jobStartBefore, setJobStartBefore] = useFilterWithReset<string | null>(null, resetPageNumber);
+  const [jobStartAfter, setJobStartAfter] = useFilterWithReset<string | null>(null, resetPageNumber);
+  const [jobEndBefore, setJobEndBefore] = useFilterWithReset<string | null>(null, resetPageNumber);
+  const [jobEndAfter, setJobEndAfter] = useFilterWithReset<string | null>(null, resetPageNumber);
+
+  const [debouncedTitle, setDebouncedTitle] = useState<string | null>(null);
   const [debouncedFilename, setDebouncedFilename] = React.useState<string | null>(null);
-  const [experimentNumberAfter, setExperimentNumberAfter] = React.useState<number | null>(null);
-  const [debouncedExperimentNumberAfter, setDebouncedExperimentNumberAfter] = React.useState<number | null>(null);
-  const [experimentNumberBefore, setExperimentNumberBefore] = React.useState<number | null>(null);
-  const [debouncedExperimentNumberBefore, setDebouncedExperimentNumberBefore] = React.useState<number | null>(null);
-  const [jobStartBefore, setJobStartBefore] = React.useState<string | null>(null);
-  const [jobStartAfter, setJobStartAfter] = React.useState<string | null>(null);
-  const [jobEndBefore, setJobEndBefore] = React.useState<string | null>(null);
-  const [jobEndAfter, setJobEndAfter] = React.useState<string | null>(null);
-  const [runStartBefore, setRunStartBefore] = React.useState<string | null>(null);
-  const [runStartAfter, setRunStartAfter] = React.useState<string | null>(null);
-  const [runEndBefore, setRunEndBefore] = React.useState<string | null>(null);
-  const [runEndAfter, setRunEndAfter] = React.useState<string | null>(null);
+
+  const [runStartBefore, setRunStartBefore] = useFilterWithReset<string | null>(null, resetPageNumber);
+  const [runStartAfter, setRunStartAfter] = useFilterWithReset<string | null>(null, resetPageNumber);
+  const [runEndBefore, setRunEndBefore] = useFilterWithReset<string | null>(null, resetPageNumber);
+  const [runEndAfter, setRunEndAfter] = useFilterWithReset<string | null>(null, resetPageNumber);
+
+  const [debouncedExperimentNumberIn, setDebouncedExperimentNumberIn] = useState<string[]>([]);
+  const [debouncedExperimentNumberAfter, setDebouncedExperimentNumberAfter] = useState<number | null>(null);
+  const [debouncedExperimentNumberBefore, setDebouncedExperimentNumberBefore] = useState<number | null>(null);
 
   useEffect(() => {
     const debounceTimeoutId = setTimeout(() => {
