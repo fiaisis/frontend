@@ -35,7 +35,7 @@ const ConfigSettingsGeneral: React.FC<ConfigSettingsGeneralProps> = ({ children,
   const { instrumentName } = useParams<{ instrumentName: string }>();
   const [reductionStatus, setReductionStatus] = useState<'ON' | 'OFF'>('ON');
   const [jsonContent, setJsonContent] = useState<string>('{}');
-  const [formFields, setFormFields] = useState<{ [key: string]: string }>({}); // Dynamic form fields
+  const [formFields, setFormFields] = useState<{ [key: string]: string | Record<string, string> }>({}); // Dynamic form fields
   const [enabledStatus, setEnabledStatus] = useState<boolean>(true); // State for "enabled" tag
   const [tabValue, setTabValue] = useState(0);
   const [unsavedChanges, setUnsavedChanges] = useState(false); // State for tracking changes
@@ -76,7 +76,7 @@ const ConfigSettingsGeneral: React.FC<ConfigSettingsGeneralProps> = ({ children,
     }
   };
   // Sync JSON when form fields are edited
-  const syncJsonWithForm = (updatedFields: { [key: string]: string }): void => {
+  const syncJsonWithForm = (updatedFields: { [key: string]: string | Record<string, string> }): void => {
     try {
       const json = JSON.parse(jsonContent);
       Object.keys(updatedFields).forEach((key) => {
@@ -87,7 +87,7 @@ const ConfigSettingsGeneral: React.FC<ConfigSettingsGeneralProps> = ({ children,
       console.error('Error syncing JSON with form:', error);
     }
   };
-  const handleFormInputChange = (key: string, value: string): void => {
+  const handleFormInputChange = (key: string, value: string | Record<string, string>): void => {
     const updatedFields = { ...formFields, [key]: value };
     setFormFields(updatedFields);
     syncJsonWithForm(updatedFields);
@@ -199,20 +199,52 @@ const ConfigSettingsGeneral: React.FC<ConfigSettingsGeneralProps> = ({ children,
       <TabPanel value={tabValue} index={0}>
         <Grid container direction="column" spacing={2}>
           {/* Dynamically generated form fields */}
-          {Object.keys(formFields).map((key) => (
-            <Grid key={key}>
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <Typography variant="body1" sx={{ width: '150px', mb: 0 }}>
-                  {key}:
-                </Typography>
-                <input
-                  value={formFields[key]}
-                  onChange={(e) => handleFormInputChange(key, e.target.value)}
-                  style={{ margin: 0, height: '20px', width: '160px' }}
-                />
-              </Box>
-            </Grid>
-          ))}
+          {Object.entries(formFields).map(([key, value]) => {
+            if (typeof value === 'object' && value !== null) {
+              return (
+                <Grid key={key}>
+                  <Typography variant="subtitle1" sx={{ mt: 2 }}>
+                    {key}
+                  </Typography>
+                  <Box sx={{ pl: 2 }}>
+                    {Object.entries(value).map(([subKey, subValue]) => (
+                      <Box key={subKey} sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                        <Typography variant="body2" sx={{ width: '120px' }}>
+                          {subKey}:
+                        </Typography>
+                        <input
+                          value={subValue}
+                          onChange={(e) => {
+                            const updatedNested = {
+                              ...((formFields[key] as Record<string, string>) ?? {}),
+                              [subKey]: e.target.value,
+                            };
+                            handleFormInputChange(key, updatedNested);
+                          }}
+                          style={{ height: '20px', width: '160px' }}
+                        />
+                      </Box>
+                    ))}
+                  </Box>
+                </Grid>
+              );
+            } else {
+              return (
+                <Grid key={key}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                    <Typography variant="body1" sx={{ width: '150px' }}>
+                      {key}:
+                    </Typography>
+                    <input
+                      value={value}
+                      onChange={(e) => handleFormInputChange(key, e.target.value)}
+                      style={{ height: '20px', width: '160px' }}
+                    />
+                  </Box>
+                </Grid>
+              );
+            }
+          })}
         </Grid>
       </TabPanel>
       {/* Advanced panel */}
