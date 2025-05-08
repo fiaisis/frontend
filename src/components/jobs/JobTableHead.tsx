@@ -74,7 +74,7 @@ const JobTableHead: React.FC<JobTableHeadProps> = ({ selectedInstrument, handleS
           orderBy={orderBy}
           orderDirection={orderDirection}
           onSort={handleSort}
-          sx={{ width: '12%', ...headerStyles(theme) }}
+          sx={{ width: '14%', ...headerStyles(theme) }}
         />
         <SortableHeaderCell
           headerName="Filename"
@@ -117,11 +117,15 @@ const JobTableHead: React.FC<JobTableHeadProps> = ({ selectedInstrument, handleS
           onSort={handleSort}
           sx={{ width: '12%', ...headerStyles(theme) }}
         />
-        <TableCell sx={{ width: '24%', ...headerStyles(theme) }} align={'left'}>
+        <TableCell
+          sx={{ width: '24%', ...headerStyles(theme) }}
+          align="left"
+          colSpan={selectedInstrument === 'ALL' ? 1 : 2}
+        >
           Title
         </TableCell>
         {selectedInstrument === 'ALL' && (
-          <TableCell sx={{ width: '10%', ...headerStyles(theme) }}>Instrument</TableCell>
+          <TableCell sx={{ width: '12%', ...headerStyles(theme) }}>Instrument</TableCell>
         )}
       </TableRow>
     </TableHead>

@@ -361,29 +361,34 @@ const Row: React.FC<{
         }}
         onClick={() => setOpen(!open)}
       >
-        <TableCell padding="checkbox">
-          <Checkbox
-            color="primary"
-            checked={isSelected}
-            onChange={() => toggleSelection(job.id)}
-            onClick={(e) => e.stopPropagation()}
-          />
-        </TableCell>
+        <TableCell sx={{ width: '18%', px: 1 }}>
+          <Box display="flex" alignItems="center" gap={1} sx={{ overflow: 'hidden' }}>
+            <Checkbox
+              color="primary"
+              checked={isSelected}
+              onChange={() => toggleSelection(job.id)}
+              onClick={(e) => e.stopPropagation()}
+              sx={{ flexShrink: 0 }}
+            />
 
-        <TableCell>
-          <IconButton aria-label="expand row" size="small">
-            {open ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
-          </IconButton>
-        </TableCell>
-        <TableCell>
-          <JobStatusIcon state={job.state} />
-        </TableCell>
-        <TableCell
-          sx={{
-            ...ellipsisWrap,
-          }}
-        >
-          {job.run?.experiment_number || 'N/A'}
+            <Box sx={{ flexShrink: 0 }}>
+              <JobStatusIcon state={job.state} />
+            </Box>
+
+            <Typography
+              variant="body2"
+              sx={{
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                minWidth: 0,
+                flexGrow: 1,
+              }}
+              title={String(job.run?.experiment_number)}
+            >
+              {job.run?.experiment_number || 'N/A'}
+            </Typography>
+          </Box>
         </TableCell>
         <TableCell
           sx={{
@@ -420,34 +425,89 @@ const Row: React.FC<{
         >
           {formatDateTime(job.end) || 'N/A'}
         </TableCell>
-        <TableCell
-          sx={{
-            ...ellipsisWrap,
-          }}
-        >
-          {job.run?.title || 'N/A'}
-        </TableCell>
-
         {showInstrumentColumn && (
-          <TableCell sx={{ width: '10%' }}>
-            <Typography
-              component={Link}
-              onClick={(evt) => evt.stopPropagation()}
-              to={`/reduction-history/${job.run.instrument_name}`}
-              sx={{
-                textDecoration: 'none',
-                '&:hover': { textDecoration: 'underline' },
-                color: theme.palette.mode === 'dark' ? '#86b4ff' : theme.palette.primary.main,
-              }}
-            >
-              {job.run.instrument_name}
-            </Typography>
+          <TableCell
+            sx={{
+              ...ellipsisWrap,
+            }}
+          >
+            {job.run?.title || 'N/A'}
+          </TableCell>
+        )}
+
+        {showInstrumentColumn ? (
+          // Merge the reduction instrument name and expand icon into one cell for "ALL" page
+          <TableCell>
+            <Box display="flex" alignItems="center" justifyContent="space-between">
+              <Typography
+                sx={{
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  flexGrow: 1,
+                  color: theme.palette.mode === 'dark' ? '#86b4ff' : theme.palette.primary.main,
+                }}
+                title={job.run.instrument_name}
+              >
+                <Link
+                  to={`/reduction-history/${job.run.instrument_name}`}
+                  onClick={(evt) => evt.stopPropagation()}
+                  style={{
+                    textDecoration: 'none',
+                    color: 'inherit',
+                  }}
+                  onMouseOver={(e) => (e.currentTarget.style.textDecoration = 'underline')}
+                  onMouseOut={(e) => (e.currentTarget.style.textDecoration = 'none')}
+                >
+                  {job.run.instrument_name}
+                </Link>
+              </Typography>
+
+              <IconButton
+                aria-label="expand row"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setOpen(!open);
+                }}
+                sx={{ ml: 1 }}
+              >
+                {open ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
+              </IconButton>
+            </Box>
+          </TableCell>
+        ) : (
+          // Merge the reduction title and expand icon into one cell for instrument specific pages
+          <TableCell colSpan={2}>
+            <Box display="flex" alignItems="center" justifyContent="space-between">
+              <Typography
+                variant="body2"
+                sx={{
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  flexGrow: 1,
+                }}
+                title={job.run?.title || 'N/A'}
+              >
+                {job.run?.title || 'N/A'}
+              </Typography>
+              <IconButton
+                aria-label="expand row"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setOpen(!open);
+                }}
+                sx={{ ml: 1 }}
+              >
+                {open ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
+              </IconButton>
+            </Box>
           </TableCell>
         )}
       </TableRow>
       <TableRow>
         <TableCell
-          colSpan={showInstrumentColumn ? 11 : 10}
+          colSpan={showInstrumentColumn ? 9 : 8}
           style={{ paddingBottom: 0, paddingTop: 0, backgroundColor: bandedRows.backgroundColor }}
         >
           <Collapse in={open} timeout="auto" unmountOnExit>
