@@ -361,34 +361,33 @@ const Row: React.FC<{
         }}
         onClick={() => setOpen(!open)}
       >
-        <TableCell sx={{ width: '18%', px: 1 }}>
-          <Box display="flex" alignItems="center" gap={1} sx={{ overflow: 'hidden' }}>
+        <TableCell sx={{ py: 0, px: 1, ...ellipsisWrap }}>
+          <Box display="flex" alignItems="center" gap={0.5}>
             <Checkbox
               color="primary"
               checked={isSelected}
               onChange={() => toggleSelection(job.id)}
               onClick={(e) => e.stopPropagation()}
-              sx={{ flexShrink: 0 }}
+              sx={{ p: 0.5 }}
             />
-
-            <Box sx={{ flexShrink: 0 }}>
-              <JobStatusIcon state={job.state} />
-            </Box>
-
-            <Typography
-              variant="body2"
-              sx={{
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-                minWidth: 0,
-                flexGrow: 1,
-              }}
-              title={String(job.run?.experiment_number)}
-            >
-              {job.run?.experiment_number || 'N/A'}
-            </Typography>
+            <JobStatusIcon state={job.state} />
           </Box>
+        </TableCell>
+
+        <TableCell sx={{ width: '18%', px: 1 }}>
+          <Typography
+            variant="body2"
+            sx={{
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              minWidth: 0,
+              flexGrow: 1,
+            }}
+            title={String(job.run?.experiment_number)}
+          >
+            {job.run?.experiment_number || 'N/A'}
+          </Typography>
         </TableCell>
         <TableCell
           sx={{
@@ -507,7 +506,7 @@ const Row: React.FC<{
       </TableRow>
       <TableRow>
         <TableCell
-          colSpan={showInstrumentColumn ? 9 : 8}
+          colSpan={showInstrumentColumn ? 10 : 9}
           style={{ paddingBottom: 0, paddingTop: 0, backgroundColor: bandedRows.backgroundColor }}
         >
           <Collapse in={open} timeout="auto" unmountOnExit>

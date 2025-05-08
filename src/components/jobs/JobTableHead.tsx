@@ -68,6 +68,7 @@ const JobTableHead: React.FC<JobTableHeadProps> = ({ selectedInstrument, handleS
   return (
     <TableHead sx={{ '& th': { py: 0.5 }, height: '54px' }}>
       <TableRow>
+        <TableCell sx={{ width: '4%', ...headerStyles(theme) }} align="left"></TableCell>
         <SortableHeaderCell
           headerName="Experiment number"
           sortKey="experiment_number"
