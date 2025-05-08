@@ -1,21 +1,26 @@
 import {
+  Alert,
   Box,
   Button,
   CircularProgress,
   Paper,
+  Snackbar,
   Table,
   TableBody,
-  IconButton,
   TableCell,
   TableContainer,
   TablePagination,
   TableRow,
-  Tooltip,
   Typography,
   useTheme,
 } from '@mui/material';
-import { Close, KeyboardArrowDown, KeyboardArrowUp } from '@mui/icons-material';
-import { Snackbar, Alert } from '@mui/material';
+import {
+  CheckBox,
+  IndeterminateCheckBox,
+  CheckBoxOutlineBlank,
+  KeyboardArrowDown,
+  KeyboardArrowUp,
+} from '@mui/icons-material';
 import React, { useEffect, useState } from 'react';
 import { Job, JobQueryFilters } from '../../lib/types';
 import Row from './Row';
@@ -82,8 +87,6 @@ const JobTable: React.FC<{
     );
   };
 
-  const clearSelectedJobs: () => void = () => setSelectedJobIds([]);
-
   const handleBulkRerun = async (): Promise<void> => {
     setIsBulkRerunning(true);
     let allSuccessful = true;
@@ -114,6 +117,17 @@ const JobTable: React.FC<{
       setOrderBy(sortKey);
     }
     handlePageChange(0);
+  };
+
+  const toggleSelectAll = (): void => {
+    const allIds = jobs.map((job) => job.id);
+    const allSelected = allIds.every((id) => selectedJobIds.includes(id));
+
+    if (allSelected) {
+      setSelectedJobIds([]);
+    } else {
+      setSelectedJobIds(allIds);
+    }
   };
 
   const theme = useTheme();
@@ -154,57 +168,74 @@ const JobTable: React.FC<{
 
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Typography
-              display={'flex'}
-              alignItems={'center'}
-              onClick={() => setFiltersOpen(!filtersOpen)}
-              sx={{ cursor: 'pointer', color: theme.palette.mode === 'dark' ? '#86b4ff' : theme.palette.primary.main }}
+            <Button
+              variant="contained"
+              color="primary"
+              size="small"
+              onClick={toggleSelectAll}
+              disabled={jobs.length === 0}
+              sx={{ height: '36px', width: 140 }}
+              startIcon={
+                selectedJobIds.length === jobs.length ? (
+                  <CheckBox />
+                ) : selectedJobIds.length > 0 ? (
+                  <IndeterminateCheckBox />
+                ) : (
+                  <CheckBoxOutlineBlank />
+                )
+              }
             >
-              Advanced filters {filtersOpen ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
-            </Typography>
+              {selectedJobIds.length === jobs.length ? 'Deselect all' : 'Select all'}
+            </Button>
 
-            {/* Bulk rerun button */}
             {selectedJobIds.length > 0 && (
               <>
                 <Button
                   variant="contained"
                   color="primary"
-                  onClick={handleBulkRerun}
-                  sx={{ height: '36px', width: 260 }}
                   disabled={isBulkRerunning}
+                  onClick={handleBulkRerun}
+                  sx={{ height: '36px', width: 120 }}
                 >
                   {isBulkRerunning ? (
                     <CircularProgress size={24} color="inherit" />
                   ) : (
-                    `Rerun selected reductions (${selectedJobIds.length})`
+                    `Rerun (${selectedJobIds.length})`
                   )}
                 </Button>
-
-                {/* Clear selection button */}
-                <Tooltip title="Clear selection">
-                  <IconButton onClick={clearSelectedJobs}>
-                    <Close />
-                  </IconButton>
-                </Tooltip>
               </>
             )}
           </Box>
 
-          <TablePagination
-            component="div"
-            count={totalRows}
-            page={currentPage}
-            onPageChange={(_, newPage) => handlePageChange(newPage)}
-            rowsPerPage={rowsPerPage}
-            onRowsPerPageChange={(e) => {
-              // Prevents the offset from going out of range and showing an empty table
-              const newRowsPerPage = parseInt(e.target.value, 10);
-              const newPage = Math.floor((currentPage * rowsPerPage) / newRowsPerPage);
-              setRowsPerPage(newRowsPerPage);
-              localStorage.setItem('jobTableRowsPerPage', newRowsPerPage.toString());
-              handlePageChange(newPage);
-            }}
-          />
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Typography
+              display={'flex'}
+              alignItems={'center'}
+              onClick={() => setFiltersOpen(!filtersOpen)}
+              sx={{
+                cursor: 'pointer',
+                color: theme.palette.mode === 'dark' ? '#86b4ff' : theme.palette.primary.main,
+              }}
+            >
+              Advanced filters {filtersOpen ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
+            </Typography>
+
+            <TablePagination
+              component="div"
+              count={totalRows}
+              page={currentPage}
+              onPageChange={(_, newPage) => handlePageChange(newPage)}
+              rowsPerPage={rowsPerPage}
+              onRowsPerPageChange={(e) => {
+                // Prevents the offset from going out of range and showing an empty table
+                const newRowsPerPage = parseInt(e.target.value, 10);
+                const newPage = Math.floor((currentPage * rowsPerPage) / newRowsPerPage);
+                setRowsPerPage(newRowsPerPage);
+                localStorage.setItem('jobTableRowsPerPage', newRowsPerPage.toString());
+                handlePageChange(newPage);
+              }}
+            />
+          </Box>
         </Box>
 
         <FilterContainer
