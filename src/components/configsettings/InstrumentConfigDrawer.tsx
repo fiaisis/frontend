@@ -1,9 +1,12 @@
+import React from 'react';
+import { Drawer, useTheme } from '@mui/material';
+
 import ConfigSettingsLOQ from './ConfigSettingsLOQ';
 import ConfigSettingsGeneral from './ConfigSettingsGeneral';
-import { Drawer, useTheme } from '@mui/material';
-import React from 'react';
 import ConfigSettingsSANS2D from './ConfigSettingsSANS2D';
 import ConfigSettingsVESUVIO from './ConfigSettingsVESUVIO';
+import ConfigSettingsOSIRIS from './ConfigSettingsOSIRIS';
+import ConfigSettingsIRIS from './ConfigSettingsIRIS';
 
 const InstrumentConfigDrawer: React.FC<{
   selectedInstrument: string;
@@ -30,6 +33,10 @@ const InstrumentConfigDrawer: React.FC<{
         <ConfigSettingsSANS2D />
       ) : selectedInstrument === 'VESUVIO' ? (
         <ConfigSettingsVESUVIO />
+      ) : selectedInstrument === 'OSIRIS' ? (
+        <ConfigSettingsOSIRIS />
+      ) : selectedInstrument === 'IRIS' ? (
+        <ConfigSettingsIRIS />
       ) : (
         <ConfigSettingsGeneral />
       )}

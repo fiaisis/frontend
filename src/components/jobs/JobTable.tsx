@@ -246,6 +246,7 @@ const JobTable: React.FC<{
           jobs={jobs}
           handleBulkRerun={handleBulkRerun}
           isBulkRerunning={isBulkRerunning}
+          resetPageNumber={() => handlePageChange(0)} // Reset page number when filters change
         />
         <TableContainer component={Paper} sx={{ maxHeight: 660, overflowY: 'scroll' }}>
           <Table stickyHeader sx={{ tableLayout: 'fixed', width: '100%' }}>
