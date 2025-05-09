@@ -16,7 +16,7 @@ import {
   TextField,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers';
-import { JobQueryFilters, reductionStates } from '../../lib/types';
+import { JobQueryFilters, reductionStates, Job } from '../../lib/types';
 import { instruments } from '../../lib/InstrumentData';
 import dayjs from 'dayjs';
 
@@ -110,6 +110,9 @@ const FilterContainer: React.FC<{
   handleFiltersClose: () => void;
   showInstrumentFilter: boolean;
   handleFiltersChange: (filters: JobQueryFilters) => void;
+  jobs: Job[];
+  handleBulkRerun: () => void;
+  isBulkRerunning: boolean;
   resetPageNumber: () => void;
 }> = ({ visible, showInstrumentFilter, handleFiltersChange, resetPageNumber }): ReactElement => {
   const [selectedInstruments, setSelectedInstruments] = useFilterWithReset<string[]>([], resetPageNumber);
@@ -349,12 +352,7 @@ const FilterContainer: React.FC<{
             </Box>
           </Box>
           <Box sx={{ alignSelf: 'end' }}>
-            <Button
-              variant={'contained'}
-              color={'warning'}
-              sx={{ width: 150, alignSelf: 'end' }}
-              onClick={clearAndCloseFilters}
-            >
+            <Button variant="contained" color="warning" sx={{ width: 150 }} onClick={clearAndCloseFilters}>
               Clear
             </Button>
           </Box>

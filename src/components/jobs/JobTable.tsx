@@ -1,7 +1,10 @@
 import {
+  Alert,
   Box,
+  Button,
   CircularProgress,
   Paper,
+  Snackbar,
   Table,
   TableBody,
   TableCell,
@@ -11,7 +14,13 @@ import {
   Typography,
   useTheme,
 } from '@mui/material';
-import { KeyboardArrowDown, KeyboardArrowUp } from '@mui/icons-material';
+import {
+  CheckBox,
+  IndeterminateCheckBox,
+  CheckBoxOutlineBlank,
+  KeyboardArrowDown,
+  KeyboardArrowUp,
+} from '@mui/icons-material';
 import React, { useEffect, useState } from 'react';
 import { Job, JobQueryFilters } from '../../lib/types';
 import Row from './Row';
@@ -36,7 +45,6 @@ const JobTable: React.FC<{
   const [rowsPerPage, setRowsPerPage] = useState<number>(getInitialRowsPerPage);
   const [orderDirection, setOrderDirection] = useState<'asc' | 'desc'>('desc');
   const [orderBy, setOrderBy] = useState<string>('run_start');
-  const [loading, setLoading] = useState<boolean>(true);
   const offset = currentPage * rowsPerPage;
   const [filters, setFilters] = useState<JobQueryFilters>({});
   const query = `limit=${rowsPerPage}&offset=${offset}&order_by=${orderBy}&order_direction=${orderDirection}&include_run=true&filters=${JSON.stringify(filters)}&as_user=${asUser}`;
@@ -45,18 +53,61 @@ const JobTable: React.FC<{
   const countQueryPath = selectedInstrument === 'ALL' ? '/jobs/count' : `/instrument/${selectedInstrument}/jobs/count`;
   const fetchJobs = useFetchJobs(queryPath, query, setJobs);
   const fetchTotalCount = useFetchTotalCount(countQueryPath, countQuery, setTotalRows);
+  const [isBulkRerunning, setIsBulkRerunning] = useState(false);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [bulkRerunSuccessful, setBulkRerunSuccessful] = useState(true);
+  const [selectedJobIds, setSelectedJobIds] = useState<number[]>([]);
 
   useEffect(() => {
-    fetchJobs().then(() => setLoading(false));
+    fetchJobs();
     void fetchTotalCount();
   }, [fetchTotalCount, fetchJobs]);
+
+  useEffect(() => {
+    // Clear selections when the View as user toggle changes
+    setSelectedJobIds([]);
+  }, [asUser]);
+
+  useEffect(() => {
+    // Clear selections when the page changes
+    setSelectedJobIds([]);
+  }, [currentPage]);
 
   const refreshJobs = (): void => {
     void Promise.resolve(fetchJobs());
     void Promise.resolve(fetchTotalCount);
   };
-  const handleRerun = async (job: Job): Promise<void> => {
+  const submitRerun = async (job: Job): Promise<void> => {
     await fiaApi.post('/job/rerun', { job_id: job.id, runner_image: job.runner_image, script: job.script.value });
+  };
+
+  const toggleJobSelection = (jobId: number): void => {
+    setSelectedJobIds((prevSelected) =>
+      prevSelected.includes(jobId) ? prevSelected.filter((id) => id !== jobId) : [...prevSelected, jobId]
+    );
+  };
+
+  const handleBulkRerun = async (): Promise<void> => {
+    setIsBulkRerunning(true);
+    let allSuccessful = true;
+
+    const jobsToRerun = jobs.filter((job) => selectedJobIds.includes(job.id));
+
+    for (const job of jobsToRerun) {
+      console.log(`Rerunning job ${job.id}`);
+      try {
+        await submitRerun(job);
+      } catch (error) {
+        console.error(`Failed to rerun job ${job.id}`, error);
+        allSuccessful = false;
+      }
+    }
+
+    setBulkRerunSuccessful(allSuccessful);
+    setSnackbarOpen(true);
+    refreshJobs();
+    setIsBulkRerunning(false);
+    setSelectedJobIds([]);
   };
 
   const handleSort = (sortKey: string): void => {
@@ -68,53 +119,153 @@ const JobTable: React.FC<{
     handlePageChange(0);
   };
 
+  const toggleSelectAll = (): void => {
+    const allIds = jobs.map((job) => job.id);
+    const allSelected = allIds.every((id) => selectedJobIds.includes(id));
+
+    if (allSelected) {
+      setSelectedJobIds([]);
+    } else {
+      setSelectedJobIds(allIds);
+    }
+  };
+
   const theme = useTheme();
 
-  return loading ? (
-    <CircularProgress />
-  ) : (
-    <Box sx={{ maxHeight: 660, pb: 1 }}>
+  return (
+    <Box sx={{ maxHeight: 700, pb: 1 }}>
       <>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-          <Typography
-            display={'flex'}
-            alignItems={'center'}
-            onClick={() => setFiltersOpen(!filtersOpen)}
-            sx={{ cursor: 'pointer', color: theme.palette.mode === 'dark' ? '#86b4ff' : theme.palette.primary.main }}
-          >
-            Advanced filters {filtersOpen ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
-          </Typography>
-          <TablePagination
-            component="div"
-            count={totalRows}
-            page={currentPage}
-            onPageChange={(_, newPage) => handlePageChange(newPage)}
-            rowsPerPage={rowsPerPage}
-            onRowsPerPageChange={(e) => {
-              // Prevents the offset from going out of range and showing an empty table
-              const newRowsPerPage = parseInt(e.target.value, 10);
-              const newPage = Math.floor((currentPage * rowsPerPage) / newRowsPerPage);
-              setRowsPerPage(newRowsPerPage);
-              localStorage.setItem('jobTableRowsPerPage', newRowsPerPage.toString());
-              handlePageChange(newPage);
+        <Snackbar
+          open={snackbarOpen}
+          autoHideDuration={5000}
+          onClose={(event, reason) => {
+            if (reason !== 'clickaway') {
+              setSnackbarOpen(false);
+            }
+          }}
+          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        >
+          <Alert
+            sx={{
+              padding: '10px 14px',
+              fontSize: '1rem',
+              width: '100%',
+              maxWidth: '600px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              border: '1px solid',
+              borderRadius: '8px',
+              fontWeight: 'bold',
             }}
-          />
+            severity={bulkRerunSuccessful ? 'success' : 'error'}
+          >
+            {bulkRerunSuccessful
+              ? `Reruns started successfully for all selected reductions`
+              : `Some reductions could not be rerun — please check the console for details`}
+          </Alert>
+        </Snackbar>
+
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Button
+              variant="contained"
+              color="primary"
+              size="small"
+              onClick={toggleSelectAll}
+              disabled={jobs.length === 0}
+              sx={{ height: '36px', width: 140 }}
+              startIcon={
+                selectedJobIds.length === jobs.length ? (
+                  <CheckBox />
+                ) : selectedJobIds.length > 0 ? (
+                  <IndeterminateCheckBox />
+                ) : (
+                  <CheckBoxOutlineBlank />
+                )
+              }
+            >
+              {selectedJobIds.length === jobs.length ? 'Deselect all' : 'Select all'}
+            </Button>
+
+            {selectedJobIds.length > 0 && (
+              <>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  disabled={isBulkRerunning}
+                  onClick={handleBulkRerun}
+                  sx={{ height: '36px', width: 120 }}
+                >
+                  {isBulkRerunning ? (
+                    <CircularProgress size={24} color="inherit" />
+                  ) : (
+                    `Rerun (${selectedJobIds.length})`
+                  )}
+                </Button>
+              </>
+            )}
+          </Box>
+
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Typography
+              display={'flex'}
+              alignItems={'center'}
+              onClick={() => setFiltersOpen(!filtersOpen)}
+              sx={{
+                cursor: 'pointer',
+                color: theme.palette.mode === 'dark' ? '#86b4ff' : theme.palette.primary.main,
+              }}
+            >
+              Advanced filters {filtersOpen ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
+            </Typography>
+
+            <TablePagination
+              component="div"
+              count={totalRows}
+              page={currentPage}
+              onPageChange={(_, newPage) => handlePageChange(newPage)}
+              rowsPerPage={rowsPerPage}
+              onRowsPerPageChange={(e) => {
+                // Prevents the offset from going out of range and showing an empty table
+                const newRowsPerPage = parseInt(e.target.value, 10);
+                const newPage = Math.floor((currentPage * rowsPerPage) / newRowsPerPage);
+                setRowsPerPage(newRowsPerPage);
+                localStorage.setItem('jobTableRowsPerPage', newRowsPerPage.toString());
+                handlePageChange(newPage);
+              }}
+            />
+          </Box>
         </Box>
+
         <FilterContainer
           showInstrumentFilter={selectedInstrument === 'ALL'}
           visible={filtersOpen}
           handleFiltersClose={() => setFiltersOpen(false)}
           handleFiltersChange={setFilters}
+          jobs={jobs}
+          handleBulkRerun={handleBulkRerun}
+          isBulkRerunning={isBulkRerunning}
           resetPageNumber={() => handlePageChange(0)} // Reset page number when filters change
         />
-        <TableContainer component={Paper} sx={{ maxHeight: 624, overflowY: 'scroll' }}>
+        <TableContainer component={Paper} sx={{ maxHeight: 660, overflowY: 'scroll' }}>
           <Table stickyHeader sx={{ tableLayout: 'fixed', width: '100%' }}>
             <JobTableHead
               selectedInstrument={selectedInstrument}
               orderBy={orderBy}
               orderDirection={orderDirection}
               handleSort={handleSort}
+              allSelected={jobs.length > 0 && selectedJobIds.length === jobs.length}
+              someSelected={selectedJobIds.length > 0 && selectedJobIds.length < jobs.length}
+              toggleSelectAll={() => {
+                if (selectedJobIds.length === jobs.length) {
+                  setSelectedJobIds([]);
+                } else {
+                  setSelectedJobIds(jobs.map((job) => job.id));
+                }
+              }}
             />
+
             <TableBody>
               {jobs.length === 0 && (
                 <TableRow>
@@ -134,8 +285,10 @@ const JobTable: React.FC<{
                   index={index}
                   job={job}
                   showInstrumentColumn={selectedInstrument === 'ALL'}
-                  submitRerun={handleRerun}
+                  submitRerun={submitRerun}
                   refreshJobs={refreshJobs}
+                  isSelected={selectedJobIds.includes(job.id)}
+                  toggleSelection={toggleJobSelection}
                 />
               ))}
             </TableBody>
