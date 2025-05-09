@@ -149,20 +149,6 @@ const JobOutput: React.FC<{ job: Job }> = ({ job }: { job: Job }): ReactElement 
   }
 };
 
-// const parseJobOutputs = (outputs: string | null): string[] => {
-//   if (!outputs || typeof outputs !== 'string') return [];
-//   try {
-//     if (outputs.startsWith('[') && outputs.endsWith(']')) {
-//       return JSON.parse(outputs.replace(/'/g, '"'));
-//     } else {
-//       return [outputs];
-//     }
-//   } catch (err) {
-//     console.error('Failed to parse job outputs:', err);
-//     return [];
-//   }
-// };
-
 const JobInput: React.FC<{ job: Job }> = ({ job }: { job: Job }): ReactElement => {
   const entries = Object.entries(job.inputs);
   if (entries.length === 0) {
