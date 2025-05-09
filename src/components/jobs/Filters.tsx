@@ -110,6 +110,9 @@ const FilterContainer: React.FC<{
   handleFiltersClose: () => void;
   showInstrumentFilter: boolean;
   handleFiltersChange: (filters: JobQueryFilters) => void;
+  jobs: Job[];
+  handleBulkRerun: () => void;
+  isBulkRerunning: boolean;
   resetPageNumber: () => void;
 }> = ({ visible, showInstrumentFilter, handleFiltersChange, resetPageNumber }): ReactElement => {
   const [selectedInstruments, setSelectedInstruments] = useFilterWithReset<string[]>([], resetPageNumber);
