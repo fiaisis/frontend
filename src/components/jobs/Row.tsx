@@ -20,6 +20,7 @@ import {
 import { Job } from '../../lib/types';
 import {
   CheckCircleOutline,
+  Download,
   ErrorOutline,
   HighlightOff,
   ImageAspectRatio,
@@ -37,6 +38,7 @@ import ReactGA from 'react-ga4';
 import { Link } from 'react-router-dom';
 import Grid from '@mui/material/Grid2';
 import { fiaApi } from '../../lib/api';
+import { parseJobOutputs } from '../../lib/hooks';
 
 const ellipsisWrap = {
   whiteSpace: 'nowrap',
@@ -127,7 +129,12 @@ const JobOutput: React.FC<{ job: Job }> = ({ job }: { job: Job }): ReactElement 
               >
                 View
               </Button>
-              <Button variant="contained" sx={{ marginLeft: 2 }} onClick={() => handleDownload(job, output)}>
+              <Button
+                variant="contained"
+                sx={{ marginLeft: 2 }}
+                startIcon={<Download />}
+                onClick={() => handleDownload(job, output)}
+              >
                 Download
               </Button>
             </Box>
@@ -141,6 +148,20 @@ const JobOutput: React.FC<{ job: Job }> = ({ job }: { job: Job }): ReactElement 
     return <TableCell>{job.outputs}</TableCell>;
   }
 };
+
+// const parseJobOutputs = (outputs: string | null): string[] => {
+//   if (!outputs || typeof outputs !== 'string') return [];
+//   try {
+//     if (outputs.startsWith('[') && outputs.endsWith(']')) {
+//       return JSON.parse(outputs.replace(/'/g, '"'));
+//     } else {
+//       return [outputs];
+//     }
+//   } catch (err) {
+//     console.error('Failed to parse job outputs:', err);
+//     return [];
+//   }
+// };
 
 const JobInput: React.FC<{ job: Job }> = ({ job }: { job: Job }): ReactElement => {
   const entries = Object.entries(job.inputs);
@@ -224,6 +245,14 @@ const Row: React.FC<{
   const rerunJobId = useRef<number | null>(null);
   const rerunSuccessful = useRef<boolean | null>(null);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
+
+  const jobOutputs = parseJobOutputs(job.outputs);
+
+  const handleDownloadAll = async (): Promise<void> => {
+    for (const output of jobOutputs) {
+      await handleDownload(job, output);
+    }
+  };
 
   const extractFilename = (path: string): string => path.split('/').pop()?.split('.')[0] ?? '';
   const formatDateTime = (dateTimeStr: string | null): string => dateTimeStr?.replace('I', '\n') ?? '';
@@ -586,6 +615,15 @@ const Row: React.FC<{
                       onClick={handleRerun}
                     >
                       {loading ? <CircularProgress size={24} color="inherit" /> : 'Rerun'}
+                    </Button>
+                    <Button
+                      variant="contained"
+                      sx={{ marginLeft: 2 }}
+                      startIcon={<Download />}
+                      onClick={handleDownloadAll}
+                      disabled={jobOutputs.length === 0}
+                    >
+                      Download all
                     </Button>
                   </Box>
                 </Grid>

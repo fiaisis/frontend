@@ -16,6 +16,7 @@ import {
 } from '@mui/material';
 import {
   CheckBox,
+  Download,
   IndeterminateCheckBox,
   CheckBoxOutlineBlank,
   KeyboardArrowDown,
@@ -28,6 +29,7 @@ import JobTableHead from './JobTableHead';
 import { useFetchJobs, useFetchTotalCount } from '../../lib/hooks';
 import { fiaApi } from '../../lib/api';
 import FilterContainer from './Filters';
+import { parseJobOutputs } from '../../lib/hooks';
 
 const JobTable: React.FC<{
   selectedInstrument: string;
@@ -57,6 +59,9 @@ const JobTable: React.FC<{
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [bulkRerunSuccessful, setBulkRerunSuccessful] = useState(true);
   const [selectedJobIds, setSelectedJobIds] = useState<number[]>([]);
+  const totalDownloadableFiles = jobs
+    .filter((job) => selectedJobIds.includes(job.id))
+    .reduce((acc, job) => acc + parseJobOutputs(job.outputs).length, 0);
 
   useEffect(() => {
     fetchJobs();
@@ -108,6 +113,29 @@ const JobTable: React.FC<{
     refreshJobs();
     setIsBulkRerunning(false);
     setSelectedJobIds([]);
+  };
+
+  const handleBulkDownload = async (): Promise<void> => {
+    const selectedJobs = jobs.filter((job) => selectedJobIds.includes(job.id));
+    for (const job of selectedJobs) {
+      const outputs = parseJobOutputs(job.outputs);
+      for (const output of outputs) {
+        try {
+          const response = await fiaApi.get(`/job/${job.id}/filename/${encodeURIComponent(output)}`, {
+            responseType: 'blob',
+          });
+          const blob = response.data;
+          const link = document.createElement('a');
+          link.href = URL.createObjectURL(blob);
+          link.download = output;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        } catch (err) {
+          console.error(`Failed to download output ${output} for job ${job.id}`, err);
+        }
+      }
+    }
   };
 
   const handleSort = (sortKey: string): void => {
@@ -202,6 +230,17 @@ const JobTable: React.FC<{
                   ) : (
                     `Rerun (${selectedJobIds.length})`
                   )}
+                </Button>
+
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={handleBulkDownload}
+                  sx={{ height: '36px', width: 200 }}
+                  startIcon={<Download />}
+                  disabled={totalDownloadableFiles === 0}
+                >
+                  {`Download all (${totalDownloadableFiles})`}
                 </Button>
               </>
             )}
