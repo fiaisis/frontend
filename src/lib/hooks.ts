@@ -29,3 +29,17 @@ export const useFetchTotalCount = (
       .catch((err) => console.error('Error fetching row count', err.message));
   }, [apiPath, setTotalRows, query]);
 };
+
+export const parseJobOutputs = (outputs: string | null): string[] => {
+  if (!outputs || typeof outputs !== 'string') return [];
+  try {
+    if (outputs.startsWith('[') && outputs.endsWith(']')) {
+      return JSON.parse(outputs.replace(/'/g, '"'));
+    } else {
+      return [outputs];
+    }
+  } catch (err) {
+    console.error('Failed to parse outputs:', err);
+    return [];
+  }
+};

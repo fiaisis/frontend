@@ -4,6 +4,7 @@ import {
   Box,
   Button,
   CircularProgress,
+  Checkbox,
   Collapse,
   IconButton,
   Snackbar,
@@ -19,6 +20,7 @@ import {
 import { Job } from '../../lib/types';
 import {
   CheckCircleOutline,
+  Download,
   ErrorOutline,
   HighlightOff,
   ImageAspectRatio,
@@ -36,6 +38,7 @@ import ReactGA from 'react-ga4';
 import { Link } from 'react-router-dom';
 import Grid from '@mui/material/Grid2';
 import { fiaApi } from '../../lib/api';
+import { parseJobOutputs } from '../../lib/hooks';
 
 const ellipsisWrap = {
   whiteSpace: 'nowrap',
@@ -126,7 +129,12 @@ const JobOutput: React.FC<{ job: Job }> = ({ job }: { job: Job }): ReactElement 
               >
                 View
               </Button>
-              <Button variant="contained" sx={{ marginLeft: 2 }} onClick={() => handleDownload(job, output)}>
+              <Button
+                variant="contained"
+                sx={{ marginLeft: 2 }}
+                startIcon={<Download />}
+                onClick={() => handleDownload(job, output)}
+              >
                 Download
               </Button>
             </Box>
@@ -212,15 +220,25 @@ const Row: React.FC<{
   job: Job;
   showInstrumentColumn: boolean;
   index: number;
+  isSelected: boolean;
+  toggleSelection: (jobId: number) => void;
   submitRerun: (job: Job) => Promise<void>;
   refreshJobs: () => void;
-}> = ({ job, showInstrumentColumn, index, submitRerun, refreshJobs }) => {
+}> = ({ job, showInstrumentColumn, index, submitRerun, refreshJobs, isSelected, toggleSelection }) => {
   const [open, setOpen] = useState(false);
   const theme = useTheme();
   const [loading, setLoading] = useState(false);
   const rerunJobId = useRef<number | null>(null);
   const rerunSuccessful = useRef<boolean | null>(null);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
+
+  const jobOutputs = parseJobOutputs(job.outputs);
+
+  const handleDownloadAll = async (): Promise<void> => {
+    for (const output of jobOutputs) {
+      await handleDownload(job, output);
+    }
+  };
 
   const extractFilename = (path: string): string => path.split('/').pop()?.split('.')[0] ?? '';
   const formatDateTime = (dateTimeStr: string | null): string => dateTimeStr?.replace('I', '\n') ?? '';
@@ -358,24 +376,33 @@ const Row: React.FC<{
         }}
         onClick={() => setOpen(!open)}
       >
-        <TableCell>
-          <IconButton aria-label="expand row" size="small">
-            {open ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
-          </IconButton>
+        <TableCell sx={{ py: 0, px: 1, ...ellipsisWrap }}>
+          <Box display="flex" alignItems="center" gap={0.5}>
+            <Checkbox
+              color="primary"
+              checked={isSelected}
+              onChange={() => toggleSelection(job.id)}
+              onClick={(e) => e.stopPropagation()}
+              sx={{ p: 0.5 }}
+            />
+            <JobStatusIcon state={job.state} />
+          </Box>
         </TableCell>
-        <TableCell
-          sx={{
-            ...ellipsisWrap,
-          }}
-        >
-          <JobStatusIcon state={job.state} />
-        </TableCell>
-        <TableCell
-          sx={{
-            ...ellipsisWrap,
-          }}
-        >
-          {job.run?.experiment_number || 'N/A'}
+
+        <TableCell sx={{ width: '18%', px: 1 }}>
+          <Typography
+            variant="body2"
+            sx={{
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              minWidth: 0,
+              flexGrow: 1,
+            }}
+            title={String(job.run?.experiment_number)}
+          >
+            {job.run?.experiment_number || 'N/A'}
+          </Typography>
         </TableCell>
         <TableCell
           sx={{
@@ -412,28 +439,83 @@ const Row: React.FC<{
         >
           {formatDateTime(job.end) || 'N/A'}
         </TableCell>
-        <TableCell
-          sx={{
-            ...ellipsisWrap,
-          }}
-        >
-          {job.run?.title || 'N/A'}
-        </TableCell>
-
         {showInstrumentColumn && (
-          <TableCell sx={{ width: '10%' }}>
-            <Typography
-              component={Link}
-              onClick={(evt) => evt.stopPropagation()}
-              to={`/reduction-history/${job.run.instrument_name}`}
-              sx={{
-                textDecoration: 'none',
-                '&:hover': { textDecoration: 'underline' },
-                color: theme.palette.mode === 'dark' ? '#86b4ff' : theme.palette.primary.main,
-              }}
-            >
-              {job.run.instrument_name}
-            </Typography>
+          <TableCell
+            sx={{
+              ...ellipsisWrap,
+            }}
+          >
+            {job.run?.title || 'N/A'}
+          </TableCell>
+        )}
+
+        {showInstrumentColumn ? (
+          // Merge the reduction instrument name and expand icon into one cell for "ALL" page
+          <TableCell>
+            <Box display="flex" alignItems="center" justifyContent="space-between">
+              <Typography
+                sx={{
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  flexGrow: 1,
+                  color: theme.palette.mode === 'dark' ? '#86b4ff' : theme.palette.primary.main,
+                }}
+                title={job.run.instrument_name}
+              >
+                <Link
+                  to={`/reduction-history/${job.run.instrument_name}`}
+                  onClick={(evt) => evt.stopPropagation()}
+                  style={{
+                    textDecoration: 'none',
+                    color: 'inherit',
+                  }}
+                  onMouseOver={(e) => (e.currentTarget.style.textDecoration = 'underline')}
+                  onMouseOut={(e) => (e.currentTarget.style.textDecoration = 'none')}
+                >
+                  {job.run.instrument_name}
+                </Link>
+              </Typography>
+
+              <IconButton
+                aria-label="expand row"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setOpen(!open);
+                }}
+                sx={{ ml: 1 }}
+              >
+                {open ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
+              </IconButton>
+            </Box>
+          </TableCell>
+        ) : (
+          // Merge the reduction title and expand icon into one cell for instrument specific pages
+          <TableCell colSpan={2}>
+            <Box display="flex" alignItems="center" justifyContent="space-between">
+              <Typography
+                variant="body2"
+                sx={{
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  flexGrow: 1,
+                }}
+                title={job.run?.title || 'N/A'}
+              >
+                {job.run?.title || 'N/A'}
+              </Typography>
+              <IconButton
+                aria-label="expand row"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setOpen(!open);
+                }}
+                sx={{ ml: 1 }}
+              >
+                {open ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
+              </IconButton>
+            </Box>
           </TableCell>
         )}
       </TableRow>
@@ -519,6 +601,15 @@ const Row: React.FC<{
                       onClick={handleRerun}
                     >
                       {loading ? <CircularProgress size={24} color="inherit" /> : 'Rerun'}
+                    </Button>
+                    <Button
+                      variant="contained"
+                      sx={{ marginLeft: 2 }}
+                      startIcon={<Download />}
+                      onClick={handleDownloadAll}
+                      disabled={jobOutputs.length === 0}
+                    >
+                      Download all
                     </Button>
                   </Box>
                 </Grid>

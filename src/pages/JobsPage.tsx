@@ -52,24 +52,26 @@ const JobsPage: React.FC = (): ReactElement => {
           <Typography variant="h3" component="h1" style={{ color: theme.palette.text.primary }}>
             {selectedInstrument} reductions
           </Typography>
-          {selectedInstrument !== 'ALL' ? (
-            <Typography
-              variant="body1"
-              component={Link}
-              to="/reduction-history/ALL"
-              sx={{
-                color: theme.palette.mode === 'dark' ? '#86b4ff' : theme.palette.primary.main,
-                display: 'flex',
-                textDecoration: 'none',
-                '&:hover': {
-                  textDecoration: 'underline',
-                },
-              }}
-            >
-              <ArrowBack style={{ marginRight: '4px' }} />
-              View reductions for all instruments
-            </Typography>
-          ) : null}
+          <Box sx={{ height: '24px' }}>
+            {selectedInstrument !== 'ALL' && (
+              <Typography
+                variant="body1"
+                component={Link}
+                to="/reduction-history/ALL"
+                sx={{
+                  color: theme.palette.mode === 'dark' ? '#86b4ff' : theme.palette.primary.main,
+                  display: 'flex',
+                  textDecoration: 'none',
+                  '&:hover': {
+                    textDecoration: 'underline',
+                  },
+                }}
+              >
+                <ArrowBack style={{ marginRight: '4px' }} />
+                View reductions for all instruments
+              </Typography>
+            )}
+          </Box>
         </Box>
         <Box display={'flex'} alignItems={'center'}>
           {showConfigButton && (
