@@ -86,7 +86,7 @@ const JobsPage: React.FC = (): ReactElement => {
           )}
           {userRole === 'staff' && (
             <FormControlLabel
-              control={<Switch checked={asUser} onChange={() => setAsUser(!asUser)} color="warning" />}
+              control={<Switch checked={asUser} onChange={() => setAsUser(!asUser)} color="secondary" />}
               label={
                 <Typography variant="body1" color={theme.palette.text.primary}>
                   View as user
