@@ -47,7 +47,21 @@ const JobTable: React.FC<{
   const [orderDirection, setOrderDirection] = useState<'asc' | 'desc'>('desc');
   const [orderBy, setOrderBy] = useState<string>('run_start');
   const offset = currentPage * rowsPerPage;
-  const [filters, setFilters] = useState<JobQueryFilters>({});
+
+  const [filters, setFiltersState] = useState<JobQueryFilters>({});
+  const previousFilters = useRef<JobQueryFilters>({});
+
+  const setFilters = (newFilters: JobQueryFilters): void => {
+    const prev = previousFilters.current;
+    const filtersChanged = JSON.stringify(prev) !== JSON.stringify(newFilters);
+
+    if (filtersChanged) {
+      previousFilters.current = newFilters;
+      setSelectedJobIds([]);
+      setFiltersState(newFilters);
+    }
+  };
+
   const query = `limit=${rowsPerPage}&offset=${offset}&order_by=${orderBy}&order_direction=${orderDirection}&include_run=true&filters=${JSON.stringify(filters)}&as_user=${asUser}`;
   const countQuery = `filters=${JSON.stringify(filters)}`;
   const queryPath = selectedInstrument === 'ALL' ? '/jobs' : `/instrument/${selectedInstrument}/jobs`;
