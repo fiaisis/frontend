@@ -104,7 +104,14 @@ const JobOutput: React.FC<{ job: Job }> = ({ job }: { job: Job }): ReactElement 
     return parsedOutputs.map((output: string, index: number) => (
       <TableRow key={index}>
         <TableCell>
-          <Box maxHeight="80px" display="flex" alignItems="center" justifyContent="space-between" width="100%">
+          <Box
+            maxHeight="80px"
+            display="flex"
+            alignItems="center"
+            justifyContent="space-between"
+            width="100%"
+            sx={{ flexWrap: 'nowrap', gap: 2 }}
+          >
             <Box display="flex" alignItems="center">
               <Box display="flex" alignItems="center" sx={{ overflow: 'hidden' }}>
                 <Typography
@@ -119,22 +126,24 @@ const JobOutput: React.FC<{ job: Job }> = ({ job }: { job: Job }): ReactElement 
                 </Typography>
               </Box>
             </Box>
-            <Box>
+            <Box
+              sx={{
+                display: 'flex',
+                flexWrap: 'nowrap',
+                gap: 1,
+                whiteSpace: 'nowrap',
+                minWidth: 'fit-content',
+              }}
+            >
               <Button
                 variant="contained"
-                sx={{ marginLeft: 2 }}
                 onClick={() =>
                   openDataViewer(job.id, job.run?.instrument_name || 'unknown', job.run?.experiment_number || 0, output)
                 }
               >
                 View
               </Button>
-              <Button
-                variant="contained"
-                sx={{ marginLeft: 2 }}
-                startIcon={<Download />}
-                onClick={() => handleDownload(job, output)}
-              >
+              <Button variant="contained" startIcon={<Download />} onClick={() => handleDownload(job, output)}>
                 Download
               </Button>
             </Box>
@@ -584,19 +593,34 @@ const Row: React.FC<{
                     sx={{
                       height: 160,
                       overflowY: 'auto',
+                      overflowX: 'auto',
                       marginBottom: 2,
-                      width: 'fit-content',
+                      width: '100%',
                     }}
                   >
                     <JobInput job={job} />
                   </Box>
-                  <Box display="flex" justifyContent="right">
-                    <Button variant="contained" onClick={() => openValueEditor(job.id)}>
+                  <Box
+                    display="flex"
+                    justifyContent="flex-end"
+                    alignItems="center"
+                    sx={{
+                      gap: 1,
+                      flexWrap: 'nowrap',
+                      overflowX: 'auto',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    <Button
+                      variant="contained"
+                      onClick={() => openValueEditor(job.id)}
+                      sx={{ flexShrink: 0, whiteSpace: 'nowrap' }}
+                    >
                       Value editor
                     </Button>
                     <Button
                       variant="contained"
-                      sx={{ marginLeft: 2, width: 60, height: 38 }}
+                      sx={{ flexShrink: 0, whiteSpace: 'nowrap', width: 60, height: 38 }}
                       disabled={loading}
                       onClick={handleRerun}
                     >
@@ -604,10 +628,10 @@ const Row: React.FC<{
                     </Button>
                     <Button
                       variant="contained"
-                      sx={{ marginLeft: 2 }}
                       startIcon={<Download />}
                       onClick={handleDownloadAll}
                       disabled={jobOutputs.length === 0}
+                      sx={{ flexShrink: 0, whiteSpace: 'nowrap' }}
                     >
                       Download all
                     </Button>
