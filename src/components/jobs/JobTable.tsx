@@ -21,7 +21,7 @@ import {
   KeyboardArrowDown,
   KeyboardArrowUp,
 } from '@mui/icons-material';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Job, JobQueryFilters } from '../../lib/types';
 import Row from './Row';
 import JobTableHead from './JobTableHead';
@@ -43,6 +43,7 @@ const JobTable: React.FC<{
     return stored ? parseInt(stored, 10) : 25;
   };
   const [rowsPerPage, setRowsPerPage] = useState<number>(getInitialRowsPerPage);
+  const previousRowsPerPage = useRef<number>(rowsPerPage);
   const [orderDirection, setOrderDirection] = useState<'asc' | 'desc'>('desc');
   const [orderBy, setOrderBy] = useState<string>('run_start');
   const offset = currentPage * rowsPerPage;
@@ -65,13 +66,10 @@ const JobTable: React.FC<{
 
   useEffect(() => {
     // Clear selections when the View as user toggle changes
-    setSelectedJobIds([]);
-  }, [asUser]);
-
-  useEffect(() => {
     // Clear selections when the page changes
+    // Clear selections when the instrument changes
     setSelectedJobIds([]);
-  }, [currentPage]);
+  }, [asUser, currentPage, selectedInstrument]);
 
   const refreshJobs = (): void => {
     void Promise.resolve(fetchJobs());
@@ -227,10 +225,18 @@ const JobTable: React.FC<{
               onPageChange={(_, newPage) => handlePageChange(newPage)}
               rowsPerPage={rowsPerPage}
               onRowsPerPageChange={(e) => {
-                // Prevents the offset from going out of range and showing an empty table
                 const newRowsPerPage = parseInt(e.target.value, 10);
+
+                // Deselect rows only if rowsPerPage is reduced
+                if (newRowsPerPage < previousRowsPerPage.current) {
+                  setSelectedJobIds([]);
+                }
+
+                // Prevents the offset from going out of range and showing an empty table
                 const newPage = Math.floor((currentPage * rowsPerPage) / newRowsPerPage);
                 setRowsPerPage(newRowsPerPage);
+
+                // Store the new rows per page in local storage
                 localStorage.setItem('jobTableRowsPerPage', newRowsPerPage.toString());
                 handlePageChange(newPage);
               }}
