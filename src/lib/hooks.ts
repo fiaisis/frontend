@@ -9,11 +9,12 @@ export const useFetchJobs = (
   setJobs: React.Dispatch<React.SetStateAction<Job[]>>
 ): (() => Promise<void>) => {
   return useCallback(async () => {
-    fiaApi
-      .get(`${apiPath}?${queryParams}`)
-      .then((res) => res.data)
-      .then((jobs) => setJobs(jobs))
-      .catch((err) => console.error('Error fetching jobs:', err));
+    try {
+      const res = await fiaApi.get(`${apiPath}?${queryParams}`);
+      setJobs(res.data);
+    } catch (err) {
+      console.error('Error fetching jobs:', err);
+    }
   }, [apiPath, queryParams, setJobs]);
 };
 
@@ -23,9 +24,11 @@ export const useFetchTotalCount = (
   setTotalRows: React.Dispatch<React.SetStateAction<number>>
 ): (() => Promise<void>) => {
   return useCallback(async () => {
-    fiaApi
-      .get(`${apiPath}?${query}`)
-      .then((res) => setTotalRows(res.data.count))
-      .catch((err) => console.error('Error fetching row count', err.message));
+    try {
+      const res = await fiaApi.get(`${apiPath}?${query}`);
+      setTotalRows(res.data.count);
+    } catch (err) {
+      console.error('Error fetching row count:', err);
+    }
   }, [apiPath, setTotalRows, query]);
 };

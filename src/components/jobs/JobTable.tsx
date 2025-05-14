@@ -13,6 +13,8 @@ import {
   TableRow,
   Typography,
   useTheme,
+  LinearProgress,
+  Skeleton,
 } from '@mui/material';
 import {
   CheckBox,
@@ -72,11 +74,21 @@ const JobTable: React.FC<{
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [bulkRerunSuccessful, setBulkRerunSuccessful] = useState(true);
   const [selectedJobIds, setSelectedJobIds] = useState<number[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [delayPassed, setDelayPassed] = useState(false);
 
   useEffect(() => {
-    fetchJobs();
-    void fetchTotalCount();
-  }, [fetchTotalCount, fetchJobs]);
+    const fetchAll = async (): Promise<void> => {
+      setIsLoading(true);
+      try {
+        await Promise.all([fetchJobs(), fetchTotalCount()]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchAll();
+  }, [fetchJobs, fetchTotalCount]);
 
   useEffect(() => {
     // Clear selections when the View as user toggle changes
@@ -84,6 +96,20 @@ const JobTable: React.FC<{
     // Clear selections when the instrument changes
     setSelectedJobIds([]);
   }, [asUser, currentPage, selectedInstrument]);
+
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+
+    if (!isLoading && jobs.length === 0) {
+      timeoutId = setTimeout(() => {
+        setDelayPassed(true);
+      }, 500);
+    } else {
+      setDelayPassed(false);
+    }
+
+    return () => clearTimeout(timeoutId);
+  }, [isLoading, jobs]);
 
   const refreshJobs = (): void => {
     void Promise.resolve(fetchJobs());
@@ -145,8 +171,19 @@ const JobTable: React.FC<{
   const theme = useTheme();
 
   return (
-    <Box sx={{ maxHeight: 700, pb: 1 }}>
-      <>
+    <>
+      {isLoading && (
+        <LinearProgress
+          sx={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            zIndex: 1201,
+          }}
+        />
+      )}
+      <Box>
         <Snackbar
           open={snackbarOpen}
           autoHideDuration={5000}
@@ -231,13 +268,19 @@ const JobTable: React.FC<{
             >
               Advanced filters {filtersOpen ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
             </Typography>
-
             <TablePagination
               component="div"
               count={totalRows}
               page={currentPage}
               onPageChange={(_, newPage) => handlePageChange(newPage)}
               rowsPerPage={rowsPerPage}
+              slotProps={{
+                actions: {
+                  previousButton: { disabled: isLoading },
+                  nextButton: { disabled: isLoading || currentPage >= Math.ceil(totalRows / rowsPerPage) - 1 },
+                },
+              }}
+              labelRowsPerPage="Rows per page"
               onRowsPerPageChange={(e) => {
                 const newRowsPerPage = parseInt(e.target.value, 10);
 
@@ -268,7 +311,7 @@ const JobTable: React.FC<{
           isBulkRerunning={isBulkRerunning}
           resetPageNumber={() => handlePageChange(0)} // Reset page number when filters change
         />
-        <TableContainer component={Paper} sx={{ maxHeight: 660, overflowY: 'scroll' }}>
+        <TableContainer component={Paper} sx={{ maxHeight: 640, minHeight: 640 }}>
           <Table stickyHeader sx={{ tableLayout: 'fixed', width: '100%' }}>
             <JobTableHead
               selectedInstrument={selectedInstrument}
@@ -287,35 +330,59 @@ const JobTable: React.FC<{
             />
 
             <TableBody>
-              {jobs.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={selectedInstrument === 'ALL' ? 9 : 8}>
-                    <Typography
-                      variant="h6"
-                      style={{ textAlign: 'center', marginTop: '20px', color: theme.palette.text.primary }}
-                    >
-                      No reductions found.
-                    </Typography>
-                  </TableCell>
-                </TableRow>
+              {isLoading || (!delayPassed && jobs.length === 0) ? (
+                [...Array(rowsPerPage)].map((_, index) => {
+                  const isEven = index % 2 === 0;
+                  const backgroundColor =
+                    theme.palette.mode === 'light'
+                      ? isEven
+                        ? '#f0f0f0'
+                        : theme.palette.background.default
+                      : isEven
+                        ? '#2d2d2d'
+                        : theme.palette.background.default;
+
+                  return (
+                    <TableRow key={index} sx={{ backgroundColor, height: 74 }}>
+                      {(selectedInstrument === 'ALL' ? [...Array(10)] : [...Array(9)]).map((_, cellIndex) => (
+                        <TableCell key={cellIndex} sx={{ overflow: 'hidden' }}>
+                          <Skeleton variant="text" height={28} />
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  );
+                })
+              ) : jobs.length === 0 ? (
+                <TableCell
+                  colSpan={selectedInstrument === 'ALL' ? 10 : 9}
+                  sx={{
+                    borderBottom: 'none',
+                    textAlign: 'center',
+                  }}
+                >
+                  <Typography variant="h6" mt={2} color={theme.palette.text.primary}>
+                    No reductions found
+                  </Typography>
+                </TableCell>
+              ) : (
+                jobs.map((job, index) => (
+                  <Row
+                    key={index}
+                    index={index}
+                    job={job}
+                    showInstrumentColumn={selectedInstrument === 'ALL'}
+                    submitRerun={submitRerun}
+                    refreshJobs={refreshJobs}
+                    isSelected={selectedJobIds.includes(job.id)}
+                    toggleSelection={toggleJobSelection}
+                  />
+                ))
               )}
-              {jobs.map((job, index) => (
-                <Row
-                  key={index}
-                  index={index}
-                  job={job}
-                  showInstrumentColumn={selectedInstrument === 'ALL'}
-                  submitRerun={submitRerun}
-                  refreshJobs={refreshJobs}
-                  isSelected={selectedJobIds.includes(job.id)}
-                  toggleSelection={toggleJobSelection}
-                />
-              ))}
             </TableBody>
           </Table>
         </TableContainer>
-      </>
-    </Box>
+      </Box>
+    </>
   );
 };
 
