@@ -276,8 +276,10 @@ const JobTable: React.FC<{
               rowsPerPage={rowsPerPage}
               slotProps={{
                 actions: {
-                  previousButton: { disabled: isLoading },
-                  nextButton: { disabled: isLoading || currentPage >= Math.ceil(totalRows / rowsPerPage) - 1 },
+                  previousButton: { disabled: isLoading || currentPage === 0 },
+                  nextButton: {
+                    disabled: isLoading || currentPage >= Math.ceil(totalRows / rowsPerPage) - 1,
+                  },
                 },
               }}
               labelRowsPerPage="Rows per page"
