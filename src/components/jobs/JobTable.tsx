@@ -98,10 +98,10 @@ const JobTable: React.FC<{
   }, [asUser, currentPage, selectedInstrument]);
 
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
+    let timeoutId: number;
 
     if (!isLoading && jobs.length === 0) {
-      timeoutId = setTimeout(() => {
+      timeoutId = window.setTimeout(() => {
         setDelayPassed(true);
       }, 500);
     } else {
