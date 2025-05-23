@@ -78,10 +78,10 @@ const JobTable: React.FC<{
   const [selectedJobIds, setSelectedJobIds] = useState<number[]>([]);
   const totalDownloadableFiles = jobs
     .filter((job) => selectedJobIds.includes(job.id))
-    .reduce((acc, job) => acc + parseJobOutputs(job.outputs).length, 0);    
+    .reduce((acc, job) => acc + parseJobOutputs(job.outputs).length, 0);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [delayPassed, setDelayPassed] = useState(false);
-    
+
   useEffect(() => {
     fetchJobs();
     void fetchTotalCount();
@@ -167,7 +167,7 @@ const JobTable: React.FC<{
     setIsBulkRerunning(false);
     setSelectedJobIds([]);
   };
-  
+
   const handleBulkDownload = async (): Promise<void> => {
     const selectedJobs = jobs.filter((job) => selectedJobIds.includes(job.id));
     for (const job of selectedJobs) {
