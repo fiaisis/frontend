@@ -48,7 +48,7 @@ const JobsPage: React.FC = (): ReactElement => {
   return (
     <div style={{ padding: '20px', height: '100%' }}>
       <Box display="flex" alignItems="center" justifyContent="space-between">
-        <Box display={'flex'} flexDirection={'column'}>
+        <Box display="flex" flexDirection="column">
           <Typography variant="h3" component="h1" style={{ color: theme.palette.text.primary }}>
             {selectedInstrument} reductions
           </Typography>
@@ -73,27 +73,27 @@ const JobsPage: React.FC = (): ReactElement => {
             )}
           </Box>
         </Box>
-        <Box display={'flex'} alignItems={'center'}>
-          {showConfigButton && (
-            <Button
-              variant="contained"
-              startIcon={<Settings />}
-              onClick={() => setConfigDrawerOpen(true)}
-              style={{ marginRight: '20px' }}
-            >
-              Config
-            </Button>
-          )}
+        <Box display="flex" alignItems="center">
           {userRole === 'staff' && (
             <FormControlLabel
-              control={<Switch checked={asUser} onChange={() => setAsUser(!asUser)} color="warning" />}
+              control={<Switch checked={asUser} onChange={() => setAsUser(!asUser)} color="secondary" />}
               label={
                 <Typography variant="body1" color={theme.palette.text.primary}>
                   View as user
                 </Typography>
               }
+              sx={{ marginRight: '16px' }}
             />
           )}
+          <Button
+            variant="contained"
+            startIcon={<Settings />}
+            onClick={() => setConfigDrawerOpen(true)}
+            disabled={!showConfigButton}
+            sx={{ marginRight: '20px' }}
+          >
+            Config
+          </Button>
           <InstrumentSelector selectedInstrument={selectedInstrument} handleInstrumentChange={handleInstrumentChange} />
         </Box>
       </Box>

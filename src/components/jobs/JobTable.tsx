@@ -13,6 +13,8 @@ import {
   TableRow,
   Typography,
   useTheme,
+  LinearProgress,
+  Skeleton,
 } from '@mui/material';
 import {
   CheckBox,
@@ -22,7 +24,7 @@ import {
   KeyboardArrowDown,
   KeyboardArrowUp,
 } from '@mui/icons-material';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Job, JobQueryFilters } from '../../lib/types';
 import Row from './Row';
 import JobTableHead from './JobTableHead';
@@ -45,10 +47,25 @@ const JobTable: React.FC<{
     return stored ? parseInt(stored, 10) : 25;
   };
   const [rowsPerPage, setRowsPerPage] = useState<number>(getInitialRowsPerPage);
+  const previousRowsPerPage = useRef<number>(rowsPerPage);
   const [orderDirection, setOrderDirection] = useState<'asc' | 'desc'>('desc');
   const [orderBy, setOrderBy] = useState<string>('run_start');
   const offset = currentPage * rowsPerPage;
-  const [filters, setFilters] = useState<JobQueryFilters>({});
+
+  const [filters, setFiltersState] = useState<JobQueryFilters>({});
+  const previousFilters = useRef<JobQueryFilters>({});
+
+  const setFilters = (newFilters: JobQueryFilters): void => {
+    const prev = previousFilters.current;
+    const filtersChanged = JSON.stringify(prev) !== JSON.stringify(newFilters);
+
+    if (filtersChanged) {
+      previousFilters.current = newFilters;
+      setSelectedJobIds([]);
+      setFiltersState(newFilters);
+    }
+  };
+
   const query = `limit=${rowsPerPage}&offset=${offset}&order_by=${orderBy}&order_direction=${orderDirection}&include_run=true&filters=${JSON.stringify(filters)}&as_user=${asUser}`;
   const countQuery = `filters=${JSON.stringify(filters)}`;
   const queryPath = selectedInstrument === 'ALL' ? '/jobs' : `/instrument/${selectedInstrument}/jobs`;
@@ -61,12 +78,48 @@ const JobTable: React.FC<{
   const [selectedJobIds, setSelectedJobIds] = useState<number[]>([]);
   const totalDownloadableFiles = jobs
     .filter((job) => selectedJobIds.includes(job.id))
-    .reduce((acc, job) => acc + parseJobOutputs(job.outputs).length, 0);
-
+    .reduce((acc, job) => acc + parseJobOutputs(job.outputs).length, 0);    
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [delayPassed, setDelayPassed] = useState(false);
+    
   useEffect(() => {
     fetchJobs();
     void fetchTotalCount();
   }, [fetchTotalCount, fetchJobs]);
+
+  useEffect(() => {
+    const fetchAll = async (): Promise<void> => {
+      setIsLoading(true);
+      try {
+        await Promise.all([fetchJobs(), fetchTotalCount()]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchAll();
+  }, [fetchJobs, fetchTotalCount]);
+
+  useEffect(() => {
+    // Clear selections when the View as user toggle changes
+    // Clear selections when the page changes
+    // Clear selections when the instrument changes
+    setSelectedJobIds([]);
+  }, [asUser, currentPage, selectedInstrument]);
+
+  useEffect(() => {
+    let timeoutId: number;
+
+    if (!isLoading && jobs.length === 0) {
+      timeoutId = window.setTimeout(() => {
+        setDelayPassed(true);
+      }, 500);
+    } else {
+      setDelayPassed(false);
+    }
+
+    return () => clearTimeout(timeoutId);
+  }, [isLoading, jobs]);
 
   useEffect(() => {
     // Clear selections when the View as user toggle changes
@@ -114,7 +167,7 @@ const JobTable: React.FC<{
     setIsBulkRerunning(false);
     setSelectedJobIds([]);
   };
-
+  
   const handleBulkDownload = async (): Promise<void> => {
     const selectedJobs = jobs.filter((job) => selectedJobIds.includes(job.id));
     for (const job of selectedJobs) {
@@ -161,8 +214,19 @@ const JobTable: React.FC<{
   const theme = useTheme();
 
   return (
-    <Box sx={{ maxHeight: 700, pb: 1 }}>
-      <>
+    <>
+      {isLoading && (
+        <LinearProgress
+          sx={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            zIndex: 1201,
+          }}
+        />
+      )}
+      <Box>
         <Snackbar
           open={snackbarOpen}
           autoHideDuration={5000}
@@ -231,7 +295,6 @@ const JobTable: React.FC<{
                     `Rerun (${selectedJobIds.length})`
                   )}
                 </Button>
-
                 <Button
                   variant="contained"
                   color="primary"
@@ -265,11 +328,28 @@ const JobTable: React.FC<{
               page={currentPage}
               onPageChange={(_, newPage) => handlePageChange(newPage)}
               rowsPerPage={rowsPerPage}
+              slotProps={{
+                actions: {
+                  previousButton: { disabled: isLoading || currentPage === 0 },
+                  nextButton: {
+                    disabled: isLoading || currentPage >= Math.ceil(totalRows / rowsPerPage) - 1,
+                  },
+                },
+              }}
+              labelRowsPerPage="Rows per page"
               onRowsPerPageChange={(e) => {
-                // Prevents the offset from going out of range and showing an empty table
                 const newRowsPerPage = parseInt(e.target.value, 10);
+
+                // Deselect rows only if rowsPerPage is reduced
+                if (newRowsPerPage < previousRowsPerPage.current) {
+                  setSelectedJobIds([]);
+                }
+
+                // Prevents the offset from going out of range and showing an empty table
                 const newPage = Math.floor((currentPage * rowsPerPage) / newRowsPerPage);
                 setRowsPerPage(newRowsPerPage);
+
+                // Store the new rows per page in local storage
                 localStorage.setItem('jobTableRowsPerPage', newRowsPerPage.toString());
                 handlePageChange(newPage);
               }}
@@ -287,7 +367,7 @@ const JobTable: React.FC<{
           isBulkRerunning={isBulkRerunning}
           resetPageNumber={() => handlePageChange(0)} // Reset page number when filters change
         />
-        <TableContainer component={Paper} sx={{ maxHeight: 660, overflowY: 'scroll' }}>
+        <TableContainer component={Paper} sx={{ maxHeight: 640, minHeight: 640 }}>
           <Table stickyHeader sx={{ tableLayout: 'fixed', width: '100%' }}>
             <JobTableHead
               selectedInstrument={selectedInstrument}
@@ -306,35 +386,59 @@ const JobTable: React.FC<{
             />
 
             <TableBody>
-              {jobs.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={selectedInstrument === 'ALL' ? 9 : 8}>
-                    <Typography
-                      variant="h6"
-                      style={{ textAlign: 'center', marginTop: '20px', color: theme.palette.text.primary }}
-                    >
-                      No reductions found.
-                    </Typography>
-                  </TableCell>
-                </TableRow>
+              {isLoading || (!delayPassed && jobs.length === 0) ? (
+                [...Array(rowsPerPage)].map((_, index) => {
+                  const isEven = index % 2 === 0;
+                  const backgroundColor =
+                    theme.palette.mode === 'light'
+                      ? isEven
+                        ? '#f0f0f0'
+                        : theme.palette.background.default
+                      : isEven
+                        ? '#2d2d2d'
+                        : theme.palette.background.default;
+
+                  return (
+                    <TableRow key={index} sx={{ backgroundColor, height: 74 }}>
+                      {(selectedInstrument === 'ALL' ? [...Array(10)] : [...Array(9)]).map((_, cellIndex) => (
+                        <TableCell key={cellIndex} sx={{ overflow: 'hidden' }}>
+                          <Skeleton variant="text" height={28} />
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  );
+                })
+              ) : jobs.length === 0 ? (
+                <TableCell
+                  colSpan={selectedInstrument === 'ALL' ? 10 : 9}
+                  sx={{
+                    borderBottom: 'none',
+                    textAlign: 'center',
+                  }}
+                >
+                  <Typography variant="h6" mt={2} color={theme.palette.text.primary}>
+                    No reductions found
+                  </Typography>
+                </TableCell>
+              ) : (
+                jobs.map((job, index) => (
+                  <Row
+                    key={index}
+                    index={index}
+                    job={job}
+                    showInstrumentColumn={selectedInstrument === 'ALL'}
+                    submitRerun={submitRerun}
+                    refreshJobs={refreshJobs}
+                    isSelected={selectedJobIds.includes(job.id)}
+                    toggleSelection={toggleJobSelection}
+                  />
+                ))
               )}
-              {jobs.map((job, index) => (
-                <Row
-                  key={index}
-                  index={index}
-                  job={job}
-                  showInstrumentColumn={selectedInstrument === 'ALL'}
-                  submitRerun={submitRerun}
-                  refreshJobs={refreshJobs}
-                  isSelected={selectedJobIds.includes(job.id)}
-                  toggleSelection={toggleJobSelection}
-                />
-              ))}
             </TableBody>
           </Table>
         </TableContainer>
-      </>
-    </Box>
+      </Box>
+    </>
   );
 };
 
