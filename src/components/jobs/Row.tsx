@@ -20,6 +20,7 @@ import {
 import { Job } from '../../lib/types';
 import {
   CheckCircleOutline,
+  Download,
   ErrorOutline,
   HighlightOff,
   ImageAspectRatio,
@@ -37,6 +38,7 @@ import ReactGA from 'react-ga4';
 import { Link } from 'react-router-dom';
 import Grid from '@mui/material/Grid2';
 import { fiaApi } from '../../lib/api';
+import { parseJobOutputs } from '../../lib/hooks';
 
 const ellipsisWrap = {
   whiteSpace: 'nowrap',
@@ -102,7 +104,14 @@ const JobOutput: React.FC<{ job: Job }> = ({ job }: { job: Job }): ReactElement 
     return parsedOutputs.map((output: string, index: number) => (
       <TableRow key={index}>
         <TableCell>
-          <Box maxHeight="80px" display="flex" alignItems="center" justifyContent="space-between" width="100%">
+          <Box
+            maxHeight="80px"
+            display="flex"
+            alignItems="center"
+            justifyContent="space-between"
+            width="100%"
+            sx={{ flexWrap: 'nowrap', gap: 2 }}
+          >
             <Box display="flex" alignItems="center">
               <Box display="flex" alignItems="center" sx={{ overflow: 'hidden' }}>
                 <Typography
@@ -117,17 +126,24 @@ const JobOutput: React.FC<{ job: Job }> = ({ job }: { job: Job }): ReactElement 
                 </Typography>
               </Box>
             </Box>
-            <Box>
+            <Box
+              sx={{
+                display: 'flex',
+                flexWrap: 'nowrap',
+                gap: 1,
+                whiteSpace: 'nowrap',
+                minWidth: 'fit-content',
+              }}
+            >
               <Button
                 variant="contained"
-                sx={{ marginLeft: 2 }}
                 onClick={() =>
                   openDataViewer(job.id, job.run?.instrument_name || 'unknown', job.run?.experiment_number || 0, output)
                 }
               >
                 View
               </Button>
-              <Button variant="contained" sx={{ marginLeft: 2 }} onClick={() => handleDownload(job, output)}>
+              <Button variant="contained" startIcon={<Download />} onClick={() => handleDownload(job, output)}>
                 Download
               </Button>
             </Box>
@@ -224,6 +240,14 @@ const Row: React.FC<{
   const rerunJobId = useRef<number | null>(null);
   const rerunSuccessful = useRef<boolean | null>(null);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
+
+  const jobOutputs = parseJobOutputs(job.outputs);
+
+  const handleDownloadAll = async (): Promise<void> => {
+    for (const output of jobOutputs) {
+      await handleDownload(job, output);
+    }
+  };
 
   const extractFilename = (path: string): string => path.split('/').pop()?.split('.')[0] ?? '';
   const formatDateTime = (dateTimeStr: string | null): string => dateTimeStr?.replace('I', '\n') ?? '';
@@ -569,23 +593,47 @@ const Row: React.FC<{
                     sx={{
                       height: 160,
                       overflowY: 'auto',
+                      overflowX: 'auto',
                       marginBottom: 2,
-                      width: 'fit-content',
+                      width: '100%',
                     }}
                   >
                     <JobInput job={job} />
                   </Box>
-                  <Box display="flex" justifyContent="right">
-                    <Button variant="contained" onClick={() => openValueEditor(job.id)}>
+                  <Box
+                    display="flex"
+                    justifyContent="flex-end"
+                    alignItems="center"
+                    sx={{
+                      gap: 1,
+                      flexWrap: 'nowrap',
+                      overflowX: 'auto',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    <Button
+                      variant="contained"
+                      onClick={() => openValueEditor(job.id)}
+                      sx={{ flexShrink: 0, whiteSpace: 'nowrap' }}
+                    >
                       Value editor
                     </Button>
                     <Button
                       variant="contained"
-                      sx={{ marginLeft: 2, width: 60, height: 38 }}
+                      sx={{ flexShrink: 0, whiteSpace: 'nowrap', width: 60, height: 38 }}
                       disabled={loading}
                       onClick={handleRerun}
                     >
                       {loading ? <CircularProgress size={24} color="inherit" /> : 'Rerun'}
+                    </Button>
+                    <Button
+                      variant="contained"
+                      startIcon={<Download />}
+                      onClick={handleDownloadAll}
+                      disabled={jobOutputs.length === 0}
+                      sx={{ flexShrink: 0, whiteSpace: 'nowrap' }}
+                    >
+                      Download all
                     </Button>
                   </Box>
                 </Grid>
