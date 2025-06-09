@@ -12,11 +12,14 @@ module.exports = {
     'plugin:@typescript-eslint/recommended',
     'prettier',
     'plugin:cypress/recommended',
+
   ],
-  plugins: ['prettier', 'cypress'],
+  plugins: ['prettier', 'cypress', 'simple-import-sort'],
   rules: {
     'react/jsx-filename-extension': 'off',
     'jsx-a11y/click-events-have-key-events': 'off',
+    'simple-import-sort/imports': 'error',
+    'simple-import-sort/exports': 'error',
     'prettier/prettier': [
       'error',
       {
