@@ -3,7 +3,6 @@ import React, { FC } from 'react';
 import { BrowserRouter as Router, Route, Switch } from 'react-router-dom';
 import ReactGA from 'react-ga4';
 
-// Local data
 import Instruments from './pages/Instruments';
 import HomePage from './pages/HomePage';
 import ValueEditor from './pages/ValueEditor';
