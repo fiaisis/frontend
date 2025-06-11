@@ -13,7 +13,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import JobsPage from './pages/JobsPage';
 
-// Initialize Google Analytics with the given tracking ID (test2)
+// Initialize Google Analytics with the given tracking ID (test3)
 ReactGA.initialize('G-7XJBCP6P75');
 // Track the initial page load event
 ReactGA.send({ hitType: 'pageview', page: window.location.pathname });
