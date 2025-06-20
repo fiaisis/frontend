@@ -3,7 +3,6 @@ import React, { FC } from 'react';
 import { BrowserRouter as Router, Route, Switch } from 'react-router-dom';
 import ReactGA from 'react-ga4';
 
-// Local data
 import Instruments from './pages/Instruments';
 import HomePage from './pages/HomePage';
 import ValueEditor from './pages/ValueEditor';
@@ -14,7 +13,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import JobsPage from './pages/JobsPage';
 
-// Initialize Google Analytics with the given tracking ID
+// Initialize Google Analytics with the given tracking ID (test3)
 ReactGA.initialize('G-7XJBCP6P75');
 // Track the initial page load event
 ReactGA.send({ hitType: 'pageview', page: window.location.pathname });
