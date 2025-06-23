@@ -1,4 +1,7 @@
 module.exports = {
+  devServer: {
+    port: 5001
+  },
   webpack: {
     configure: (webpackConfig, { env, paths }) => {
       webpackConfig.externals = {

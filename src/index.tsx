@@ -66,6 +66,7 @@ createRoute(
 );
 createRoute('Reductions', 'Instruments', '/fia/instruments', 2, 'Data help text', false);
 createRoute('Reductions', 'Reduction history', '/fia/reduction-history/ALL', 3, 'Data help text', false);
+createRoute('Experiment Viewer', 'Experiment Viewer', '/fia/experiment-viewer', 4, 'View experiment data', false);
 
 // Single-SPA bootstrap methods have no idea what type of inputs may be
 // pushed down from the parent app
