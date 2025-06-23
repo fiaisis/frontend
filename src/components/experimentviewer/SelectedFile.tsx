@@ -31,6 +31,7 @@ export const SelectedFile = (props: SelectedFileProps): React.ReactElement => {
   }, []);
 
   const onCheckBoxChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
+    console.log(heatmap);
     props.onSelect(props.name, heatmap);
   };
 

@@ -76,7 +76,30 @@ const ExperimentViewer = (): React.ReactElement => {
     return richTreeData;
   };
 
-  const fetchData = async (filename: string): Promise<[][]> => {
+  const fetchData = async (filename: string, slice: number): Promise<number[]> => {
+    return await plottingApi
+      .get('data', {
+        params: {
+          file: filename,
+          path: '/mantid_workspace_1/workspace/values',
+          selection: slice,
+        },
+      })
+      .then((res) => res.data);
+  };
+
+  const fetchAxis = async (filename: string): Promise<number[]> => {
+    return await plottingApi
+      .get('data', {
+        params: {
+          file: filename,
+          path: '/mantid_workspace_1/workspace/axis1',
+        },
+      })
+      .then((res) => res.data);
+  };
+
+  const fetchHeatmapData = async (filename: string): Promise<[][]> => {
     const data = await plottingApi
       .get('processed_data', {
         params: {
@@ -98,16 +121,17 @@ const ExperimentViewer = (): React.ReactElement => {
   useEffect(() => {
     if (activeFiles.length > 0) {
       (async () => {
-        await fetchData('OSIRIS151097,151096,151095_graphite_002_Reduced-individual.nxs').then((data) => {
-          setOptions(computeOptions2DOptions(data));
-        });
+        const data = await fetchData('OSIRIS151097,151096,151095_graphite_002_Reduced-individual.nxs', 0);
+        const axis = await fetchAxis('OSIRIS151097,151096,151095_graphite_002_Reduced-individual.nxs');
+        setOptions(computeOptions1DOptions(data, axis));
       })();
+      return;
     } else {
       setOptions(undefined);
     }
     if (activeHeatmap) {
       (async () => {
-        await fetchData(activeHeatmap.name).then((data) => {
+        await fetchHeatmapData(activeHeatmap.name.slice(0, -1)).then((data) => {
           setOptions(computeOptions2DOptions(data));
         });
       })();
@@ -132,8 +156,29 @@ const ExperimentViewer = (): React.ReactElement => {
         return;
       }
       setActiveHeatmap({ name: item });
+      return;
     }
     setActiveFiles([...activeFiles, item]);
+  };
+
+  const computeOptions1DOptions = (data: number[], axis: number[]): EChartsOption => {
+    console.log(data);
+    return {
+      xAxis: {
+        type: 'category',
+        data: axis,
+      },
+      yAxis: {},
+      tooltip: {
+        trigger: 'item',
+      },
+      series: [
+        {
+          data: data,
+          type: 'line',
+        },
+      ],
+    };
   };
 
   const computeOptions2DOptions = (data: number[][]): EChartsOption => {
