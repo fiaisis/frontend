@@ -5,7 +5,7 @@ import Grid from '@mui/material/Grid2';
 
 interface SelectedFileProps {
   name: string;
-  onSelect: (item: string) => void;
+  onSelect: (item: string, heatmap: boolean) => void;
 }
 
 interface Meta {
@@ -14,6 +14,7 @@ interface Meta {
 
 export const SelectedFile = (props: SelectedFileProps): React.ReactElement => {
   const theme = useTheme();
+  const [heatmap, setHeatmap] = React.useState<boolean>(false);
   const [meta, setMeta] = React.useState<Meta>({ shape: [] });
 
   useEffect(() => {
@@ -30,7 +31,11 @@ export const SelectedFile = (props: SelectedFileProps): React.ReactElement => {
   }, []);
 
   const onCheckBoxChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
-    props.onSelect(props.name);
+    props.onSelect(props.name, heatmap);
+  };
+
+  const switchHeatmap = (event: React.ChangeEvent<HTMLInputElement>): void => {
+    setHeatmap(event.target.checked);
   };
 
   return (
@@ -65,7 +70,7 @@ export const SelectedFile = (props: SelectedFileProps): React.ReactElement => {
         </Grid>
         {meta.shape[0] > 1 && (
           <Stack direction={'row'} alignItems={'baseline'}>
-            <FormControlLabel control={<Switch />} label={'Heatmap'} />
+            <FormControlLabel control={<Switch checked={heatmap} onChange={switchHeatmap} />} label={'Heatmap'} />
             <TextField variant={'standard'} label={'Slices'} />
           </Stack>
         )}

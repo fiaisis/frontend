@@ -15,7 +15,7 @@ interface Job {
   };
 }
 
-type file = {
+type heatmap = {
   name: string;
 };
 
@@ -30,6 +30,7 @@ const ExperimentViewer = (): React.ReactElement => {
   const [files, setFiles] = React.useState<string[]>([]);
   const [activeFiles, setActiveFiles] = React.useState<string[]>([]);
   const [options, setOptions] = React.useState<EChartsOption>();
+  const [activeHeatmap, setActiveHeatmap] = React.useState<heatmap>();
   const theme = useTheme();
   const fetchRuns = async (RB: string): Promise<TreeViewBaseItem<RunsTreeItem>[]> => {
     const data: Job[] = await fiaApi
@@ -75,11 +76,11 @@ const ExperimentViewer = (): React.ReactElement => {
     return richTreeData;
   };
 
-  const fetchData = async (): Promise<[][]> => {
+  const fetchData = async (filename: string): Promise<[][]> => {
     const data = await plottingApi
       .get('processed_data', {
         params: {
-          filename: 'OSIRIS151097,151096,151095_graphite_002_Reduced-individual.nxs',
+          filename: filename,
           path: '/mantid_workspace_1/workspace/values',
         },
       })
@@ -97,13 +98,21 @@ const ExperimentViewer = (): React.ReactElement => {
   useEffect(() => {
     if (activeFiles.length > 0) {
       (async () => {
-        await fetchData().then((data) => {
-          console.log('data fetched', data);
-          setOptions(computeOptions(data));
+        await fetchData('OSIRIS151097,151096,151095_graphite_002_Reduced-individual.nxs').then((data) => {
+          setOptions(computeOptions2DOptions(data));
+        });
+      })();
+    } else {
+      setOptions(undefined);
+    }
+    if (activeHeatmap) {
+      (async () => {
+        await fetchData(activeHeatmap.name).then((data) => {
+          setOptions(computeOptions2DOptions(data));
         });
       })();
     }
-  }, [activeFiles]);
+  }, [activeFiles, activeHeatmap]);
 
   const setSelectedItem = (item: string): void => {
     if (files.includes(item)) {
@@ -115,12 +124,19 @@ const ExperimentViewer = (): React.ReactElement => {
     }
   };
 
-  const selectItemForPlotting = (item: string): void => {
+  const selectItemForPlotting = (item: string, heatmap: boolean): void => {
+    if (heatmap) {
+      setActiveFiles([]);
+      if (activeHeatmap?.name === item) {
+        setActiveHeatmap(undefined);
+        return;
+      }
+      setActiveHeatmap({ name: item });
+    }
     setActiveFiles([...activeFiles, item]);
   };
 
-  const computeOptions = (data: number[][]): EChartsOption => {
-    console.log(data);
+  const computeOptions2DOptions = (data: number[][]): EChartsOption => {
     return {
       grid: { top: 8, right: 8, bottom: 24, left: 36 },
       xAxis: {
@@ -141,7 +157,7 @@ const ExperimentViewer = (): React.ReactElement => {
         },
       ],
       tooltip: {
-        trigger: 'axis',
+        trigger: 'item',
       },
     };
   };
