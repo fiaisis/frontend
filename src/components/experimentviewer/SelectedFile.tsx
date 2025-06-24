@@ -2,10 +2,11 @@ import { Box, Checkbox, FormControlLabel, Stack, Switch, TextField, Typography, 
 import React, { useEffect } from 'react';
 import { plottingApi } from '../../lib/plotting-api';
 import Grid from '@mui/material/Grid2';
+import { file } from '../../pages/ExperimentViewer';
 
 interface SelectedFileProps {
   name: string;
-  onSelect: (item: string, heatmap: boolean) => void;
+  onSelect: (file: file) => void;
 }
 
 interface Meta {
@@ -15,6 +16,7 @@ interface Meta {
 export const SelectedFile = (props: SelectedFileProps): React.ReactElement => {
   const theme = useTheme();
   const [heatmap, setHeatmap] = React.useState<boolean>(false);
+  const [slices, setSlices] = React.useState<string>('');
   const [meta, setMeta] = React.useState<Meta>({ shape: [] });
 
   useEffect(() => {
@@ -31,8 +33,7 @@ export const SelectedFile = (props: SelectedFileProps): React.ReactElement => {
   }, []);
 
   const onCheckBoxChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
-    console.log(heatmap);
-    props.onSelect(props.name, heatmap);
+    props.onSelect({ name: props.name, heatMap: heatmap, slices: slices.split(',').map((s) => parseInt(s)) });
   };
 
   const switchHeatmap = (event: React.ChangeEvent<HTMLInputElement>): void => {
@@ -72,7 +73,14 @@ export const SelectedFile = (props: SelectedFileProps): React.ReactElement => {
         {meta.shape[0] > 1 && (
           <Stack direction={'row'} alignItems={'baseline'}>
             <FormControlLabel control={<Switch checked={heatmap} onChange={switchHeatmap} />} label={'Heatmap'} />
-            <TextField variant={'standard'} label={'Slices'} />
+            <TextField
+              onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                setSlices(event.target.value);
+              }}
+              value={slices}
+              variant={'standard'}
+              label={'Slices'}
+            />
           </Stack>
         )}
       </Stack>
