@@ -128,11 +128,27 @@ const ExperimentViewer = (): React.ReactElement => {
     if (activeFiles.length > 0) {
       (async () => {
         const data: number[][] = [];
-        activeFiles.map(async (file) => {
-          file.slices.map(async (slice) => {
-            data.push(await fetchData(file.name.slice(0, -1), slice));
-          });
+        const fetchPromises = activeFiles.flatMap((file) => {
+          if (file.slices.length > 0) {
+            return file.slices.map(async (slice) => {
+              const result = await fetchData(file.name.slice(0, -1), slice);
+              data.push(result);
+              return result;
+            });
+          } else {
+            return [
+              (async () => {
+                const result = await fetchData(file.name.slice(0, -1), 0);
+                data.push(result);
+                return result;
+              })(),
+            ];
+          }
         });
+
+        // Wait for all fetch operations to complete
+        await Promise.all(fetchPromises);
+
         const axis = await fetchAxis('OSIRIS151097,151096,151095_graphite_002_Reduced-individual.nxs');
         setOptions(computeOptions1DOptions(data, axis));
       })();
