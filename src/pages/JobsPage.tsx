@@ -1,11 +1,12 @@
-import { Link, useHistory, useParams } from 'react-router-dom';
-import JobTable from '../components/jobs/JobTable';
-import { Box, Button, FormControlLabel, SelectChangeEvent, Switch, Typography, useTheme } from '@mui/material';
 import { ArrowBack, Settings } from '@mui/icons-material';
-import React, { ReactElement, useState } from 'react';
-import InstrumentSelector from '../components/jobs/InstrumentSelector';
-import InstrumentConfigDrawer from '../components/configsettings/InstrumentConfigDrawer';
+import { Box, Button, FormControlLabel, SelectChangeEvent, Switch, Typography, useTheme } from '@mui/material';
 import { jwtDecode } from 'jwt-decode';
+import React, { ReactElement, useState } from 'react';
+import { Link, useHistory, useParams } from 'react-router-dom';
+
+import InstrumentConfigDrawer from '../components/configsettings/InstrumentConfigDrawer';
+import InstrumentSelector from '../components/jobs/InstrumentSelector';
+import JobTable from '../components/jobs/JobTable';
 
 const JobsPage: React.FC = (): ReactElement => {
   const { instrumentName } = useParams<{ instrumentName: string }>();

@@ -1,9 +1,11 @@
-import ReactDOM from 'react-dom';
-import React from 'react';
 import './index.css';
-import App from './App';
-import singleSpaReact from 'single-spa-react';
+
 import * as log from 'loglevel';
+import React from 'react';
+import ReactDOM from 'react-dom';
+import singleSpaReact from 'single-spa-react';
+
+import App from './App';
 import { createRoute } from './routes';
 import { createWebsocketClient } from './websocket';
 

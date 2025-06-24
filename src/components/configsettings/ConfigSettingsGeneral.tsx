@@ -1,11 +1,9 @@
-import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
-
+import MonacoEditor from '@monaco-editor/react';
+import { Info } from '@mui/icons-material';
 import { Box, Button, IconButton, Tab, Tabs, Tooltip, Typography, useTheme } from '@mui/material';
 import Grid from '@mui/material/Grid2';
-import { Info } from '@mui/icons-material';
-
-import MonacoEditor from '@monaco-editor/react';
+import React, { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
 
 import { fiaApi } from '../../lib/api';
 

@@ -71,7 +71,8 @@
     "eject": "react-scripts eject",
     "cypress:open": "cypress open",
     "cypress:run": "cypress run",
-    "run-frontend": "yarn build && cd ../scigateway && yarn start"
+    "run-frontend": "yarn build && cd ../scigateway && yarn start",
+    "prepare": "husky"
   },
   "eslintConfig": {
     "extends": "react-app"
@@ -107,7 +108,7 @@
     "eslint-plugin-simple-import-sort": "^12.1.1",
     "html-webpack-plugin": "^5.6.3",
     "husky": "^9.1.7",
-    "lint-staged": "15.2.10",
+    "lint-staged": "^16.1.0",
     "prettier": "3.4.1",
     "serve": "14.2.4"
   }

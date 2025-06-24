@@ -1,9 +1,18 @@
 import {
+  CheckBox,
+  CheckBoxOutlineBlank,
+  IndeterminateCheckBox,
+  KeyboardArrowDown,
+  KeyboardArrowUp,
+} from '@mui/icons-material';
+import {
   Alert,
   Box,
   Button,
   CircularProgress,
+  LinearProgress,
   Paper,
+  Skeleton,
   Snackbar,
   Table,
   TableBody,
@@ -13,23 +22,15 @@ import {
   TableRow,
   Typography,
   useTheme,
-  LinearProgress,
-  Skeleton,
 } from '@mui/material';
-import {
-  CheckBox,
-  IndeterminateCheckBox,
-  CheckBoxOutlineBlank,
-  KeyboardArrowDown,
-  KeyboardArrowUp,
-} from '@mui/icons-material';
-import React, { useEffect, useState, useRef } from 'react';
-import { Job, JobQueryFilters } from '../../lib/types';
-import Row from './Row';
-import JobTableHead from './JobTableHead';
-import { useFetchJobs, useFetchTotalCount } from '../../lib/hooks';
+import React, { useEffect, useRef, useState } from 'react';
+
 import { fiaApi } from '../../lib/api';
+import { useFetchJobs, useFetchTotalCount } from '../../lib/hooks';
+import { Job, JobQueryFilters } from '../../lib/types';
 import FilterContainer from './Filters';
+import JobTableHead from './JobTableHead';
+import Row from './Row';
 
 const JobTable: React.FC<{
   selectedInstrument: string;

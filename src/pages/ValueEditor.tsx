@@ -1,12 +1,11 @@
 // React components
+// Monaco components
+import Editor from '@monaco-editor/react';
+// Material UI components
+import { Alert, Box, Button, CircularProgress, Snackbar, Tab, Tabs, Typography, useTheme } from '@mui/material';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
-// Material UI components
-import { Alert, Box, Button, CircularProgress, Snackbar, Tab, Tabs, Typography, useTheme } from '@mui/material';
-
-// Monaco components
-import Editor from '@monaco-editor/react';
 import { fiaApi } from '../lib/api';
 
 interface TabPanelProps {

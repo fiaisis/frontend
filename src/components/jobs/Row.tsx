@@ -1,23 +1,3 @@
-import React, { ReactElement, useRef, useState } from 'react';
-import {
-  Alert,
-  Box,
-  Button,
-  CircularProgress,
-  Checkbox,
-  Collapse,
-  IconButton,
-  Snackbar,
-  Table,
-  TableBody,
-  TableCell,
-  TableRow,
-  Theme,
-  Tooltip,
-  Typography,
-  useTheme,
-} from '@mui/material';
-import { Job } from '../../lib/types';
 import {
   CheckCircleOutline,
   ErrorOutline,
@@ -33,10 +13,31 @@ import {
   WarningAmber,
   WorkOutline,
 } from '@mui/icons-material';
+import {
+  Alert,
+  Box,
+  Button,
+  Checkbox,
+  CircularProgress,
+  Collapse,
+  IconButton,
+  Snackbar,
+  Table,
+  TableBody,
+  TableCell,
+  TableRow,
+  Theme,
+  Tooltip,
+  Typography,
+  useTheme,
+} from '@mui/material';
+import Grid from '@mui/material/Grid2';
+import React, { ReactElement, useRef, useState } from 'react';
 import ReactGA from 'react-ga4';
 import { Link } from 'react-router-dom';
-import Grid from '@mui/material/Grid2';
+
 import { fiaApi } from '../../lib/api';
+import { Job } from '../../lib/types';
 
 const ellipsisWrap = {
   whiteSpace: 'nowrap',

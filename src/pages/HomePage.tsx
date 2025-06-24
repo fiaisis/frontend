@@ -1,22 +1,21 @@
 // React imports
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { Trans, useTranslation } from 'react-i18next';
-
+import SearchIcon from '@mui/icons-material/Search';
 // Material UI imports
 import { alpha, Avatar, Box, Button, Paper, styled, Typography, useMediaQuery, useTheme } from '@mui/material';
-import SearchIcon from '@mui/icons-material/Search';
 import Grid from '@mui/material/Grid2';
+import React from 'react';
+import { Trans, useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 
 // Local data
 import BackgroundImage from '../images/background.jpg';
-import GreenSwirl1Image from '../images/green-swirl1.png';
-import GreenSwirl2Image from '../images/green-swirl2.png';
 import Decal1Image from '../images/decal1.svg';
 import Decal2Image from '../images/decal2.svg';
 import Decal2DarkImage from '../images/decal2-dark.svg';
 import Decal2DarkHCImage from '../images/decal2-darkhc.svg';
 import FacilityImage from '../images/facility.jpg';
+import GreenSwirl1Image from '../images/green-swirl1.png';
+import GreenSwirl2Image from '../images/green-swirl2.png';
 
 const backgroundTitleStyles = {
   color: '#FFFFFF',

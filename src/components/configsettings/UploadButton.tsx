@@ -1,6 +1,6 @@
-import React from 'react';
-import { Box, Button } from '@mui/material';
 import { Edit, UploadFile } from '@mui/icons-material';
+import { Box, Button } from '@mui/material';
+import React from 'react';
 
 const UploadButton: React.FC<{
   onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
