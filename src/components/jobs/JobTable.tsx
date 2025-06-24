@@ -170,24 +170,6 @@ const JobTable: React.FC<{
 
   const theme = useTheme();
 
-  if (selectedInstrument === 'IMAT') {
-    return (
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          height: 640,
-          width: '100%',
-        }}
-      >
-        <Typography variant="h6" color={theme.palette.text.primary}>
-          Most recent NDXIMAT image will be rendered here
-        </Typography>
-      </Box>
-    );
-  }
-
   return (
     <>
       {isLoading && (
