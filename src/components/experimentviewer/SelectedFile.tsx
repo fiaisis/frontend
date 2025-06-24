@@ -16,7 +16,7 @@ interface Meta {
 export const SelectedFile = (props: SelectedFileProps): React.ReactElement => {
   const theme = useTheme();
   const [heatmap, setHeatmap] = React.useState<boolean>(false);
-  const [slices, setSlices] = React.useState<string>('');
+  const [slicesSelected, setSlicesSelected] = React.useState<string>('');
   const [meta, setMeta] = React.useState<Meta>({ shape: [] });
 
   useEffect(() => {
@@ -33,7 +33,11 @@ export const SelectedFile = (props: SelectedFileProps): React.ReactElement => {
   }, []);
 
   const onCheckBoxChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
-    props.onSelect({ name: props.name, heatMap: heatmap, slices: slices.split(',').map((s) => parseInt(s)) });
+    const slicesArray = slicesSelected.split(',').map((s) => parseInt(s));
+    if (isNaN(slicesArray[0])) {
+      slicesArray.pop();
+    }
+    props.onSelect({ name: props.name, heatMap: heatmap, slices: slicesArray });
   };
 
   const switchHeatmap = (event: React.ChangeEvent<HTMLInputElement>): void => {
@@ -75,9 +79,9 @@ export const SelectedFile = (props: SelectedFileProps): React.ReactElement => {
             <FormControlLabel control={<Switch checked={heatmap} onChange={switchHeatmap} />} label={'Heatmap'} />
             <TextField
               onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                setSlices(event.target.value);
+                setSlicesSelected(event.target.value);
               }}
-              value={slices}
+              value={slicesSelected}
               variant={'standard'}
               label={'Slices'}
             />
