@@ -1,4 +1,3 @@
-import React, { FC, ReactElement, useEffect, useState, Dispatch, SetStateAction } from 'react';
 import {
   Box,
   Button,
@@ -16,9 +15,11 @@ import {
   TextField,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers';
-import { JobQueryFilters, reductionStates, Job } from '../../lib/types';
-import { instruments } from '../../lib/InstrumentData';
 import dayjs from 'dayjs';
+import React, { Dispatch, FC, ReactElement, SetStateAction, useEffect, useState } from 'react';
+
+import { instruments } from '../../lib/InstrumentData';
+import { Job, JobQueryFilters, reductionStates } from '../../lib/types';
 
 const itemHeight = 48;
 const itemPaddingTop = 8;
