@@ -6,7 +6,7 @@ import { FileMenuTree } from '../components/FileMenuTree';
 import { SelectedFile } from '../components/experimentviewer/SelectedFile';
 import ReactECharts from 'echarts-for-react';
 import { plottingApi } from '../lib/plotting-api';
-import { EChartsOption } from 'echarts';
+import { EChartsOption, SeriesOption } from 'echarts';
 
 interface Job {
   outputs: string;
@@ -14,6 +14,12 @@ interface Job {
     filename: string;
   };
 }
+
+export type file = {
+  name: string;
+  heatMap: boolean;
+  slices: number[];
+};
 
 type heatmap = {
   name: string;
@@ -28,7 +34,7 @@ export type RunsTreeItem = {
 const ExperimentViewer = (): React.ReactElement => {
   const [runs, setRuns] = React.useState<TreeViewBaseItem<RunsTreeItem>[]>([]);
   const [files, setFiles] = React.useState<string[]>([]);
-  const [activeFiles, setActiveFiles] = React.useState<string[]>([]);
+  const [activeFiles, setActiveFiles] = React.useState<file[]>([]);
   const [options, setOptions] = React.useState<EChartsOption>();
   const [activeHeatmap, setActiveHeatmap] = React.useState<heatmap>();
   const theme = useTheme();
@@ -121,12 +127,18 @@ const ExperimentViewer = (): React.ReactElement => {
   useEffect(() => {
     if (activeFiles.length > 0) {
       (async () => {
-        const data = await fetchData('OSIRIS151097,151096,151095_graphite_002_Reduced-individual.nxs', 0);
+        const data: number[][] = [];
+        activeFiles.map(async (file) => {
+          file.slices.map(async (slice) => {
+            data.push(await fetchData(file.name.slice(0, -1), slice));
+          });
+        });
         const axis = await fetchAxis('OSIRIS151097,151096,151095_graphite_002_Reduced-individual.nxs');
         setOptions(computeOptions1DOptions(data, axis));
       })();
       return;
     } else {
+      console.log('options removed');
       setOptions(undefined);
     }
     if (activeHeatmap) {
@@ -148,21 +160,31 @@ const ExperimentViewer = (): React.ReactElement => {
     }
   };
 
-  const selectItemForPlotting = (item: string, heatmap: boolean): void => {
-    if (heatmap) {
+  const selectItemForPlotting = (file: file): void => {
+    if (file.heatMap) {
       setActiveFiles([]);
-      if (activeHeatmap?.name === item) {
+      if (activeHeatmap?.name === file.name) {
         setActiveHeatmap(undefined);
         return;
       }
-      setActiveHeatmap({ name: item });
+      setActiveHeatmap({ name: file.name });
       return;
     }
-    setActiveFiles([...activeFiles, item]);
+    if (activeFiles.includes(file)) {
+      setActiveFiles(activeFiles.filter((file) => file !== file));
+    } else {
+      console.log('setting file');
+      setActiveFiles([...activeFiles, file]);
+    }
   };
 
-  const computeOptions1DOptions = (data: number[], axis: number[]): EChartsOption => {
+  const computeOptions1DOptions = (data: number[][], axis: number[]): EChartsOption => {
     console.log(data);
+    const seriesUnpacked: SeriesOption[] = data.map((item, index) => ({
+      name: index.toString(),
+      type: 'line',
+      data: item,
+    }));
     return {
       xAxis: {
         type: 'category',
@@ -172,12 +194,7 @@ const ExperimentViewer = (): React.ReactElement => {
       tooltip: {
         trigger: 'item',
       },
-      series: [
-        {
-          data: data,
-          type: 'line',
-        },
-      ],
+      series: seriesUnpacked,
     };
   };
 
