@@ -46,7 +46,6 @@ export const FileMenuTree = (props: FileMenuTreeProps): React.ReactElement => {
         borderRadius: '4px',
         backgroundColor: theme.palette.background.paper,
         overflow: 'auto',
-        width: '100%',
       }}
     >
       <RichTreeView
