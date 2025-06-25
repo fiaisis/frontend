@@ -150,7 +150,7 @@ const ExperimentViewer = (): React.ReactElement => {
         await Promise.all(fetchPromises);
 
         const axis = await fetchAxis('OSIRIS151097,151096,151095_graphite_002_Reduced-individual.nxs');
-        setOptions(computeOptions1DOptions(data, axis));
+        computeOptions1DOptions(data, axis);
       })();
       return;
     } else {
@@ -160,7 +160,7 @@ const ExperimentViewer = (): React.ReactElement => {
     if (activeHeatmap) {
       (async () => {
         await fetchHeatmapData(activeHeatmap.name.slice(0, -1)).then((data) => {
-          setOptions(computeOptions2DOptions(data));
+          computeOptions2DOptions(data);
         });
       })();
     }
@@ -170,6 +170,7 @@ const ExperimentViewer = (): React.ReactElement => {
     if (files.includes(item)) {
       // If item exists, remove it
       setFiles(files.filter((file) => file !== item));
+      setActiveFiles(activeFiles.filter((file) => file.name !== item));
     } else {
       // If item doesn't exist, add it
       setFiles([...files, item]);
@@ -179,44 +180,60 @@ const ExperimentViewer = (): React.ReactElement => {
   const selectItemForPlotting = (file: file): void => {
     if (file.heatMap) {
       setActiveFiles([]);
-      if (activeHeatmap?.name === file.name) {
-        setActiveHeatmap(undefined);
-        return;
-      }
       setActiveHeatmap({ name: file.name });
       return;
     }
-    if (activeFiles.includes(file)) {
-      setActiveFiles(activeFiles.filter((file) => file !== file));
-    } else {
-      console.log('setting file');
-      setActiveFiles([...activeFiles, file]);
-    }
+    setActiveFiles([...activeFiles, file]);
   };
 
-  const computeOptions1DOptions = (data: number[][], axis: number[]): EChartsOption => {
-    console.log(data);
+  const deplotFile = (fileToDeplot: file): void => {
+    activeFiles.forEach((file) => {
+      if (file.name === fileToDeplot.name) {
+        setActiveFiles(activeFiles.filter((file) => file.name !== fileToDeplot.name));
+      }
+    });
+  };
+
+  const computeOptions1DOptions = (data: number[][], axis: number[]): void => {
+    const legendNames = data.map((item, index) => index.toString());
     const seriesUnpacked: SeriesOption[] = data.map((item, index) => ({
       name: index.toString(),
       type: 'line',
       data: item,
     }));
-    return {
+    setOptions({
+      legend: {
+        data: legendNames,
+      },
+      toolbox: {
+        feature: {
+          dataZoom: {
+            yAxisIndex: 'none',
+          },
+        },
+      },
+      dataZoom: [
+        {
+          type: 'inside',
+        },
+      ],
       xAxis: {
         type: 'category',
         data: axis,
       },
-      yAxis: {},
+      yAxis: {
+        type: 'value',
+      },
       tooltip: {
-        trigger: 'item',
+        trigger: 'axis',
       },
       series: seriesUnpacked,
-    };
+    });
   };
 
-  const computeOptions2DOptions = (data: number[][]): EChartsOption => {
-    return {
-      grid: { top: 8, right: 8, bottom: 24, left: 36 },
+  const computeOptions2DOptions = (data: number[][]): void => {
+    setOptions({
+      animation: false,
       xAxis: {
         type: 'category',
       },
@@ -237,7 +254,7 @@ const ExperimentViewer = (): React.ReactElement => {
       tooltip: {
         trigger: 'item',
       },
-    };
+    });
   };
 
   return (
@@ -245,31 +262,40 @@ const ExperimentViewer = (): React.ReactElement => {
       <Typography variant="h3" component="h1" style={{ color: theme.palette.text.primary, padding: '20px' }}>
         Experiment Viewer
       </Typography>
-      <Grid2 container spacing={6}>
+      <Grid2 container spacing={2}>
         <Grid2 size={2}>
           <FileMenuTree items={runs} setSelectedItem={setSelectedItem} />
         </Grid2>
         {files.length > 0 && (
           <>
-            <Grid2 size={4}>
-              <Box
-                sx={{
-                  padding: '12px 16px',
-                  border: `1px solid ${theme.palette.divider}`,
-                  borderRadius: '4px',
-                  backgroundColor: theme.palette.background.paper,
-                }}
-              >
-                {files.map((file) => (
-                  <Box key={file} sx={{ marginBottom: 1, marginLeft: 2, marginRight: 2 }}>
-                    <SelectedFile name={file} onSelect={selectItemForPlotting}></SelectedFile>
-                  </Box>
-                ))}
-              </Box>
+            <Grid2 size={2}>
+              {files.map((file) => (
+                <Box
+                  key={file}
+                  sx={{
+                    marginBottom: 1,
+                    marginLeft: 2,
+                    marginRight: 2,
+                    padding: '12px 16px',
+                    border: `1px solid ${theme.palette.divider}`,
+                    borderRadius: '4px',
+                    backgroundColor: theme.palette.background.paper,
+                  }}
+                >
+                  <SelectedFile name={file} plot={selectItemForPlotting} deplot={deplotFile}></SelectedFile>
+                </Box>
+              ))}
             </Grid2>
             {options && (
-              <Grid2 size={6}>
-                <ReactECharts style={{}} option={options} />
+              <Grid2 size={'grow'}>
+                <Box
+                  sx={{
+                    bgcolor: theme.palette.background.paper,
+                    marginRight: '32px',
+                  }}
+                >
+                  <ReactECharts style={{ height: '85vh', width: '100%' }} option={options} notMerge={true} />
+                </Box>
               </Grid2>
             )}
           </>

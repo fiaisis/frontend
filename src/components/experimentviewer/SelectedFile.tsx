@@ -6,7 +6,8 @@ import { file } from '../../pages/ExperimentViewer';
 
 interface SelectedFileProps {
   name: string;
-  onSelect: (file: file) => void;
+  plot: (file: file) => void;
+  deplot: (file: file) => void;
 }
 
 interface Meta {
@@ -16,6 +17,7 @@ interface Meta {
 export const SelectedFile = (props: SelectedFileProps): React.ReactElement => {
   const theme = useTheme();
   const [heatmap, setHeatmap] = React.useState<boolean>(false);
+  const [selected, setSelected] = React.useState<boolean>(true);
   const [slicesSelected, setSlicesSelected] = React.useState<string>('');
   const [meta, setMeta] = React.useState<Meta>({ shape: [] });
 
@@ -32,12 +34,20 @@ export const SelectedFile = (props: SelectedFileProps): React.ReactElement => {
     })();
   }, []);
 
-  const onCheckBoxChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
-    const slicesArray = slicesSelected.split(',').map((s) => parseInt(s));
-    if (isNaN(slicesArray[0])) {
-      slicesArray.pop();
+  useEffect(() => {
+    if (selected) {
+      const slicesArray = slicesSelected.split(',').map((s) => parseInt(s));
+      if (isNaN(slicesArray[0])) {
+        slicesArray.pop();
+      }
+      props.plot({ name: props.name, heatMap: heatmap, slices: slicesArray });
+    } else {
+      props.deplot({ name: props.name, heatMap: heatmap, slices: [] });
     }
-    props.onSelect({ name: props.name, heatMap: heatmap, slices: slicesArray });
+  }, [selected, slicesSelected]);
+
+  const onCheckBoxChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
+    setSelected(event.target.checked);
   };
 
   const switchHeatmap = (event: React.ChangeEvent<HTMLInputElement>): void => {
@@ -53,15 +63,15 @@ export const SelectedFile = (props: SelectedFileProps): React.ReactElement => {
             alignItems: 'center',
           }}
         >
-          <Grid size={1}>
-            <Checkbox onChange={onCheckBoxChange} />
+          <Grid size={'auto'}>
+            <Checkbox checked={selected} onChange={onCheckBoxChange} />
           </Grid>
-          <Grid size={11}>
+          <Grid size={'grow'}>
             <Typography
               variant="h6"
               component="h1"
               style={{
-                fontSize: '1.2rem',
+                fontSize: '1rem',
                 fontWeight: 'bold',
                 textTransform: 'uppercase',
                 color: theme.palette.mode === 'dark' ? '#86b4ff' : theme.palette.primary.main,
