@@ -18,6 +18,7 @@ import {
 } from '@mui/material';
 import {
   CheckBox,
+  Download,
   IndeterminateCheckBox,
   CheckBoxOutlineBlank,
   KeyboardArrowDown,
@@ -30,6 +31,7 @@ import JobTableHead from './JobTableHead';
 import { useFetchJobs, useFetchTotalCount } from '../../lib/hooks';
 import { fiaApi } from '../../lib/api';
 import FilterContainer from './Filters';
+import { parseJobOutputs } from '../../lib/hooks';
 
 const JobTable: React.FC<{
   selectedInstrument: string;
@@ -74,8 +76,16 @@ const JobTable: React.FC<{
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [bulkRerunSuccessful, setBulkRerunSuccessful] = useState(true);
   const [selectedJobIds, setSelectedJobIds] = useState<number[]>([]);
+  const totalDownloadableFiles = jobs
+    .filter((job) => selectedJobIds.includes(job.id))
+    .reduce((acc, job) => acc + parseJobOutputs(job.outputs).length, 0);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [delayPassed, setDelayPassed] = useState(false);
+
+  useEffect(() => {
+    fetchJobs();
+    void fetchTotalCount();
+  }, [fetchTotalCount, fetchJobs]);
 
   useEffect(() => {
     const fetchAll = async (): Promise<void> => {
@@ -110,6 +120,16 @@ const JobTable: React.FC<{
 
     return () => clearTimeout(timeoutId);
   }, [isLoading, jobs]);
+
+  useEffect(() => {
+    // Clear selections when the View as user toggle changes
+    setSelectedJobIds([]);
+  }, [asUser]);
+
+  useEffect(() => {
+    // Clear selections when the page changes
+    setSelectedJobIds([]);
+  }, [currentPage]);
 
   const refreshJobs = (): void => {
     void Promise.resolve(fetchJobs());
@@ -146,6 +166,29 @@ const JobTable: React.FC<{
     refreshJobs();
     setIsBulkRerunning(false);
     setSelectedJobIds([]);
+  };
+
+  const handleBulkDownload = async (): Promise<void> => {
+    const selectedJobs = jobs.filter((job) => selectedJobIds.includes(job.id));
+    for (const job of selectedJobs) {
+      const outputs = parseJobOutputs(job.outputs);
+      for (const output of outputs) {
+        try {
+          const response = await fiaApi.get(`/job/${job.id}/filename/${encodeURIComponent(output)}`, {
+            responseType: 'blob',
+          });
+          const blob = response.data;
+          const link = document.createElement('a');
+          link.href = URL.createObjectURL(blob);
+          link.download = output;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        } catch (err) {
+          console.error(`Failed to download output ${output} for job ${job.id}`, err);
+        }
+      }
+    }
   };
 
   const handleSort = (sortKey: string): void => {
@@ -252,6 +295,16 @@ const JobTable: React.FC<{
                     `Rerun (${selectedJobIds.length})`
                   )}
                 </Button>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={handleBulkDownload}
+                  sx={{ height: '36px', width: 200 }}
+                  startIcon={<Download />}
+                  disabled={totalDownloadableFiles === 0}
+                >
+                  {`Download all (${totalDownloadableFiles})`}
+                </Button>
               </>
             )}
           </Box>
@@ -268,6 +321,7 @@ const JobTable: React.FC<{
             >
               Advanced filters {filtersOpen ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
             </Typography>
+
             <TablePagination
               component="div"
               count={totalRows}
