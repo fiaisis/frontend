@@ -37,7 +37,7 @@ export const SelectedFile = (props: SelectedFileProps): React.ReactElement => {
   useEffect(() => {
     if (selected) {
       const slicesArray = slicesSelected.split(',').map((s) => parseInt(s));
-      if (isNaN(slicesArray[0])) {
+      if (isNaN(slicesArray[-1])) {
         slicesArray.pop();
       }
       props.plot({ name: props.name, heatMap: heatmap, slices: slicesArray });
@@ -45,6 +45,14 @@ export const SelectedFile = (props: SelectedFileProps): React.ReactElement => {
       props.deplot({ name: props.name, heatMap: heatmap, slices: [] });
     }
   }, [selected, slicesSelected]);
+
+  useEffect(() => {
+    if (selected && heatmap) {
+      props.plot({ name: props.name, heatMap: heatmap, slices: [] });
+    } else {
+      props.deplot({ name: props.name, heatMap: heatmap, slices: [] });
+    }
+  }, [heatmap]);
 
   const onCheckBoxChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
     setSelected(event.target.checked);
