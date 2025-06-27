@@ -183,6 +183,10 @@ const ExperimentViewer = (): React.ReactElement => {
       setActiveHeatmap({ name: file.name });
       return;
     }
+    if (activeFiles.includes(file)) {
+      setActiveFiles(activeFiles.filter((activeFile) => activeFile !== file));
+      return;
+    }
     setActiveFiles([...activeFiles, file]);
   };
 
