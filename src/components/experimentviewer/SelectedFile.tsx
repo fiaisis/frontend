@@ -2,12 +2,13 @@ import { Box, Checkbox, FormControlLabel, Stack, Switch, TextField, Typography, 
 import React, { useEffect } from 'react';
 import { plottingApi } from '../../lib/plotting-api';
 import Grid from '@mui/material/Grid2';
-import { file } from '../../pages/ExperimentViewer';
+import { FileToPlot } from './PlotController';
 
 interface SelectedFileProps {
   name: string;
-  plot: (file: file) => void;
-  deplot: (file: file) => void;
+  selected: boolean;
+  heatmap: boolean;
+  updateSelected: (selectedFile: FileToPlot) => void;
 }
 
 interface Meta {
@@ -16,8 +17,8 @@ interface Meta {
 
 export const SelectedFile = (props: SelectedFileProps): React.ReactElement => {
   const theme = useTheme();
-  const [heatmap, setHeatmap] = React.useState<boolean>(false);
-  const [selected, setSelected] = React.useState<boolean>(true);
+  const [heatmap, setHeatmap] = React.useState<boolean>(props.heatmap);
+  const [selected, setSelected] = React.useState<boolean>(props.selected);
   const [slicesSelected, setSlicesSelected] = React.useState<string>('');
   const [meta, setMeta] = React.useState<Meta>({ shape: [] });
 
@@ -35,27 +36,29 @@ export const SelectedFile = (props: SelectedFileProps): React.ReactElement => {
   }, []);
 
   useEffect(() => {
-    if (selected) {
-      const slicesArray = slicesSelected.split(',').map((s) => parseInt(s));
-      if (isNaN(slicesArray[-1])) {
-        slicesArray.pop();
-      }
-      props.plot({ name: props.name, heatMap: heatmap, slices: slicesArray });
+    if (selected && !heatmap) {
+      props.updateSelected({
+        fileName: props.name,
+        plotted: selected,
+        heatmap: heatmap,
+        slices: computeSlices(slicesSelected),
+      });
+    } else if (selected) {
+      props.updateSelected({
+        fileName: props.name,
+        plotted: selected,
+        heatmap: heatmap,
+        slices: [],
+      });
     } else {
-      props.deplot({ name: props.name, heatMap: heatmap, slices: [] });
+      setHeatmap(false);
+      props.updateSelected({ fileName: props.name, plotted: false, heatmap: false, slices: [] });
     }
-  }, [selected, slicesSelected]);
+  }, [selected, heatmap, slicesSelected]);
 
-  useEffect(() => {
-    if (selected && heatmap) {
-      props.plot({ name: props.name, heatMap: heatmap, slices: [] });
-    } else {
-      props.deplot({ name: props.name, heatMap: heatmap, slices: [] });
-    }
-  }, [heatmap]);
-
-  const onCheckBoxChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
-    setSelected(event.target.checked);
+  const computeSlices = (sliceStr: string): number[] => {
+    const sliceArray = sliceStr.trim() === '' ? [] : sliceStr.split(',').map((s) => parseInt(s.trim()));
+    return sliceArray.filter((num) => !isNaN(num));
   };
 
   const switchHeatmap = (event: React.ChangeEvent<HTMLInputElement>): void => {
@@ -72,7 +75,7 @@ export const SelectedFile = (props: SelectedFileProps): React.ReactElement => {
           }}
         >
           <Grid size={'auto'}>
-            <Checkbox checked={selected} onChange={onCheckBoxChange} />
+            <Checkbox checked={selected} onChange={(event) => setSelected(event.target.checked)} />
           </Grid>
           <Grid size={'grow'}>
             <Typography
@@ -99,6 +102,7 @@ export const SelectedFile = (props: SelectedFileProps): React.ReactElement => {
               onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
                 setSlicesSelected(event.target.value);
               }}
+              disabled={heatmap}
               value={slicesSelected}
               variant={'standard'}
               label={'Slices'}
