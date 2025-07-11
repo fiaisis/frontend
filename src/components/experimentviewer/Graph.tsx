@@ -7,10 +7,14 @@ interface GraphProps {
   filesToBePlotted: FileToPlot[];
 }
 
+export interface GraphData {
+  data: number[][];
+  isHeatmap: boolean;
+}
+
 const Graph = (props: GraphProps): React.ReactElement => {
   const [selectedFiles, setSelectedFiles] = React.useState<FileToPlot[]>([]);
-  const [renderHeatmap, setRenderHeatmap] = React.useState(false);
-  const [data, setData] = React.useState<number[][]>([]);
+  const [data, setData] = React.useState<GraphData>({ data: [], isHeatmap: false });
 
   const fetchHeatmapData = async (filename: string): Promise<number[][]> => {
     return await plottingApi
@@ -53,26 +57,28 @@ const Graph = (props: GraphProps): React.ReactElement => {
 
   useEffect(() => {
     (async () => {
-      const dataArray = (
-        await Promise.all(
-          selectedFiles.map(async (file) => {
-            const baseName = file.fileName.slice(0, -1);
+      const dataArray = await Promise.all(
+        selectedFiles.map(async (file) => {
+          const baseName = file.fileName.slice(0, -1);
 
-            if (file.plotted && file.heatmap) {
-              setRenderHeatmap(true);
-              return await fetchHeatmapData(baseName);
-            } else if (file.plotted && file.slices?.length) {
-              setRenderHeatmap(false);
-              return await Promise.all(file.slices.map((slice) => fetchData(baseName, slice)));
-            } else {
-              setRenderHeatmap(false);
-              const result = await fetchData(baseName, 0);
-              return [result];
-            }
-          })
-        )
-      ).flat();
-      setData(dataArray);
+          if (file.plotted && file.heatmap) {
+            const data = await fetchHeatmapData(baseName); // number[][]
+            return { data, isHeatmap: true };
+          } else if (file.plotted && file.slices?.length) {
+            const data = await Promise.all(
+              file.slices.map((slice) => fetchData(baseName, slice)) // number[]
+            );
+            return { data, isHeatmap: false }; // data: number[][]
+          } else {
+            const result = await fetchData(baseName, 0); // number[]
+            return { data: [result], isHeatmap: false }; // wrap single slice in array
+          }
+        })
+      );
+
+      console.log(dataArray);
+
+      setData(dataArray[0]);
     })();
   }, [selectedFiles]);
 
@@ -81,7 +87,7 @@ const Graph = (props: GraphProps): React.ReactElement => {
       {selectedFiles.map((file, index) => (
         <div key={index}>{`${file.fileName} ${file.plotted} ${file.heatmap} ${file.slices}`}</div>
       ))}
-      <Plot data={data} heatmap={renderHeatmap}></Plot>
+      {data ? <Plot graphData={data}></Plot> : <></>}
     </>
   );
 };

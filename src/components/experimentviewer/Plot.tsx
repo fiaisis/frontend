@@ -1,10 +1,10 @@
 import { EChartsOption, SeriesOption } from 'echarts';
 import React, { useEffect } from 'react';
+import { GraphData } from './Graph';
 import ReactECharts from 'echarts-for-react';
 
 interface PlotProps {
-  data: number[][];
-  heatmap: boolean;
+  graphData: GraphData;
 }
 
 const Plot = (props: PlotProps): React.ReactElement | null => {
@@ -73,15 +73,16 @@ const Plot = (props: PlotProps): React.ReactElement | null => {
   };
 
   useEffect(() => {
-    if (props.heatmap) {
-      setOptions(computeOptions2DOptions(props.data));
+    if (props.graphData.isHeatmap) {
+      setOptions(computeOptions2DOptions(props.graphData.data));
     } else {
-      setOptions(computeOptions1DOptions(props.data));
+      setOptions(computeOptions1DOptions(props.graphData.data));
     }
   }, [props]);
 
   if (!options) return null;
 
+  // return <>test</>;
   return <ReactECharts style={{ height: '85vh', width: '100%' }} option={options} notMerge={true} />;
 };
 
