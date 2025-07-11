@@ -129,10 +129,6 @@ const Plot = (props: PlotProps): React.ReactElement | null => {
       yAxis: {
         type: 'value',
         scale: false,
-        max: function (value) {
-          // Cap maximum but allow 10% padding
-          return Math.max(3, value.max * 1.1);
-        },
         axisLine: {
           show: true,
         },

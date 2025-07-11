@@ -99,7 +99,23 @@ const Graph = (props: GraphProps): React.ReactElement => {
       );
       console.log(dataArray);
 
-      setData(dataArray[0]);
+      const mergedData = dataArray.reduce(
+        (acc, curr) => {
+          acc.data.push(...curr.data);
+          if (curr.errors) {
+            acc.errors.push(...curr.errors);
+          }
+          acc.isHeatmap ||= curr.isHeatmap;
+          return acc;
+        },
+        {
+          data: [] as number[][],
+          errors: [] as number[][], // start as empty
+          isHeatmap: false,
+        }
+      );
+
+      setData(mergedData);
     })();
   }, [selectedFiles]);
 
