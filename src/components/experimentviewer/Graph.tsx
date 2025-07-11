@@ -9,12 +9,13 @@ interface GraphProps {
 
 export interface GraphData {
   data: number[][];
+  errors: number[][];
   isHeatmap: boolean;
 }
 
 const Graph = (props: GraphProps): React.ReactElement => {
   const [selectedFiles, setSelectedFiles] = React.useState<FileToPlot[]>([]);
-  const [data, setData] = React.useState<GraphData>({ data: [], isHeatmap: false });
+  const [data, setData] = React.useState<GraphData>({ data: [], errors: [], isHeatmap: false });
 
   const fetchHeatmapData = async (filename: string): Promise<number[][]> => {
     return await plottingApi
@@ -33,6 +34,18 @@ const Graph = (props: GraphProps): React.ReactElement => {
         params: {
           file: filename,
           path: '/mantid_workspace_1/workspace/values',
+          selection: slice,
+        },
+      })
+      .then((res) => res.data);
+  };
+
+  const fetchErrorData = async (filename: string, slice: number): Promise<number[]> => {
+    return await plottingApi
+      .get('data', {
+        params: {
+          file: filename,
+          path: '/mantid_workspace_1/workspace/errors',
           selection: slice,
         },
       })
@@ -62,20 +75,28 @@ const Graph = (props: GraphProps): React.ReactElement => {
           const baseName = file.fileName.slice(0, -1);
 
           if (file.plotted && file.heatmap) {
-            const data = await fetchHeatmapData(baseName); // number[][]
-            return { data, isHeatmap: true };
+            const data = await fetchHeatmapData(baseName);
+            return { data, errors: [], isHeatmap: true };
           } else if (file.plotted && file.slices?.length) {
-            const data = await Promise.all(
-              file.slices.map((slice) => fetchData(baseName, slice)) // number[]
-            );
-            return { data, isHeatmap: false }; // data: number[][]
+            const data: number[][] = [];
+            const errors: number[][] = [];
+
+            for (const slice of file.slices) {
+              const [sliceData, sliceErrors] = await Promise.all([
+                fetchData(baseName, slice),
+                fetchErrorData(baseName, slice),
+              ]);
+              data.push(sliceData);
+              errors.push(sliceErrors);
+            }
+
+            return { data, errors, isHeatmap: false };
           } else {
-            const result = await fetchData(baseName, 0); // number[]
-            return { data: [result], isHeatmap: false }; // wrap single slice in array
+            const [result, error] = await Promise.all([fetchData(baseName, 0), fetchErrorData(baseName, 0)]);
+            return { data: [result], errors: [error], isHeatmap: false };
           }
         })
       );
-
       console.log(dataArray);
 
       setData(dataArray[0]);

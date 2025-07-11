@@ -85,7 +85,7 @@ const PlotController = (props: PlotControllerProps): React.ReactElement => {
         <Grid2 size={'grow'}>
           <Box
             sx={{
-              bgcolor: theme.palette.background.paper,
+              bgcolor: '#000',
               marginRight: '32px',
             }}
           >
