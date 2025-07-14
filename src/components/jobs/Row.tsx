@@ -73,19 +73,23 @@ const JobStatusIcon: React.FC<{ state: string }> = ({ state }: { state: string }
 
 const handleDownload = async (job: Job, output: string): Promise<void> => {
   try {
-    const response = await fiaApi.get(`/job/${job.id}/filename/${encodeURIComponent(output)}`, {
+    const payload = {
+      [job.id]: [output],
+    };
+
+    const response = await fiaApi.post('/job/download-zip', payload, {
       responseType: 'blob',
     });
 
-    const blob = response.data;
+    const blob = new Blob([response.data], { type: 'application/zip' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = output;
+    link.download = `${output.replace(/\.[^/.]+$/, '')}.zip`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   } catch (error) {
-    console.error('Failed to download file:', error);
+    console.error('Failed to download ZIP file:', error);
   }
 };
 
