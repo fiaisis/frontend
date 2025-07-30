@@ -81,6 +81,8 @@ const JobTable: React.FC<{
     .reduce((acc, job) => acc + parseJobOutputs(job.outputs).length, 0);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [delayPassed, setDelayPassed] = useState(false);
+  const [downloadErrorOpen, setDownloadErrorOpen] = useState(false);
+  const [downloadErrorMessage, setDownloadErrorMessage] = useState('');
 
   useEffect(() => {
     fetchJobs();
@@ -182,7 +184,14 @@ const JobTable: React.FC<{
     try {
       const response = await fiaApi.post('/job/download-zip', jobFiles, {
         responseType: 'blob',
+        validateStatus: () => true,
       });
+
+      if (response.status !== 200) {
+        setDownloadErrorMessage(`Bulk download failed — status ${response.status}`);
+        setDownloadErrorOpen(true);
+        return;
+      }
 
       const blob = new Blob([response.data], { type: 'application/zip' });
       const link = document.createElement('a');
@@ -193,6 +202,8 @@ const JobTable: React.FC<{
       document.body.removeChild(link);
     } catch (err) {
       console.error('Failed to download ZIP file', err);
+      setDownloadErrorMessage('An unexpected error occurred during bulk download.');
+      setDownloadErrorOpen(true);
     }
   };
 
@@ -220,6 +231,35 @@ const JobTable: React.FC<{
 
   return (
     <>
+      <Snackbar
+        open={downloadErrorOpen}
+        autoHideDuration={5000}
+        onClose={(event, reason) => {
+          if (reason !== 'clickaway') {
+            setDownloadErrorOpen(false);
+          }
+        }}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert
+          sx={{
+            padding: '10px 14px',
+            fontSize: '1rem',
+            width: '100%',
+            maxWidth: '600px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            border: '1px solid',
+            borderRadius: '8px',
+            fontWeight: 'bold',
+          }}
+          severity="error"
+        >
+          {downloadErrorMessage}
+        </Alert>
+      </Snackbar>
+
       {isLoading && (
         <LinearProgress
           sx={{

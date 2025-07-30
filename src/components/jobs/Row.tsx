@@ -232,21 +232,32 @@ const Row: React.FC<{
   const rerunJobId = useRef<number | null>(null);
   const rerunSuccessful = useRef<boolean | null>(null);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [downloadErrorOpen, setDownloadErrorOpen] = useState(false);
+  const [downloadErrorMessage, setDownloadErrorMessage] = useState('');
+
   const jobOutputs = parseJobOutputs(job.outputs);
   const [downloadingAll, setDownloadingAll] = useState(false);
   const [downloadingSingle, setDownloadingSingle] = useState<string | null>(null);
 
-  const downloadFile = async (job: Job, output: string): Promise<void> => {
-    const payload = { [job.id]: [output] };
-    const { data } = await fiaApi.post('/job/download-zip', payload, {
+  const downloadFile = async (job: Job, output: string | string[]): Promise<void> => {
+    const payload = { [job.id]: Array.isArray(output) ? output : [output] };
+
+    const response = await fiaApi.post('/job/download-zip', payload, {
       responseType: 'blob',
+      validateStatus: () => true,
     });
 
-    const blob = new Blob([data], { type: 'application/zip' });
-    const link = Object.assign(document.createElement('a'), {
-      href: URL.createObjectURL(blob),
-      download: `${output.replace(/\.[^/.]+$/, '')}.zip`,
-    });
+    if (response.status !== 200) {
+      setDownloadErrorMessage(`Download failed with status ${response.status}`);
+      setDownloadErrorOpen(true);
+      return;
+    }
+
+    const blob = new Blob([response.data], { type: 'application/zip' });
+
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `${Array.isArray(output) ? job.id : output.replace(/\.[^/.]+$/, '')}.zip`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -268,21 +279,28 @@ const Row: React.FC<{
       setDownloadingAll(true);
       const payload = { [job.id]: jobOutputs };
 
-      const { data } = await fiaApi.post('/job/download-zip', payload, {
+      const response = await fiaApi.post('/job/download-zip', payload, {
         responseType: 'blob',
+        validateStatus: () => true,
       });
 
-      const blob = new Blob([data], { type: 'application/zip' });
+      if (response.status !== 200) {
+        setDownloadErrorMessage(`Download all failed with status ${response.status}`);
+        setDownloadErrorOpen(true);
+        return;
+      }
+
+      const blob = new Blob([response.data], { type: 'application/zip' });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
-
       link.download = `${job.id}.zip`;
-
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
     } catch (err) {
       console.error('Download-all failed:', err);
+      setDownloadErrorMessage('An error occurred while downloading all files.');
+      setDownloadErrorOpen(true);
     } finally {
       setDownloadingAll(false);
     }
@@ -413,6 +431,35 @@ const Row: React.FC<{
           {rerunSuccessful.current
             ? `Rerun started successfully for reduction ${rerunJobId.current}`
             : `Rerun could not be started for ${rerunJobId.current} — please try again later or contact staff`}
+        </Alert>
+      </Snackbar>
+
+      <Snackbar
+        open={downloadErrorOpen}
+        autoHideDuration={5000}
+        onClose={(event, reason) => {
+          if (reason !== 'clickaway') {
+            setDownloadErrorOpen(false);
+          }
+        }}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert
+          sx={{
+            padding: '10px 14px',
+            fontSize: '1rem',
+            width: '100%',
+            maxWidth: '600px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            border: '1px solid',
+            borderRadius: '8px',
+            fontWeight: 'bold',
+          }}
+          severity="error"
+        >
+          {downloadErrorMessage}
         </Alert>
       </Snackbar>
 
