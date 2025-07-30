@@ -232,10 +232,9 @@ const Row: React.FC<{
   const rerunJobId = useRef<number | null>(null);
   const rerunSuccessful = useRef<boolean | null>(null);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const jobOutputs = parseJobOutputs(job.outputs);
   const [downloadingAll, setDownloadingAll] = useState(false);
   const [downloadingSingle, setDownloadingSingle] = useState<string | null>(null);
-
-  const jobOutputs = parseJobOutputs(job.outputs);
 
   const downloadFile = async (job: Job, output: string): Promise<void> => {
     const payload = { [job.id]: [output] };
@@ -267,9 +266,21 @@ const Row: React.FC<{
   const handleDownloadAll = async (): Promise<void> => {
     try {
       setDownloadingAll(true);
-      for (const output of jobOutputs) {
-        await downloadFile(job, output);
-      }
+      const payload = { [job.id]: jobOutputs };
+
+      const { data } = await fiaApi.post('/job/download-zip', payload, {
+        responseType: 'blob',
+      });
+
+      const blob = new Blob([data], { type: 'application/zip' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+
+      link.download = `${job.id}-outputs.zip`;
+
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     } catch (err) {
       console.error('Download-all failed:', err);
     } finally {
