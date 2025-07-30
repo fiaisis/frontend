@@ -276,7 +276,7 @@ const Row: React.FC<{
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
 
-      link.download = `${job.id}-outputs.zip`;
+      link.download = `${job.id}.zip`;
 
       document.body.appendChild(link);
       link.click();
