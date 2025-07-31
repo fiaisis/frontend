@@ -71,25 +71,11 @@ const JobStatusIcon: React.FC<{ state: string }> = ({ state }: { state: string }
   return <Tooltip title={state}>{icons[state] || <ErrorOutline />}</Tooltip>;
 };
 
-const handleDownload = async (job: Job, output: string): Promise<void> => {
-  try {
-    const response = await fiaApi.get(`/job/${job.id}/filename/${encodeURIComponent(output)}`, {
-      responseType: 'blob',
-    });
-
-    const blob = response.data;
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = output;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  } catch (error) {
-    console.error('Failed to download file:', error);
-  }
-};
-
-const JobOutput: React.FC<{ job: Job }> = ({ job }: { job: Job }): ReactElement => {
+const JobOutput: React.FC<{
+  job: Job;
+  downloadingSingle: string | null;
+  handleDownload: (job: Job, output: string) => Promise<void>;
+}> = ({ job, downloadingSingle, handleDownload }) => {
   try {
     if (typeof job.outputs !== 'string') {
       return <Typography>No outputs to show</Typography>;
@@ -143,8 +129,14 @@ const JobOutput: React.FC<{ job: Job }> = ({ job }: { job: Job }): ReactElement 
               >
                 View
               </Button>
-              <Button variant="contained" startIcon={<Download />} onClick={() => handleDownload(job, output)}>
-                Download
+              <Button
+                variant="contained"
+                startIcon={downloadingSingle === output ? null : <Download />}
+                onClick={() => handleDownload(job, output)}
+                disabled={downloadingSingle === output}
+                sx={{ flexShrink: 0, whiteSpace: 'nowrap', width: 110, height: 38 }}
+              >
+                {downloadingSingle === output ? <CircularProgress size={24} color="inherit" /> : 'Download'}
               </Button>
             </Box>
           </Box>
@@ -240,12 +232,73 @@ const Row: React.FC<{
   const rerunJobId = useRef<number | null>(null);
   const rerunSuccessful = useRef<boolean | null>(null);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [downloadErrorOpen, setDownloadErrorOpen] = useState(false);
+  const [downloadErrorMessage, setDownloadErrorMessage] = useState('');
 
   const jobOutputs = parseJobOutputs(job.outputs);
+  const [downloadingAll, setDownloadingAll] = useState(false);
+  const [downloadingSingle, setDownloadingSingle] = useState<string | null>(null);
+
+  const handleDownload = async (job: Job, output: string): Promise<void> => {
+    try {
+      setDownloadingSingle(output);
+
+      const response = await fiaApi.get(`/job/${job.id}/filename/${encodeURIComponent(output)}`, {
+        responseType: 'blob',
+        validateStatus: () => true,
+      });
+
+      if (response.status !== 200) {
+        setDownloadErrorMessage(`Download failed with status ${response.status}`);
+        setDownloadErrorOpen(true);
+        return;
+      }
+
+      const blob = new Blob([response.data]);
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = output;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error('Failed to download file:', error);
+      setDownloadErrorMessage('An error occurred while downloading the file.');
+      setDownloadErrorOpen(true);
+    } finally {
+      setDownloadingSingle(null);
+    }
+  };
 
   const handleDownloadAll = async (): Promise<void> => {
-    for (const output of jobOutputs) {
-      await handleDownload(job, output);
+    try {
+      setDownloadingAll(true);
+      const payload = { [job.id]: jobOutputs };
+
+      const response = await fiaApi.post('/job/download-zip', payload, {
+        responseType: 'blob',
+        validateStatus: () => true,
+      });
+
+      if (response.status !== 200) {
+        setDownloadErrorMessage(`Download all failed with status ${response.status}`);
+        setDownloadErrorOpen(true);
+        return;
+      }
+
+      const blob = new Blob([response.data], { type: 'application/zip' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `${job.id}.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error('Download-all failed:', err);
+      setDownloadErrorMessage('An error occurred while downloading all files.');
+      setDownloadErrorOpen(true);
+    } finally {
+      setDownloadingAll(false);
     }
   };
 
@@ -374,6 +427,35 @@ const Row: React.FC<{
           {rerunSuccessful.current
             ? `Rerun started successfully for reduction ${rerunJobId.current}`
             : `Rerun could not be started for ${rerunJobId.current} — please try again later or contact staff`}
+        </Alert>
+      </Snackbar>
+
+      <Snackbar
+        open={downloadErrorOpen}
+        autoHideDuration={5000}
+        onClose={(event, reason) => {
+          if (reason !== 'clickaway') {
+            setDownloadErrorOpen(false);
+          }
+        }}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert
+          sx={{
+            padding: '10px 14px',
+            fontSize: '1rem',
+            width: '100%',
+            maxWidth: '600px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            border: '1px solid',
+            borderRadius: '8px',
+            fontWeight: 'bold',
+          }}
+          severity="error"
+        >
+          {downloadErrorMessage}
         </Alert>
       </Snackbar>
 
@@ -555,7 +637,7 @@ const Row: React.FC<{
                     ) : (
                       <Table size="small" aria-label="details">
                         <TableBody>
-                          <JobOutput job={job} />
+                          <JobOutput job={job} downloadingSingle={downloadingSingle} handleDownload={handleDownload} />
                         </TableBody>
                       </Table>
                     )}
@@ -628,12 +710,12 @@ const Row: React.FC<{
                     </Button>
                     <Button
                       variant="contained"
-                      startIcon={<Download />}
+                      startIcon={!downloadingAll && <Download />}
                       onClick={handleDownloadAll}
-                      disabled={jobOutputs.length === 0}
-                      sx={{ flexShrink: 0, whiteSpace: 'nowrap' }}
+                      disabled={jobOutputs.length === 0 || downloadingAll}
+                      sx={{ flexShrink: 0, whiteSpace: 'nowrap', width: 140, height: 38 }}
                     >
-                      Download all
+                      {downloadingAll ? <CircularProgress size={24} color="inherit" /> : 'Download all'}
                     </Button>
                   </Box>
                 </Grid>
