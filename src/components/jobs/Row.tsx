@@ -481,62 +481,51 @@ const Row: React.FC<{
         </TableCell>
 
         <TableCell sx={{ width: '18%', px: 1 }}>
-          <Typography
-            variant="body2"
-            sx={{
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-              minWidth: 0,
-              flexGrow: 1,
-            }}
-            title={String(job.run?.experiment_number)}
-          >
-            {job.run?.experiment_number || 'N/A'}
-          </Typography>
+          <Tooltip title={String(job.run?.experiment_number || 'N/A')}>
+            <Typography
+              variant="body2"
+              sx={{
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                minWidth: 0,
+                flexGrow: 1,
+              }}
+            >
+              {job.run?.experiment_number || 'N/A'}
+            </Typography>
+          </Tooltip>
         </TableCell>
-        <TableCell
-          sx={{
-            ...ellipsisWrap,
-          }}
-        >
-          {extractFilename(job.run?.filename || 'N/A')}
+        <TableCell sx={{ ...ellipsisWrap }}>
+          <Tooltip title={extractFilename(job.run?.filename || 'N/A')}>
+            <span>{extractFilename(job.run?.filename || 'N/A')}</span>
+          </Tooltip>
         </TableCell>
-        <TableCell
-          sx={{
-            ...ellipsisWrap,
-          }}
-        >
-          {formatDateTime(job.run?.run_start || 'N/A')}
+        <TableCell sx={{ ...ellipsisWrap }}>
+          <Tooltip title={formatDateTime(job.run?.run_start || 'N/A')}>
+            <span>{formatDateTime(job.run?.run_start || 'N/A')}</span>
+          </Tooltip>
         </TableCell>
-        <TableCell
-          sx={{
-            ...ellipsisWrap,
-          }}
-        >
-          {formatDateTime(job.run?.run_end || 'N/A')}
+        <TableCell sx={{ ...ellipsisWrap }}>
+          <Tooltip title={formatDateTime(job.run?.run_end || 'N/A')}>
+            <span>{formatDateTime(job.run?.run_end || 'N/A')}</span>
+          </Tooltip>
         </TableCell>
-        <TableCell
-          sx={{
-            ...ellipsisWrap,
-          }}
-        >
-          {formatDateTime(job.start) || 'N/A'}
+        <TableCell sx={{ ...ellipsisWrap }}>
+          <Tooltip title={formatDateTime(job.start) || 'N/A'}>
+            <span>{formatDateTime(job.start) || 'N/A'}</span>
+          </Tooltip>
         </TableCell>
-        <TableCell
-          sx={{
-            ...ellipsisWrap,
-          }}
-        >
-          {formatDateTime(job.end) || 'N/A'}
+        <TableCell sx={{ ...ellipsisWrap }}>
+          <Tooltip title={formatDateTime(job.end) || 'N/A'}>
+            <span>{formatDateTime(job.end) || 'N/A'}</span>
+          </Tooltip>
         </TableCell>
         {showInstrumentColumn && (
-          <TableCell
-            sx={{
-              ...ellipsisWrap,
-            }}
-          >
-            {job.run?.title || 'N/A'}
+          <TableCell sx={{ ...ellipsisWrap }}>
+            <Tooltip title={job.run?.title || 'N/A'}>
+              <span>{job.run?.title || 'N/A'}</span>
+            </Tooltip>
           </TableCell>
         )}
 
@@ -584,18 +573,19 @@ const Row: React.FC<{
           // Merge the reduction title and expand icon into one cell for instrument specific pages
           <TableCell colSpan={2}>
             <Box display="flex" alignItems="center" justifyContent="space-between">
-              <Typography
-                variant="body2"
-                sx={{
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                  flexGrow: 1,
-                }}
-                title={job.run?.title || 'N/A'}
-              >
-                {job.run?.title || 'N/A'}
-              </Typography>
+              <Tooltip title={job.run?.title || 'N/A'}>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    flexGrow: 1,
+                  }}
+                >
+                  {job.run?.title || 'N/A'}
+                </Typography>
+              </Tooltip>
               <IconButton
                 aria-label="expand row"
                 onClick={(e) => {
