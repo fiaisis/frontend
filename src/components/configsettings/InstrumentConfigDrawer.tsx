@@ -7,6 +7,7 @@ import ConfigSettingsSANS2D from './ConfigSettingsSANS2D';
 import ConfigSettingsVESUVIO from './ConfigSettingsVESUVIO';
 import ConfigSettingsOSIRIS from './ConfigSettingsOSIRIS';
 import ConfigSettingsIRIS from './ConfigSettingsIRIS';
+import ConfigSettingsENGINX from './ConfigSettingsENGINX';
 
 const InstrumentConfigDrawer: React.FC<{
   selectedInstrument: string;
@@ -37,6 +38,8 @@ const InstrumentConfigDrawer: React.FC<{
         <ConfigSettingsOSIRIS />
       ) : selectedInstrument === 'IRIS' ? (
         <ConfigSettingsIRIS />
+      ) : selectedInstrument === 'ENGINX' ? (
+        <ConfigSettingsENGINX />
       ) : (
         <ConfigSettingsGeneral />
       )}
