@@ -252,6 +252,22 @@ const Row: React.FC<{
   const extractFilename = (path: string): string => path.split('/').pop()?.split('.')[0] ?? '';
   const formatDateTime = (dateTimeStr: string | null): string => dateTimeStr?.replace('I', '\n') ?? '';
 
+  function lastSunday(month, year) {
+    var d = new Date();
+    var lastDayOfMonth = new Date(Date.UTC(year || d.getFullYear(), month+1, 0));
+    var day = lastDayOfMonth.getDay();
+    return new Date(Date.UTC(lastDayOfMonth.getFullYear(), lastDayOfMonth.getMonth(), lastDayOfMonth.getDate() - day));
+  }
+
+  function isBST(date) {
+    var d = date || new Date();
+    var starts = lastSunday(2, d.getFullYear());
+    starts.setHours(1);
+    var ends = lastSunday(9, d.getFullYear());
+    ends.setHours(1);
+    return d.getTime() >= starts.getTime() && d.getTime() < ends.getTime();
+  }
+
   const openValueEditor = (jobId: number): void => {
     const url = `/fia/value-editor/${jobId}`;
     const windowName = 'ValueEditorWindow';
