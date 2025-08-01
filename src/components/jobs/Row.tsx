@@ -252,20 +252,36 @@ const Row: React.FC<{
   const extractFilename = (path: string): string => path.split('/').pop()?.split('.')[0] ?? '';
   const formatDateTime = (dateTimeStr: string | null): string => dateTimeStr?.replace('I', '\n') ?? '';
 
-  function lastSunday(month, year) {
-    var d = new Date();
-    var lastDayOfMonth = new Date(Date.UTC(year || d.getFullYear(), month+1, 0));
-    var day = lastDayOfMonth.getDay();
+  function stringToDate(dateString: string): Date {
+    const returnDate = new Date(dateString);
+    return returnDate;
+  }
+
+  function lastSunday(month: number, year: number): Date {
+    const d = new Date();
+    const lastDayOfMonth = new Date(Date.UTC(year || d.getFullYear(), month + 1, 0));
+    const day = lastDayOfMonth.getDay();
     return new Date(Date.UTC(lastDayOfMonth.getFullYear(), lastDayOfMonth.getMonth(), lastDayOfMonth.getDate() - day));
   }
 
-  function isBST(date) {
-    var d = date || new Date();
-    var starts = lastSunday(2, d.getFullYear());
+  function isBST(date: Date): boolean {
+    const d = date || new Date();
+    const starts = lastSunday(2, d.getFullYear());
     starts.setHours(1);
-    var ends = lastSunday(9, d.getFullYear());
+    const ends = lastSunday(9, d.getFullYear());
     ends.setHours(1);
     return d.getTime() >= starts.getTime() && d.getTime() < ends.getTime();
+  }
+
+  function jobTimezoneHandle(date: string): string {
+    const convertDate = stringToDate(date);
+    if (isBST(stringToDate(job.start))) {
+      const BSTDate = new Date(convertDate);
+      BSTDate.setHours(BSTDate.getHours() + 1);
+      return BSTDate.toISOString();
+    } else {
+      return convertDate.toISOString();
+    }
   }
 
   const openValueEditor = (jobId: number): void => {
@@ -340,12 +356,12 @@ const Row: React.FC<{
     {
       icon: <Schedule fontSize="small" />,
       label: 'Reduction start:',
-      value: formatDateTime(job.start) || 'N/A',
+      value: formatDateTime(jobTimezoneHandle(job.start) || 'N/A'),
     },
     {
       icon: <Schedule fontSize="small" />,
       label: 'Reduction end:',
-      value: formatDateTime(job.end) || 'N/A',
+      value: formatDateTime(jobTimezoneHandle(job.end) || 'N/A'),
     },
     {
       icon: <StackedBarChart fontSize="small" />,
@@ -441,28 +457,28 @@ const Row: React.FC<{
             ...ellipsisWrap,
           }}
         >
-          {formatDateTime(job.run?.run_start || 'N/A')}
+          {formatDateTime(jobTimezoneHandle(job.run?.run_start) || 'N/A')}
         </TableCell>
         <TableCell
           sx={{
             ...ellipsisWrap,
           }}
         >
-          {formatDateTime(job.run?.run_end || 'N/A')}
+          {formatDateTime(jobTimezoneHandle(job.run?.run_end) || 'N/A')}
         </TableCell>
         <TableCell
           sx={{
             ...ellipsisWrap,
           }}
         >
-          {formatDateTime(job.start) || 'N/A'}
+          {formatDateTime(jobTimezoneHandle(job.start) || 'N/A')}
         </TableCell>
         <TableCell
           sx={{
             ...ellipsisWrap,
           }}
         >
-          {formatDateTime(job.end) || 'N/A'}
+          {formatDateTime(jobTimezoneHandle(job.end) || 'N/A')}
         </TableCell>
         {showInstrumentColumn && (
           <TableCell
