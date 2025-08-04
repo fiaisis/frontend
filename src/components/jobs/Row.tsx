@@ -273,11 +273,16 @@ const Row: React.FC<{
     return d.getTime() >= starts.getTime() && d.getTime() < ends.getTime();
   }
 
-  function jobTimezoneHandle(date: string): string {
+  function jobTimezoneHandle(date: string, start_or_end: string): string {
     const convertDate = stringToDate(date);
     if (isBST(stringToDate(job.start))) {
       const BSTDate = new Date(convertDate);
       BSTDate.setHours(BSTDate.getHours() + 1);
+      if (start_or_end.startsWith('s')) {
+        job.start = BSTDate.toISOString();
+      } else if (start_or_end.startsWith('e')) {
+        job.end = BSTDate.toISOString();
+      }
       return BSTDate.toISOString();
     } else {
       return convertDate.toISOString();
@@ -356,12 +361,12 @@ const Row: React.FC<{
     {
       icon: <Schedule fontSize="small" />,
       label: 'Reduction start:',
-      value: formatDateTime(jobTimezoneHandle(job.start) || 'N/A'),
+      value: formatDateTime(job.start || 'N/A'),
     },
     {
       icon: <Schedule fontSize="small" />,
       label: 'Reduction end:',
-      value: formatDateTime(jobTimezoneHandle(job.end) || 'N/A'),
+      value: jobTimezoneHandle(job.end, 'end') || 'N/A',
     },
     {
       icon: <StackedBarChart fontSize="small" />,
@@ -457,28 +462,28 @@ const Row: React.FC<{
             ...ellipsisWrap,
           }}
         >
-          {formatDateTime(jobTimezoneHandle(job.run?.run_start) || 'N/A')}
+          {formatDateTime(job.run?.run_start || 'N/A')}
         </TableCell>
         <TableCell
           sx={{
             ...ellipsisWrap,
           }}
         >
-          {formatDateTime(jobTimezoneHandle(job.run?.run_end) || 'N/A')}
+          {formatDateTime(job.run?.run_end || 'N/A')}
         </TableCell>
         <TableCell
           sx={{
             ...ellipsisWrap,
           }}
         >
-          {formatDateTime(jobTimezoneHandle(job.start) || 'N/A')}
+          {jobTimezoneHandle(job.start, 'start') || 'N/A'}
         </TableCell>
         <TableCell
           sx={{
             ...ellipsisWrap,
           }}
         >
-          {formatDateTime(jobTimezoneHandle(job.end) || 'N/A')}
+          {jobTimezoneHandle(job.end, 'end') || 'N/A'}
         </TableCell>
         {showInstrumentColumn && (
           <TableCell
