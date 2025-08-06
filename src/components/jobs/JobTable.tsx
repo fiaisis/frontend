@@ -81,6 +81,8 @@ const JobTable: React.FC<{
     .reduce((acc, job) => acc + parseJobOutputs(job.outputs).length, 0);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [delayPassed, setDelayPassed] = useState(false);
+  const [downloadErrorOpen, setDownloadErrorOpen] = useState(false);
+  const [downloadErrorMessage, setDownloadErrorMessage] = useState('');
 
   useEffect(() => {
     fetchJobs();
@@ -170,24 +172,38 @@ const JobTable: React.FC<{
 
   const handleBulkDownload = async (): Promise<void> => {
     const selectedJobs = jobs.filter((job) => selectedJobIds.includes(job.id));
+    const jobFiles: Record<number, string[]> = {};
+
     for (const job of selectedJobs) {
       const outputs = parseJobOutputs(job.outputs);
-      for (const output of outputs) {
-        try {
-          const response = await fiaApi.get(`/job/${job.id}/filename/${encodeURIComponent(output)}`, {
-            responseType: 'blob',
-          });
-          const blob = response.data;
-          const link = document.createElement('a');
-          link.href = URL.createObjectURL(blob);
-          link.download = output;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-        } catch (err) {
-          console.error(`Failed to download output ${output} for job ${job.id}`, err);
-        }
+      if (outputs.length > 0) {
+        jobFiles[job.id] = outputs;
       }
+    }
+
+    try {
+      const response = await fiaApi.post('/job/download-zip', jobFiles, {
+        responseType: 'blob',
+        validateStatus: () => true,
+      });
+
+      if (response.status !== 200) {
+        setDownloadErrorMessage(`Bulk download failed — status ${response.status}`);
+        setDownloadErrorOpen(true);
+        return;
+      }
+
+      const blob = new Blob([response.data], { type: 'application/zip' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'reduction_files.zip';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error('Failed to download ZIP file', err);
+      setDownloadErrorMessage('An unexpected error occurred during bulk download.');
+      setDownloadErrorOpen(true);
     }
   };
 
@@ -215,6 +231,35 @@ const JobTable: React.FC<{
 
   return (
     <>
+      <Snackbar
+        open={downloadErrorOpen}
+        autoHideDuration={5000}
+        onClose={(event, reason) => {
+          if (reason !== 'clickaway') {
+            setDownloadErrorOpen(false);
+          }
+        }}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert
+          sx={{
+            padding: '10px 14px',
+            fontSize: '1rem',
+            width: '100%',
+            maxWidth: '600px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            border: '1px solid',
+            borderRadius: '8px',
+            fontWeight: 'bold',
+          }}
+          severity="error"
+        >
+          {downloadErrorMessage}
+        </Alert>
+      </Snackbar>
+
       {isLoading && (
         <LinearProgress
           sx={{

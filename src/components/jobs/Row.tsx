@@ -72,25 +72,11 @@ const JobStatusIcon: React.FC<{ state: string }> = ({ state }: { state: string }
   return <Tooltip title={state}>{icons[state] || <ErrorOutline />}</Tooltip>;
 };
 
-const handleDownload = async (job: Job, output: string): Promise<void> => {
-  try {
-    const response = await fiaApi.get(`/job/${job.id}/filename/${encodeURIComponent(output)}`, {
-      responseType: 'blob',
-    });
-
-    const blob = response.data;
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = output;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  } catch (error) {
-    console.error('Failed to download file:', error);
-  }
-};
-
-const JobOutput: React.FC<{ job: Job }> = ({ job }: { job: Job }): ReactElement => {
+const JobOutput: React.FC<{
+  job: Job;
+  downloadingSingle: string | null;
+  handleDownload: (job: Job, output: string) => Promise<void>;
+}> = ({ job, downloadingSingle, handleDownload }) => {
   try {
     if (typeof job.outputs !== 'string') {
       return <Typography>No outputs to show</Typography>;
@@ -144,8 +130,14 @@ const JobOutput: React.FC<{ job: Job }> = ({ job }: { job: Job }): ReactElement 
               >
                 View
               </Button>
-              <Button variant="contained" startIcon={<Download />} onClick={() => handleDownload(job, output)}>
-                Download
+              <Button
+                variant="contained"
+                startIcon={downloadingSingle === output ? null : <Download />}
+                onClick={() => handleDownload(job, output)}
+                disabled={downloadingSingle === output}
+                sx={{ flexShrink: 0, whiteSpace: 'nowrap', width: 110, height: 38 }}
+              >
+                {downloadingSingle === output ? <CircularProgress size={24} color="inherit" /> : 'Download'}
               </Button>
             </Box>
           </Box>
@@ -241,12 +233,73 @@ const Row: React.FC<{
   const rerunJobId = useRef<number | null>(null);
   const rerunSuccessful = useRef<boolean | null>(null);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [downloadErrorOpen, setDownloadErrorOpen] = useState(false);
+  const [downloadErrorMessage, setDownloadErrorMessage] = useState('');
 
   const jobOutputs = parseJobOutputs(job.outputs);
+  const [downloadingAll, setDownloadingAll] = useState(false);
+  const [downloadingSingle, setDownloadingSingle] = useState<string | null>(null);
+
+  const handleDownload = async (job: Job, output: string): Promise<void> => {
+    try {
+      setDownloadingSingle(output);
+
+      const response = await fiaApi.get(`/job/${job.id}/filename/${encodeURIComponent(output)}`, {
+        responseType: 'blob',
+        validateStatus: () => true,
+      });
+
+      if (response.status !== 200) {
+        setDownloadErrorMessage(`Download failed with status ${response.status}`);
+        setDownloadErrorOpen(true);
+        return;
+      }
+
+      const blob = new Blob([response.data]);
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = output;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error('Failed to download file:', error);
+      setDownloadErrorMessage('An error occurred while downloading the file.');
+      setDownloadErrorOpen(true);
+    } finally {
+      setDownloadingSingle(null);
+    }
+  };
 
   const handleDownloadAll = async (): Promise<void> => {
-    for (const output of jobOutputs) {
-      await handleDownload(job, output);
+    try {
+      setDownloadingAll(true);
+      const payload = { [job.id]: jobOutputs };
+
+      const response = await fiaApi.post('/job/download-zip', payload, {
+        responseType: 'blob',
+        validateStatus: () => true,
+      });
+
+      if (response.status !== 200) {
+        setDownloadErrorMessage(`Download all failed with status ${response.status}`);
+        setDownloadErrorOpen(true);
+        return;
+      }
+
+      const blob = new Blob([response.data], { type: 'application/zip' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `${job.id}.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error('Download-all failed:', err);
+      setDownloadErrorMessage('An error occurred while downloading all files.');
+      setDownloadErrorOpen(true);
+    } finally {
+      setDownloadingAll(false);
     }
   };
 
@@ -377,6 +430,35 @@ const Row: React.FC<{
         </Alert>
       </Snackbar>
 
+      <Snackbar
+        open={downloadErrorOpen}
+        autoHideDuration={5000}
+        onClose={(event, reason) => {
+          if (reason !== 'clickaway') {
+            setDownloadErrorOpen(false);
+          }
+        }}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert
+          sx={{
+            padding: '10px 14px',
+            fontSize: '1rem',
+            width: '100%',
+            maxWidth: '600px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            border: '1px solid',
+            borderRadius: '8px',
+            fontWeight: 'bold',
+          }}
+          severity="error"
+        >
+          {downloadErrorMessage}
+        </Alert>
+      </Snackbar>
+
       <TableRow
         sx={{
           ...bandedRows,
@@ -399,62 +481,51 @@ const Row: React.FC<{
         </TableCell>
 
         <TableCell sx={{ width: '18%', px: 1 }}>
-          <Typography
-            variant="body2"
-            sx={{
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-              minWidth: 0,
-              flexGrow: 1,
-            }}
-            title={String(job.run?.experiment_number)}
-          >
-            {job.run?.experiment_number || 'N/A'}
-          </Typography>
+          <Tooltip title={String(job.run?.experiment_number || 'N/A')}>
+            <Typography
+              variant="body2"
+              sx={{
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                minWidth: 0,
+                flexGrow: 1,
+              }}
+            >
+              {job.run?.experiment_number || 'N/A'}
+            </Typography>
+          </Tooltip>
         </TableCell>
-        <TableCell
-          sx={{
-            ...ellipsisWrap,
-          }}
-        >
-          {extractFilename(job.run?.filename || 'N/A')}
+        <TableCell sx={{ ...ellipsisWrap }}>
+          <Tooltip title={extractFilename(job.run?.filename || 'N/A')}>
+            <span>{extractFilename(job.run?.filename || 'N/A')}</span>
+          </Tooltip>
         </TableCell>
-        <TableCell
-          sx={{
-            ...ellipsisWrap,
-          }}
-        >
-          {formatUtcForLocale(job.run?.run_start || 'N/A')}
+        <TableCell sx={{ ...ellipsisWrap }}>
+          <Tooltip title={formatUtcForLocale(job.run?.run_start || 'N/A')}>
+            <span>{formatUtcForLocale(job.run?.run_start || 'N/A')}</span>
+          </Tooltip>
         </TableCell>
-        <TableCell
-          sx={{
-            ...ellipsisWrap,
-          }}
-        >
-          {formatUtcForLocale(job.run?.run_end || 'N/A')}
+        <TableCell sx={{ ...ellipsisWrap }}>
+          <Tooltip title={formatUtcForLocale(job.run?.run_end || 'N/A')}>
+            <span>{formatUtcForLocale(job.run?.run_end || 'N/A')}</span>
+          </Tooltip>
         </TableCell>
-        <TableCell
-          sx={{
-            ...ellipsisWrap,
-          }}
-        >
-          {formatUtcForLocale(job.start || 'N/A')}
+        <TableCell sx={{ ...ellipsisWrap }}>
+          <Tooltip title={formatUtcForLocale(job.start) || 'N/A'}>
+            <span>{formatUtcForLocale(job.start) || 'N/A'}</span>
+          </Tooltip>
         </TableCell>
-        <TableCell
-          sx={{
-            ...ellipsisWrap,
-          }}
-        >
-          {formatUtcForLocale(job.end || 'N/A')}
+        <TableCell sx={{ ...ellipsisWrap }}>
+          <Tooltip title={formatUtcForLocale(job.end) || 'N/A'}>
+            <span>{formatUtcForLocale(job.end) || 'N/A'}</span>
+          </Tooltip>
         </TableCell>
         {showInstrumentColumn && (
-          <TableCell
-            sx={{
-              ...ellipsisWrap,
-            }}
-          >
-            {job.run?.title || 'N/A'}
+          <TableCell sx={{ ...ellipsisWrap }}>
+            <Tooltip title={job.run?.title || 'N/A'}>
+              <span>{job.run?.title || 'N/A'}</span>
+            </Tooltip>
           </TableCell>
         )}
 
@@ -502,18 +573,19 @@ const Row: React.FC<{
           // Merge the reduction title and expand icon into one cell for instrument specific pages
           <TableCell colSpan={2}>
             <Box display="flex" alignItems="center" justifyContent="space-between">
-              <Typography
-                variant="body2"
-                sx={{
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                  flexGrow: 1,
-                }}
-                title={job.run?.title || 'N/A'}
-              >
-                {job.run?.title || 'N/A'}
-              </Typography>
+              <Tooltip title={job.run?.title || 'N/A'}>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    flexGrow: 1,
+                  }}
+                >
+                  {job.run?.title || 'N/A'}
+                </Typography>
+              </Tooltip>
               <IconButton
                 aria-label="expand row"
                 onClick={(e) => {
@@ -555,7 +627,7 @@ const Row: React.FC<{
                     ) : (
                       <Table size="small" aria-label="details">
                         <TableBody>
-                          <JobOutput job={job} />
+                          <JobOutput job={job} downloadingSingle={downloadingSingle} handleDownload={handleDownload} />
                         </TableBody>
                       </Table>
                     )}
@@ -628,12 +700,12 @@ const Row: React.FC<{
                     </Button>
                     <Button
                       variant="contained"
-                      startIcon={<Download />}
+                      startIcon={!downloadingAll && <Download />}
                       onClick={handleDownloadAll}
-                      disabled={jobOutputs.length === 0}
-                      sx={{ flexShrink: 0, whiteSpace: 'nowrap' }}
+                      disabled={jobOutputs.length === 0 || downloadingAll}
+                      sx={{ flexShrink: 0, whiteSpace: 'nowrap', width: 140, height: 38 }}
                     >
-                      Download all
+                      {downloadingAll ? <CircularProgress size={24} color="inherit" /> : 'Download all'}
                     </Button>
                   </Box>
                 </Grid>
