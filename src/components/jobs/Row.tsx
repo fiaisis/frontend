@@ -498,27 +498,27 @@ const Row: React.FC<{
         </TableCell>
         <TableCell sx={{ ...ellipsisWrap }}>
           <Tooltip title={extractFilename(job.run?.filename || 'N/A')}>
-            <span>{extractFilename(job.run?.filename || 'N/A')}</span>
+            <span>{extractFilename(job.run?.filename)}</span>
           </Tooltip>
         </TableCell>
         <TableCell sx={{ ...ellipsisWrap }}>
-          <Tooltip title={formatUtcForLocale(job.run?.run_start || 'N/A')}>
-            <span>{formatUtcForLocale(job.run?.run_start || 'N/A')}</span>
+          <Tooltip title={formatUtcForLocale(job.run?.run_start)}>
+            <span>{formatUtcForLocale(job.run?.run_start)}</span>
           </Tooltip>
         </TableCell>
         <TableCell sx={{ ...ellipsisWrap }}>
-          <Tooltip title={formatUtcForLocale(job.run?.run_end || 'N/A')}>
-            <span>{formatUtcForLocale(job.run?.run_end || 'N/A')}</span>
+          <Tooltip title={formatUtcForLocale(job.run?.run_end)}>
+            <span>{formatUtcForLocale(job.run?.run_end)}</span>
           </Tooltip>
         </TableCell>
         <TableCell sx={{ ...ellipsisWrap }}>
-          <Tooltip title={formatUtcForLocale(job.start) || 'N/A'}>
-            <span>{formatUtcForLocale(job.start) || 'N/A'}</span>
+          <Tooltip title={formatUtcForLocale(job.start)}>
+            <span>{formatUtcForLocale(job.start)}</span>
           </Tooltip>
         </TableCell>
         <TableCell sx={{ ...ellipsisWrap }}>
-          <Tooltip title={formatUtcForLocale(job.end) || 'N/A'}>
-            <span>{formatUtcForLocale(job.end) || 'N/A'}</span>
+          <Tooltip title={formatUtcForLocale(job.end)}>
+            <span>{formatUtcForLocale(job.end)}</span>
           </Tooltip>
         </TableCell>
         {showInstrumentColumn && (
