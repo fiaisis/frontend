@@ -39,6 +39,7 @@ import { Link } from 'react-router-dom';
 import Grid from '@mui/material/Grid2';
 import { fiaApi } from '../../lib/api';
 import { parseJobOutputs } from '../../lib/hooks';
+import { formatUtcForLocale } from '../../lib/timezone';
 
 const ellipsisWrap = {
   whiteSpace: 'nowrap',
@@ -303,7 +304,6 @@ const Row: React.FC<{
   };
 
   const extractFilename = (path: string): string => path.split('/').pop()?.split('.')[0] ?? '';
-  const formatDateTime = (dateTimeStr: string | null): string => dateTimeStr?.replace('I', '\n') ?? '';
 
   const openValueEditor = (jobId: number): void => {
     const url = `/fia/value-editor/${jobId}`;
@@ -377,12 +377,12 @@ const Row: React.FC<{
     {
       icon: <Schedule fontSize="small" />,
       label: 'Reduction start:',
-      value: formatDateTime(job.start) || 'N/A',
+      value: formatUtcForLocale(job.start),
     },
     {
       icon: <Schedule fontSize="small" />,
       label: 'Reduction end:',
-      value: formatDateTime(job.end) || 'N/A',
+      value: formatUtcForLocale(job.end),
     },
     {
       icon: <StackedBarChart fontSize="small" />,
@@ -498,27 +498,27 @@ const Row: React.FC<{
         </TableCell>
         <TableCell sx={{ ...ellipsisWrap }}>
           <Tooltip title={extractFilename(job.run?.filename || 'N/A')}>
-            <span>{extractFilename(job.run?.filename || 'N/A')}</span>
+            <span>{extractFilename(job.run?.filename)}</span>
           </Tooltip>
         </TableCell>
         <TableCell sx={{ ...ellipsisWrap }}>
-          <Tooltip title={formatDateTime(job.run?.run_start || 'N/A')}>
-            <span>{formatDateTime(job.run?.run_start || 'N/A')}</span>
+          <Tooltip title={formatUtcForLocale(job.run?.run_start)}>
+            <span>{formatUtcForLocale(job.run?.run_start)}</span>
           </Tooltip>
         </TableCell>
         <TableCell sx={{ ...ellipsisWrap }}>
-          <Tooltip title={formatDateTime(job.run?.run_end || 'N/A')}>
-            <span>{formatDateTime(job.run?.run_end || 'N/A')}</span>
+          <Tooltip title={formatUtcForLocale(job.run?.run_end)}>
+            <span>{formatUtcForLocale(job.run?.run_end)}</span>
           </Tooltip>
         </TableCell>
         <TableCell sx={{ ...ellipsisWrap }}>
-          <Tooltip title={formatDateTime(job.start) || 'N/A'}>
-            <span>{formatDateTime(job.start) || 'N/A'}</span>
+          <Tooltip title={formatUtcForLocale(job.start)}>
+            <span>{formatUtcForLocale(job.start)}</span>
           </Tooltip>
         </TableCell>
         <TableCell sx={{ ...ellipsisWrap }}>
-          <Tooltip title={formatDateTime(job.end) || 'N/A'}>
-            <span>{formatDateTime(job.end) || 'N/A'}</span>
+          <Tooltip title={formatUtcForLocale(job.end)}>
+            <span>{formatUtcForLocale(job.end)}</span>
           </Tooltip>
         </TableCell>
         {showInstrumentColumn && (
