@@ -1,3 +1,4 @@
+// Convert an ISO UTC Timestamp to a Locale formatted Datetime string.
 export const formatUtcForLocale = (
   isoUtc: string | null,
   opts: Intl.DateTimeFormatOptions = { dateStyle: 'short', timeStyle: 'medium', hour12: false },
