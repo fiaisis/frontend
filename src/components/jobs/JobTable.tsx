@@ -83,6 +83,7 @@ const JobTable: React.FC<{
   const [delayPassed, setDelayPassed] = useState(false);
   const [downloadErrorOpen, setDownloadErrorOpen] = useState(false);
   const [downloadErrorMessage, setDownloadErrorMessage] = useState('');
+  const [downloadingBulk, setDownloadingBulk] = useState(false);
 
   useEffect(() => {
     fetchJobs();
@@ -181,6 +182,7 @@ const JobTable: React.FC<{
       }
     }
 
+    setDownloadingBulk(true);
     try {
       const response = await fiaApi.post('/job/download-zip', jobFiles, {
         responseType: 'blob',
@@ -204,6 +206,8 @@ const JobTable: React.FC<{
       console.error('Failed to download ZIP file', err);
       setDownloadErrorMessage('An unexpected error occurred during bulk download.');
       setDownloadErrorOpen(true);
+    } finally {
+      setDownloadingBulk(false);
     }
   };
 
@@ -345,10 +349,14 @@ const JobTable: React.FC<{
                   color="primary"
                   onClick={handleBulkDownload}
                   sx={{ height: '36px', width: 200 }}
-                  startIcon={<Download />}
-                  disabled={totalDownloadableFiles === 0}
+                  startIcon={!downloadingBulk && <Download />}
+                  disabled={totalDownloadableFiles === 0 || downloadingBulk}
                 >
-                  {`Download all (${totalDownloadableFiles})`}
+                  {downloadingBulk ? (
+                    <CircularProgress size={24} color="inherit" />
+                  ) : (
+                    `Download all (${totalDownloadableFiles})`
+                  )}
                 </Button>
               </>
             )}
