@@ -1,9 +1,10 @@
 // React components
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useHistory, useLocation } from 'react-router-dom';
 
 // Material UI components
 import { Alert, Box, Button, CircularProgress, Snackbar, Tab, Tabs, Typography, useTheme } from '@mui/material';
+import ArrowBack from '@mui/icons-material/ArrowBack';
 
 // Monaco components
 import Editor from '@monaco-editor/react';
@@ -32,17 +33,32 @@ const a11yProps = (index: number): { id: string; 'aria-controls': string } => {
   };
 };
 
+type LocationState = { from?: string };
+
 const ValueEditor: React.FC = () => {
   const theme = useTheme();
+  const history = useHistory();
+  const location = useLocation<LocationState>();
+
   const [value, setValue] = useState<number>(0);
   const [runnerVersion, setRunnerVersion] = useState<string>('');
   const [runners, setRunners] = useState<string[]>([]);
   const { jobId } = useParams<{ jobId: string }>();
   const [scriptValue, setScriptValue] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
+  const [instrumentName, setInstrumentName] = useState<string | null>(null);
   const rerunSuccessful = useRef<boolean | null>(null);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const userModified = useRef(false);
+
+  const handleBackClick = (): void => {
+    if (window.history.length > 1) {
+      history.goBack();
+      return;
+    }
+    const fallback = location.state?.from ?? `/reduction-history/${instrumentName ?? 'ALL'}`;
+    history.push(fallback);
+  };
 
   const fetchReduction = useCallback(async (): Promise<void> => {
     setLoading(true);
@@ -52,6 +68,9 @@ const ValueEditor: React.FC = () => {
       .then((data) => {
         if (data?.script?.value && !userModified.current) {
           setScriptValue(data.script.value);
+        }
+        if (data?.run?.instrument_name) {
+          setInstrumentName(data.run.instrument_name);
         }
       })
       .catch((err) => console.error('Error fetching reductions:', err))
@@ -106,6 +125,32 @@ const ValueEditor: React.FC = () => {
   return (
     <Box sx={{ width: '100%', height: '85vh', overflow: 'hidden' }}>
       <Box sx={{ p: 2, backgroundColor: theme.palette.background.default }}>
+        <Typography variant="h3" component="h1" style={{ color: theme.palette.text.primary }}>
+          {instrumentName} Job {jobId}
+        </Typography>
+
+        <Box sx={{ height: '24px', mb: 1 }}>
+          <Typography
+            component="button"
+            onClick={handleBackClick}
+            sx={{
+              color: theme.palette.mode === 'dark' ? '#86b4ff' : theme.palette.primary.main,
+              display: 'flex',
+              alignItems: 'center',
+              textDecoration: 'none',
+              cursor: 'pointer',
+              background: 'transparent',
+              border: 0,
+              p: 0,
+              font: 'inherit',
+              '&:hover': { textDecoration: 'underline' },
+            }}
+          >
+            <ArrowBack style={{ marginRight: '4px' }} />
+            Back to previous page
+          </Typography>
+        </Box>
+
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <Snackbar
@@ -166,6 +211,7 @@ const ValueEditor: React.FC = () => {
           </Button>
         </Box>
       </Box>
+
       <Box sx={{ borderTop: 3, borderColor: 'divider' }}>
         <Tabs
           value={value}
@@ -189,8 +235,7 @@ const ValueEditor: React.FC = () => {
       </Box>
 
       <TabPanel value={value} index={0}>
-        {/* Loading state necessary so that page contents don't load before
-        scriptValue is set */}
+        {/* Loading state necessary so that page contents don't load before scriptValue is set */}
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
             <CircularProgress />
