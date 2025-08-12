@@ -126,7 +126,7 @@ const ValueEditor: React.FC = () => {
     <Box sx={{ width: '100%', height: '85vh', overflow: 'hidden' }}>
       <Box sx={{ p: 2, backgroundColor: theme.palette.background.default }}>
         <Typography variant="h3" component="h1" style={{ color: theme.palette.text.primary }}>
-          {instrumentName} Job {jobId}
+          {instrumentName} Job {jobId} values
         </Typography>
 
         <Box sx={{ height: '24px', mb: 1 }}>
