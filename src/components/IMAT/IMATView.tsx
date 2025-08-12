@@ -16,7 +16,7 @@ const IMATView: React.FC = () => {
       }}
     >
       <Typography variant="h6" color={theme.palette.text.primary}>
-        Most recent NDXIMAT image will be rendered here
+        This page is under construction. An IMAT viewer will be rendered here
       </Typography>
     </Box>
   );
