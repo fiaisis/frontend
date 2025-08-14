@@ -305,19 +305,6 @@ const Row: React.FC<{
 
   const extractFilename = (path: string): string => path.split('/').pop()?.split('.')[0] ?? '';
 
-  const openValueEditor = (jobId: number): void => {
-    const url = `/fia/value-editor/${jobId}`;
-    const windowName = 'ValueEditorWindow';
-    const features = 'width=1200,height=800,resizable=no';
-    window.open(url, windowName, features);
-    ReactGA.event({
-      category: 'Button',
-      action: 'Click',
-      label: 'Value editor button',
-      value: jobId,
-    });
-  };
-
   const handleRerun = async (): Promise<void> => {
     setLoading(true);
     rerunJobId.current = job.id;
@@ -683,13 +670,22 @@ const Row: React.FC<{
                       whiteSpace: 'nowrap',
                     }}
                   >
-                    <Button
-                      variant="contained"
-                      onClick={() => openValueEditor(job.id)}
-                      sx={{ flexShrink: 0, whiteSpace: 'nowrap' }}
+                    <Link
+                      to={`/value-editor/${job.id}`}
+                      onClick={() =>
+                        ReactGA.event({
+                          category: 'Button',
+                          action: 'Click',
+                          label: 'Value editor button',
+                          value: job.id,
+                        })
+                      }
+                      style={{ textDecoration: 'none' }}
                     >
-                      Value editor
-                    </Button>
+                      <Button variant="contained" sx={{ flexShrink: 0, whiteSpace: 'nowrap' }}>
+                        Value editor
+                      </Button>
+                    </Link>
                     <Button
                       variant="contained"
                       sx={{ flexShrink: 0, whiteSpace: 'nowrap', width: 60, height: 38 }}
