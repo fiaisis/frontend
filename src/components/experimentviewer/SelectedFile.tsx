@@ -8,11 +8,13 @@ interface SelectedFileProps {
   name: string;
   selected: boolean;
   heatmap: boolean;
+  instrument: string;
+  experimentNumber: string;
   updateSelected: (selectedFile: FileToPlot) => void;
 }
 
 interface Meta {
-  shape: number[];
+  shape: number;
 }
 
 export const SelectedFile = (props: SelectedFileProps): React.ReactElement => {
@@ -20,20 +22,19 @@ export const SelectedFile = (props: SelectedFileProps): React.ReactElement => {
   const [heatmap, setHeatmap] = React.useState<boolean>(props.heatmap);
   const [selected, setSelected] = React.useState<boolean>(props.selected);
   const [slicesSelected, setSlicesSelected] = React.useState<string>('');
-  const [meta, setMeta] = React.useState<Meta>({ shape: [] });
+  const [meta, setMeta] = React.useState<Meta>();
 
   useEffect(() => {
     (async () => {
       plottingApi
-        .get('/meta/', {
+        .get(`/echarts_meta/${props.instrument}/${props.experimentNumber}`, {
           params: {
-            file: `/${props.name.slice(0, -1)}`,
-            path: `/mantid_workspace_1/workspace/values`,
+            filename: `/${props.name}`,
           },
         })
         .then((res) => setMeta(res.data));
     })();
-  }, []);
+  }, [props.name]);
 
   useEffect(() => {
     if (selected && !heatmap) {
@@ -95,7 +96,7 @@ export const SelectedFile = (props: SelectedFileProps): React.ReactElement => {
             </Typography>
           </Grid>
         </Grid>
-        {meta.shape[0] > 1 && (
+        {meta && meta.shape > 1 && (
           <Stack direction={'row'} alignItems={'baseline'}>
             <FormControlLabel control={<Switch checked={heatmap} onChange={switchHeatmap} />} label={'Heatmap'} />
             <TextField

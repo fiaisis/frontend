@@ -77,7 +77,7 @@ const App: FC = () => {
             <Route path="/reduction-history/:instrumentName/value-editor-:jobId">
               <ValueEditor />
             </Route>
-            <Route path="/experiment-viewer">
+            <Route path="/experiment-viewer/:instrumentName/:jobId">
               <ExperimentViewer />
             </Route>
           </Switch>

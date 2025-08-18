@@ -35,7 +35,7 @@ import {
   WorkOutline,
 } from '@mui/icons-material';
 import ReactGA from 'react-ga4';
-import { Link } from 'react-router-dom';
+import { Link as RouterLink, Link } from 'react-router-dom';
 import Grid from '@mui/material/Grid2';
 import { fiaApi } from '../../lib/api';
 import { parseJobOutputs } from '../../lib/hooks';

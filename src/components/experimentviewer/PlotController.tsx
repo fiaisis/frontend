@@ -6,6 +6,8 @@ import Graph from './Graph';
 
 interface PlotControllerProps {
   shortListedFiles: string[];
+  experimentNumber: string;
+  instrument: string;
 }
 
 export type FileToPlot = {
@@ -16,7 +18,7 @@ export type FileToPlot = {
 };
 
 type Metadata = {
-  shape: number[];
+  shape: number;
 };
 
 const PlotController = (props: PlotControllerProps): React.ReactElement => {
@@ -25,10 +27,9 @@ const PlotController = (props: PlotControllerProps): React.ReactElement => {
 
   const fetchMetadata = async (fileName: string): Promise<Metadata> => {
     return plottingApi
-      .get('/meta', {
+      .get(`/echarts_meta/${props.instrument}/${props.experimentNumber}`, {
         params: {
-          file: fileName,
-          path: 'mantid_workspace_1/workspace/values',
+          filename: fileName,
         },
       })
       .then((res) => {
@@ -40,8 +41,8 @@ const PlotController = (props: PlotControllerProps): React.ReactElement => {
     (async () => {
       const tempFileArray: FileToPlot[] = [];
       for (const fileName of props.shortListedFiles) {
-        const metadata = await fetchMetadata(fileName.slice(0, -1));
-        if (metadata.shape[0] > 1) {
+        const metadata = await fetchMetadata(fileName);
+        if (metadata.shape > 1) {
           tempFileArray.push({ fileName: fileName, plotted: true, heatmap: false, slices: [] });
         } else {
           tempFileArray.push({ fileName: fileName, plotted: true, heatmap: false, slices: [] });
@@ -76,6 +77,8 @@ const PlotController = (props: PlotControllerProps): React.ReactElement => {
               name={file.fileName}
               selected={file.plotted}
               heatmap={file.heatmap}
+              instrument={props.instrument}
+              experimentNumber={props.experimentNumber}
               updateSelected={updateSelectedFile}
             ></SelectedFile>
           </Box>
@@ -89,7 +92,7 @@ const PlotController = (props: PlotControllerProps): React.ReactElement => {
               marginRight: '32px',
             }}
           >
-            <Graph filesToBePlotted={files} />
+            <Graph filesToBePlotted={files} experimentNumber={props.experimentNumber} instrument={props.instrument} />
           </Box>
         </Grid2>
       )}
