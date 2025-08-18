@@ -5,11 +5,13 @@ import Plot from './Plot';
 
 interface GraphProps {
   filesToBePlotted: FileToPlot[];
+  instrument: string;
+  experimentNumber: string;
 }
 
 export interface GraphData {
-  data: number[][];
-  errors: number[][];
+  data: number[][][];
+  errors: number[][][];
   isHeatmap: boolean;
 }
 
@@ -22,30 +24,28 @@ const Graph = (props: GraphProps): React.ReactElement => {
       .get('processed_data', {
         params: {
           filename: filename,
-          path: '/mantid_workspace_1/workspace/values',
+          path: '/ws_out/data/data',
         },
       })
       .then((res) => res.data);
   };
 
-  const fetchData = async (filename: string, slice: number): Promise<number[]> => {
+  const fetchData = async (filename: string, slice: number): Promise<number[][]> => {
     return await plottingApi
-      .get('data', {
+      .get(`echarts_data/${props.instrument}/${props.experimentNumber}`, {
         params: {
-          file: filename,
-          path: '/mantid_workspace_1/workspace/values',
+          filename: filename,
           selection: slice,
         },
       })
       .then((res) => res.data);
   };
 
-  const fetchErrorData = async (filename: string, slice: number): Promise<number[]> => {
+  const fetchErrorData = async (filename: string, slice: number): Promise<number[][]> => {
     return await plottingApi
-      .get('data', {
+      .get(`echarts_data/${props.instrument}/${props.experimentNumber}`, {
         params: {
-          file: filename,
-          path: '/mantid_workspace_1/workspace/errors',
+          filename: filename,
           selection: slice,
         },
       })
@@ -72,14 +72,14 @@ const Graph = (props: GraphProps): React.ReactElement => {
     (async () => {
       const dataArray = await Promise.all(
         selectedFiles.map(async (file) => {
-          const baseName = file.fileName.slice(0, -1);
-
+          const baseName = file.fileName;
+          console.log(file.fileName + ' --- ' + file.plotted + ' --- ' + file.heatmap + ' --- ' + file.slices);
           if (file.plotted && file.heatmap) {
             const data = await fetchHeatmapData(baseName);
-            return { data, errors: [], isHeatmap: true };
+            return { data: [data], errors: [], isHeatmap: true };
           } else if (file.plotted && file.slices?.length) {
-            const data: number[][] = [];
-            const errors: number[][] = [];
+            const data: number[][][] = [];
+            const errors: number[][][] = [];
 
             for (const slice of file.slices) {
               const [sliceData, sliceErrors] = await Promise.all([
@@ -109,8 +109,8 @@ const Graph = (props: GraphProps): React.ReactElement => {
           return acc;
         },
         {
-          data: [] as number[][],
-          errors: [] as number[][], // start as empty
+          data: [] as number[][][],
+          errors: [] as number[][][], // start as empty
           isHeatmap: false,
         }
       );

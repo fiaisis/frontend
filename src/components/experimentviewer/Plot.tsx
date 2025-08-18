@@ -10,141 +10,60 @@ interface PlotProps {
 const Plot = (props: PlotProps): React.ReactElement | null => {
   const [options, setOptions] = React.useState<EChartsOption>();
 
-  const computeOptions1DOptions = (data: number[][], errors?: number[][]): EChartsOption => {
-    const legendNames = data.map((_, index) => index.toString());
-
+  const computeOptions1DOptions = (data: number[][][], errors?: number[][][]): EChartsOption => {
     const seriesUnpacked: SeriesOption[] = [];
-
-    data.forEach((item, index) => {
-      // Line series
+    data.forEach((data, index) => {
       seriesUnpacked.push({
-        name: legendNames[index],
+        name: index,
+        data: data,
         type: 'line',
-        data: item,
-        color: '#00c0ff',
+        showSymbol: false,
+        emphasis: { disabled: false },
       });
-
-      // Optional error bar series
-      if (errors && errors[index]) {
-        const errorData = item.map((y, i) => {
-          const err = errors[index][i] ?? 0;
-          return [i, y - err, y + err]; // [x, yLow, yHigh]
-        });
-
-        seriesUnpacked.push({
-          name: `${legendNames[index]} error`,
-          type: 'custom',
-          renderItem: (params, api) => {
-            const x = api.value(0);
-            const low = api.value(1);
-            const high = api.value(2);
-
-            const coordLow = api.coord([x, low]);
-            const coordHigh = api.coord([x, high]);
-            const barWidth = 6;
-
-            return {
-              type: 'group',
-              children: [
-                {
-                  type: 'line',
-                  shape: {
-                    x1: coordLow[0],
-                    y1: coordLow[1],
-                    x2: coordHigh[0],
-                    y2: coordHigh[1],
-                  },
-                  style: {
-                    stroke: '#00c0ff',
-                    width: 1,
-                  },
-                },
-                {
-                  type: 'line',
-                  shape: {
-                    x1: coordLow[0] - barWidth / 2,
-                    y1: coordLow[1],
-                    x2: coordLow[0] + barWidth / 2,
-                    y2: coordLow[1],
-                  },
-                  style: {
-                    stroke: '#0085ff',
-                    width: 1,
-                  },
-                },
-                {
-                  type: 'line',
-                  shape: {
-                    x1: coordHigh[0] - barWidth / 2,
-                    y1: coordHigh[1],
-                    x2: coordHigh[0] + barWidth / 2,
-                    y2: coordHigh[1],
-                  },
-                  style: {
-                    stroke: '#0085ff',
-                    width: 1,
-                  },
-                },
-              ],
-            };
-          },
-          encode: {
-            x: 0,
-            y: [1, 2],
-          },
-          data: errorData,
-          silent: true,
-        });
-      }
     });
-
     return {
       grid: {
-        show: false,
-      },
-      legend: {
-        data: legendNames,
-      },
-      toolbox: {
-        feature: {
-          dataZoom: {
-            yAxisIndex: 'none',
-          },
-        },
-      },
-      dataZoom: [
-        {
-          type: 'inside',
-        },
-      ],
-      xAxis: {
-        type: 'category',
-        axisLine: {
-          show: true,
-        },
-        splitLine: {
-          show: false,
-        },
-      },
-      yAxis: {
-        type: 'value',
-        scale: false,
-        axisLine: {
-          show: true,
-        },
-        splitLine: {
-          show: false,
-        },
-        min: -0.1,
+        left: 0,
+        containLabel: true,
       },
       tooltip: {
         trigger: 'axis',
       },
+      xAxis: {
+        type: 'value',
+        splitLine: { show: false },
+      },
+      yAxis: {
+        type: 'value',
+        splitLine: { show: false },
+        min: -0.05,
+      },
+      dataZoom: [
+        {
+          type: 'inside',
+          xAxisIndex: [0],
+          filterMode: 'none',
+        },
+        {
+          type: 'inside',
+          yAxisIndex: [0],
+          filterMode: 'none',
+        },
+      ],
+      toolbox: {
+        show: true,
+        feature: {
+          dataZoom: {
+            filterMode: 'none',
+          },
+        },
+      },
+
       series: seriesUnpacked,
     };
   };
 
-  const computeOptions2DOptions = (data: number[][]): EChartsOption => {
+  const computeOptions2DOptions = (data: number[][][]): EChartsOption => {
     return {
       animation: false,
       xAxis: {
@@ -155,13 +74,28 @@ const Plot = (props: PlotProps): React.ReactElement | null => {
       },
       visualMap: {
         min: 0,
-        max: 1,
+        max: 40,
         calculable: true,
+        inRange: {
+          color: [
+            '#440154',
+            '#482475',
+            '#414487',
+            '#355f8d',
+            '#2a788e',
+            '#21918c',
+            '#22a884',
+            '#44bf70',
+            '#7ad151',
+            '#bddf26',
+            '#fde725',
+          ],
+        },
       },
       series: [
         {
           type: 'heatmap',
-          data: data,
+          data: data[0],
         },
       ],
       tooltip: {

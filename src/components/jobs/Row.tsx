@@ -34,7 +34,7 @@ import {
   WorkOutline,
 } from '@mui/icons-material';
 import ReactGA from 'react-ga4';
-import { Link } from 'react-router-dom';
+import { Link as RouterLink, Link } from 'react-router-dom';
 import Grid from '@mui/material/Grid2';
 import { fiaApi } from '../../lib/api';
 
@@ -576,7 +576,18 @@ const Row: React.FC<{
                     <JobInput job={job} />
                   </Box>
                   <Box display="flex" justifyContent="right">
-                    <Button variant="contained" onClick={() => openValueEditor(job.id)}>
+                    <Button
+                      variant="contained"
+                      component={RouterLink}
+                      to={`/experiment-viewer/${job.run.instrument_name}/${job.run.experiment_number}`}
+                    >
+                      Experiment viewer
+                    </Button>
+                    <Button
+                      variant="contained"
+                      sx={{ marginLeft: 2, height: 38 }}
+                      onClick={() => openValueEditor(job.id)}
+                    >
                       Value editor
                     </Button>
                     <Button
