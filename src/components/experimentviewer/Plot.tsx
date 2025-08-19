@@ -74,7 +74,7 @@ const Plot = (props: PlotProps): React.ReactElement | null => {
       },
       visualMap: {
         min: 0,
-        max: 40,
+        max: 2,
         calculable: true,
         inRange: {
           color: [
@@ -114,7 +114,6 @@ const Plot = (props: PlotProps): React.ReactElement | null => {
 
   if (!options) return null;
 
-  // return <>test</>;
   return <ReactECharts style={{ height: '85vh', width: '100%' }} option={options} notMerge={true} />;
 };
 

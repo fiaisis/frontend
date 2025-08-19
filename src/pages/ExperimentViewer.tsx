@@ -2,16 +2,10 @@ import { Box, Grid2, Typography, useTheme } from '@mui/material';
 import React, { useEffect } from 'react';
 import { fiaApi } from '../lib/api';
 import { TreeViewBaseItem } from '@mui/x-tree-view';
-import { FileMenuTree } from '../components/FileMenuTree';
+import { FileMenuTree } from '../components/experimentviewer/FileMenuTree';
 import PlotController from '../components/experimentviewer/PlotController';
 import { useParams } from 'react-router-dom';
 import { Job } from '../lib/types';
-
-type file = {
-  name: string;
-  heatMap: boolean;
-  slices: number[];
-};
 
 export type RunsTreeItem = {
   parent: boolean;
@@ -23,8 +17,7 @@ const ExperimentViewer = (): React.ReactElement => {
   const { jobId } = useParams<{ jobId: string }>();
   const { instrumentName } = useParams<{ instrumentName: string }>();
   const [runs, setRuns] = React.useState<TreeViewBaseItem<RunsTreeItem>[]>([]);
-  const [files, setFiles] = React.useState<string[]>([]);
-  const [activeFiles, setActiveFiles] = React.useState<file[]>([]);
+  const [selectedFiles, setSelectedFiles] = React.useState<string[]>([]);
   const theme = useTheme();
   const fetchRuns = async (RB: string): Promise<TreeViewBaseItem<RunsTreeItem>[]> => {
     const data: Job[] = await fiaApi
@@ -35,6 +28,7 @@ const ExperimentViewer = (): React.ReactElement => {
         },
       })
       .then((res) => res.data);
+
     const formatedData: { fileName: string; outputs: string[] }[] = [];
 
     // Parse output files to JSON
@@ -52,7 +46,6 @@ const ExperimentViewer = (): React.ReactElement => {
       }
     });
 
-    console.log(formatedData);
     // Collapse duplicate fileName entries and combine their outputs
     const collapsedResults: { fileName: string; outputs: string[] }[] = [];
 
@@ -84,20 +77,21 @@ const ExperimentViewer = (): React.ReactElement => {
     return richTreeData;
   };
 
+  // Initial component mount will fetch all the runs for the experiment
   useEffect(() => {
     (async () => {
       setRuns(await fetchRuns(jobId));
     })();
   }, []);
 
+  // Handler for selecting items from the menu
   const setSelectedItem = (item: string): void => {
-    if (files.includes(item)) {
+    if (selectedFiles.includes(item)) {
       // If item exists, remove it
-      setFiles(files.filter((file) => file !== item));
-      setActiveFiles(activeFiles.filter((file) => file.name !== item));
+      setSelectedFiles(selectedFiles.filter((file) => file !== item));
     } else {
       // If item doesn't exist, add it
-      setFiles([...files, item]);
+      setSelectedFiles([...selectedFiles, item]);
     }
   };
 
@@ -110,8 +104,8 @@ const ExperimentViewer = (): React.ReactElement => {
         <Grid2 size={2}>
           <FileMenuTree items={runs} setSelectedItem={setSelectedItem} />
         </Grid2>
-        {files.length > 0 && (
-          <PlotController shortListedFiles={files} experimentNumber={jobId} instrument={instrumentName} />
+        {selectedFiles.length > 0 && (
+          <PlotController shortListedFiles={selectedFiles} experimentNumber={jobId} instrument={instrumentName} />
         )}
       </Grid2>
     </Box>

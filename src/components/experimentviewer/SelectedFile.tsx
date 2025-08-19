@@ -1,20 +1,16 @@
 import { Box, Checkbox, FormControlLabel, Stack, Switch, TextField, Typography, useTheme } from '@mui/material';
 import React, { useEffect } from 'react';
-import { plottingApi } from '../../lib/plotting-api';
 import Grid from '@mui/material/Grid2';
-import { FileToPlot } from './PlotController';
+import { FileToPlot, Metadata } from './PlotController';
 
 interface SelectedFileProps {
   name: string;
   selected: boolean;
   heatmap: boolean;
+  meta: Metadata;
   instrument: string;
   experimentNumber: string;
   updateSelected: (selectedFile: FileToPlot) => void;
-}
-
-interface Meta {
-  shape: number;
 }
 
 export const SelectedFile = (props: SelectedFileProps): React.ReactElement => {
@@ -22,38 +18,19 @@ export const SelectedFile = (props: SelectedFileProps): React.ReactElement => {
   const [heatmap, setHeatmap] = React.useState<boolean>(props.heatmap);
   const [selected, setSelected] = React.useState<boolean>(props.selected);
   const [slicesSelected, setSlicesSelected] = React.useState<string>('');
-  const [meta, setMeta] = React.useState<Meta>();
 
   useEffect(() => {
-    (async () => {
-      plottingApi
-        .get(`/echarts_meta/${props.instrument}/${props.experimentNumber}`, {
-          params: {
-            filename: `/${props.name}`,
-          },
-        })
-        .then((res) => setMeta(res.data));
-    })();
-  }, [props.name]);
-
-  useEffect(() => {
-    if (selected && !heatmap) {
+    if (selected) {
       props.updateSelected({
         fileName: props.name,
         plotted: selected,
         heatmap: heatmap,
-        slices: computeSlices(slicesSelected),
-      });
-    } else if (selected) {
-      props.updateSelected({
-        fileName: props.name,
-        plotted: selected,
-        heatmap: heatmap,
-        slices: [],
+        slices: !heatmap ? computeSlices(slicesSelected) : [],
+        meta: props.meta,
       });
     } else {
       setHeatmap(false);
-      props.updateSelected({ fileName: props.name, plotted: false, heatmap: false, slices: [] });
+      props.updateSelected({ fileName: props.name, plotted: false, heatmap: false, slices: [], meta: props.meta });
     }
   }, [selected, heatmap, slicesSelected]);
 
@@ -96,7 +73,7 @@ export const SelectedFile = (props: SelectedFileProps): React.ReactElement => {
             </Typography>
           </Grid>
         </Grid>
-        {meta && meta.shape > 1 && (
+        {props.meta.shape > 1 && (
           <Stack direction={'row'} alignItems={'baseline'}>
             <FormControlLabel control={<Switch checked={heatmap} onChange={switchHeatmap} />} label={'Heatmap'} />
             <TextField

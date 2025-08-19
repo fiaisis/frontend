@@ -21,10 +21,9 @@ const Graph = (props: GraphProps): React.ReactElement => {
 
   const fetchHeatmapData = async (filename: string): Promise<number[][]> => {
     return await plottingApi
-      .get('processed_data', {
+      .get(`processed_data/${props.instrument}/${props.experimentNumber}`, {
         params: {
           filename: filename,
-          path: '/ws_out/data/data',
         },
       })
       .then((res) => res.data);
@@ -97,7 +96,6 @@ const Graph = (props: GraphProps): React.ReactElement => {
           }
         })
       );
-      console.log(dataArray);
 
       const mergedData = dataArray.reduce(
         (acc, curr) => {
