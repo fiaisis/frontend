@@ -15,11 +15,12 @@ export type FileToPlot = {
   plotted: boolean;
   heatmap: boolean;
   slices: number[] | undefined;
+  meta: Metadata;
 };
 
-type Metadata = {
+export interface Metadata {
   shape: number;
-};
+}
 
 const PlotController = (props: PlotControllerProps): React.ReactElement => {
   const theme = useTheme();
@@ -42,11 +43,7 @@ const PlotController = (props: PlotControllerProps): React.ReactElement => {
       const tempFileArray: FileToPlot[] = [];
       for (const fileName of props.shortListedFiles) {
         const metadata = await fetchMetadata(fileName);
-        if (metadata.shape > 1) {
-          tempFileArray.push({ fileName: fileName, plotted: true, heatmap: false, slices: [] });
-        } else {
-          tempFileArray.push({ fileName: fileName, plotted: true, heatmap: false, slices: [] });
-        }
+        tempFileArray.push({ fileName: fileName, plotted: true, heatmap: false, slices: [], meta: metadata });
       }
       setFiles(tempFileArray);
     })();
@@ -78,6 +75,7 @@ const PlotController = (props: PlotControllerProps): React.ReactElement => {
               selected={file.plotted}
               heatmap={file.heatmap}
               instrument={props.instrument}
+              meta={file.meta}
               experimentNumber={props.experimentNumber}
               updateSelected={updateSelectedFile}
             ></SelectedFile>

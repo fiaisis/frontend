@@ -1,7 +1,7 @@
 import { RichTreeView, TreeItem, TreeItemProps, TreeViewBaseItem, useTreeViewApiRef } from '@mui/x-tree-view';
 import { Box, Tooltip, useTheme } from '@mui/material';
 import React from 'react';
-import { RunsTreeItem } from '../pages/ExperimentViewer';
+import { RunsTreeItem } from '../../pages/ExperimentViewer';
 
 interface FileMenuTreeProps {
   items: TreeViewBaseItem<RunsTreeItem>[];
