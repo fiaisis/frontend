@@ -13,7 +13,7 @@ interface PlotControllerProps {
 export type FileToPlot = {
   fileName: string;
   plotted: boolean;
-  heatmap: boolean;
+  plotAsHeatmap: boolean;
   slices: number[] | undefined;
   meta: Metadata;
 };
@@ -43,15 +43,25 @@ const PlotController = (props: PlotControllerProps): React.ReactElement => {
       const tempFileArray: FileToPlot[] = [];
       for (const fileName of props.shortListedFiles) {
         const metadata = await fetchMetadata(fileName);
-        tempFileArray.push({ fileName: fileName, plotted: true, heatmap: false, slices: [], meta: metadata });
+        tempFileArray.push({ fileName: fileName, plotted: true, plotAsHeatmap: false, slices: [], meta: metadata });
       }
       setFiles(tempFileArray);
     })();
   }, [props.shortListedFiles]);
 
   const updateSelectedFile = (selectedFile: FileToPlot): void => {
-    files[files.findIndex((file) => file.fileName === selectedFile.fileName)] = selectedFile;
-    setFiles([...files]);
+    if (selectedFile.plotAsHeatmap) {
+      setFiles((prev) =>
+        prev.map((file) =>
+          file.fileName === selectedFile.fileName
+            ? { ...file, plotAsHeatmap: selectedFile.plotAsHeatmap, slices: selectedFile.slices }
+            : { ...file, plotted: false }
+        )
+      );
+    } else {
+      files[files.findIndex((file) => file.fileName === selectedFile.fileName)] = selectedFile;
+      setFiles([...files]);
+    }
   };
 
   return (
@@ -73,12 +83,12 @@ const PlotController = (props: PlotControllerProps): React.ReactElement => {
             <SelectedFile
               name={file.fileName}
               selected={file.plotted}
-              heatmap={file.heatmap}
+              heatmap={file.plotAsHeatmap}
               instrument={props.instrument}
               meta={file.meta}
               experimentNumber={props.experimentNumber}
               updateSelected={updateSelectedFile}
-            ></SelectedFile>
+            />
           </Box>
         ))}
       </Grid2>
@@ -87,7 +97,6 @@ const PlotController = (props: PlotControllerProps): React.ReactElement => {
           <Box
             sx={{
               bgcolor: '#000',
-              marginRight: '32px',
             }}
           >
             <Graph filesToBePlotted={files} experimentNumber={props.experimentNumber} instrument={props.instrument} />
