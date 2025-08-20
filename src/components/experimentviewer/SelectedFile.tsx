@@ -20,17 +20,27 @@ export const SelectedFile = (props: SelectedFileProps): React.ReactElement => {
   const [slicesSelected, setSlicesSelected] = React.useState<string>('');
 
   useEffect(() => {
+    setSelected(props.selected);
+  }, [props.selected]);
+
+  useEffect(() => {
     if (selected) {
       props.updateSelected({
         fileName: props.name,
         plotted: selected,
-        heatmap: heatmap,
+        plotAsHeatmap: heatmap,
         slices: !heatmap ? computeSlices(slicesSelected) : [],
         meta: props.meta,
       });
     } else {
       setHeatmap(false);
-      props.updateSelected({ fileName: props.name, plotted: false, heatmap: false, slices: [], meta: props.meta });
+      props.updateSelected({
+        fileName: props.name,
+        plotted: false,
+        plotAsHeatmap: false,
+        slices: [],
+        meta: props.meta,
+      });
     }
   }, [selected, heatmap, slicesSelected]);
 

@@ -52,8 +52,9 @@ const Graph = (props: GraphProps): React.ReactElement => {
   };
 
   useEffect(() => {
-    if (props.filesToBePlotted.find((file) => file.heatmap)) {
-      setSelectedFiles([props.filesToBePlotted.filter((file) => file.heatmap)[0]]);
+    if (props.filesToBePlotted.find((file) => file.plotAsHeatmap)) {
+      const heatmapFiles = props.filesToBePlotted.filter((file) => file.plotAsHeatmap);
+      setSelectedFiles([heatmapFiles[heatmapFiles.length - 1]]);
       return;
     }
     if (props.filesToBePlotted.length > 0) {
@@ -72,8 +73,7 @@ const Graph = (props: GraphProps): React.ReactElement => {
       const dataArray = await Promise.all(
         selectedFiles.map(async (file) => {
           const baseName = file.fileName;
-          console.log(file.fileName + ' --- ' + file.plotted + ' --- ' + file.heatmap + ' --- ' + file.slices);
-          if (file.plotted && file.heatmap) {
+          if (file.plotted && file.plotAsHeatmap) {
             const data = await fetchHeatmapData(baseName);
             return { data: [data], errors: [], isHeatmap: true };
           } else if (file.plotted && file.slices?.length) {
@@ -117,14 +117,7 @@ const Graph = (props: GraphProps): React.ReactElement => {
     })();
   }, [selectedFiles]);
 
-  return (
-    <>
-      {selectedFiles.map((file, index) => (
-        <div key={index}>{`${file.fileName} ${file.plotted} ${file.heatmap} ${file.slices}`}</div>
-      ))}
-      {data ? <Plot graphData={data}></Plot> : <></>}
-    </>
-  );
+  return <>{data ? <Plot graphData={data}></Plot> : <></>}</>;
 };
 
 export default Graph;

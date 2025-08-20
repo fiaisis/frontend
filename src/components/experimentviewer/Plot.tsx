@@ -23,7 +23,10 @@ const Plot = (props: PlotProps): React.ReactElement | null => {
     });
     return {
       grid: {
-        left: 0,
+        left: '2%',
+        right: '2%',
+        top: '2%',
+        bottom: '2%',
         containLabel: true,
       },
       tooltip: {
