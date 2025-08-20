@@ -2,7 +2,7 @@ import { Box, Grid2, useTheme } from '@mui/material';
 import { SelectedFile } from './SelectedFile';
 import React, { useEffect } from 'react';
 import { plottingApi } from '../../lib/plotting-api';
-import Graph from './Graph';
+import { Graph } from './Graph';
 
 interface PlotControllerProps {
   shortListedFiles: string[];
@@ -99,7 +99,11 @@ const PlotController = (props: PlotControllerProps): React.ReactElement => {
               bgcolor: '#000',
             }}
           >
-            <Graph filesToBePlotted={files} experimentNumber={props.experimentNumber} instrument={props.instrument} />
+            <Graph
+              filesToBePlotted={files.filter((file) => file.plotted)}
+              experimentNumber={props.experimentNumber}
+              instrument={props.instrument}
+            />
           </Box>
         </Grid2>
       )}

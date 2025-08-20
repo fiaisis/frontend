@@ -66,7 +66,7 @@ const Plot = (props: PlotProps): React.ReactElement | null => {
     };
   };
 
-  const computeOptions2DOptions = (data: number[][][]): EChartsOption => {
+  const computeOptions2DOptions = (data: number[][]): EChartsOption => {
     return {
       animation: false,
       xAxis: {
@@ -98,7 +98,7 @@ const Plot = (props: PlotProps): React.ReactElement | null => {
       series: [
         {
           type: 'heatmap',
-          data: data[0],
+          data: data,
         },
       ],
       tooltip: {
