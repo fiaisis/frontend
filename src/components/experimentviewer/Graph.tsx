@@ -9,14 +9,18 @@ interface GraphProps {
   experimentNumber: string;
 }
 
-export interface GraphData {
-  data: number[][][];
-  errors: number[][][];
-  isHeatmap: boolean;
-}
+export type GraphData =
+  | {
+      isHeatmap: false;
+      data: number[][][];
+      errors: number[][][];
+    }
+  | {
+      isHeatmap: true;
+      data: number[][];
+    };
 
-const Graph = (props: GraphProps): React.ReactElement => {
-  const [selectedFiles, setSelectedFiles] = React.useState<FileToPlot[]>([]);
+export const Graph = (props: GraphProps): React.ReactElement => {
   const [data, setData] = React.useState<GraphData>({ data: [], errors: [], isHeatmap: false });
 
   const fetchHeatmapData = async (filename: string): Promise<number[][]> => {
@@ -52,72 +56,31 @@ const Graph = (props: GraphProps): React.ReactElement => {
   };
 
   useEffect(() => {
-    if (props.filesToBePlotted.find((file) => file.plotAsHeatmap)) {
-      const heatmapFiles = props.filesToBePlotted.filter((file) => file.plotAsHeatmap);
-      setSelectedFiles([heatmapFiles[heatmapFiles.length - 1]]);
-      return;
-    }
-    if (props.filesToBePlotted.length > 0) {
-      const tempArray: FileToPlot[] = [];
-      props.filesToBePlotted.forEach((file) => {
-        if (file.plotted) {
-          tempArray.push(file);
-        }
-      });
-      setSelectedFiles(tempArray);
-    }
-  }, [props.filesToBePlotted]);
-
-  useEffect(() => {
     (async () => {
-      const dataArray = await Promise.all(
-        selectedFiles.map(async (file) => {
-          const baseName = file.fileName;
-          if (file.plotted && file.plotAsHeatmap) {
-            const data = await fetchHeatmapData(baseName);
-            return { data: [data], errors: [], isHeatmap: true };
-          } else if (file.plotted && file.slices?.length) {
-            const data: number[][][] = [];
-            const errors: number[][][] = [];
+      if (props.filesToBePlotted.find((file) => file.plotAsHeatmap)) {
+        // Heatmap case
+        const heatmapData = await fetchHeatmapData(props.filesToBePlotted[0].fileName);
+        setData({ isHeatmap: true, data: heatmapData });
+        return;
+      }
 
-            for (const slice of file.slices) {
-              const [sliceData, sliceErrors] = await Promise.all([
-                fetchData(baseName, slice),
-                fetchErrorData(baseName, slice),
-              ]);
-              data.push(sliceData);
-              errors.push(sliceErrors);
-            }
+      // Normal graph case
+      const dataPromises: Promise<number[][]>[] = [];
+      const errorPromises: Promise<number[][]>[] = [];
 
-            return { data, errors, isHeatmap: false };
-          } else {
-            const [result, error] = await Promise.all([fetchData(baseName, 0), fetchErrorData(baseName, 0)]);
-            return { data: [result], errors: [error], isHeatmap: false };
-          }
-        })
-      );
+      props.filesToBePlotted.forEach((file) => {
+        const slices = file.slices && file.slices.length > 0 ? file.slices : [0];
+        slices.forEach((slice) => {
+          dataPromises.push(fetchData(file.fileName, slice));
+          errorPromises.push(fetchErrorData(file.fileName, slice));
+        });
+      });
 
-      const mergedData = dataArray.reduce(
-        (acc, curr) => {
-          acc.data.push(...curr.data);
-          if (curr.errors) {
-            acc.errors.push(...curr.errors);
-          }
-          acc.isHeatmap ||= curr.isHeatmap;
-          return acc;
-        },
-        {
-          data: [] as number[][][],
-          errors: [] as number[][][], // start as empty
-          isHeatmap: false,
-        }
-      );
+      const [dataArray, errorsArray] = await Promise.all([Promise.all(dataPromises), Promise.all(errorPromises)]);
 
-      setData(mergedData);
+      setData({ isHeatmap: false, data: dataArray, errors: errorsArray });
     })();
-  }, [selectedFiles]);
+  }, [props.filesToBePlotted]);
 
   return <>{data ? <Plot graphData={data}></Plot> : <></>}</>;
 };
-
-export default Graph;
