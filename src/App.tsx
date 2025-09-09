@@ -1,77 +1,86 @@
 // React components
-import React, { FC } from 'react';
+import React, { FC, useEffect, useReducer } from 'react';
 import { BrowserRouter as Router, Route, Switch } from 'react-router-dom';
 import ReactGA from 'react-ga4';
 
-// Local data
+// Pages
 import Instruments from './pages/Instruments';
 import HomePage from './pages/HomePage';
 import ValueEditor from './pages/ValueEditor';
+import JobsPage from './pages/JobsPage';
 import GlobalStyles from './GlobalStyles';
-import { clearFailedAuthRequestsQueue, retryFailedAuthRequests } from './lib/api';
+
+// MUI date pickers
 import 'dayjs/locale/en-gb';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import JobsPage from './pages/JobsPage';
 
-// Initialize Google Analytics with the given tracking ID
+// Auth queue helpers
+import { clearFailedAuthRequestsQueue, retryFailedAuthRequests } from './lib/api';
+
+// Google Analytics, TODO: expand on this
 ReactGA.initialize('G-7XJBCP6P75');
-// Track the initial page load event
 ReactGA.send({ hitType: 'pageview', page: window.location.pathname });
 
 const App: FC = () => {
-  // Force update mechanism using React's useReducer hook
-  // This is used to trigger a re-render when necessary (e.g. when SciGateway requests it)
+  // Force-update mechanism (used when SciGateway asks for a re-render)
   // There is no direct forceUpdate in functional components, so we increment a state variable instead
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [_, forceUpdate] = React.useReducer((x) => x + 1, 0);
+  const [_, forceUpdate] = useReducer((x) => x + 1, 0);
+
+  const basename = import.meta.env.BASE_URL ?? '/';
 
   function handler(e: Event): void {
     // Handle custom SciGateway events for triggering actions in the app
-    const action = (e as CustomEvent).detail;
-
-    // If SciGateway requests a plugin re-render, trigger a re-render
-    if ('scigateway:api:plugin_rerender'.match(action)) {
-      forceUpdate();
-    }
-
-    // If SciGateway invalidates the token, retry failed authentication requests
-    if ('scigateway:api:invalidate_token'.match(action)) {
-      retryFailedAuthRequests();
-    }
-
-    // If SciGateway requests signout, clear the authentication request queue
-    if ('scigateway:api:signout'.match(action)) {
-      clearFailedAuthRequestsQueue();
+    const action = (e as CustomEvent<{ type?: string }>).detail;
+    switch (action?.type) {
+      // If SciGateway requests a plugin re-render, trigger a re-render
+      case 'scigateway:api:plugin_rerender':
+        forceUpdate();
+        break;
+      // If SciGateway invalidates the token, retry failed authentication requests
+      case 'scigateway:api:invalidate_token':
+        retryFailedAuthRequests();
+        break;
+      // If SciGateway requests signout, clear the authentication request queue
+      case 'scigateway:api:signout':
+        clearFailedAuthRequestsQueue();
+        break;
+      default:
+        break;
     }
   }
 
-  // Attach event listener for SciGateway events when the component mounts
-  React.useEffect(() => {
-    document.addEventListener('scigateway', handler);
-
+  useEffect(() => {
     // Remove event listener when the component unmounts
-    return () => {
-      document.removeEventListener('scigateway', handler);
-    };
+    document.addEventListener('scigateway', handler);
+    return () => document.removeEventListener('scigateway', handler);
   }, []);
 
   return (
-    <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale={'en-gb'}>
+    <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="en-gb">
       <GlobalStyles>
-        <Router basename="/fia">
+        <Router basename={basename}>
           <Switch>
             <Route exact path="/">
               <HomePage />
             </Route>
+
             <Route path="/instruments">
               <Instruments />
             </Route>
+
             <Route path="/reduction-history/:instrumentName">
               <JobsPage />
             </Route>
+
             <Route path="/value-editor/:jobId">
               <ValueEditor />
+            </Route>
+
+            {/* Fallback so "/" always shows something in dev */}
+            <Route path="*">
+              <HomePage />
             </Route>
           </Switch>
         </Router>
