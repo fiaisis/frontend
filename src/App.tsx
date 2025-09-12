@@ -18,7 +18,8 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 // Auth queue helpers
 import { clearFailedAuthRequestsQueue, retryFailedAuthRequests } from './lib/api';
 
-// Google Analytics, TODO: expand on this
+// Google Analytics
+// TODO: expand on this to show more metrics
 ReactGA.initialize('G-7XJBCP6P75');
 ReactGA.send({ hitType: 'pageview', page: window.location.pathname });
 
