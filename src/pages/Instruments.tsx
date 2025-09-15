@@ -10,6 +10,7 @@ import StarIcon from '@mui/icons-material/Star';
 
 // Local data
 import { instruments } from '../lib/InstrumentData';
+import NavArrows from '../components/NavArrows';
 
 const Instruments: React.FC = () => {
   const theme = useTheme();
@@ -66,6 +67,11 @@ const Instruments: React.FC = () => {
 
   return (
     <>
+      <Box>
+        <Button variant="contained">
+          <NavArrows />
+        </Button>
+      </Box>
       {/* Page title */}
       <Typography variant="h3" component="h1" style={{ color: theme.palette.text.primary, padding: '20px' }}>
         ISIS instruments
