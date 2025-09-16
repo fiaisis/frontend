@@ -68,8 +68,15 @@ const Instruments: React.FC = () => {
   return (
     <>
       <Box>
-        <Button variant="contained">
-          <NavArrows />
+        <Button>
+          <NavArrows
+            homeElement={'Home'}
+            separator={<span> {'>'} </span>}
+            activeClasses=""
+            containerClasses=""
+            listClasses="hover:underline mx-2 font-bold"
+            capitaliseLinks
+          />
         </Button>
       </Box>
       {/* Page title */}
