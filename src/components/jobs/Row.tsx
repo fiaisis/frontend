@@ -48,7 +48,7 @@ const ellipsisWrap = {
   maxWidth: '200px',
 };
 
-const DATA_VIEWER_URL = process.env.REACT_APP_FIA_DATA_VIEWER_URL;
+const DATA_VIEWER_URL = (import.meta.env.REACT_APP_FIA_DATA_VIEWER_URL ?? '').replace(/\/$/, '');
 
 const openDataViewer = (jobId: number, instrumentName: string, experimentNumber: number, output: string): void => {
   const url = `${DATA_VIEWER_URL}/view/${instrumentName}/${experimentNumber}/${output}`;
