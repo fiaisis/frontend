@@ -67,10 +67,13 @@ const App: FC = () => {
             <Route path="/instruments">
               <Instruments />
             </Route>
-            <Route path="/reduction-history/:instrumentName">
+            <Route exact path="/reduction-history">
               <JobsPage />
             </Route>
-            <Route path="/value-editor/:jobId">
+            <Route exact path="/reduction-history/:instrumentName">
+              <JobsPage />
+            </Route>
+            <Route path="/reduction-history/:instrumentName/value-editor/:jobId">
               <ValueEditor />
             </Route>
           </Switch>

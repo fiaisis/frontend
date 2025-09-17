@@ -1,16 +1,16 @@
 import { Link, useHistory, useParams } from 'react-router-dom';
 import JobTable from '../components/jobs/JobTable';
-import NavArrows from '../components/NavArrows';
 import { Box, Button, FormControlLabel, SelectChangeEvent, Switch, Typography, useTheme } from '@mui/material';
 import { ArrowBack, Settings } from '@mui/icons-material';
 import React, { ReactElement, useState } from 'react';
 import InstrumentSelector from '../components/jobs/InstrumentSelector';
+import NavArrows from '../components/navigation/Breadcrumbs';
 import InstrumentConfigDrawer from '../components/configsettings/InstrumentConfigDrawer';
 import { jwtDecode } from 'jwt-decode';
 import IMATView from '../components/IMAT/IMATView';
 
 const JobsPage: React.FC = (): ReactElement => {
-  const { instrumentName } = useParams<{ instrumentName: string }>();
+  const { instrumentName } = useParams<{ instrumentName?: string }>();
   const history = useHistory();
   const [selectedInstrument, setSelectedInstrument] = React.useState<string>(instrumentName || 'ALL');
   const theme = useTheme();
@@ -24,7 +24,7 @@ const JobsPage: React.FC = (): ReactElement => {
   const handleInstrumentChange = (event: SelectChangeEvent<string>): void => {
     const newInstrument = event.target.value;
     setSelectedInstrument(newInstrument);
-    history.push(`/reduction-history/${newInstrument}`);
+    history.push(newInstrument === 'ALL' ? `/reduction-history` : `/reduction-history/${newInstrument}`);
   };
   const getUserRole = (): 'staff' | 'user' | null => {
     const token = localStorage.getItem('scigateway:token');
@@ -51,16 +51,19 @@ const JobsPage: React.FC = (): ReactElement => {
 
   return (
     <>
-      <Box display="flex" flexDirection="row">
-        <NavArrows
-          homeElement={'Home'}
-          separator={<span> | </span>}
-          activeClasses=""
-          containerClasses=""
-          listClasses=""
-          capitaliseLinks
-        />
-      </Box>
+      <NavArrows />
+      {/* <Box>
+        <Button>
+          <NavArrows
+            homeElement={'Home'}
+            separator={<span> {'>'} </span>}
+            activeClasses=""
+            containerClasses=""
+            listClasses=""
+            capitaliseLinks
+          />
+        </Button>
+      </Box> */}
       <div style={{ padding: '20px', height: '100%' }}>
         <Box display="flex" alignItems="center" justifyContent="space-between">
           <Box display="flex" flexDirection="column">
@@ -72,7 +75,7 @@ const JobsPage: React.FC = (): ReactElement => {
                 <Typography
                   variant="body1"
                   component={Link}
-                  to="/reduction-history/ALL"
+                  to="/reduction-history"
                   sx={{
                     color: theme.palette.mode === 'dark' ? '#86b4ff' : theme.palette.primary.main,
                     display: 'flex',
