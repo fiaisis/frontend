@@ -114,7 +114,7 @@ const NavArrows: React.FC = () => {
           const destination = `/${pathsList.slice(1, index + 1).join('/')}`;
           console.log(index, label);
           return (
-            <StyledNavArrows>
+            <StyledNavArrows key="">
               <MuiLink component={RouterLink} underline="hover" to={destination} key={index}>
                 {label}
               </MuiLink>
