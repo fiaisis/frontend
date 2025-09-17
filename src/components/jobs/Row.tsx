@@ -671,7 +671,7 @@ const Row: React.FC<{
                     }}
                   >
                     <Link
-                      to={`/value-editor/${job.id}`}
+                      to={`/reduction-history/${job.run.instrument_name}/value-editor/${job.id}`}
                       onClick={() =>
                         ReactGA.event({
                           category: 'Button',
