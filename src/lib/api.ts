@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const isDev = process.env.REACT_APP_DEV_MODE === 'true';
+const isDev = import.meta.env.REACT_APP_DEV_MODE === 'true';
 
 export const fiaApi = axios.create();
 
@@ -24,44 +24,41 @@ export const clearFailedAuthRequestsQueue = (): void => {
   failedAuthRequestQueue = [];
 };
 
-// We need to configure axios via interceptors because if the access token changes without a refresh the previous
-// token will still be used
+// Configure axios via interceptors (token may change)
 fiaApi.interceptors.request.use(async (config) => {
-  config.baseURL = process.env.REACT_APP_FIA_REST_API_URL;
-  config.headers['Authorization'] = `Bearer ${!isDev ? localStorage.getItem('scigateway:token') : ''}`;
+  // NOTE: in vite.config.ts ensure envPrefix includes 'REACT_APP_'
+  // envPrefix: ['VITE_', 'REACT_APP_']
+  config.baseURL = import.meta.env.REACT_APP_FIA_REST_API_URL;
+
+  // avoid "Bearer null"
+  const token = !isDev ? (localStorage.getItem('scigateway:token') ?? '') : '';
+  config.headers = { ...(config.headers ?? {}), Authorization: `Bearer ${token}` };
   return config;
 });
 
-// This should be called when SciGateway successfully refreshes the access token - it retries
-// all requests that failed due to an invalid token
 fiaApi.interceptors.response.use(
   (response) => response,
   (error) => {
     const originalRequest = error.config;
-    // Check if the response is a 403 error
+
     if (error.response?.status === 403) {
-      // Prevent multiple refresh requests
       if (!isFetchingAccessToken) {
         isFetchingAccessToken = true;
-
-        // Request SciGateway to refresh the token
         document.dispatchEvent(
           new CustomEvent('scigateway', {
-            detail: {
-              type: 'scigateway:api:invalidate_token',
-            },
+            detail: { type: 'scigateway:api:invalidate_token' },
           })
         );
       }
 
-      // Add request to queue to be resolved only once SciGateway has successfully
-      // refreshed the token
       return new Promise((resolve, reject) => {
         failedAuthRequestQueue.push((shouldReject?: boolean) => {
           if (shouldReject) reject(error);
           else resolve(fiaApi(originalRequest));
         });
       });
-    } else return Promise.reject(error);
+    }
+
+    return Promise.reject(error);
   }
 );
