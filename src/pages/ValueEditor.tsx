@@ -56,7 +56,9 @@ const ValueEditor: React.FC = () => {
       history.goBack();
       return;
     }
-    const fallback = location.state?.from ?? `/reduction-history/${instrumentName ?? 'ALL'}`;
+    const fallback =
+      location.state?.from ??
+      (instrumentName && instrumentName !== 'ALL' ? `/reduction-history/${instrumentName}` : '/reduction-history');
     history.push(fallback);
   };
 

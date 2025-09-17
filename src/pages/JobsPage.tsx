@@ -9,7 +9,7 @@ import { jwtDecode } from 'jwt-decode';
 import IMATView from '../components/IMAT/IMATView';
 
 const JobsPage: React.FC = (): ReactElement => {
-  const { instrumentName } = useParams<{ instrumentName: string }>();
+  const { instrumentName } = useParams<{ instrumentName?: string }>();
   const history = useHistory();
   const [selectedInstrument, setSelectedInstrument] = React.useState<string>(instrumentName || 'ALL');
   const theme = useTheme();
@@ -23,7 +23,7 @@ const JobsPage: React.FC = (): ReactElement => {
   const handleInstrumentChange = (event: SelectChangeEvent<string>): void => {
     const newInstrument = event.target.value;
     setSelectedInstrument(newInstrument);
-    history.push(`/reduction-history/${newInstrument}`);
+    history.push(newInstrument === 'ALL' ? `/reduction-history` : `/reduction-history/${newInstrument}`);
   };
   const getUserRole = (): 'staff' | 'user' | null => {
     const token = localStorage.getItem('scigateway:token');
@@ -60,7 +60,7 @@ const JobsPage: React.FC = (): ReactElement => {
               <Typography
                 variant="body1"
                 component={Link}
-                to="/reduction-history/ALL"
+                to="/reduction-history"
                 sx={{
                   color: theme.palette.mode === 'dark' ? '#86b4ff' : theme.palette.primary.main,
                   display: 'flex',
