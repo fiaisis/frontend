@@ -56,8 +56,8 @@ const JobsPage: React.FC = (): ReactElement => {
           homeElement={'Home'}
           separator={<span> | </span>}
           activeClasses=""
-          containerClasses="flex items-center bg-gray-100 p-2 rounded-md"
-          listClasses="hover:underline mx-2 font-bold"
+          containerClasses=""
+          listClasses=""
           capitaliseLinks
         />
       </Box>

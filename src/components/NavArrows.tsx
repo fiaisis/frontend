@@ -25,14 +25,16 @@ const NavArrows = ({
 
   return (
     <div>
-      <ul className={containerClasses}>
-        <li className={listClasses}>
-          <Link href={'/fia/'}>{homeElement}</Link>
+      <ul className="flex items-center bg-gray-100 p-2 rounded-md">
+        <li className="relative bg-blue-500 text-white px-4 py-2 clip-path-arrow-first">
+          <Link href={'/fia/'} className="text-white no-underline">
+            {homeElement}
+          </Link>
         </li>
         {pathNames.length > 0 && separator}
         {pathNames.map((link, index) => {
           let href = `/${pathNames.slice(0, index + 1).join('/')}`;
-          const itemClasses = paths === href ? `${listClasses} ${activeClasses}` : listClasses;
+          const isActive = paths === href ? `${listClasses} ${activeClasses}` : listClasses;
           const itemLink = capitaliseLinks ? link[0].toUpperCase() + link.slice(1, link.length) : link;
           console.log(href);
           if (link === 'reduction-history') {
@@ -40,7 +42,11 @@ const NavArrows = ({
           }
           return (
             <React.Fragment key={index}>
-              <li className={itemClasses}>
+              <li
+                className={`relative bg-blue-500 text-white px-4 py-2 ml-[-6px] ${
+                  index === pathNames.length - 1 ? 'clip-path-arrow-last' : 'clip-path-arrow-middle'
+                } ${isActive ? 'bg-blue-700' : ''}`}
+              >
                 <Link href={'/fia' + href}>{itemLink}</Link>
               </li>
               {pathNames.length !== index + 1 && separator}

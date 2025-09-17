@@ -74,7 +74,7 @@ const Instruments: React.FC = () => {
             separator={<span> {'>'} </span>}
             activeClasses=""
             containerClasses=""
-            listClasses="hover:underline mx-2 font-bold"
+            listClasses=""
             capitaliseLinks
           />
         </Button>
