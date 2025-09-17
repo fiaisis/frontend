@@ -8,22 +8,24 @@ export function createRoute(
   helpText: string,
   unauthorised: boolean
 ): void {
-  // By default SciGateway will use logoDarkMode even when light mode is on.
-  // Also, switching between light and dark doesn't alter the header bar
-  // colour unless high contrast mode is also on, so for now only using the
-  // light logo
-  const pluginUrl = process.env.REACT_APP_PLUGIN_URL;
-  const logoUrl = pluginUrl + logoLight;
+  // Explicit plugin base URL, else fall back to Vite's BASE_URL for local dev
+  const pluginBase = (import.meta.env.REACT_APP_PLUGIN_URL ?? import.meta.env.BASE_URL ?? '') as string;
+
+  // Normalise: drop trailing slash on base; ensure the asset path begins with one
+  const base = pluginBase.replace(/\/$/, '');
+  const asset = logoLight.startsWith('/') ? logoLight : `/${logoLight}`;
+  const logoUrl = `${base}${asset}`;
+
   const routeAction = {
     type: 'scigateway:api:register_route',
     payload: {
-      section: section,
+      section,
       link: route,
       plugin: 'fia',
       displayName: label,
-      order: order,
-      helpText: helpText,
-      unauthorised: unauthorised,
+      order,
+      helpText,
+      unauthorised,
       logoLightMode: logoUrl,
       logoDarkMode: logoUrl,
       logoAltText: 'Flexible Interactive Automation',
