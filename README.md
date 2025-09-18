@@ -43,7 +43,7 @@ A `dev-plugin-settings.json` file is also needed in SciGateway's `micro-frontend
 
 ### Specifying environment variables
 
-Unless you have a working API and data-viewer set-up locally you will want the frontend to point to the ones in staging which require your machine to be on the company VPN. The URLs for the `REST_API` and `DATA_VIEWER` are found in [`.env`](https://github.com/fiaisis/frontend/blob/main/.env).
+Unless you have a working API and data-viewer set-up locally, you will want the frontend to point to the ones in staging which require your machine to be on the site VPN. The URLs for the `REST_API` and `DATA_VIEWER` are found in [`.env`](https://github.com/fiaisis/frontend/blob/main/.env).
 
 ## Running the frontend for the first time
 
@@ -55,7 +55,7 @@ Installs the necessary dependencies for the project. You will also need to run t
 
 ### `yarn build`
 
-Builds the app for production. You will need to do this every time the frontend changes as the `build` folder isn't tracked by Git and SciGateway uses this folder to display the frontend.
+Builds the app so it can be used as a plugin. You will need to do this every time the frontend changes as the `build` folder isn't tracked by Git and SciGateway uses this folder to display the frontend.
 
 ### `yarn start`
 
@@ -97,7 +97,7 @@ To access the websites made by the above containers navigate to http://localhost
 
 As an alternative to testing using containers, you can replace the contents of SciGateway's [`res`](https://github.com/ral-facilities/scigateway/tree/release/v2.0.0/public/res) folder with the frontend's [`default.json`](https://github.com/fiaisis/frontend/blob/main/container/default.json) file and [`images`](https://github.com/fiaisis/frontend/tree/main/container/images) folder. This will allow you to see the changes made by running `yarn start`.
 
-<span style="color:red">BEWARE:</span> this can give false positives. And do not push changes to SciGateway.
+<span style="color:red">BEWARE:</span> this can give false positives. And do not push changes to SciGateway as we do not develop for that repo.
 
 ## Package issues
 
