@@ -63,11 +63,14 @@
   },
   "scripts": {
     "lint:js": "eslint --ext=tsx --ext=js --ext=jsx --fix ./src",
-    "start": "craco start",
-    "build": "craco build",
+    "start": "vite",
+    "dev": "vite",
+    "build": "vite build",
+    "build:standalone": "cross-env BUNDLE_REACT=true vite build",
+    "preview": "vite preview --port 5001",
     "test": "craco test --env=jsdom --coverage --watchAll=false",
     "test:watch": "craco test --env=jsdom --watch",
-    "serve:build": "yarn build && serve -l 5001 build",
+    "serve:build": "yarn build && vite preview --port 5001",
     "serve:backend": "node server/server.js",
     "analyze": "yarn build && source-map-explorer build/main.*",
     "postinstall": "husky install",
@@ -102,6 +105,8 @@
     "@types/react-router-dom": "5.3.3",
     "@typescript-eslint/eslint-plugin": "8.16.0",
     "@typescript-eslint/parser": "8.16.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "cross-env": "^7.0.3",
     "cypress": "^13.16.0",
     "cypress-real-events": "^1.13.0",
     "eslint": "8.x",
@@ -113,6 +118,7 @@
     "husky": "9.1.7",
     "lint-staged": "15.2.10",
     "prettier": "3.4.1",
-    "serve": "14.2.4"
+    "serve": "14.2.4",
+    "vite": "^5.4.10"
   }
 }
