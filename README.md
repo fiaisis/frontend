@@ -1,14 +1,14 @@
 # Flexible Interactive Automation frontend
 
-This repository is for the frontend web application side of [FIA](https://github.com/fiaisis) which has been using Yarn, React, Typescript, Material-UI and serves as a plugin for [SciGateway](https://github.com/ral-facilities/scigateway). The application allows for users to view and manage runs and reductions performed by ISIS instruments.
-
-FIA is in the early stages of development and is continuously being worked on.
+This repository is for the frontend web application side of [FIA](https://github.com/fiaisis). It uses Yarn, React, TypeScript, Material UI and serves as a plugin for [SciGateway](https://github.com/ral-facilities/scigateway). The application allows users to view and manage runs and reductions performed by ISIS instruments.
 
 ## Starting development
 
+This project uses Vite for development and builds.
+
 ### Downloading the code
 
-To get started developing for the frontend, first you will need to have [Node.js](https://nodejs.org/en/download/package-manager) and [Yarn](https://classic.yarnpkg.com/en/docs/install) installed and set-up on your machine. When following the install wizards just keep to default settings. You will then want to clone the [SciGateway](https://github.com/ral-facilities/scigateway) repository. From now on stick to SciGateway's `release/v2.0.0` branch (worth noting that `develop` is the repository's default branch).
+To get started developing for the frontend, first you will need to have [Node.js](https://nodejs.org/en/download/package-manager) and [Yarn](https://classic.yarnpkg.com/en/docs/install) installed and set-up on your machine. When following the install wizards just keep to default settings. You will then want to clone the [SciGateway](https://github.com/ral-facilities/scigateway) repository. From now on stick to SciGateway's `release/v2.0.0` branch (worth noting that `develop` is the repository's default branch instead of "main" or "master").
 
 With that done, you can now clone the FIA frontend repository.
 
@@ -18,13 +18,14 @@ The frontend works by building the project and then running it through SciGatewa
 
 ```json
 // settings.json
+
 "plugins": [
-    {
-        "name": "fia",
-        "src": "http://localhost:5001/main.js",
-        "enable": true,
-        "location": "main"
-    }
+  {
+    "name": "fia",
+    "src": "http://localhost:5001/main.js",
+    "enable": true,
+    "location": "main"
+  }
 ]
 ```
 
@@ -32,18 +33,25 @@ A `dev-plugin-settings.json` file is also needed in SciGateway's `micro-frontend
 
 ```json
 // dev-plugin-settings.json
+
+// Replace [path] and [to] with the actual path
 "plugins": [
-    {
-      "type": "static",
-      "location": "C:\\[path]\\[to]\\[frontend\\[build]\\[folder]",
-      "port": 5001
-    }
+  {
+    "type": "static",
+    "location": "C:\\[path]\\[to]\\frontend\\build",
+    "port": 5001
+  }
 ]
 ```
 
 ### Specifying environment variables
 
-Unless you have a working API and data-viewer set-up locally you will want the frontend to point to the ones in staging which require your machine to be on the company VPN. The URLs for the `REST_API` and `DATA_VIEWER` are found in [`.env`](https://github.com/fiaisis/frontend/blob/main/.env).
+Unless you have a working API and data viewer set up locally, point the frontend at the staging services (requires site VPN). Vite uses `VITE_*` environment variables. See [`.env`](.env) for examples:
+
+- `VITE_FIA_REST_API_URL`
+- `VITE_FIA_DATA_VIEWER_URL`
+- `VITE_PLUGIN_URL` (used for certain asset URLs)
+- `VITE_DEV_MODE` (optional)
 
 ## Running the frontend for the first time
 
@@ -51,17 +59,28 @@ Assuming all the previous steps have been completed, you can now use these comma
 
 ### `yarn install`
 
-Installs the necessary dependencies for the project. You will also need to run this after adding new dependencies or switching to branches with a modified [`package.json`](https://github.com/fiaisis/frontend/blob/main/package.json) file.
+Installs the necessary dependencies for the project. Run this after adding new dependencies or switching to branches with a modified [`package.json`](package.json).
 
 ### `yarn build`
 
-Builds the app for production. You will need to do this every time the frontend changes as the `build` folder isn't tracked by Git and SciGateway uses this folder to display the frontend.
+Builds the app with Vite into `build/` for use as a SciGateway plugin. Do this whenever the frontend changes; `build/` is not tracked by Git and SciGateway serves this folder.
+
+Notes:
+
+- The default build expects React and ReactDOM to be provided by the host (externals). If your host does not provide them, use `yarn build:standalone` to bundle React into `build/main.js`.
+- On Windows, SciGateway may lock files in `build/` while serving them. Stop SciGateway before rebuilding to avoid `EPERM` errors.
 
 ### `yarn start`
 
-You can now open a terminal in SciGateway and have it act as a parent application for running the frontend. You only need to run `yarn start` and the FIA frontend will be running on http://localhost:3000/fia.
+Runs the Vite dev server on http://localhost:3000.
 
-If you're testing changes that don't strictly need SciGateway, the API, or the data-viewer, you can run the frontend on its own by running `yarn start` in the frontend directory. This will also be running on http://localhost:3000/fia.
+- For integration testing inside SciGateway, build with `yarn build` and start SciGateway. The plugin will be available at the route configured in SciGateway (typically `/fia`).
+- For quick standalone development (no SciGateway), use http://localhost:3000.
+
+Other useful dev commands:
+
+- `yarn preview`: Serves the built `build/` output for local checks. Do not run this on the same port SciGateway uses (5001) at the same time.
+- `yarn serve:build`: Builds and previews on port 5001. Avoid running while SciGateway is serving the static plugin to prevent port conflicts.
 
 ## Container files
 
@@ -97,13 +116,13 @@ To access the websites made by the above containers navigate to http://localhost
 
 As an alternative to testing using containers, you can replace the contents of SciGateway's [`res`](https://github.com/ral-facilities/scigateway/tree/release/v2.0.0/public/res) folder with the frontend's [`default.json`](https://github.com/fiaisis/frontend/blob/main/container/default.json) file and [`images`](https://github.com/fiaisis/frontend/tree/main/container/images) folder. This will allow you to see the changes made by running `yarn start`.
 
-<span style="color:red">BEWARE:</span> this can give false positives. And do not push changes to SciGateway.
+<span style="color:red">BEWARE:</span> this can give false positives. Do not push changes to SciGateway as we do not develop in that repo.
 
 ## Package issues
 
-When adding new depencies to [`package.json`](https://github.com/fiaisis/frontend/blob/main/package.json) or switching between branches with different dependencies, you will need to run `yarn install` to update the `node_modules` folder.
+When adding new dependencies to [`package.json`](package.json) or switching between branches with different dependencies, run `yarn install` to update the `node_modules` folder.
 
-Occassionally there are issues with package conflicts that require `node_modules` and `yarn.lock` to be deleted and the cache cleared. You can do this with the following command:
+Occasionally there are issues with package conflicts that require `node_modules` and `yarn.lock` to be deleted and the cache cleared. You can do this with the following command:
 
 ```bash
 rm -rf node_modules && yarn cache clean && rm -f yarn.lock && yarn install
@@ -111,23 +130,13 @@ rm -rf node_modules && yarn cache clean && rm -f yarn.lock && yarn install
 
 ## Writing browser tests
 
-The FIA frontend makes use of [Cypress](https://www.cypress.io/) for conducting end-to-end and component testing. These tests will be ran by a [workflow](https://github.com/fiaisis/frontend/blob/main/.github/workflows/cypress_tests.yml) whenever a commit is pushed or a pull request merged. The tests can also be ran locally.
+The FIA frontend uses [Cypress](https://www.cypress.io/) for end-to-end and component testing. These tests run in a [workflow](.github/workflows/cypress_tests.yml) whenever a commit is pushed or a pull request is merged. Tests can also be run locally.
 
-For writing your own tests, follow the guide [here](https://docs.cypress.io/guides/end-to-end-testing/writing-your-first-end-to-end-test). Alternatively you can replicate the methods used in pre-existing `.cy.tsx` files, like the [home page](https://github.com/fiaisis/frontend/blob/main/cypress/component/HomePage.cy.tsx).
+For writing your own tests, follow the guide [here](https://docs.cypress.io/guides/end-to-end-testing/writing-your-first-end-to-end-test). Alternatively, replicate the methods used in pre-existing `.cy.tsx` files, like the [home page](cypress/component/HomePage.cy.tsx).
 
 ## Additional scripts
 
 Here are a few other scripts to be aware of:
-
-### `yarn eject`
-
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
-
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
-
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
 
 ### `yarn cypress open`
 
@@ -139,10 +148,16 @@ Runs Cypress tests headlessly in the terminal. This is useful for running tests 
 
 ### `yarn run-frontend`
 
-Builds the frontend and then navigates to the `SciGateway` folder (assuming it's in an adjacent directory) and runs `yarn start` there. Makes testing easier.
+Builds the frontend and then navigates to the `SciGateway` folder (assuming it's in an adjacent directory) and runs `yarn start` there. A helper script to quickly get SciGateway running with the latest frontend build without needing two terminal windows open.
 
-## Learn More
+## Learn more
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+Read more:
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+- [TypeScript documentation](https://www.typescriptlang.org/docs/)
+- [React documentation](https://react.dev/)
+- [Yarn documentation](https://classic.yarnpkg.com/en/docs/)
+- [Vite documentation](https://vite.dev/guide/)
+- [Material UI documentation](https://mui.com/material-ui/getting-started/overview/)
+- [Cypress documentation](https://docs.cypress.io/guides/overview/why-cypress)
+- [Docker documentation](https://docs.docker.com/get-started/)

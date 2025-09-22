@@ -7,7 +7,7 @@ import * as log from 'loglevel';
 import { createRoute } from './routes';
 import { createWebsocketClient } from './websocket';
 
-if (process.env.NODE_ENV === `development`) {
+if (import.meta.env.DEV) {
   const el = document.getElementById('fia');
   if (el) {
     ReactDOM.render(<App />, document.getElementById('fia'));
@@ -55,15 +55,15 @@ const reactLifecycles = singleSpaReact({
   },
 });
 
-// Route registration events being fired back to the parent
-createRoute(
-  'Reductions', // what section of the menu you want the link to be in
-  'Home page', // text of the link
-  '/fia', // route the link should link to
-  1, // how high up in the section should your link be - ascending order
-  'Data help text', // help text renders a tooltip in the site tour for this link
-  false // whether the link should be visible to unauthenticated users
-);
+// Create route registration events being fired back to the parent
+// Args:
+// 1. What section of the menu route will appear under
+// 2. Text of the link
+// 3. Route to link to
+// 4. How high up in the section should your link be - ascending order
+// 5. Help text renders a tooltip in the site tour for this link
+// 6. Whether the link should be visible to unauthenticated users
+createRoute('Reductions', 'Home page', '/fia', 1, 'Data help text', false);
 createRoute('Reductions', 'Instruments', '/fia/instruments', 2, 'Data help text', false);
 createRoute('Reductions', 'Reduction history', '/fia/reduction-history', 3, 'Data help text', false);
 
