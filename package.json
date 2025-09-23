@@ -6,7 +6,6 @@
     "node": ">=20.19 <21 || >=22.12"
   },
   "dependencies": {
-    "@craco/craco": "7.0.0",
     "@emotion/react": "11.10.0",
     "@emotion/styled": "11.13.5",
     "@material-ui/core": "^4.12.4",
@@ -68,8 +67,8 @@
     "build": "vite build",
     "build:standalone": "cross-env BUNDLE_REACT=true vite build",
     "preview": "vite preview --port 5001",
-    "test": "craco test --env=jsdom --coverage --watchAll=false",
-    "test:watch": "craco test --env=jsdom --watch",
+    "test": "react-scripts test --env=jsdom --coverage --watchAll=false",
+    "test:watch": "react-scripts test --env=jsdom --watch",
     "serve:build": "yarn build && vite preview --port 5001",
     "serve:backend": "node server/server.js",
     "analyze": "yarn build && source-map-explorer build/main.*",
