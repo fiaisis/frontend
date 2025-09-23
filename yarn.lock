@@ -1813,25 +1813,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@craco/craco@npm:7.0.0":
-  version: 7.0.0
-  resolution: "@craco/craco@npm:7.0.0"
-  dependencies:
-    autoprefixer: ^10.4.12
-    cosmiconfig: ^7.0.1
-    cosmiconfig-typescript-loader: ^1.0.0
-    cross-spawn: ^7.0.3
-    lodash: ^4.17.21
-    semver: ^7.3.7
-    webpack-merge: ^5.8.0
-  peerDependencies:
-    react-scripts: ^5.0.0
-  bin:
-    craco: dist/bin/craco.js
-  checksum: d8371d5508a586ea00070d66010e632c8dab2761c2dd51163003e5b4e62e044f5931b081c3d19f02eea187fd970f9ddffeeaefcae004962e63286682e41e86b1
-  languageName: node
-  linkType: hard
-
 "@cspotcode/source-map-support@npm:^0.8.0":
   version: 0.8.1
   resolution: "@cspotcode/source-map-support@npm:0.8.1"
@@ -8644,7 +8625,6 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "fia@workspace:."
   dependencies:
-    "@craco/craco": 7.0.0
     "@cypress/react": ^7.0.3
     "@cypress/webpack-dev-server": ^3.11.0
     "@emotion/react": 11.10.0
@@ -17750,3 +17730,5 @@ __metadata:
   checksum: f2e05b767ed3141e6372a80af9caa4715d60969227f38b1a4370d60bffe153c9c5b33a862905609afc9b375ec57cd40999810d20e5e10229a204e8bde7ef255c
   languageName: node
   linkType: hard
+
+
