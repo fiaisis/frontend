@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrowserRouter } from 'react-router-dom';
 import { mount } from '@cypress/react';
-import HomePage from '../../src/pages/HomePage';
+import Homepage from '../../src/pages/Homepage';
 
 describe('HomePage Component Tests', () => {
   beforeEach(() => {
@@ -9,7 +9,7 @@ describe('HomePage Component Tests', () => {
     // This setup is necessary since HomePage uses Link components for routing
     mount(
       <BrowserRouter>
-        <HomePage />
+        <Homepage />
       </BrowserRouter>
     );
   });

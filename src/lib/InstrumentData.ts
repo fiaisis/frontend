@@ -310,7 +310,7 @@ export const instruments: InstrumentData[] = [
     id: 34,
     name: 'WISH',
     description:
-      'WISH is a long-wavelength diffractometer primarily designed for powder diffraction at long d-spacing in magnetic and large unit-cell systems. The instrument is also suitable for measuring single-crystals. ​',
+      'WISH is a long-wavelength diffractometer primarily designed for powder diffraction at long d-spacing in magnetic and large unit-cell systems. The instrument is also suitable for measuring single-crystals.',
     type: 'Neutron spectroscopy',
     infoPage: 'https://www.isis.stfc.ac.uk/Pages/WISH.aspx',
     scientists: ['Dmitry Khalyavin', 'Fabio Orlandi', 'Pascal Manuel'],
