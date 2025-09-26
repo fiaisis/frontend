@@ -32,39 +32,39 @@ import { useFetchJobs, useFetchTotalCount } from '../../lib/hooks';
 import { fiaApi } from '../../lib/api';
 import FilterContainer from './Filters';
 import { parseJobOutputs } from '../../lib/hooks';
+import { JOB_ROWS_PER_PAGE_OPTIONS, JobRowsPerPage, isJobRowsPerPage } from './constants';
 
 const JobTable: React.FC<{
   selectedInstrument: string;
   currentPage: number;
   handlePageChange: (currentPage: number) => void;
   asUser: boolean;
-}> = ({ selectedInstrument, currentPage, handlePageChange, asUser }) => {
+  rowsPerPage: JobRowsPerPage;
+  handleRowsPerPageChange: (rowsPerPage: JobRowsPerPage, newPage: number) => void;
+  filters: JobQueryFilters;
+  handleFiltersChange: (filters: JobQueryFilters) => void;
+}> = ({
+  selectedInstrument,
+  currentPage,
+  handlePageChange,
+  asUser,
+  rowsPerPage,
+  handleRowsPerPageChange,
+  filters,
+  handleFiltersChange,
+}) => {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [totalRows, setTotalRows] = useState<number>(0);
   const [filtersOpen, setFiltersOpen] = useState<boolean>(false);
-  const getInitialRowsPerPage = (): number => {
-    const stored = localStorage.getItem('jobTableRowsPerPage');
-    return stored ? parseInt(stored, 10) : 25;
-  };
-  const [rowsPerPage, setRowsPerPage] = useState<number>(getInitialRowsPerPage);
-  const previousRowsPerPage = useRef<number>(rowsPerPage);
+  const previousRowsPerPage = useRef<JobRowsPerPage>(rowsPerPage);
+
+  // Cache the last filter JSON so we only reset selection when the filter set
+  // truly changes
+  const filtersStringRef = useRef<string>(JSON.stringify(filters));
+
   const [orderDirection, setOrderDirection] = useState<'asc' | 'desc'>('desc');
   const [orderBy, setOrderBy] = useState<string>('run_start');
   const offset = currentPage * rowsPerPage;
-
-  const [filters, setFiltersState] = useState<JobQueryFilters>({});
-  const previousFilters = useRef<JobQueryFilters>({});
-
-  const setFilters = (newFilters: JobQueryFilters): void => {
-    const prev = previousFilters.current;
-    const filtersChanged = JSON.stringify(prev) !== JSON.stringify(newFilters);
-
-    if (filtersChanged) {
-      previousFilters.current = newFilters;
-      setSelectedJobIds([]);
-      setFiltersState(newFilters);
-    }
-  };
 
   const query = `limit=${rowsPerPage}&offset=${offset}&order_by=${orderBy}&order_direction=${orderDirection}&include_run=true&filters=${JSON.stringify(filters)}&as_user=${asUser}`;
   const countQuery = `filters=${JSON.stringify(filters)}`;
@@ -114,23 +114,75 @@ const JobTable: React.FC<{
     };
   }, []);
 
-  useEffect(() => {
-    fetchJobs();
-    void fetchTotalCount();
-  }, [fetchTotalCount, fetchJobs]);
+  const [hasLoadedCounts, setHasLoadedCounts] = useState(false);
+
+  // Highest index allowed for the pagination control
+  const maxPageIndex = Math.max(0, Math.ceil(totalRows / rowsPerPage) - 1);
 
   useEffect(() => {
+    previousRowsPerPage.current = rowsPerPage;
+  }, [rowsPerPage]);
+
+  // Ensure the current page stays within the valid range and is an integer
+  useEffect(() => {
+    if (!Number.isInteger(currentPage) || currentPage < 0) {
+      handlePageChange(0);
+      return;
+    }
+
+    if (!hasLoadedCounts) {
+      return;
+    }
+
+    if (totalRows === 0) {
+      if (currentPage !== 0) {
+        handlePageChange(0);
+      }
+      return;
+    }
+
+    const boundedPage = Math.min(currentPage, maxPageIndex);
+
+    if (boundedPage !== currentPage) {
+      handlePageChange(boundedPage);
+    }
+  }, [currentPage, handlePageChange, hasLoadedCounts, maxPageIndex, totalRows]);
+
+  useEffect(() => {
+    const nextFiltersString = JSON.stringify(filters);
+    if (filtersStringRef.current !== nextFiltersString) {
+      filtersStringRef.current = nextFiltersString;
+      setSelectedJobIds([]);
+    }
+  }, [filters]);
+
+  // Forward changes upstream only when the payload differs so URL sync stays
+  // stable
+  const onFiltersChange = (newFilters: JobQueryFilters): void => {
+    const nextFiltersString = JSON.stringify(newFilters);
+    if (filtersStringRef.current !== nextFiltersString) {
+      filtersStringRef.current = nextFiltersString;
+      setSelectedJobIds([]);
+      handleFiltersChange(newFilters);
+    }
+  };
+
+  useEffect(() => {
+    if (!Number.isInteger(currentPage) || currentPage < 0) {
+      return;
+    }
     const fetchAll = async (): Promise<void> => {
       setIsLoading(true);
       try {
         await Promise.all([fetchJobs(), fetchTotalCount()]);
       } finally {
         setIsLoading(false);
+        setHasLoadedCounts(true);
       }
     };
-
+    setHasLoadedCounts(false);
     fetchAll();
-  }, [fetchJobs, fetchTotalCount]);
+  }, [currentPage, fetchJobs, fetchTotalCount, maxPageIndex]);
 
   useEffect(() => {
     // Clear selections when the View as user toggle changes
@@ -408,8 +460,20 @@ const JobTable: React.FC<{
               component="div"
               count={totalRows}
               page={currentPage}
-              onPageChange={(_, newPage) => handlePageChange(newPage)}
+              onPageChange={(_, newPage) => {
+                if (!Number.isInteger(newPage) || newPage < 0) {
+                  return;
+                }
+
+                if (totalRows > 0 && newPage > maxPageIndex) {
+                  handlePageChange(maxPageIndex);
+                  return;
+                }
+
+                handlePageChange(newPage);
+              }}
               rowsPerPage={rowsPerPage}
+              rowsPerPageOptions={JOB_ROWS_PER_PAGE_OPTIONS}
               slotProps={{
                 actions: {
                   previousButton: { disabled: isLoading || currentPage === 0 },
@@ -420,20 +484,23 @@ const JobTable: React.FC<{
               }}
               labelRowsPerPage="Rows per page"
               onRowsPerPageChange={(e) => {
-                const newRowsPerPage = parseInt(e.target.value, 10);
+                const newRowsPerPage = Number(e.target.value);
 
-                // Deselect rows only if rowsPerPage is reduced
+                if (!isJobRowsPerPage(newRowsPerPage)) {
+                  return;
+                }
+
+                // Clear job selections if reducing the rows per page value.
+                // Avoids scenarios where selected jobs are not visible
+                // anymore because they're on a later page
                 if (newRowsPerPage < previousRowsPerPage.current) {
                   setSelectedJobIds([]);
                 }
 
-                // Prevents the offset from going out of range and showing an empty table
+                // Calculate what page to show: prevents the scenario where the
+                // offset isbeyond the actual number of jobs
                 const newPage = Math.floor((currentPage * rowsPerPage) / newRowsPerPage);
-                setRowsPerPage(newRowsPerPage);
-
-                // Store the new rows per page in local storage
-                localStorage.setItem('jobTableRowsPerPage', newRowsPerPage.toString());
-                handlePageChange(newPage);
+                handleRowsPerPageChange(newRowsPerPage, newPage);
               }}
             />
           </Box>
@@ -443,7 +510,8 @@ const JobTable: React.FC<{
           showInstrumentFilter={selectedInstrument === 'ALL'}
           visible={filtersOpen}
           handleFiltersClose={() => setFiltersOpen(false)}
-          handleFiltersChange={setFilters}
+          handleFiltersChange={onFiltersChange}
+          appliedFilters={filters}
           jobs={jobs}
           handleBulkRerun={handleBulkRerun}
           isBulkRerunning={isBulkRerunning}
