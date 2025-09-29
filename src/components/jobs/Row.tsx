@@ -353,7 +353,7 @@ const Row: React.FC<{
   };
 
   const runDetails = [
-    { icon: <VpnKey fontSize="small" />, label: 'Reduction ID:', value: job.id },
+    { icon: <VpnKey fontSize="small" />, label: 'Experiment number:', value: job.run.experiment_number },
     { icon: <WorkOutline fontSize="small" />, label: 'Job type:', value: job.type ? formatJobType(job.type) : 'N/A' },
     {
       icon: <ImageAspectRatio fontSize="small" />,
