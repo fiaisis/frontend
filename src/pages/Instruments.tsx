@@ -68,18 +68,6 @@ const Instruments: React.FC = () => {
   return (
     <>
       <NavArrows />
-      {/* <Box>
-        <Button>
-          <NavArrows
-            homeElement={'Home'}
-            separator={<span> {'>'} </span>}
-            activeClasses=""
-            containerClasses=""
-            listClasses=""
-            capitaliseLinks
-          />
-        </Button>
-      </Box> */}
       {/* Page title */}
       <Typography variant="h3" component="h1" style={{ color: theme.palette.text.primary, padding: '20px' }}>
         ISIS instruments

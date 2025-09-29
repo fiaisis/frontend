@@ -52,18 +52,6 @@ const JobsPage: React.FC = (): ReactElement => {
   return (
     <>
       <NavArrows />
-      {/* <Box>
-        <Button>
-          <NavArrows
-            homeElement={'Home'}
-            separator={<span> {'>'} </span>}
-            activeClasses=""
-            containerClasses=""
-            listClasses=""
-            capitaliseLinks
-          />
-        </Button>
-      </Box> */}
       <div style={{ padding: '20px', height: '100%' }}>
         <Box display="flex" alignItems="center" justifyContent="space-between">
           <Box display="flex" flexDirection="column">
