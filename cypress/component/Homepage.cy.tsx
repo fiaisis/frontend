@@ -3,7 +3,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { mount } from '@cypress/react';
 import Homepage from '../../src/pages/Homepage';
 
-describe('HomePage Component Tests', () => {
+describe('Homepage Component Tests', () => {
   beforeEach(() => {
     // Before each test, mount the HomePage component wrapped in BrowserRouter
     // This setup is necessary since HomePage uses Link components for routing
