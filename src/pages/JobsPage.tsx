@@ -4,6 +4,7 @@ import { Box, Button, FormControlLabel, SelectChangeEvent, Switch, Typography, u
 import { ArrowBack, Settings } from '@mui/icons-material';
 import React, { ReactElement, useState } from 'react';
 import InstrumentSelector from '../components/jobs/InstrumentSelector';
+import NavArrows from '../components/navigation/Breadcrumbs';
 import InstrumentConfigDrawer from '../components/configsettings/InstrumentConfigDrawer';
 import { jwtDecode } from 'jwt-decode';
 import IMATView from '../components/IMAT/IMATView';
@@ -49,73 +50,79 @@ const JobsPage: React.FC = (): ReactElement => {
   );
 
   return (
-    <div style={{ padding: '20px', height: '100%' }}>
-      <Box display="flex" alignItems="center" justifyContent="space-between">
-        <Box display="flex" flexDirection="column">
-          <Typography variant="h3" component="h1" style={{ color: theme.palette.text.primary }}>
-            {selectedInstrument} reductions
-          </Typography>
-          <Box sx={{ height: '24px' }}>
-            {selectedInstrument !== 'ALL' && (
-              <Typography
-                variant="body1"
-                component={Link}
-                to="/reduction-history"
-                sx={{
-                  color: theme.palette.mode === 'dark' ? '#86b4ff' : theme.palette.primary.main,
-                  display: 'flex',
-                  textDecoration: 'none',
-                  '&:hover': {
-                    textDecoration: 'underline',
-                  },
-                }}
-              >
-                <ArrowBack style={{ marginRight: '4px' }} />
-                View reductions for all instruments
-              </Typography>
+    <>
+      <NavArrows />
+      <div style={{ padding: '20px', height: '100%' }}>
+        <Box display="flex" alignItems="center" justifyContent="space-between">
+          <Box display="flex" flexDirection="column">
+            <Typography variant="h3" component="h1" style={{ color: theme.palette.text.primary }}>
+              {selectedInstrument} reductions
+            </Typography>
+            <Box sx={{ height: '24px' }}>
+              {selectedInstrument !== 'ALL' && (
+                <Typography
+                  variant="body1"
+                  component={Link}
+                  to="/reduction-history"
+                  sx={{
+                    color: theme.palette.mode === 'dark' ? '#86b4ff' : theme.palette.primary.main,
+                    display: 'flex',
+                    textDecoration: 'none',
+                    '&:hover': {
+                      textDecoration: 'underline',
+                    },
+                  }}
+                >
+                  <ArrowBack style={{ marginRight: '4px' }} />
+                  View reductions for all instruments
+                </Typography>
+              )}
+            </Box>
+          </Box>
+          <Box display="flex" alignItems="center">
+            {userRole === 'staff' && (
+              <FormControlLabel
+                control={<Switch checked={asUser} onChange={() => setAsUser(!asUser)} color="secondary" />}
+                label={
+                  <Typography variant="body1" color={theme.palette.text.primary}>
+                    View as user
+                  </Typography>
+                }
+                sx={{ marginRight: '16px' }}
+              />
             )}
+            <Button
+              variant="contained"
+              startIcon={<Settings />}
+              onClick={() => setConfigDrawerOpen(true)}
+              disabled={!showConfigButton}
+              sx={{ marginRight: '20px' }}
+            >
+              Config
+            </Button>
+            <InstrumentSelector
+              selectedInstrument={selectedInstrument}
+              handleInstrumentChange={handleInstrumentChange}
+            />
           </Box>
         </Box>
-        <Box display="flex" alignItems="center">
-          {userRole === 'staff' && (
-            <FormControlLabel
-              control={<Switch checked={asUser} onChange={() => setAsUser(!asUser)} color="secondary" />}
-              label={
-                <Typography variant="body1" color={theme.palette.text.primary}>
-                  View as user
-                </Typography>
-              }
-              sx={{ marginRight: '16px' }}
-            />
-          )}
-          <Button
-            variant="contained"
-            startIcon={<Settings />}
-            onClick={() => setConfigDrawerOpen(true)}
-            disabled={!showConfigButton}
-            sx={{ marginRight: '20px' }}
-          >
-            Config
-          </Button>
-          <InstrumentSelector selectedInstrument={selectedInstrument} handleInstrumentChange={handleInstrumentChange} />
-        </Box>
-      </Box>
-      <InstrumentConfigDrawer
-        drawerOpen={configDrawerOpen}
-        setDrawerOpen={setConfigDrawerOpen}
-        selectedInstrument={selectedInstrument}
-      />
-      {selectedInstrument === 'IMAT' ? (
-        <IMATView />
-      ) : (
-        <JobTable
+        <InstrumentConfigDrawer
+          drawerOpen={configDrawerOpen}
+          setDrawerOpen={setConfigDrawerOpen}
           selectedInstrument={selectedInstrument}
-          currentPage={currentPage}
-          handlePageChange={setCurrentPage}
-          asUser={asUser}
         />
-      )}
-    </div>
+        {selectedInstrument === 'IMAT' ? (
+          <IMATView />
+        ) : (
+          <JobTable
+            selectedInstrument={selectedInstrument}
+            currentPage={currentPage}
+            handlePageChange={setCurrentPage}
+            asUser={asUser}
+          />
+        )}
+      </div>
+    </>
   );
 };
 

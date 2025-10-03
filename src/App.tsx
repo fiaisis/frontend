@@ -73,7 +73,7 @@ const App: FC = () => {
             <Route exact path="/reduction-history/:instrumentName">
               <JobsPage />
             </Route>
-            <Route path="/reduction-history/:instrumentName/value-editor/:jobId">
+            <Route path="/reduction-history/:instrumentName/value-editor-:jobId">
               <ValueEditor />
             </Route>
           </Switch>
