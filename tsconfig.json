@@ -15,5 +15,5 @@
     "noEmit": true,
     "jsx": "preserve"
   },
-  "include": ["src", "cypress/component/HomePage.cy.tsx"]
+  "include": ["src", "cypress/component/Homepage.cy.tsx"]
 }
