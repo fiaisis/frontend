@@ -91,7 +91,6 @@ const NavArrows: React.FC = () => {
           '& span': {
             display: 'block',
             whiteSpace: 'nowrap',
-            // TODO: Remove use of "vw" here?
             maxWidth: '20vw',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
@@ -110,7 +109,8 @@ const NavArrows: React.FC = () => {
           if (label === 'reduction-history') {
             label = 'Reduction history';
           }
-          if (label === 'value-editor') {
+          const regex = new RegExp('^value-editor-(\\d+)$', 'i');
+          if (label.match(regex)) {
             label = 'Value editor';
           }
           if (isLast) {
