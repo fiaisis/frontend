@@ -352,8 +352,11 @@ const Row: React.FC<{
     return formattedType.charAt(0).toUpperCase() + formattedType.slice(1).toLowerCase();
   };
 
+  const mantid_version = 12345
+
   const runDetails = [
     { icon: <VpnKey fontSize="small" />, label: 'Experiment number:', value: job.run.experiment_number },
+    { icon: <VpnKey fontSize="small" />, label: 'Mantid version:', value: mantid_version },
     { icon: <WorkOutline fontSize="small" />, label: 'Job type:', value: job.type ? formatJobType(job.type) : 'N/A' },
     {
       icon: <ImageAspectRatio fontSize="small" />,
