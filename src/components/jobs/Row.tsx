@@ -1,4 +1,4 @@
-import React, { ReactElement, useRef, useState } from 'react';
+import React, { ReactElement, useCallback, useRef, useState } from 'react';
 import {
   Alert,
   Box,
@@ -352,11 +352,23 @@ const Row: React.FC<{
     return formattedType.charAt(0).toUpperCase() + formattedType.slice(1).toLowerCase();
   };
 
-  const mantid_version = 12345
+  const [mantidVersion, setMantidVersion] = useState<string>('');
+
+  const fetchRunners = useCallback(async (): Promise<void> => {
+      fiaApi
+        .get('/jobs/runners')
+        .then((res) => res.data)
+        .then((data) => {
+          setMantidVersion(data[0]);
+        })
+        .catch((err) => console.error('Failed to fetch runner versions:', err));
+    }, []);
+
+  fetchRunners();
 
   const runDetails = [
     { icon: <VpnKey fontSize="small" />, label: 'Experiment number:', value: job.run.experiment_number },
-    { icon: <VpnKey fontSize="small" />, label: 'Mantid version:', value: mantid_version },
+    { icon: <VpnKey fontSize="small" />, label: 'Mantid version:', value: mantidVersion },
     { icon: <WorkOutline fontSize="small" />, label: 'Job type:', value: job.type ? formatJobType(job.type) : 'N/A' },
     {
       icon: <ImageAspectRatio fontSize="small" />,
