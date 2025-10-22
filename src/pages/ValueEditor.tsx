@@ -1,16 +1,16 @@
 // React components
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { useParams, useHistory, useLocation } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 
 // Material UI components
 import { Alert, Box, Button, CircularProgress, Snackbar, Tab, Tabs, Typography, useTheme } from '@mui/material';
-import ArrowBack from '@mui/icons-material/ArrowBack';
 
 // Monaco components
 import Editor from '@monaco-editor/react';
 import { fiaApi } from '../lib/api';
 
 import NavArrows from '../components/navigation/Breadcrumbs';
+import { RunnerVersionMap } from '../lib/types';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -35,16 +35,11 @@ const a11yProps = (index: number): { id: string; 'aria-controls': string } => {
   };
 };
 
-type LocationState = { from?: string };
-
 const ValueEditor: React.FC = () => {
   const theme = useTheme();
-  const history = useHistory();
-  const location = useLocation<LocationState>();
-
   const [value, setValue] = useState<number>(0);
   const [runnerVersion, setRunnerVersion] = useState<string>('');
-  const [runners, setRunners] = useState<string[]>([]);
+  const [runners, setRunners] = useState<RunnerVersionMap>({});
   const { jobId } = useParams<{ jobId: string }>();
   const [scriptValue, setScriptValue] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
@@ -52,17 +47,6 @@ const ValueEditor: React.FC = () => {
   const rerunSuccessful = useRef<boolean | null>(null);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const userModified = useRef(false);
-
-  const handleBackClick = (): void => {
-    if (window.history.length > 1) {
-      history.goBack();
-      return;
-    }
-    const fallback =
-      location.state?.from ??
-      (instrumentName && instrumentName !== 'ALL' ? `/reduction-history/${instrumentName}` : '/reduction-history');
-    history.push(fallback);
-  };
 
   const fetchReduction = useCallback(async (): Promise<void> => {
     setLoading(true);
@@ -90,8 +74,22 @@ const ValueEditor: React.FC = () => {
       .get('/jobs/runners')
       .then((res) => res.data)
       .then((data) => {
-        setRunners(data);
-        setRunnerVersion(data[0]);
+        if (!data || typeof data !== 'object' || Array.isArray(data)) {
+          console.error('Unexpected runner version response format:', data);
+          setRunners({});
+          setRunnerVersion('');
+          return;
+        }
+
+        const runnerData = data as RunnerVersionMap;
+        setRunners(runnerData);
+
+        const runnerKeys = Object.keys(runnerData);
+        if (runnerKeys.length > 0) {
+          setRunnerVersion((current) => (current && runnerData[current] ? current : runnerKeys[0]));
+        } else {
+          setRunnerVersion('');
+        }
       })
       .catch((err) => console.error('Failed to fetch runner versions:', err));
   }, []);
@@ -109,8 +107,10 @@ const ValueEditor: React.FC = () => {
   };
 
   const handleRerun = async (): Promise<void> => {
+    if (!runnerVersion) return;
+
     setLoading(true);
-    const runnerImage = `ghcr.io/fiaisis/mantid:${runnerVersion}`;
+    const runnerImage = `ghcr.io/fiaisis/mantid@${runnerVersion}`;
     fiaApi
       .post('/job/rerun', { job_id: jobId, runner_image: runnerImage, script: scriptValue })
       .then(() => (rerunSuccessful.current = true))
@@ -134,28 +134,6 @@ const ValueEditor: React.FC = () => {
           <Typography variant="h3" component="h1" style={{ color: theme.palette.text.primary }}>
             {instrumentName} Job {jobId} values
           </Typography>
-
-          <Box sx={{ height: '24px', mb: 1 }}>
-            <Typography
-              component="button"
-              onClick={handleBackClick}
-              sx={{
-                color: theme.palette.mode === 'dark' ? '#86b4ff' : theme.palette.primary.main,
-                display: 'flex',
-                alignItems: 'center',
-                textDecoration: 'none',
-                cursor: 'pointer',
-                background: 'transparent',
-                border: 0,
-                p: 0,
-                font: 'inherit',
-                '&:hover': { textDecoration: 'underline' },
-              }}
-            >
-              <ArrowBack style={{ marginRight: '4px' }} />
-              Back to previous page
-            </Typography>
-          </Box>
 
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -194,13 +172,14 @@ const ValueEditor: React.FC = () => {
               <select
                 value={runnerVersion}
                 onChange={handleRunnerVersionChange}
+                disabled={Object.keys(runners).length === 0}
                 style={{
                   padding: '8px',
                   borderRadius: '4px',
                 }}
               >
-                {runners.map((version) => (
-                  <option key={version} value={version}>
+                {Object.entries(runners).map(([sha, version]) => (
+                  <option key={sha} value={sha}>
                     Mantid {version}
                   </option>
                 ))}
@@ -210,7 +189,7 @@ const ValueEditor: React.FC = () => {
               variant="contained"
               color="primary"
               onClick={handleRerun}
-              disabled={loading}
+              disabled={loading || !runnerVersion}
               sx={{ width: 170, height: 38 }}
             >
               {loading ? <CircularProgress size={24} color="inherit" /> : 'Rerun with changes'}
