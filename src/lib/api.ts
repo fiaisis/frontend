@@ -3,6 +3,9 @@ import axios from 'axios';
 const isDev = import.meta.env.DEV || import.meta.env.VITE_DEV_MODE === 'true';
 
 export const fiaApi = axios.create();
+export const plottingApi = axios.create({
+  baseURL: import.meta.env.VITE_PLOTTING_API_URL,
+});
 
 let isFetchingAccessToken = false;
 let failedAuthRequestQueue: ((shouldReject?: boolean) => void)[] = [];
