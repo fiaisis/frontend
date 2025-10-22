@@ -352,24 +352,27 @@ const Row: React.FC<{
     return formattedType.charAt(0).toUpperCase() + formattedType.slice(1).toLowerCase();
   };
 
-  const [mantidVersion, setMantidVersion] = useState<string>('');
+  const [mantidVersionMap, setMantidVersion] = useState<Map<string, string>>(new Map());
 
   const fetchRunners = useCallback(async (): Promise<void> => {
-      fiaApi
-        .get('/jobs/runners')
-        .then((res) => res.data)
-        .then((data) => {
-          setMantidVersion(data[0]);
-        })
-        .catch((err) => console.error('Failed to fetch runner versions:', err));
+      try{
+        const res = await fiaApi.get('/jobs/runners');
+        // Assume res.data is an object with key-value pairs
+        const map = new Map<string, string>(
+          Object.entries(res.data));
+          setMantidVersion(map);
+        } catch(err) {
+          console.error('Failed to fetch runner versions:', err)
+        }
     }, []);
 
   fetchRunners();
+  const runnerSha = job.runner_image.split("@");
 
   const runDetails = [
     { icon: <VpnKey fontSize="small" />, label: 'Experiment number:', value: job.run.experiment_number },
-    { icon: <VpnKey fontSize="small" />, label: 'Mantid version:', value: mantidVersion },
     { icon: <WorkOutline fontSize="small" />, label: 'Job type:', value: job.type ? formatJobType(job.type) : 'N/A' },
+    { icon: <ImageAspectRatio fontSize="small" />, label: 'Mantid version:', value: mantidVersionMap.get(runnerSha[1]) },
     {
       icon: <ImageAspectRatio fontSize="small" />,
       label: 'Runner image:',
