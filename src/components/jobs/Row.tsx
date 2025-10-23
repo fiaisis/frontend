@@ -1,4 +1,4 @@
-import React, { ReactElement, useCallback, useRef, useState } from 'react';
+import React, { ReactElement, useCallback, useEffect, useRef, useState } from 'react';
 import {
   Alert,
   Box,
@@ -365,8 +365,11 @@ const Row: React.FC<{
           console.error('Failed to fetch runner versions:', err)
         }
     }, []);
-
-  fetchRunners();
+  
+  useEffect(() => {
+    fetchRunners();
+  }, []);
+  
   const runnerSha = job.runner_image.split("@");
 
   const runDetails = [
