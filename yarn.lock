@@ -1717,6 +1717,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@babel/runtime@npm:^7.27.1":
+  version: 7.28.4
+  resolution: "@babel/runtime@npm:7.28.4"
+  checksum: 934b0a0460f7d06637d93fcd1a44ac49adc33518d17253b5a0b55ff4cb90a45d8fe78bf034b448911dbec7aff2a90b918697559f78d21c99ff8dbadae9565b55
+  languageName: node
+  linkType: hard
+
 "@babel/template@npm:^7.25.9, @babel/template@npm:^7.3.3":
   version: 7.25.9
   resolution: "@babel/template@npm:7.25.9"

@@ -671,6 +671,22 @@ const Row: React.FC<{
                     }}
                   >
                     <Link
+                      to={`/experiment-viewer/${job.run.instrument_name}/${job.run.experiment_number}`}
+                      onClick={() =>
+                        ReactGA.event({
+                          category: 'Button',
+                          action: 'Click',
+                          label: 'Experiment viewer button',
+                          value: job.id,
+                        })
+                      }
+                      style={{ textDecoration: 'none' }}
+                    >
+                      <Button variant="contained" sx={{ flexShrink: 0, whiteSpace: 'nowrap' }}>
+                        Experiment viewer
+                      </Button>
+                    </Link>
+                    <Link
                       to={`/reduction-history/${job.run.instrument_name}/value-editor-${job.id}`}
                       onClick={() =>
                         ReactGA.event({
