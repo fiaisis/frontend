@@ -12,11 +12,20 @@ import Grid from '@mui/material/Grid2';
 import BackgroundImage from '../images/background.jpg';
 import GreenSwirl1Image from '../images/green-swirl1.png';
 import GreenSwirl2Image from '../images/green-swirl2.png';
-import Decal1Image from '../images/decal1.svg';
-import Decal2Image from '../images/decal2.svg';
-import Decal2DarkImage from '../images/decal2-dark.svg';
-import Decal2DarkHCImage from '../images/decal2-darkhc.svg';
+import Decal1Svg from '../images/decal1.svg?raw';
+import Decal2Svg from '../images/decal2.svg?raw';
+import Decal2DarkSvg from '../images/decal2-dark.svg?raw';
+import Decal2DarkHCSvg from '../images/decal2-darkhc.svg?raw';
 import FacilityImage from '../images/facility.jpg';
+
+// ?raw on SVGs tells Vite to skip the URL/file handling and instead give
+// the file contents as a plain string at build time
+const svgToDataUri = (svg: string): string => `data:image/svg+xml,${encodeURIComponent(svg)}`;
+
+const Decal1Image = svgToDataUri(Decal1Svg);
+const Decal2Image = svgToDataUri(Decal2Svg);
+const Decal2DarkImage = svgToDataUri(Decal2DarkSvg);
+const Decal2DarkHCImage = svgToDataUri(Decal2DarkHCSvg);
 
 const backgroundTitleStyles = {
   color: '#FFFFFF',
