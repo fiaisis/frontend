@@ -1,4 +1,4 @@
-import React, { ReactElement, useCallback, useEffect, useRef, useState } from 'react';
+import React, { ReactElement, useRef, useState } from 'react';
 import {
   Alert,
   Box,
@@ -17,7 +17,7 @@ import {
   Typography,
   useTheme,
 } from '@mui/material';
-import { Job } from '../../lib/types';
+import { Job, MantidVersionMap } from '../../lib/types';
 import {
   CheckCircleOutline,
   Download,
@@ -226,7 +226,8 @@ const Row: React.FC<{
   toggleSelection: (jobId: number) => void;
   submitRerun: (job: Job) => Promise<void>;
   refreshJobs: () => void;
-}> = ({ job, showInstrumentColumn, index, submitRerun, refreshJobs, isSelected, toggleSelection }) => {
+  mantidVersions: MantidVersionMap;
+}> = ({ job, showInstrumentColumn, index, submitRerun, refreshJobs, isSelected, toggleSelection, mantidVersions }) => {
   const [open, setOpen] = useState(false);
   const theme = useTheme();
   const [loading, setLoading] = useState(false);
@@ -347,62 +348,64 @@ const Row: React.FC<{
     };
   };
 
-  const formatJobType = (jobType: string): string => {
-    const formattedType = jobType.replace('JobType.', '');
-    return formattedType.charAt(0).toUpperCase() + formattedType.slice(1).toLowerCase();
-  };
-
-  const [mantidVersionMap, setMantidVersion] = useState<Map<string, string>>(new Map());
-
-  const fetchRunners = useCallback(async (): Promise<void> => {
-      try{
-        const res = await fiaApi.get('/jobs/runners');
-        // Assume res.data is an object with key-value pairs
-        const map = new Map<string, string>(
-          Object.entries(res.data));
-          setMantidVersion(map);
-        } catch(err) {
-          console.error('Failed to fetch runner versions:', err)
-        }
-    }, []);
-  
-  useEffect(() => {
-    fetchRunners();
-  }, []);
-  
-  const runnerSha = job.runner_image.split("@");
-
+  const runnerImageUrl = job.runner_image && job.runner_image.includes('@') ? job.runner_image.split('@')[1] : null;
+  const mantidVersion = runnerImageUrl ? (mantidVersions[runnerImageUrl] ?? null) : null;
   const runDetails = [
-    { icon: <VpnKey fontSize="small" />, label: 'Experiment number:', value: job.run.experiment_number },
-    { icon: <WorkOutline fontSize="small" />, label: 'Job type:', value: job.type ? formatJobType(job.type) : 'N/A' },
-    { icon: <ImageAspectRatio fontSize="small" />, label: 'Mantid version:', value: mantidVersionMap.get(runnerSha[1]) },
+    {
+      icon: <VpnKey fontSize="small" />,
+      label: 'Experiment number:',
+      value: job.run.experiment_number || '—',
+    },
+    {
+      icon: <WorkOutline fontSize="small" />,
+      label: 'Job type:',
+      value: job.type
+        ? job.type
+            .replace('JobType.', '')
+            .toLowerCase()
+            .replace(/^\w/, (c) => c.toUpperCase())
+        : '—',
+    },
+    {
+      icon: <ImageAspectRatio fontSize="small" />,
+      label: 'Mantid version:',
+      value: mantidVersion || '—',
+    },
     {
       icon: <ImageAspectRatio fontSize="small" />,
       label: 'Runner image:',
-      value: job.runner_image || 'N/A',
+      value: job.runner_image || '—',
     },
-    { icon: <Schema fontSize="small" />, label: 'Instrument:', value: job.run?.instrument_name || 'N/A' },
+    {
+      icon: <Schema fontSize="small" />,
+      label: 'Instrument:',
+      value: job.run?.instrument_name || '—',
+    },
     {
       icon: <Schedule fontSize="small" />,
       label: 'Reduction start:',
-      value: formatUtcForLocale(job.start),
+      value: formatUtcForLocale(job.start) || '—',
     },
     {
       icon: <Schedule fontSize="small" />,
       label: 'Reduction end:',
-      value: formatUtcForLocale(job.end),
+      value: formatUtcForLocale(job.end) || '—',
     },
     {
       icon: <StackedBarChart fontSize="small" />,
       label: 'Good frames:',
-      value: job.run?.good_frames?.toLocaleString() || 'N/A',
+      value: job.run?.good_frames?.toLocaleString() || '—',
     },
     {
       icon: <StackedBarChart fontSize="small" />,
       label: 'Raw frames:',
-      value: job.run?.raw_frames?.toLocaleString() || 'N/A',
+      value: job.run?.raw_frames?.toLocaleString() || '—',
     },
-    { icon: <People fontSize="small" />, label: 'Users:', value: job.run?.users || 'N/A' },
+    {
+      icon: <People fontSize="small" />,
+      label: 'Users:',
+      value: job.run?.users || '—',
+    },
   ];
 
   return (

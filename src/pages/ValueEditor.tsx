@@ -10,7 +10,7 @@ import Editor from '@monaco-editor/react';
 import { fiaApi } from '../lib/api';
 
 import NavArrows from '../components/navigation/Breadcrumbs';
-import { RunnerVersionMap } from '../lib/types';
+import { MantidVersionMap } from '../lib/types';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -39,7 +39,7 @@ const ValueEditor: React.FC = () => {
   const theme = useTheme();
   const [value, setValue] = useState<number>(0);
   const [runnerVersion, setRunnerVersion] = useState<string>('');
-  const [runners, setRunners] = useState<RunnerVersionMap>({});
+  const [runners, setRunners] = useState<MantidVersionMap>({});
   const { jobId } = useParams<{ jobId: string }>();
   const [scriptValue, setScriptValue] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
@@ -81,7 +81,7 @@ const ValueEditor: React.FC = () => {
           return;
         }
 
-        const runnerData = data as RunnerVersionMap;
+        const runnerData = data as MantidVersionMap;
         setRunners(runnerData);
 
         const runnerKeys = Object.keys(runnerData);

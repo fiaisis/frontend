@@ -25,7 +25,7 @@ import {
   KeyboardArrowUp,
 } from '@mui/icons-material';
 import React, { useEffect, useState, useRef } from 'react';
-import { Job, JobQueryFilters } from '../../lib/types';
+import { Job, JobQueryFilters, MantidVersionMap } from '../../lib/types';
 import Row from './Row';
 import JobTableHead from './JobTableHead';
 import { useFetchJobs, useFetchTotalCount } from '../../lib/hooks';
@@ -84,6 +84,35 @@ const JobTable: React.FC<{
   const [downloadErrorOpen, setDownloadErrorOpen] = useState(false);
   const [downloadErrorMessage, setDownloadErrorMessage] = useState('');
   const [downloadingBulk, setDownloadingBulk] = useState(false);
+  const [mantidVersions, setMantidVersions] = useState<MantidVersionMap>({});
+
+  useEffect(() => {
+    // Keep async response from touching state once the component unmounts.
+    let isMounted = true;
+
+    const fetchMantidVersions = async (): Promise<void> => {
+      try {
+        const { data } = await fiaApi.get('/jobs/runners');
+
+        // Bail out on malformed responses to avoid runtime errors when the map is used.
+        if (!data || typeof data !== 'object' || Array.isArray(data)) {
+          console.error('Unexpected Mantid version response format:', data);
+          if (isMounted) setMantidVersions({});
+          return;
+        }
+
+        if (isMounted) setMantidVersions(data as MantidVersionMap);
+      } catch (error) {
+        console.error('Failed to fetch Mantid versions:', error);
+      }
+    };
+
+    fetchMantidVersions();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     fetchJobs();
@@ -484,6 +513,7 @@ const JobTable: React.FC<{
                     refreshJobs={refreshJobs}
                     isSelected={selectedJobIds.includes(job.id)}
                     toggleSelection={toggleJobSelection}
+                    mantidVersions={mantidVersions}
                   />
                 ))
               )}
