@@ -49,4 +49,4 @@ export interface JobQueryFilters {
   experiment_number_before?: number;
 }
 
-export type RunnerVersionMap = Record<string, string>;
+export type MantidVersionMap = Record<string, string>;
