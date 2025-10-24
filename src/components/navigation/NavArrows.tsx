@@ -27,21 +27,18 @@ const NavArrows: React.FC = () => {
               position: 'relative',
 
               /* Positions breadcrumb */
-              lineHeight: '28px',
-              padding: '0 4px 0 16px',
+              lineHeight: '32px',
+              padding: '4px 10px 4px 20px',
               textAlign: 'center',
 
               /* Add the arrow between breadcrumbs */
               '&:after': {
                 content: '""',
                 position: 'absolute',
-                top: '3px',
-                // half the width/height
-                right: '-11px',
-                // width/height same as lineHeight - 2* top height
-                height: '22px',
-                width: '22px',
-                // change skew to alter how shallow the arrow is
+                top: '6px',
+                right: '-14px',
+                height: '28px',
+                width: '28px',
                 transform: 'scale(0.707) rotate(45deg) skew(15deg,15deg)',
                 zIndex: 1,
                 boxShadow: `2px -2px 0 2px ${theme.palette.background.default}`,
@@ -73,14 +70,14 @@ const NavArrows: React.FC = () => {
           },
           '& li:first-of-type': {
             '& a, p': {
-              paddingLeft: '14px',
+              paddingLeft: '18px',
             },
           },
           '& li:last-of-type': {
             '& a, p': {
               /* Curve the last breadcrumb border */
               borderRadius: '0 5px 5px 0',
-              paddingLeft: '14px',
+              paddingLeft: '18px',
               '&:after': {
                 content: 'none',
               },
