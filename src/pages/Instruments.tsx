@@ -10,7 +10,7 @@ import StarIcon from '@mui/icons-material/Star';
 
 // Local data
 import { instruments } from '../lib/InstrumentData';
-import NavArrows from '../components/navigation/Breadcrumbs';
+import NavArrows from '../components/navigation/NavArrows';
 
 const Instruments: React.FC = () => {
   const theme = useTheme();

@@ -9,7 +9,7 @@ import { Alert, Box, Button, CircularProgress, Snackbar, Tab, Tabs, Typography, 
 import Editor from '@monaco-editor/react';
 import { fiaApi } from '../lib/api';
 
-import NavArrows from '../components/navigation/Breadcrumbs';
+import NavArrows from '../components/navigation/NavArrows';
 import { MantidVersionMap } from '../lib/types';
 
 interface TabPanelProps {
