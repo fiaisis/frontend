@@ -35,7 +35,7 @@ import {
   WorkOutline,
 } from '@mui/icons-material';
 import ReactGA from 'react-ga4';
-import { Link } from 'react-router-dom';
+import { Link as RouterLink, Link } from 'react-router-dom';
 import Grid from '@mui/material/Grid2';
 import { fiaApi } from '../../lib/api';
 import { parseJobOutputs } from '../../lib/hooks';
@@ -694,6 +694,22 @@ const Row: React.FC<{
                       whiteSpace: 'nowrap',
                     }}
                   >
+                    <Link
+                      to={`/experiment-viewer/${job.run.instrument_name}/${job.run.experiment_number}`}
+                      onClick={() =>
+                        ReactGA.event({
+                          category: 'Button',
+                          action: 'Click',
+                          label: 'Experiment viewer button',
+                          value: job.id,
+                        })
+                      }
+                      style={{ textDecoration: 'none' }}
+                    >
+                      <Button variant="contained" sx={{ flexShrink: 0, whiteSpace: 'nowrap' }}>
+                        Experiment viewer
+                      </Button>
+                    </Link>
                     <Link
                       to={`/reduction-history/${job.run.instrument_name}/value-editor-${job.id}`}
                       onClick={() =>
