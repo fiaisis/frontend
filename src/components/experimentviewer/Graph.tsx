@@ -7,6 +7,7 @@ interface GraphProps {
   filesToBePlotted: FileToPlot[];
   instrument: string;
   experimentNumber: string;
+  swapAxes?: boolean;
 }
 
 export type GraphData =
@@ -104,6 +105,7 @@ export const Graph = (props: GraphProps): React.ReactElement => {
           visualMapMin={visualMapMin}
           visualMapMax={visualMapMax}
           fileTitle={axisSource?.fileName}
+          swapAxes={props.swapAxes}
         />
       ) : (
         <></>

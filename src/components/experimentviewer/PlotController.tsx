@@ -1,4 +1,4 @@
-import { Box, Grid2, Stack, TextField, useTheme } from '@mui/material';
+import { Box, Grid2, Stack, TextField, useTheme, Switch, FormControlLabel } from '@mui/material';
 import { SelectedFile } from './SelectedFile';
 import React, { useEffect } from 'react';
 import { plottingApi } from '../../lib/plotting-api';
@@ -38,6 +38,7 @@ const PlotController = (props: PlotControllerProps): React.ReactElement => {
   const [slicesInput, setSlicesInput] = React.useState<string>('');
   const [vMinInput, setVMinInput] = React.useState<string>('');
   const [vMaxInput, setVMaxInput] = React.useState<string>('');
+  const [swapAxes, setSwapAxes] = React.useState<boolean>(false);
 
   const heatmapActive = React.useMemo(() => files.some((f) => f.plotted && f.plotAsHeatmap), [files]);
 
@@ -173,6 +174,10 @@ const PlotController = (props: PlotControllerProps): React.ReactElement => {
                   placeholder="e.g. 0,1,2"
                   sx={{ minWidth: 200 }}
                 />
+                <FormControlLabel
+                  control={<Switch checked={swapAxes} onChange={(_, v) => setSwapAxes(v)} />}
+                  label="Swap axes (X↔Y)"
+                />
                 {heatmapActive && (
                   <Stack direction={'row'} spacing={2} alignItems={'center'}>
                     <TextField
@@ -201,6 +206,7 @@ const PlotController = (props: PlotControllerProps): React.ReactElement => {
               filesToBePlotted={files.filter((file) => file.plotted)}
               experimentNumber={props.experimentNumber}
               instrument={props.instrument}
+              swapAxes={swapAxes}
             />
           </Box>
         </Grid2>

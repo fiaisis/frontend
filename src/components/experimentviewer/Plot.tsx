@@ -13,17 +13,25 @@ interface PlotProps {
   visualMapMin?: number;
   visualMapMax?: number;
   fileTitle?: string;
+  swapAxes?: boolean;
 }
 
 const Plot = (props: PlotProps): React.ReactElement | null => {
   const [options, setOptions] = React.useState<EChartsOption>();
 
   const computeOptions1DOptions = (data: number[][][], errors?: number[][][]): EChartsOption => {
+    const swap = !!props.swapAxes;
+
+    // Map series data if swapping: [x, y] -> [y, x]
+    const mappedSeriesData: number[][][] = swap
+      ? data.map((series) => series.map((pt) => [pt[1], pt[0]]))
+      : data;
+
     const seriesUnpacked: SeriesOption[] = [];
-    data.forEach((data, index) => {
+    mappedSeriesData.forEach((series, index) => {
       seriesUnpacked.push({
         name: index,
-        data: data,
+        data: series,
         type: 'line',
         showSymbol: false,
         emphasis: { disabled: false },
@@ -33,8 +41,40 @@ const Plot = (props: PlotProps): React.ReactElement | null => {
     // Parse axis names from props.axesLabels?.axes e.g., "X:Y"
     const axesStr = props.axesLabels?.axes || '';
     const [xNameRaw, yNameRaw] = axesStr.split(':');
-    const xName = xNameRaw?.trim() || undefined;
-    const yName = yNameRaw?.trim() || undefined;
+    const baseXName = xNameRaw?.trim() || undefined;
+    const baseYName = yNameRaw?.trim() || undefined;
+    const xName = swap ? baseYName : baseXName;
+    const yName = swap ? baseXName : baseYName;
+
+    // Compute axis bounds with swap consideration
+    const xMin = swap
+      ? typeof props.yAxisMin === 'number'
+        ? props.yAxisMin
+        : -0.05
+      : typeof props.xAxisMin === 'number'
+      ? props.xAxisMin
+      : undefined;
+    const xMax = swap
+      ? typeof props.yAxisMax === 'number'
+        ? props.yAxisMax
+        : undefined
+      : typeof props.xAxisMax === 'number'
+      ? props.xAxisMax
+      : undefined;
+    const yMin = swap
+      ? typeof props.xAxisMin === 'number'
+        ? props.xAxisMin
+        : undefined
+      : typeof props.yAxisMin === 'number'
+      ? props.yAxisMin
+      : -0.05;
+    const yMax = swap
+      ? typeof props.xAxisMax === 'number'
+        ? props.xAxisMax
+        : undefined
+      : typeof props.yAxisMax === 'number'
+      ? props.yAxisMax
+      : undefined;
 
     return {
       grid: {
@@ -58,8 +98,8 @@ const Plot = (props: PlotProps): React.ReactElement | null => {
           fontWeight: 'bold',
           color: '#86b4ff',
         },
-        min: typeof props.xAxisMin === 'number' ? props.xAxisMin : undefined,
-        max: typeof props.xAxisMax === 'number' ? props.xAxisMax : undefined,
+        min: xMin,
+        max: xMax,
         axisLabel: {
           formatter: (value: number) => {
             const num = Number(value);
@@ -78,8 +118,8 @@ const Plot = (props: PlotProps): React.ReactElement | null => {
           fontWeight: 'bold',
           color: '#86b4ff',
         },
-        min: typeof props.yAxisMin === 'number' ? props.yAxisMin : -0.05,
-        max: typeof props.yAxisMax === 'number' ? props.yAxisMax : undefined,
+        min: yMin,
+        max: yMax,
         axisLabel: {
           formatter: (value: number) => {
             const num = Number(value);
@@ -115,10 +155,14 @@ const Plot = (props: PlotProps): React.ReactElement | null => {
   };
 
   const computeOptions2DOptions = (data: number[][]): EChartsOption => {
+    const swap = !!props.swapAxes;
+
     const axesStr = props.axesLabels?.axes || '';
     const [xNameRaw, yNameRaw] = axesStr.split(':');
-    const xName = xNameRaw?.trim() || undefined;
-    const yName = yNameRaw?.trim() || undefined;
+    const baseXName = xNameRaw?.trim() || undefined;
+    const baseYName = yNameRaw?.trim() || undefined;
+    const xName = swap ? baseYName : baseXName;
+    const yName = swap ? baseXName : baseYName;
 
     const vMin = typeof props.visualMapMin === 'number' ? props.visualMapMin : 0;
     const vMax = typeof props.visualMapMax === 'number' ? props.visualMapMax : 2;
@@ -129,6 +173,9 @@ const Plot = (props: PlotProps): React.ReactElement | null => {
     };
 
     const titleText = truncate(props.fileTitle);
+
+    // Map heatmap tuples if swapping: [x, y, value] -> [y, x, value]
+    const mappedData: number[][] = swap ? data.map((t) => [t[1], t[0], t[2]]) : data;
 
     return {
       animation: false,
@@ -190,7 +237,7 @@ const Plot = (props: PlotProps): React.ReactElement | null => {
       series: [
         {
           type: 'heatmap',
-          data: data,
+          data: mappedData,
         },
       ],
       tooltip: {
