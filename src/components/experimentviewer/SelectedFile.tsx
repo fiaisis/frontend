@@ -101,28 +101,28 @@ export const SelectedFile = (props: SelectedFileProps): React.ReactElement => {
               variant={'standard'}
               label={'Slices'}
             />
-            {heatmap && (
-              <Stack direction={'row'} spacing={2} alignItems={'baseline'}>
-                <TextField
-                  type="number"
-                  label="vMap Min"
-                  variant="standard"
-                  value={visualMapMin}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setVisualMapMin(e.target.value)}
-                  inputProps={{ step: 'any' }}
-                  sx={{ width: 100 }}
-                />
-                <TextField
-                  type="number"
-                  label="vMap Max"
-                  variant="standard"
-                  value={visualMapMax}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setVisualMapMax(e.target.value)}
-                  inputProps={{ step: 'any' }}
-                  sx={{ width: 100 }}
-                />
-              </Stack>
-            )}
+          </Stack>
+        )}
+        {props.meta.shape > 1 && heatmap && (
+          <Stack direction={'row'} spacing={2} alignItems={'baseline'} sx={{ mt: 1 }}>
+            <TextField
+              type="number"
+              label="vMap Min"
+              variant="standard"
+              value={visualMapMin}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setVisualMapMin(e.target.value)}
+              inputProps={{ step: 'any' }}
+              sx={{ width: 100 }}
+            />
+            <TextField
+              type="number"
+              label="vMap Max"
+              variant="standard"
+              value={visualMapMax}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setVisualMapMax(e.target.value)}
+              inputProps={{ step: 'any' }}
+              sx={{ width: 100 }}
+            />
           </Stack>
         )}
       </Stack>

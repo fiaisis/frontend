@@ -54,6 +54,12 @@ const Plot = (props: PlotProps): React.ReactElement | null => {
         nameGap: 28,
         min: typeof props.xAxisMin === 'number' ? props.xAxisMin : undefined,
         max: typeof props.xAxisMax === 'number' ? props.xAxisMax : undefined,
+        axisLabel: {
+          formatter: (value: number) => {
+            const num = Number(value);
+            return isNaN(num) ? String(value) : num.toFixed(1);
+          },
+        },
       },
       yAxis: {
         type: 'value',
@@ -63,6 +69,12 @@ const Plot = (props: PlotProps): React.ReactElement | null => {
         nameGap: 36,
         min: typeof props.yAxisMin === 'number' ? props.yAxisMin : -0.05,
         max: typeof props.yAxisMax === 'number' ? props.yAxisMax : undefined,
+        axisLabel: {
+          formatter: (value: number) => {
+            const num = Number(value);
+            return isNaN(num) ? String(value) : num.toFixed(1);
+          },
+        },
       },
       dataZoom: [
         {
