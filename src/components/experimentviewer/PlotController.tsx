@@ -1,4 +1,4 @@
-import { Box, Grid2, useTheme } from '@mui/material';
+import { Box, Grid2, Stack, TextField, useTheme } from '@mui/material';
 import { SelectedFile } from './SelectedFile';
 import React, { useEffect } from 'react';
 import { plottingApi } from '../../lib/plotting-api';
@@ -34,6 +34,13 @@ const PlotController = (props: PlotControllerProps): React.ReactElement => {
   const theme = useTheme();
   const [files, setFiles] = React.useState<FileToPlot[]>([]);
 
+  // Controls bar state
+  const [slicesInput, setSlicesInput] = React.useState<string>('');
+  const [vMinInput, setVMinInput] = React.useState<string>('');
+  const [vMaxInput, setVMaxInput] = React.useState<string>('');
+
+  const heatmapActive = React.useMemo(() => files.some((f) => f.plotted && f.plotAsHeatmap), [files]);
+
   const fetchMetadata = async (fileName: string): Promise<Metadata> => {
     return plottingApi
       .get(`/echarts_meta/${props.instrument}/${props.experimentNumber}`, {
@@ -57,6 +64,25 @@ const PlotController = (props: PlotControllerProps): React.ReactElement => {
     })();
   }, [props.shortListedFiles]);
 
+  // Initialize controls from current files whenever files list changes
+  useEffect(() => {
+    const firstPlottedNonHeatmap = files.find((f) => f.plotted && !f.plotAsHeatmap);
+    setSlicesInput(
+      firstPlottedNonHeatmap && firstPlottedNonHeatmap.slices && firstPlottedNonHeatmap.slices.length > 0
+        ? firstPlottedNonHeatmap.slices.join(',')
+        : ''
+    );
+
+    const firstHeatmap = files.find((f) => f.plotted && f.plotAsHeatmap);
+    setVMinInput(firstHeatmap && typeof firstHeatmap.visualMapMin === 'number' ? String(firstHeatmap.visualMapMin) : '');
+    setVMaxInput(firstHeatmap && typeof firstHeatmap.visualMapMax === 'number' ? String(firstHeatmap.visualMapMax) : '');
+  }, [files]);
+
+  const computeSlices = (sliceStr: string): number[] => {
+    const sliceArray = sliceStr.trim() === '' ? [] : sliceStr.split(',').map((s) => parseInt(s.trim(), 10));
+    return sliceArray.filter((num) => !isNaN(num));
+  };
+
   const updateSelectedFile = (selectedFile: FileToPlot): void => {
     if (selectedFile.plotAsHeatmap) {
       setFiles((prev) =>
@@ -65,18 +91,44 @@ const PlotController = (props: PlotControllerProps): React.ReactElement => {
             ? {
                 ...file,
                 plotAsHeatmap: selectedFile.plotAsHeatmap,
-                slices: selectedFile.slices,
-                visualMapMin: selectedFile.visualMapMin,
-                visualMapMax: selectedFile.visualMapMax,
+                // keep existing slices and visualMap values; selection will be handled below
                 plotted: true,
               }
             : { ...file, plotted: false }
         )
       );
     } else {
-      files[files.findIndex((file) => file.fileName === selectedFile.fileName)] = selectedFile;
-      setFiles([...files]);
+      setFiles((prev) =>
+        prev.map((file) =>
+          file.fileName === selectedFile.fileName
+            ? {
+                ...file,
+                plotted: selectedFile.plotted,
+                plotAsHeatmap: selectedFile.plotAsHeatmap,
+                // keep existing slices/visualMap as they are controlled in the top controls bar
+              }
+            : file
+        )
+      );
     }
+  };
+
+  const onSlicesChange = (val: string): void => {
+    setSlicesInput(val);
+    const parsed = computeSlices(val);
+    setFiles((prev) => prev.map((f) => (f.plotted && !f.plotAsHeatmap ? { ...f, slices: parsed } : f)));
+  };
+
+  const onVMinChange = (val: string): void => {
+    setVMinInput(val);
+    const num = val.trim() === '' ? undefined : Number(val);
+    setFiles((prev) => prev.map((f) => (f.plotted && f.plotAsHeatmap ? { ...f, visualMapMin: num } : f)));
+  };
+
+  const onVMaxChange = (val: string): void => {
+    setVMaxInput(val);
+    const num = val.trim() === '' ? undefined : Number(val);
+    setFiles((prev) => prev.map((f) => (f.plotted && f.plotAsHeatmap ? { ...f, visualMapMax: num } : f)));
   };
 
   return (
@@ -109,11 +161,42 @@ const PlotController = (props: PlotControllerProps): React.ReactElement => {
       </Grid2>
       {files.length > 0 && (
         <Grid2 size={'grow'}>
-          <Box
-            sx={{
-              bgcolor: '#000',
-            }}
-          >
+          <Box sx={{ bgcolor: '#000' }}>
+            <Box sx={{ p: 2, bgcolor: 'background.paper', borderBottom: '1px solid', borderColor: theme.palette.divider }}>
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={'center'}>
+                <TextField
+                  label="Slices"
+                  variant="standard"
+                  value={slicesInput}
+                  disabled={heatmapActive}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => onSlicesChange(e.target.value)}
+                  placeholder="e.g. 0,1,2"
+                  sx={{ minWidth: 200 }}
+                />
+                {heatmapActive && (
+                  <Stack direction={'row'} spacing={2} alignItems={'center'}>
+                    <TextField
+                      type="number"
+                      label="vMap Min"
+                      variant="standard"
+                      value={vMinInput}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => onVMinChange(e.target.value)}
+                      inputProps={{ step: 'any' }}
+                      sx={{ width: 120 }}
+                    />
+                    <TextField
+                      type="number"
+                      label="vMap Max"
+                      variant="standard"
+                      value={vMaxInput}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => onVMaxChange(e.target.value)}
+                      inputProps={{ step: 'any' }}
+                      sx={{ width: 120 }}
+                    />
+                  </Stack>
+                )}
+              </Stack>
+            </Box>
             <Graph
               filesToBePlotted={files.filter((file) => file.plotted)}
               experimentNumber={props.experimentNumber}
