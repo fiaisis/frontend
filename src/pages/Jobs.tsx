@@ -6,7 +6,7 @@ import React, { ReactElement, useState } from 'react';
 import InstrumentSelector from '../components/jobs/InstrumentSelector';
 import InstrumentConfigDrawer from '../components/configsettings/InstrumentConfigDrawer';
 import { jwtDecode } from 'jwt-decode';
-import IMATView from '../components/IMAT/IMATView';
+import IMATView from '../components/imat/IMATView';
 import { JobQueryFilters } from '../lib/types';
 import { JOB_ROWS_PER_PAGE_OPTIONS, JobRowsPerPage, isJobRowsPerPage } from '../components/jobs/constants';
 
