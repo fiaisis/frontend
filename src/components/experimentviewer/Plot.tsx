@@ -12,6 +12,7 @@ interface PlotProps {
   yAxisMax?: number;
   visualMapMin?: number;
   visualMapMax?: number;
+  fileTitle?: string;
 }
 
 const Plot = (props: PlotProps): React.ReactElement | null => {
@@ -52,6 +53,11 @@ const Plot = (props: PlotProps): React.ReactElement | null => {
         name: xName,
         nameLocation: 'middle',
         nameGap: 28,
+        nameTextStyle: {
+          fontSize: 15,
+          fontWeight: 'bold',
+          color: '#86b4ff',
+        },
         min: typeof props.xAxisMin === 'number' ? props.xAxisMin : undefined,
         max: typeof props.xAxisMax === 'number' ? props.xAxisMax : undefined,
         axisLabel: {
@@ -67,6 +73,11 @@ const Plot = (props: PlotProps): React.ReactElement | null => {
         name: yName,
         nameLocation: 'middle',
         nameGap: 36,
+        nameTextStyle: {
+          fontSize: 15,
+          fontWeight: 'bold',
+          color: '#86b4ff',
+        },
         min: typeof props.yAxisMin === 'number' ? props.yAxisMin : -0.05,
         max: typeof props.yAxisMax === 'number' ? props.yAxisMax : undefined,
         axisLabel: {
@@ -112,19 +123,49 @@ const Plot = (props: PlotProps): React.ReactElement | null => {
     const vMin = typeof props.visualMapMin === 'number' ? props.visualMapMin : 0;
     const vMax = typeof props.visualMapMax === 'number' ? props.visualMapMax : 2;
 
+    const truncate = (s?: string, max = 40): string | undefined => {
+      if (!s) return undefined;
+      return s.length > max ? s.slice(0, max) + '…' : s;
+    };
+
+    const titleText = truncate(props.fileTitle);
+
     return {
       animation: false,
+      title: titleText
+        ? {
+            text: titleText,
+            left: 'center',
+            top: 6,
+            textStyle: { color: '#ffffff', fontSize: 16, fontWeight: 'bold' },
+          }
+        : undefined,
+      grid: { top: titleText ? 48 : 16, bottom: 24, left: 50, right: 24, containLabel: true },
       xAxis: {
         type: 'category',
         name: xName,
         nameLocation: 'middle',
         nameGap: 28,
+        nameTextStyle: { fontSize: 15, fontWeight: 'bold', color: '#86b4ff' },
+        axisLabel: {
+          formatter: (value: string | number) => {
+            const num = Number(value);
+            return isNaN(num) ? String(value) : num.toFixed(1);
+          },
+        },
       },
       yAxis: {
         type: 'category',
         name: yName,
         nameLocation: 'middle',
         nameGap: 36,
+        nameTextStyle: { fontSize: 15, fontWeight: 'bold', color: '#86b4ff' },
+        axisLabel: {
+          formatter: (value: string | number) => {
+            const num = Number(value);
+            return isNaN(num) ? String(value) : num.toFixed(1);
+          },
+        },
       },
       visualMap: {
         min: vMin,

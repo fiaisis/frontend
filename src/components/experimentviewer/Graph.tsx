@@ -103,6 +103,7 @@ export const Graph = (props: GraphProps): React.ReactElement => {
           yAxisMax={yAxisMax}
           visualMapMin={visualMapMin}
           visualMapMax={visualMapMax}
+          fileTitle={axisSource?.fileName}
         />
       ) : (
         <></>
