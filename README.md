@@ -14,7 +14,7 @@ With that done, you can now clone the FIA frontend repository.
 
 ### Setting up FIA as a plugin
 
-The frontend works by building the project and then running it through SciGateway as a plugin. You will want to create a `settings.json` file in SciGateway's `public` folder. Do this by simply duplicating [`settings.example.json`](https://github.com/ral-facilities/scigateway/tree/release/v2.0.0/public/settings.example.json), renaming it, then adding FIA as a plugin with what port to listen on:
+The frontend works by building the project and then running it through SciGateway as a plugin. You will want to create a `settings.json` file in SciGateway's `public` folder. Do this by simply duplicating [`settings.example.json`](https://github.com/ral-facilities/scigateway/tree/release/v2.0.0/public/settings.example.json) and renaming it. A few adjustments will need to be made, like adding FIA as a plugin, setting `homeepageUrl` to `"/fia"`, and setting the `authUrl` to `"https://dev.reduce.isis.cclrc.ac.uk/auth"`. Aside from that, keep everything else as is:
 
 ```json
 // settings.json
@@ -26,6 +26,9 @@ The frontend works by building the project and then running it through SciGatewa
     "enable": true,
     "location": "main"
   }
+
+  "authUrl": "https://dev.reduce.isis.cclrc.ac.uk/auth",
+  "homepageUrl": "/fia",
 ]
 ```
 
