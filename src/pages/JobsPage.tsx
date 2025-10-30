@@ -4,7 +4,7 @@ import { Box, Button, FormControlLabel, SelectChangeEvent, Switch, Typography, u
 import { ArrowBack, Settings } from '@mui/icons-material';
 import React, { ReactElement, useState } from 'react';
 import InstrumentSelector from '../components/jobs/InstrumentSelector';
-import NavArrows from '../components/navigation/Breadcrumbs';
+import NavArrows from '../components/navigation/NavArrows';
 import InstrumentConfigDrawer from '../components/configsettings/InstrumentConfigDrawer';
 import { jwtDecode } from 'jwt-decode';
 import IMATView from '../components/IMAT/IMATView';
