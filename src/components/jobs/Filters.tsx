@@ -17,7 +17,7 @@ import {
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers';
 import { JobQueryFilters, reductionStates, Job } from '../../lib/types';
-import { instruments } from '../../lib/InstrumentData';
+import { instruments } from '../../lib/instrumentData';
 import dayjs from 'dayjs';
 
 const itemHeight = 48;
@@ -32,15 +32,27 @@ const menuProps = {
 };
 
 // Hook for page-resetting when a filter is changed
-function useFilterWithReset<T>(initialValue: T, resetPageNumber: () => void): [T, Dispatch<SetStateAction<T>>] {
+function useFilterWithReset<T>(
+  initialValue: T,
+  resetPageNumber: () => void
+): [T, Dispatch<SetStateAction<T>>, Dispatch<SetStateAction<T>>] {
   const [value, setValue] = useState<T>(initialValue);
 
-  const setValueAndReset: Dispatch<SetStateAction<T>> = (newValue) => {
-    setValue(newValue);
-    resetPageNumber();
-  };
+  const setValueAndReset: Dispatch<SetStateAction<T>> = React.useCallback(
+    (newValue) => {
+      setValue(newValue);
+      resetPageNumber();
+    },
+    [resetPageNumber]
+  );
 
-  return [value, setValueAndReset];
+  // Silent setter to not trigger a page reset: causes infinite re-renders
+  // otherwise
+  const setValueSilently: Dispatch<SetStateAction<T>> = React.useCallback((newValue) => {
+    setValue(newValue);
+  }, []);
+
+  return [value, setValueAndReset, setValueSilently];
 }
 
 const DatePickerPair: FC<{
@@ -86,7 +98,7 @@ const MultipleSelectCheckmarks: FC<{
             target: { value },
           } = event;
           handleChange(
-            // On autofill, we get a stringified value.
+            // On autofill, we get a stringified value
             typeof value === 'string' ? value.split(',') : value
           );
         }}
@@ -114,33 +126,74 @@ const FilterContainer: React.FC<{
   handleBulkRerun: () => void;
   isBulkRerunning: boolean;
   resetPageNumber: () => void;
-}> = ({ visible, showInstrumentFilter, handleFiltersChange, resetPageNumber }): ReactElement => {
-  const [selectedInstruments, setSelectedInstruments] = useFilterWithReset<string[]>([], resetPageNumber);
-  const [selectedStates, setSelectedStates] = useFilterWithReset<string[]>([], resetPageNumber);
-  const [title, setTitle] = useFilterWithReset<string | null>(null, resetPageNumber);
-  const [filename, setFilename] = useFilterWithReset<string | null>(null, resetPageNumber);
+  appliedFilters: JobQueryFilters;
+}> = ({ visible, showInstrumentFilter, handleFiltersChange, resetPageNumber, appliedFilters }): ReactElement => {
+  const [selectedInstruments, setSelectedInstruments, setSelectedInstrumentsSilently] = useFilterWithReset<string[]>(
+    [],
+    resetPageNumber
+  );
+  const [selectedStates, setSelectedStates, setSelectedStatesSilently] = useFilterWithReset<string[]>(
+    [],
+    resetPageNumber
+  );
+  const [title, setTitle, setTitleSilently] = useFilterWithReset<string | null>(null, resetPageNumber);
+  const [filename, setFilename, setFilenameSilently] = useFilterWithReset<string | null>(null, resetPageNumber);
 
-  const [experimentNumberIn, setExperimentNumberIn] = useFilterWithReset<string[]>([], resetPageNumber);
-  const [experimentNumberAfter, setExperimentNumberAfter] = useFilterWithReset<number | null>(null, resetPageNumber);
-  const [experimentNumberBefore, setExperimentNumberBefore] = useFilterWithReset<number | null>(null, resetPageNumber);
+  const [experimentNumberIn, setExperimentNumberIn, setExperimentNumberInSilently] = useFilterWithReset<string[]>(
+    [],
+    resetPageNumber
+  );
+  const [experimentNumberAfter, setExperimentNumberAfter, setExperimentNumberAfterSilently] = useFilterWithReset<
+    number | null
+  >(null, resetPageNumber);
+  const [experimentNumberBefore, setExperimentNumberBefore, setExperimentNumberBeforeSilently] = useFilterWithReset<
+    number | null
+  >(null, resetPageNumber);
 
-  const [jobStartBefore, setJobStartBefore] = useFilterWithReset<string | null>(null, resetPageNumber);
-  const [jobStartAfter, setJobStartAfter] = useFilterWithReset<string | null>(null, resetPageNumber);
-  const [jobEndBefore, setJobEndBefore] = useFilterWithReset<string | null>(null, resetPageNumber);
-  const [jobEndAfter, setJobEndAfter] = useFilterWithReset<string | null>(null, resetPageNumber);
+  const [jobStartBefore, setJobStartBefore, setJobStartBeforeSilently] = useFilterWithReset<string | null>(
+    null,
+    resetPageNumber
+  );
+  const [jobStartAfter, setJobStartAfter, setJobStartAfterSilently] = useFilterWithReset<string | null>(
+    null,
+    resetPageNumber
+  );
+  const [jobEndBefore, setJobEndBefore, setJobEndBeforeSilently] = useFilterWithReset<string | null>(
+    null,
+    resetPageNumber
+  );
+  const [jobEndAfter, setJobEndAfter, setJobEndAfterSilently] = useFilterWithReset<string | null>(
+    null,
+    resetPageNumber
+  );
 
   const [debouncedTitle, setDebouncedTitle] = useState<string | null>(null);
   const [debouncedFilename, setDebouncedFilename] = React.useState<string | null>(null);
 
-  const [runStartBefore, setRunStartBefore] = useFilterWithReset<string | null>(null, resetPageNumber);
-  const [runStartAfter, setRunStartAfter] = useFilterWithReset<string | null>(null, resetPageNumber);
-  const [runEndBefore, setRunEndBefore] = useFilterWithReset<string | null>(null, resetPageNumber);
-  const [runEndAfter, setRunEndAfter] = useFilterWithReset<string | null>(null, resetPageNumber);
+  const [runStartBefore, setRunStartBefore, setRunStartBeforeSilently] = useFilterWithReset<string | null>(
+    null,
+    resetPageNumber
+  );
+  const [runStartAfter, setRunStartAfter, setRunStartAfterSilently] = useFilterWithReset<string | null>(
+    null,
+    resetPageNumber
+  );
+  const [runEndBefore, setRunEndBefore, setRunEndBeforeSilently] = useFilterWithReset<string | null>(
+    null,
+    resetPageNumber
+  );
+  const [runEndAfter, setRunEndAfter, setRunEndAfterSilently] = useFilterWithReset<string | null>(
+    null,
+    resetPageNumber
+  );
 
   const [debouncedExperimentNumberIn, setDebouncedExperimentNumberIn] = useState<string[]>([]);
   const [debouncedExperimentNumberAfter, setDebouncedExperimentNumberAfter] = useState<number | null>(null);
   const [debouncedExperimentNumberBefore, setDebouncedExperimentNumberBefore] = useState<number | null>(null);
 
+  const previousAppliedFiltersRef = React.useRef<string>('');
+
+  // Debounce filters so API isn't spammed while typing
   useEffect(() => {
     const debounceTimeoutId = setTimeout(() => {
       setDebouncedExperimentNumberIn(experimentNumberIn);
@@ -161,6 +214,68 @@ const FilterContainer: React.FC<{
     experimentNumberBefore,
   ]);
 
+  // React to upstream filter changes such as URL navigation
+  useEffect(() => {
+    const serializedFilters = JSON.stringify(appliedFilters ?? {});
+
+    if (previousAppliedFiltersRef.current === serializedFilters) {
+      return;
+    }
+
+    previousAppliedFiltersRef.current = serializedFilters;
+
+    const instruments = Array.isArray(appliedFilters.instrument_in) ? [...appliedFilters.instrument_in] : [];
+    const states = Array.isArray(appliedFilters.job_state_in) ? [...appliedFilters.job_state_in] : [];
+    const experimentNumbers = Array.isArray(appliedFilters.experiment_number_in)
+      ? appliedFilters.experiment_number_in.map((num) => num.toString())
+      : [];
+
+    setSelectedInstrumentsSilently(instruments);
+    setSelectedStatesSilently(states);
+    setExperimentNumberInSilently(experimentNumbers);
+    setExperimentNumberAfterSilently(appliedFilters.experiment_number_after ?? null);
+    setExperimentNumberBeforeSilently(appliedFilters.experiment_number_before ?? null);
+    setTitleSilently(appliedFilters.title ?? null);
+    setFilenameSilently(appliedFilters.filename ?? null);
+    setJobStartBeforeSilently(appliedFilters.job_start_before ?? null);
+    setJobStartAfterSilently(appliedFilters.job_start_after ?? null);
+    setJobEndBeforeSilently(appliedFilters.job_end_before ?? null);
+    setJobEndAfterSilently(appliedFilters.job_end_after ?? null);
+    setRunStartBeforeSilently(appliedFilters.run_start_before ?? null);
+    setRunStartAfterSilently(appliedFilters.run_start_after ?? null);
+    setRunEndBeforeSilently(appliedFilters.run_end_before ?? null);
+    setRunEndAfterSilently(appliedFilters.run_end_after ?? null);
+
+    setDebouncedTitle(appliedFilters.title ?? null);
+    setDebouncedFilename(appliedFilters.filename ?? null);
+    setDebouncedExperimentNumberIn(experimentNumbers);
+    setDebouncedExperimentNumberAfter(appliedFilters.experiment_number_after ?? null);
+    setDebouncedExperimentNumberBefore(appliedFilters.experiment_number_before ?? null);
+  }, [
+    appliedFilters,
+    setSelectedInstrumentsSilently,
+    setSelectedStatesSilently,
+    setTitleSilently,
+    setFilenameSilently,
+    setExperimentNumberInSilently,
+    setExperimentNumberAfterSilently,
+    setExperimentNumberBeforeSilently,
+    setJobStartBeforeSilently,
+    setJobStartAfterSilently,
+    setJobEndBeforeSilently,
+    setJobEndAfterSilently,
+    setRunStartBeforeSilently,
+    setRunStartAfterSilently,
+    setRunEndBeforeSilently,
+    setRunEndAfterSilently,
+    setDebouncedTitle,
+    setDebouncedFilename,
+    setDebouncedExperimentNumberIn,
+    setDebouncedExperimentNumberAfter,
+    setDebouncedExperimentNumberBefore,
+  ]);
+
+  // Build the payload for the API whenever any debounced field changes
   useEffect(() => {
     const filters: JobQueryFilters = Object();
     if (selectedInstruments) {

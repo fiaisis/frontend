@@ -74,7 +74,7 @@ const PaperHeading = styled(Typography)(({ theme }) => ({
   fontWeight: 'bold',
   fontSize: '24px',
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  color: (theme as any).colours?.homePage?.heading,
+  color: (theme as any).colours?.homepage?.heading,
   marginBottom: theme.spacing(2),
 }));
 
@@ -95,7 +95,7 @@ const BluePaperHeading = styled(Typography)(({ theme }) => ({
 const BluePaperDescription = styled(Typography)(({ theme }) => ({
   textAlign: 'left',
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  color: (theme as any).colours?.homePage?.blueDescription,
+  color: (theme as any).colours?.homepage?.blueDescription,
   marginBottom: theme.spacing(2),
 }));
 
@@ -124,17 +124,17 @@ const BrowseDecal = styled('div', {
 const LightBlueButton = styled(Button)(({ theme }) => ({
   color: '#FFFFFF',
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  backgroundColor: (theme as any).colours?.homePage?.blueButton,
+  backgroundColor: (theme as any).colours?.homepage?.blueButton,
   '&:hover': {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    backgroundColor: (theme as any).colours?.homePage?.blueButton
+    backgroundColor: (theme as any).colours?.homepage?.blueButton
       ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        alpha((theme as any).colours?.homePage?.blueButton, 0.8)
+        alpha((theme as any).colours?.homepage?.blueButton, 0.8)
       : '#FFFFFF',
   },
 }));
 
-const HomePage = (): React.ReactElement => {
+const Homepage = (): React.ReactElement => {
   const [t] = useTranslation();
   const theme = useTheme();
   const isViewportMdOrLager = useMediaQuery(theme.breakpoints.up('md'));
@@ -201,7 +201,7 @@ const HomePage = (): React.ReactElement => {
                     fontWeight: 'bold',
                     fontSize: '32px',
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    color: (theme as any).colours?.homePage?.heading,
+                    color: (theme as any).colours?.homepage?.heading,
                     marginBottom: theme.spacing(2),
                   })}
                 >
@@ -360,4 +360,4 @@ const HomePage = (): React.ReactElement => {
   );
 };
 
-export default HomePage;
+export default Homepage;
