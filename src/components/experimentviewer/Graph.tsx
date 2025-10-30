@@ -82,5 +82,31 @@ export const Graph = (props: GraphProps): React.ReactElement => {
     })();
   }, [props.filesToBePlotted]);
 
-  return <>{data ? <Plot graphData={data}></Plot> : <></>}</>;
+  const axisSource = props.filesToBePlotted.length > 0 ? props.filesToBePlotted[0] : undefined;
+  const axesLabels = axisSource?.meta?.axes_labels;
+  const xAxisMin = axisSource?.meta?.x_axis_min;
+  const xAxisMax = axisSource?.meta?.x_axis_max;
+  const yAxisMin = axisSource?.meta?.y_axis_min;
+  const yAxisMax = axisSource?.meta?.y_axis_max;
+  const visualMapMin = axisSource?.visualMapMin;
+  const visualMapMax = axisSource?.visualMapMax;
+
+  return (
+    <>
+      {data ? (
+        <Plot
+          graphData={data}
+          axesLabels={axesLabels}
+          xAxisMin={xAxisMin}
+          xAxisMax={xAxisMax}
+          yAxisMin={yAxisMin}
+          yAxisMax={yAxisMax}
+          visualMapMin={visualMapMin}
+          visualMapMax={visualMapMax}
+        />
+      ) : (
+        <></>
+      )}
+    </>
+  );
 };

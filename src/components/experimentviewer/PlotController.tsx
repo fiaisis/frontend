@@ -16,10 +16,18 @@ export type FileToPlot = {
   plotAsHeatmap: boolean;
   slices: number[] | undefined;
   meta: Metadata;
+  visualMapMin?: number;
+  visualMapMax?: number;
 };
 
 export interface Metadata {
+  filename: string;
   shape: number;
+  axes_labels: { axes: string };
+  x_axis_min: number;
+  x_axis_max: number;
+  y_axis_min: number;
+  y_axis_max: number;
 }
 
 const PlotController = (props: PlotControllerProps): React.ReactElement => {
@@ -54,7 +62,14 @@ const PlotController = (props: PlotControllerProps): React.ReactElement => {
       setFiles((prev) =>
         prev.map((file) =>
           file.fileName === selectedFile.fileName
-            ? { ...file, plotAsHeatmap: selectedFile.plotAsHeatmap, slices: selectedFile.slices }
+            ? {
+                ...file,
+                plotAsHeatmap: selectedFile.plotAsHeatmap,
+                slices: selectedFile.slices,
+                visualMapMin: selectedFile.visualMapMin,
+                visualMapMax: selectedFile.visualMapMax,
+                plotted: true,
+              }
             : { ...file, plotted: false }
         )
       );

@@ -5,6 +5,13 @@ import ReactECharts from 'echarts-for-react';
 
 interface PlotProps {
   graphData: GraphData;
+  axesLabels?: { axes: string };
+  xAxisMin?: number;
+  xAxisMax?: number;
+  yAxisMin?: number;
+  yAxisMax?: number;
+  visualMapMin?: number;
+  visualMapMax?: number;
 }
 
 const Plot = (props: PlotProps): React.ReactElement | null => {
@@ -21,12 +28,19 @@ const Plot = (props: PlotProps): React.ReactElement | null => {
         emphasis: { disabled: false },
       });
     });
+
+    // Parse axis names from props.axesLabels?.axes e.g., "X:Y"
+    const axesStr = props.axesLabels?.axes || '';
+    const [xNameRaw, yNameRaw] = axesStr.split(':');
+    const xName = xNameRaw?.trim() || undefined;
+    const yName = yNameRaw?.trim() || undefined;
+
     return {
       grid: {
-        left: '2%',
+        left: '6%',
         right: '2%',
-        top: '2%',
-        bottom: '2%',
+        top: '6%',
+        bottom: '8%',
         containLabel: true,
       },
       tooltip: {
@@ -35,11 +49,20 @@ const Plot = (props: PlotProps): React.ReactElement | null => {
       xAxis: {
         type: 'value',
         splitLine: { show: false },
+        name: xName,
+        nameLocation: 'middle',
+        nameGap: 28,
+        min: typeof props.xAxisMin === 'number' ? props.xAxisMin : undefined,
+        max: typeof props.xAxisMax === 'number' ? props.xAxisMax : undefined,
       },
       yAxis: {
         type: 'value',
         splitLine: { show: false },
-        min: -0.05,
+        name: yName,
+        nameLocation: 'middle',
+        nameGap: 36,
+        min: typeof props.yAxisMin === 'number' ? props.yAxisMin : -0.05,
+        max: typeof props.yAxisMax === 'number' ? props.yAxisMax : undefined,
       },
       dataZoom: [
         {
@@ -59,6 +82,8 @@ const Plot = (props: PlotProps): React.ReactElement | null => {
           dataZoom: {
             filterMode: 'none',
           },
+          restore: {},
+          saveAsImage: {},
         },
       },
 
@@ -67,17 +92,31 @@ const Plot = (props: PlotProps): React.ReactElement | null => {
   };
 
   const computeOptions2DOptions = (data: number[][]): EChartsOption => {
+    const axesStr = props.axesLabels?.axes || '';
+    const [xNameRaw, yNameRaw] = axesStr.split(':');
+    const xName = xNameRaw?.trim() || undefined;
+    const yName = yNameRaw?.trim() || undefined;
+
+    const vMin = typeof props.visualMapMin === 'number' ? props.visualMapMin : 0;
+    const vMax = typeof props.visualMapMax === 'number' ? props.visualMapMax : 2;
+
     return {
       animation: false,
       xAxis: {
         type: 'category',
+        name: xName,
+        nameLocation: 'middle',
+        nameGap: 28,
       },
       yAxis: {
         type: 'category',
+        name: yName,
+        nameLocation: 'middle',
+        nameGap: 36,
       },
       visualMap: {
-        min: 0,
-        max: 2,
+        min: vMin,
+        max: vMax,
         calculable: true,
         inRange: {
           color: [
