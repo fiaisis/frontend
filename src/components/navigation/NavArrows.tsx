@@ -17,6 +17,8 @@ const NavArrows: React.FC = () => {
         aria-label="breadcrumb"
         separator=""
         sx={(theme) => ({
+          marginTop: theme.spacing(2),
+          marginLeft: theme.spacing(2),
           backgroundColor: theme.palette.background.default,
           '& li': {
             '& a, p': {
