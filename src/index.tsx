@@ -10,6 +10,7 @@ import { createWebsocketClient } from './websocket';
 if (import.meta.env.DEV) {
   const el = document.getElementById('fia');
   if (el) {
+    //ReactDOM.createRoot()
     ReactDOM.render(<App />, document.getElementById('fia'));
   }
   log.setDefaultLevel(log.levels.DEBUG);
