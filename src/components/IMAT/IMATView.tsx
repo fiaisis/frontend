@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box, Typography, useTheme } from '@mui/material';
 
-// Shows the latest NDXIMAT image (placeholder for now)
+// Shows the latest NDXIMAT image (placeholder for now, being worked on)
 const IMATView: React.FC = () => {
   const theme = useTheme();
 
