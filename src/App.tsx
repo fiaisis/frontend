@@ -5,14 +5,14 @@ import ReactGA from 'react-ga4';
 
 // Local data
 import Instruments from './pages/Instruments';
-import HomePage from './pages/HomePage';
+import Homepage from './pages/Homepage';
 import ValueEditor from './pages/ValueEditor';
 import GlobalStyles from './GlobalStyles';
+import Jobs from './pages/Jobs';
 import { clearFailedAuthRequestsQueue, retryFailedAuthRequests } from './lib/api';
 import 'dayjs/locale/en-gb';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import JobsPage from './pages/JobsPage';
 
 // Initialize Google Analytics with the given tracking ID
 ReactGA.initialize('G-7XJBCP6P75');
@@ -62,16 +62,16 @@ const App: FC = () => {
         <Router basename="/fia">
           <Switch>
             <Route exact path="/">
-              <HomePage />
+              <Homepage />
             </Route>
             <Route path="/instruments">
               <Instruments />
             </Route>
             <Route exact path="/reduction-history">
-              <JobsPage />
+              <Jobs />
             </Route>
             <Route exact path="/reduction-history/:instrumentName">
-              <JobsPage />
+              <Jobs />
             </Route>
             <Route path="/reduction-history/:instrumentName/value-editor-:jobId">
               <ValueEditor />

@@ -136,7 +136,7 @@ rm -rf node_modules && yarn cache clean && rm -f yarn.lock && yarn install
 
 The FIA frontend uses [Cypress](https://www.cypress.io/) for end-to-end and component testing. These tests run in a [workflow](.github/workflows/cypress_tests.yml) whenever a commit is pushed or a pull request is merged. Tests can also be run locally.
 
-For writing your own tests, follow the guide [here](https://docs.cypress.io/guides/end-to-end-testing/writing-your-first-end-to-end-test). Alternatively, replicate the methods used in pre-existing `.cy.tsx` files, like the [home page](cypress/component/HomePage.cy.tsx).
+For writing your own tests, follow the guide [here](https://docs.cypress.io/guides/end-to-end-testing/writing-your-first-end-to-end-test). Alternatively, replicate the methods used in pre-existing `.cy.tsx` files, like the [homepage](cypress/component/Homepage.cy.tsx).
 
 ## Additional scripts
 

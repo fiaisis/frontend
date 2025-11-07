@@ -9,7 +9,7 @@ import StarBorderIcon from '@mui/icons-material/StarBorder';
 import StarIcon from '@mui/icons-material/Star';
 
 // Local data
-import { instruments } from '../lib/InstrumentData';
+import { instruments } from '../lib/instrumentData';
 import NavArrows from '../components/navigation/NavArrows';
 
 const Instruments: React.FC = () => {
