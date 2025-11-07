@@ -9,6 +9,7 @@ import Homepage from './pages/Homepage';
 import ValueEditor from './pages/ValueEditor';
 import ExperimentViewer from './pages/ExperimentViewer';
 import GlobalStyles from './GlobalStyles';
+import IMATViewer from './pages/IMATViewer';
 import Jobs from './pages/Jobs';
 import { clearFailedAuthRequestsQueue, retryFailedAuthRequests } from './lib/api';
 import 'dayjs/locale/en-gb';
@@ -65,7 +66,7 @@ const App: FC = () => {
             <Route exact path="/">
               <Homepage />
             </Route>
-            <Route path="/instruments">
+            <Route exact path="/instruments">
               <Instruments />
             </Route>
             <Route exact path="/reduction-history">
@@ -74,7 +75,7 @@ const App: FC = () => {
             <Route exact path="/reduction-history/:instrumentName">
               <Jobs />
             </Route>
-            <Route path="/reduction-history/:instrumentName/value-editor-:jobId">
+            <Route exact path="/reduction-history/:instrumentName/value-editor-:jobId">
               <ValueEditor />
             </Route>
             <Route path="/reduction-history/:instrumentName/experiment-viewer-:jobId">
@@ -87,6 +88,9 @@ const App: FC = () => {
             <Route path="/login" />
             {/* Catch-all that redirects unmatched routes to the homepage*/}
             <Route render={() => <Redirect to="/" />} />
+            <Route exact path="/imat-viewer">
+              <IMATViewer />
+            </Route>
           </Switch>
         </Router>
       </GlobalStyles>

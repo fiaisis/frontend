@@ -77,13 +77,14 @@ createRoute(
   false
 );
 createRoute(
-  'Reductions',
+  'Viewers',
   'Expriment viewer',
   '/fia/experiment-viewer',
   4,
   'View and visualize HDF5 data files from reduction jobs.',
   false
 );
+createRoute('Viewers', 'IMAT viewer', '/fia/imat-viewer', 4, 'Latest IMAT heatmap', false);
 
 // Single-SPA bootstrap methods have no idea what type of inputs may be
 // pushed down from the parent app
