@@ -1,5 +1,5 @@
 import React from 'react';
-import NavArrows from '../components/navigation/Breadcrumbs';
+import NavArrows from '../components/navigation/NavArrows';
 import axios from 'axios';
 import { Box, CircularProgress, FormControl, InputLabel, MenuItem, Select, Typography, useTheme } from '@mui/material';
 import type { SelectChangeEvent } from '@mui/material';
