@@ -7,7 +7,6 @@ import InstrumentSelector from '../components/jobs/InstrumentSelector';
 import NavArrows from '../components/navigation/NavArrows';
 import InstrumentConfigDrawer from '../components/configsettings/InstrumentConfigDrawer';
 import { jwtDecode } from 'jwt-decode';
-import IMATView from '../components/IMAT/IMATView';
 
 const JobsPage: React.FC = (): ReactElement => {
   const { instrumentName } = useParams<{ instrumentName?: string }>();
@@ -111,16 +110,12 @@ const JobsPage: React.FC = (): ReactElement => {
           setDrawerOpen={setConfigDrawerOpen}
           selectedInstrument={selectedInstrument}
         />
-        {selectedInstrument === 'IMAT' ? (
-          <IMATView />
-        ) : (
-          <JobTable
-            selectedInstrument={selectedInstrument}
-            currentPage={currentPage}
-            handlePageChange={setCurrentPage}
-            asUser={asUser}
-          />
-        )}
+        <JobTable
+          selectedInstrument={selectedInstrument}
+          currentPage={currentPage}
+          handlePageChange={setCurrentPage}
+          asUser={asUser}
+        />
       </div>
     </>
   );
