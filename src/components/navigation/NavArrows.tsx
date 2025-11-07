@@ -108,6 +108,9 @@ const NavArrows: React.FC = () => {
           if (label === 'reduction-history') {
             label = 'Reduction history';
           }
+          if (label === 'imat-viewer') {
+            label = 'IMAT viewer';
+          }
           const regex = new RegExp('^value-editor-(\\d+)$', 'i');
           if (label.match(regex)) {
             label = 'Value editor';

@@ -13,6 +13,7 @@ import 'dayjs/locale/en-gb';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import JobsPage from './pages/JobsPage';
+import IMATViewer from './pages/IMATViewer';
 
 // Initialize Google Analytics with the given tracking ID
 ReactGA.initialize('G-7XJBCP6P75');
@@ -64,7 +65,7 @@ const App: FC = () => {
             <Route exact path="/">
               <HomePage />
             </Route>
-            <Route path="/instruments">
+            <Route exact path="/instruments">
               <Instruments />
             </Route>
             <Route exact path="/reduction-history">
@@ -73,8 +74,11 @@ const App: FC = () => {
             <Route exact path="/reduction-history/:instrumentName">
               <JobsPage />
             </Route>
-            <Route path="/reduction-history/:instrumentName/value-editor-:jobId">
+            <Route exact path="/reduction-history/:instrumentName/value-editor-:jobId">
               <ValueEditor />
+            </Route>
+            <Route exact path="/imat-viewer">
+              <IMATViewer />
             </Route>
           </Switch>
         </Router>
