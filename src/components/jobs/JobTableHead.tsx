@@ -60,7 +60,7 @@ const highlightHover = (theme: Theme): React.CSSProperties => {
           ? theme.palette.primary.dark // Light mode hover colour
           : theme.palette.mode === 'dark'
             ? theme.palette.primary.dark // Dark mode hover colour
-          : '#ffffff', // High contrast mode hover colour
+          : theme.palette.primary.dark, // High contrast mode hover colour
     };
   };
 
