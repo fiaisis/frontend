@@ -307,13 +307,13 @@ const IMATViewer: React.FC = () => {
 
         const headers = response.headers as Record<string, string | string[] | undefined>;
         const overrides: DatasetOverrides = {
-          originalWidth: parseNumericHeader(headers, 'x-imat-original-width'),
-          originalHeight: parseNumericHeader(headers, 'x-imat-original-height'),
-          sampledWidth: parseNumericHeader(headers, 'x-imat-sampled-width'),
-          sampledHeight: parseNumericHeader(headers, 'x-imat-sampled-height'),
-          downsampleFactor: parseNumericHeader(headers, 'x-imat-downsample-factor') ?? downsampleFactor,
-          minValue: parseNumericHeader(headers, 'x-imat-min-value'),
-          maxValue: parseNumericHeader(headers, 'x-imat-max-value'),
+          originalWidth: parseNumericHeader(headers, 'x-original-width'),
+          originalHeight: parseNumericHeader(headers, 'x-original-height'),
+          sampledWidth: parseNumericHeader(headers, 'x-sampled-width'),
+          sampledHeight: parseNumericHeader(headers, 'x-sampled-height'),
+          downsampleFactor: parseNumericHeader(headers, 'x-downsample-factor') ?? downsampleFactor,
+          minValue: parseNumericHeader(headers, 'x-min-value'),
+          maxValue: parseNumericHeader(headers, 'x-max-value'),
         };
 
         const heatmapResult = await convertImageBlobToHeatmap(blob, overrides);
