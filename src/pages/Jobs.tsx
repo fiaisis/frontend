@@ -9,6 +9,7 @@ import { jwtDecode } from 'jwt-decode';
 import IMATView from '../components/imat/IMATView';
 import { JobQueryFilters } from '../lib/types';
 import { JOB_ROWS_PER_PAGE_OPTIONS, JobRowsPerPage, isJobRowsPerPage } from '../components/jobs/constants';
+import NavArrows from '../components/navigation/NavArrows';
 
 const DEFAULT_ROWS_PER_PAGE: JobRowsPerPage = JOB_ROWS_PER_PAGE_OPTIONS[1];
 
@@ -210,6 +211,7 @@ const Jobs: React.FC = (): ReactElement => {
 
   return (
     <>
+      <NavArrows />
       <Box display="flex" alignItems="center" justifyContent="space-between" sx={{ padding: '20px', height: '100%' }}>
         <Box display="flex" flexDirection="column">
           <Typography variant="h3" component="h1" style={{ color: theme.palette.text.primary }}>
