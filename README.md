@@ -1,10 +1,8 @@
 # Flexible Interactive Automation frontend
 
-This repository is for the frontend web application side of [FIA](https://github.com/fiaisis). It uses Yarn, React, TypeScript, Material UI and serves as a plugin for [SciGateway](https://github.com/ral-facilities/scigateway). The application allows users to view and manage runs and reductions performed by ISIS instruments.
+This repository is for the frontend web application side of [FIA](https://github.com/fiaisis). It uses [Yarn](https://yarnpkg.com/), [React](https://react.dev/), [TypeScript](https://www.typescriptlang.org/), [Vite](https://vite.dev/), [Material UI](https://mui.com/material-ui/), and serves as a plugin for [SciGateway](https://github.com/ral-facilities/scigateway). The application allows users to view and manage runs and reductions performed by ISIS instruments.
 
 ## Starting development
-
-This project uses Vite for development and builds.
 
 ### Downloading the code
 
@@ -38,11 +36,10 @@ A `dev-plugin-settings.json` file is also needed in SciGateway's `micro-frontend
 ```json
 // dev-plugin-settings.json
 
-// Replace [path] and [to] with the actual path
 "plugins": [
   {
     "type": "static",
-    "location": "C:\\[path]\\[to]\\frontend\\build",
+    "location": "C:\\[path]\\[to]\\frontend\\build", // Replace [path] and [to] with the actual path
     "port": 5001
   }
 ]
@@ -78,17 +75,17 @@ Notes:
 
 Runs the Vite dev server on http://localhost:3000.
 
-- For integration testing inside SciGateway, build with `yarn build` and start SciGateway. The plugin will be available at the route configured in SciGateway (typically `/fia`).
-- For quick standalone development (no SciGateway), use http://localhost:3000.
+- For quick standalone development (no SciGateway), the web app will be hosted at http://localhost:3000 by default.
+- For testing as a plugin for SciGateway, build with `yarn build` and start SciGateway. The plugin will be available at the route configured in SciGateway.
 
-Other useful dev commands:
+#### Other useful dev commands:
 
-- `yarn preview`: Serves the built `build/` output for local checks. Do not run this on the same port SciGateway uses (5001) at the same time.
-- `yarn serve:build`: Builds and previews on port 5001. Avoid running while SciGateway is serving the static plugin to prevent port conflicts.
+- `yarn preview`: Serves the built `build/` output for local checks.
+- `yarn serve:build`: Builds and previews on port 5001.
 
 ## Container files
 
-Certain features of the frontend such as the help page are handled by files in SciGateway which are overwritten during production to display the correct information to users. Files for this purpose are stored in the [`container`](https://github.com/fiaisis/frontend/tree/main/container) folder. Any changes made locally to this folder won't be visible when running the web application using `yarn start`. So to test changes you need to create a container image. To do this we recommend installing and using [Docker](https://www.docker.com/).
+Certain features of the frontend such as the help page are handled by files in SciGateway which are overwritten during production to display the correct information to users. Files for this purpose are stored in the [`container`](https://github.com/fiaisis/frontend/tree/main/container) folder. Any changes made locally to this folder won't be visible when running the web application using `yarn start`. So to test changes, you either need to modify SciGateway's files or create a container image. To do this we recommend installing and using [Docker](https://www.docker.com/).
 
 #### To build the frontend:
 
@@ -115,10 +112,6 @@ docker run --rm -it -p 8080:80 ghcr.io/fiaisis/scigateway
 ```
 
 To access the websites made by the above containers navigate to http://localhost:8080.
-
-### Container alternative
-
-As an alternative to testing using containers, you can replace the contents of SciGateway's [`res`](https://github.com/ral-facilities/scigateway/tree/release/v2.0.0/public/res) folder with the frontend's [`default.json`](https://github.com/fiaisis/frontend/blob/main/container/default.json) file and [`images`](https://github.com/fiaisis/frontend/tree/main/container/images) folder. This will allow you to see the changes made by running `yarn start`.
 
 <span style="color:red">BEWARE:</span> this can give false positives. Do not push changes to SciGateway as we do not develop in that repo.
 
@@ -152,7 +145,7 @@ Runs Cypress tests headlessly in the terminal. This is useful for running tests 
 
 ### `yarn run-frontend`
 
-Builds the frontend and then navigates to the `SciGateway` folder (assuming it's in an adjacent directory) and runs `yarn start` there. A helper script to quickly get SciGateway running with the latest frontend build without needing two terminal windows open.
+A helper script which builds the frontend and then navigates to the `SciGateway` folder (assuming it's in an adjacent directory) and runs `yarn start` there.
 
 ## Learn more
 
