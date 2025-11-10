@@ -267,20 +267,22 @@ const Jobs: React.FC = (): ReactElement => {
         setDrawerOpen={setConfigDrawerOpen}
         selectedInstrument={selectedInstrument}
       />
-      {selectedInstrument === 'IMAT' ? (
-        <IMATView />
-      ) : (
-        <JobTable
-          selectedInstrument={selectedInstrument}
-          currentPage={currentPage}
-          handlePageChange={handlePageChange}
-          asUser={asUser}
-          rowsPerPage={rowsPerPage}
-          handleRowsPerPageChange={handleRowsPerPageChange}
-          filters={currentFilters}
-          handleFiltersChange={handleFiltersChange}
-        />
-      )}
+      <Box sx={{ padding: '0 20px 20px' }}>
+        {selectedInstrument === 'IMAT' ? (
+          <IMATView />
+        ) : (
+          <JobTable
+            selectedInstrument={selectedInstrument}
+            currentPage={currentPage}
+            handlePageChange={handlePageChange}
+            asUser={asUser}
+            rowsPerPage={rowsPerPage}
+            handleRowsPerPageChange={handleRowsPerPageChange}
+            filters={currentFilters}
+            handleFiltersChange={handleFiltersChange}
+          />
+        )}
+      </Box>
     </>
   );
 };
