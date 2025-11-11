@@ -1,6 +1,6 @@
 import { Box, CSSObject, SxProps, TableCell, TableHead, TableRow, TableSortLabel, useTheme } from '@mui/material';
 import React from 'react';
-import { Theme, alpha } from '@mui/material/styles';
+import { Theme } from '@mui/material/styles';
 
 interface SortableHeaderCellProps {
   headerName: string; // Title of the column
@@ -54,13 +54,13 @@ const SortableHeaderCell: React.FC<SortableHeaderCellProps> = ({
 };
 
 const highlightHover = (theme: Theme): React.CSSProperties => {
-    return {
-      backgroundColor:
-        theme.palette.mode === 'light'
-          ? theme.palette.primary.dark // Light mode hover colour
-          : theme.palette.mode === 'dark'
-            ? theme.palette.primary.dark // Dark mode hover colour
-          : theme.palette.primary.dark, // High contrast mode hover colour
+  return {
+    backgroundColor:
+      theme.palette.mode === 'light'
+        ? theme.palette.primary.dark // Light mode hover colour
+        : theme.palette.mode === 'dark'
+          ? theme.palette.primary.dark // Dark mode hover colour
+        : theme.palette.primary.dark, // High contrast mode hover colour
     };
   };
 
