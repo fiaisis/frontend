@@ -12,11 +12,20 @@ import Grid from '@mui/material/Grid2';
 import BackgroundImage from '../images/background.jpg';
 import GreenSwirl1Image from '../images/green-swirl1.png';
 import GreenSwirl2Image from '../images/green-swirl2.png';
-import Decal1Image from '../images/decal1.svg';
-import Decal2Image from '../images/decal2.svg';
-import Decal2DarkImage from '../images/decal2-dark.svg';
-import Decal2DarkHCImage from '../images/decal2-darkhc.svg';
+import Decal1Svg from '../images/decal1.svg?raw';
+import Decal2Svg from '../images/decal2.svg?raw';
+import Decal2DarkSvg from '../images/decal2-dark.svg?raw';
+import Decal2DarkHCSvg from '../images/decal2-darkhc.svg?raw';
 import FacilityImage from '../images/facility.jpg';
+
+// ?raw on SVGs tells Vite to skip the URL/file handling and instead give
+// the file contents as a plain string at build time
+const svgToDataUri = (svg: string): string => `data:image/svg+xml,${encodeURIComponent(svg)}`;
+
+const Decal1Image = svgToDataUri(Decal1Svg);
+const Decal2Image = svgToDataUri(Decal2Svg);
+const Decal2DarkImage = svgToDataUri(Decal2DarkSvg);
+const Decal2DarkHCImage = svgToDataUri(Decal2DarkHCSvg);
 
 const backgroundTitleStyles = {
   color: '#FFFFFF',
@@ -65,7 +74,7 @@ const PaperHeading = styled(Typography)(({ theme }) => ({
   fontWeight: 'bold',
   fontSize: '24px',
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  color: (theme as any).colours?.homePage?.heading,
+  color: (theme as any).colours?.homepage?.heading,
   marginBottom: theme.spacing(2),
 }));
 
@@ -86,7 +95,7 @@ const BluePaperHeading = styled(Typography)(({ theme }) => ({
 const BluePaperDescription = styled(Typography)(({ theme }) => ({
   textAlign: 'left',
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  color: (theme as any).colours?.homePage?.blueDescription,
+  color: (theme as any).colours?.homepage?.blueDescription,
   marginBottom: theme.spacing(2),
 }));
 
@@ -115,17 +124,17 @@ const BrowseDecal = styled('div', {
 const LightBlueButton = styled(Button)(({ theme }) => ({
   color: '#FFFFFF',
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  backgroundColor: (theme as any).colours?.homePage?.blueButton,
+  backgroundColor: (theme as any).colours?.homepage?.blueButton,
   '&:hover': {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    backgroundColor: (theme as any).colours?.homePage?.blueButton
+    backgroundColor: (theme as any).colours?.homepage?.blueButton
       ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        alpha((theme as any).colours?.homePage?.blueButton, 0.8)
+        alpha((theme as any).colours?.homepage?.blueButton, 0.8)
       : '#FFFFFF',
   },
 }));
 
-const HomePage = (): React.ReactElement => {
+const Homepage = (): React.ReactElement => {
   const [t] = useTranslation();
   const theme = useTheme();
   const isViewportMdOrLager = useMediaQuery(theme.breakpoints.up('md'));
@@ -192,7 +201,7 @@ const HomePage = (): React.ReactElement => {
                     fontWeight: 'bold',
                     fontSize: '32px',
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    color: (theme as any).colours?.homePage?.heading,
+                    color: (theme as any).colours?.homepage?.heading,
                     marginBottom: theme.spacing(2),
                   })}
                 >
@@ -299,7 +308,7 @@ const HomePage = (): React.ReactElement => {
                     color="primary"
                     variant="contained"
                     component={Link}
-                    to={t('reduction-history/ALL')}
+                    to="/reduction-history"
                     data-testid="browse-button"
                   >
                     {t('Browse reductions')}
@@ -351,4 +360,4 @@ const HomePage = (): React.ReactElement => {
   );
 };
 
-export default HomePage;
+export default Homepage;

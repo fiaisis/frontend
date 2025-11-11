@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const isDev = process.env.REACT_APP_DEV_MODE === 'true';
+const isDev = import.meta.env.DEV || import.meta.env.VITE_DEV_MODE === 'true';
 
 export const fiaApi = axios.create();
 
@@ -27,7 +27,8 @@ export const clearFailedAuthRequestsQueue = (): void => {
 // We need to configure axios via interceptors because if the access token changes without a refresh the previous
 // token will still be used
 fiaApi.interceptors.request.use(async (config) => {
-  config.baseURL = process.env.REACT_APP_FIA_REST_API_URL;
+  const baseURL = import.meta.env.VITE_FIA_REST_API_URL;
+  config.baseURL = baseURL;
   config.headers['Authorization'] = `Bearer ${!isDev ? localStorage.getItem('scigateway:token') : ''}`;
   return config;
 });

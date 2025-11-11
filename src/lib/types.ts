@@ -1,4 +1,5 @@
 export const reductionStates = ['ERROR', 'UNSUCCESSFUL', 'SUCCESSFUL', 'NOT_STARTED'] as const;
+
 export type ReductionState = (typeof reductionStates)[number];
 
 export interface Job {
@@ -30,7 +31,6 @@ export interface Job {
   };
 }
 
-// if this needs exporting, move it to types
 export interface JobQueryFilters {
   experiment_number_in?: number[];
   title?: string;
@@ -48,3 +48,5 @@ export interface JobQueryFilters {
   experiment_number_after?: number;
   experiment_number_before?: number;
 }
+
+export type MantidVersionMap = Record<string, string>;

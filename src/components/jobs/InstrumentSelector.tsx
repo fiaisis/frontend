@@ -1,6 +1,6 @@
 import { FormControl, InputLabel, MenuItem, Select, SelectChangeEvent } from '@mui/material';
 import React from 'react';
-import { instruments } from '../../lib/InstrumentData';
+import { instruments } from '../../lib/instrumentData';
 
 const InstrumentSelector: React.FC<{
   selectedInstrument: string;

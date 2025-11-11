@@ -1,4 +1,5 @@
-import logoLight from './images/fia-light-text-logo.png';
+// Resolve plugin logo at runtime
+const lightLogoUrl = new URL('./images/fia-light-text-logo.png', import.meta.url).href;
 
 export function createRoute(
   section: string,
@@ -12,8 +13,7 @@ export function createRoute(
   // Also, switching between light and dark doesn't alter the header bar
   // colour unless high contrast mode is also on, so for now only using the
   // light logo
-  const pluginUrl = process.env.REACT_APP_PLUGIN_URL;
-  const logoUrl = pluginUrl + logoLight;
+  const logoUrl = lightLogoUrl;
   const routeAction = {
     type: 'scigateway:api:register_route',
     payload: {
