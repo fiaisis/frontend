@@ -43,6 +43,9 @@ const JobTable: React.FC<{
   handleRowsPerPageChange: (rowsPerPage: JobRowsPerPage, newPage: number) => void;
   filters: JobQueryFilters;
   handleFiltersChange: (filters: JobQueryFilters) => void;
+  handleSort: (sortKey: string) => void;
+  orderBy: string;
+  orderDirection: "desc" | "asc";
 }> = ({
   selectedInstrument,
   currentPage,
@@ -52,6 +55,9 @@ const JobTable: React.FC<{
   handleRowsPerPageChange,
   filters,
   handleFiltersChange,
+  orderBy,
+  orderDirection,
+  handleSort,
 }) => {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [totalRows, setTotalRows] = useState<number>(0);
@@ -62,8 +68,6 @@ const JobTable: React.FC<{
   // truly changes
   const filtersStringRef = useRef<string>(JSON.stringify(filters));
 
-  const [orderDirection, setOrderDirection] = useState<'asc' | 'desc'>('desc');
-  const [orderBy, setOrderBy] = useState<string>('run_start');
   const offset = currentPage * rowsPerPage;
 
   const query = `limit=${rowsPerPage}&offset=${offset}&order_by=${orderBy}&order_direction=${orderDirection}&include_run=true&filters=${JSON.stringify(filters)}&as_user=${asUser}`;
@@ -290,15 +294,6 @@ const JobTable: React.FC<{
     } finally {
       setDownloadingBulk(false);
     }
-  };
-
-  const handleSort = (sortKey: string): void => {
-    if (sortKey === orderBy) {
-      setOrderDirection(orderDirection === 'asc' ? 'desc' : 'asc');
-    } else {
-      setOrderBy(sortKey);
-    }
-    handlePageChange(0);
   };
 
   const toggleSelectAll = (): void => {
