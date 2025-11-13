@@ -1,4 +1,5 @@
-import ReactDOM from 'react-dom';
+import ReactDOMLegacy from 'react-dom';
+import * as ReactDOMClient from 'react-dom/client';
 import React from 'react';
 import './index.css';
 import App from './App';
@@ -10,7 +11,7 @@ import { createWebsocketClient } from './websocket';
 if (import.meta.env.DEV) {
   const el = document.getElementById('fia');
   if (el) {
-    ReactDOM.render(<App />, document.getElementById('fia'));
+    ReactDOMClient.createRoot(el).render(<App />);
   }
   log.setDefaultLevel(log.levels.DEBUG);
 } else {
@@ -29,10 +30,12 @@ function domElementGetter(): HTMLElement {
 // Create WebSocket client to respond to listen for pushed notifications
 createWebsocketClient('ws://localhost:3210/');
 
+const reactDomForSingleSpa = Object.assign({}, ReactDOMLegacy, ReactDOMClient) as typeof ReactDOMLegacy;
+
 const reactLifecycles = singleSpaReact({
   React,
-  ReactDOM,
-  renderType: 'render',
+  ReactDOM: reactDomForSingleSpa,
+  renderType: 'createRoot',
   rootComponent: App,
   domElementGetter,
   errorBoundary: (error): React.ReactElement => {
