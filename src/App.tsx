@@ -1,6 +1,6 @@
 // React components
 import React, { FC } from 'react';
-import { BrowserRouter as Router, Route, Switch } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Switch, Redirect } from 'react-router-dom';
 import ReactGA from 'react-ga4';
 
 // Local data
@@ -76,6 +76,10 @@ const App: FC = () => {
             <Route path="/reduction-history/:instrumentName/value-editor-:jobId">
               <ValueEditor />
             </Route>
+            {/* Blank route for login page*/}
+            <Route path="/login" />
+            {/* Catch-all that redirects unmatched routes to the homepage*/}
+            <Route render={() => <Redirect to="/" />} />
           </Switch>
         </Router>
       </GlobalStyles>
