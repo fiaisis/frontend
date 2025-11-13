@@ -52,6 +52,14 @@
     {
       "target": ".tour-nav-menu",
       "content": "Click here to open or close the navigation menu"
+    },
+    {
+      "target": ".tour-instruments",
+      "content": "Click here to see a list of all Instruments"
+    },
+    {
+      "target": ".tour-reduction-history",
+      "content": "Click here to see a list of all reductions"
     }
   ],
   "auth-provider": "jwt",
