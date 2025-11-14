@@ -35,14 +35,14 @@ jobs:
           push: true
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/frontend:${{ github.sha }}
 
-      # - name: Build and push scigateway Docker image
-      #   uses: docker/build-push-action@v6
-      #   id: scigateway_build
-      #   with:
-      #     context: ./container
-      #     file: ./container/scigateway.dockerfile
-      #     push: true
-      #     tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/scigateway:${{ github.sha }}
+      - name: Build and push scigateway Docker image
+        uses: docker/build-push-action@v6
+        id: scigateway_build
+        with:
+          context: ./container
+          file: ./container/scigateway.dockerfile
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/scigateway:${{ github.sha }}
 
       - name: Checkout the Gitops repository
         uses: actions/checkout@v5
@@ -55,10 +55,10 @@ jobs:
         with:
           cmd: yq e -i '.spec.template.spec.containers[] |= select(.name == "frontend").image = "ghcr.io/fiaisis/frontend@${{ steps.frontend_build.outputs.digest }}"' './components/frontend/envs/staging/frontend.yml'
 
-      # - name: Edit the YAML scigateway file for staging
-      #   uses: mikefarah/yq@v4.48.1
-      #   with:
-      #     cmd: yq e -i '.spec.template.spec.containers[] |= select(.name == "scigateway").image = "ghcr.io/fiaisis/scigateway@${{ steps.scigateway_build.outputs.digest }}"' './components/scigateway/envs/staging/scigateway.yml'
+      - name: Edit the YAML scigateway file for staging
+        uses: mikefarah/yq@v4.48.1
+        with:
+          cmd: yq e -i '.spec.template.spec.containers[] |= select(.name == "scigateway").image = "ghcr.io/fiaisis/scigateway@${{ steps.scigateway_build.outputs.digest }}"' './components/scigateway/envs/staging/scigateway.yml'
 
       - name: Commit and push changes
         run: |
