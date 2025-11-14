@@ -3074,7 +3074,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mui/utils@npm:^7.3.3":
+"@mui/utils@npm:^7.3.5":
   version: 7.3.5
   resolution: "@mui/utils@npm:7.3.5"
   dependencies:
@@ -3095,12 +3095,12 @@ __metadata:
   linkType: hard
 
 "@mui/x-date-pickers@npm:^8.17.0":
-  version: 8.17.0
-  resolution: "@mui/x-date-pickers@npm:8.17.0"
+  version: 8.18.0
+  resolution: "@mui/x-date-pickers@npm:8.18.0"
   dependencies:
     "@babel/runtime": ^7.28.4
-    "@mui/utils": ^7.3.3
-    "@mui/x-internals": 8.17.0
+    "@mui/utils": ^7.3.5
+    "@mui/x-internals": 8.18.0
     "@types/react-transition-group": ^4.4.12
     clsx: ^2.1.1
     prop-types: ^15.8.1
@@ -3138,21 +3138,21 @@ __metadata:
       optional: true
     moment-jalaali:
       optional: true
-  checksum: c0c4ffaae69f331de6a427a2c3e491a1f8ce68d8ec190f66c700f0dd855f44e62d89d668fabe68484ecb4bf9d244817c33f85cecf99359c3615b82d91d58ac71
+  checksum: 5092b7d7796bb5c9b8f8b90660b3f32d311e53075b5daaf319098a68c7cbfacf8f348474cfbd2bd2919f848c7984cf94a88874b77ba389a98f4827e81ebc3076
   languageName: node
   linkType: hard
 
-"@mui/x-internals@npm:8.17.0":
-  version: 8.17.0
-  resolution: "@mui/x-internals@npm:8.17.0"
+"@mui/x-internals@npm:8.18.0":
+  version: 8.18.0
+  resolution: "@mui/x-internals@npm:8.18.0"
   dependencies:
     "@babel/runtime": ^7.28.4
-    "@mui/utils": ^7.3.3
+    "@mui/utils": ^7.3.5
     reselect: ^5.1.1
     use-sync-external-store: ^1.6.0
   peerDependencies:
     react: ^17.0.0 || ^18.0.0 || ^19.0.0
-  checksum: e762ebd8cf7f1b01c08f76fc04a6d2a347d06040656ee1ef27814255787710659ac37c473d27c16e786bbc10ceae9ada96449976de11ea5e55fd341a2beea131
+  checksum: ef3db7c5f68003e9f2922d9ea322780b79e860887062588870128dae657387d4e2bfe9249b66a27f7d63d88ef9d39311c3b2af57f34d7790e7af3d2f501fffb6
   languageName: node
   linkType: hard
 
@@ -3506,9 +3506,9 @@ __metadata:
   linkType: hard
 
 "@rushstack/eslint-patch@npm:^1.1.0":
-  version: 1.14.1
-  resolution: "@rushstack/eslint-patch@npm:1.14.1"
-  checksum: 58a9f459efe5863d0093bc4a1d1cae046c5ffdc975519d2e1c432f8e00d2a70f6b6a4936ca35e178c406c0b200995504717555da2a749b3e3dd86109d6b6be4b
+  version: 1.15.0
+  resolution: "@rushstack/eslint-patch@npm:1.15.0"
+  checksum: 0b3f5951e66dabcaf5db4c1db789e1031701819caa69e09f8935cdd4aa0a41649936c2b2a5da795d79e5f56b8b6753b6e20bcfdf9343d4fb27a274a9566d7417
   languageName: node
   linkType: hard
 
@@ -3975,7 +3975,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:*, @types/node@npm:24.10.0":
+"@types/node@npm:*":
+  version: 24.10.1
+  resolution: "@types/node@npm:24.10.1"
+  dependencies:
+    undici-types: ~7.16.0
+  checksum: c2f370ae7a97c04991e0eee6b57e588a2abef0814a5f6e41fda5a9200cf02ae6654fad51c8372ee203ae4134bab80f5bf441c586f7f50e0fda3ba422f35eb3c0
+  languageName: node
+  linkType: hard
+
+"@types/node@npm:24.10.0":
   version: 24.10.0
   resolution: "@types/node@npm:24.10.0"
   dependencies:
@@ -4095,13 +4104,6 @@ __metadata:
   version: 0.12.2
   resolution: "@types/retry@npm:0.12.2"
   checksum: e5675035717b39ce4f42f339657cae9637cf0c0051cf54314a6a2c44d38d91f6544be9ddc0280587789b6afd056be5d99dbe3e9f4df68c286c36321579b1bf4a
-  languageName: node
-  linkType: hard
-
-"@types/scheduler@npm:*":
-  version: 0.26.0
-  resolution: "@types/scheduler@npm:0.26.0"
-  checksum: 295ede5e7f991c7c52f9ed8e58d3076526be9a560e59ae11bf1c1414f9755a17bd750f3bfed4657b118283d1eb082bb27dcbe2eadf335a982b0c3b6a562771c2
   languageName: node
   linkType: hard
 
@@ -5478,11 +5480,11 @@ __metadata:
   linkType: hard
 
 "baseline-browser-mapping@npm:^2.8.25":
-  version: 2.8.25
-  resolution: "baseline-browser-mapping@npm:2.8.25"
+  version: 2.8.28
+  resolution: "baseline-browser-mapping@npm:2.8.28"
   bin:
     baseline-browser-mapping: dist/cli.js
-  checksum: d11bdd2cce30ad96d65f6fdf92cf485152beaf7b1dfc81ad028a94022d702b439dee942984f62c2328c0b6ff468629eb42c2e62ad0ab7d8586b33837b738e560
+  checksum: d9b54c55edea84902709ae2163d607cbe32f55de755efc4c26a88e269bcc7e1bafba82142e692e08e94bff20fade966d8d9b820612ffe63b6fed16a7bbc344fd
   languageName: node
   linkType: hard
 
@@ -6753,9 +6755,9 @@ __metadata:
   linkType: hard
 
 "csstype@npm:^3.0.2, csstype@npm:^3.1.3":
-  version: 3.1.3
-  resolution: "csstype@npm:3.1.3"
-  checksum: 8db785cc92d259102725b3c694ec0c823f5619a84741b5c7991b8ad135dfaa66093038a1cc63e03361a6cd28d122be48f2106ae72334e067dd619a51f49eddf7
+  version: 3.2.0
+  resolution: "csstype@npm:3.2.0"
+  checksum: 952365b45deb09ee4d05679b1481d97047425c8efd6e228e200507d1d28ad43f7ff68a7f3b2e9a6e47b9b913cc5b70491b88a5318d78e3f696a5453dcdff30db
   languageName: node
   linkType: hard
 
@@ -6961,19 +6963,19 @@ __metadata:
   linkType: hard
 
 "default-browser-id@npm:^5.0.0":
-  version: 5.0.0
-  resolution: "default-browser-id@npm:5.0.0"
-  checksum: 185bfaecec2c75fa423544af722a3469b20704c8d1942794a86e4364fe7d9e8e9f63241a5b769d61c8151993bc65833a5b959026fa1ccea343b3db0a33aa6deb
+  version: 5.0.1
+  resolution: "default-browser-id@npm:5.0.1"
+  checksum: 52c637637bcd76bfe974462a2f1dd75cb04784c2852935575760f82e1fd338e5e80d3c45a9b01fdbb1e450553a830bb163b004d2eca223c5573989f82232a072
   languageName: node
   linkType: hard
 
 "default-browser@npm:^5.2.1":
-  version: 5.2.1
-  resolution: "default-browser@npm:5.2.1"
+  version: 5.3.0
+  resolution: "default-browser@npm:5.3.0"
   dependencies:
     bundle-name: ^4.1.0
     default-browser-id: ^5.0.0
-  checksum: afab7eff7b7f5f7a94d9114d1ec67273d3fbc539edf8c0f80019879d53aa71e867303c6f6d7cffeb10a6f3cfb59d4f963dba3f9c96830b4540cc7339a1bf9840
+  checksum: a5f474ec7dbf9612eef8bc81a859e1b358889bf3701de92815256c49b0aa041869c571cc381ffa316ff5c9856b490ee218aa3bce1d3cb0ae5ab319b827bf9c69
   languageName: node
   linkType: hard
 
@@ -7312,9 +7314,9 @@ __metadata:
   linkType: hard
 
 "electron-to-chromium@npm:^1.5.249":
-  version: 1.5.250
-  resolution: "electron-to-chromium@npm:1.5.250"
-  checksum: 4f32d0e176fb1dcf334dc8943a6a2636a305e7c30d86381321f259010f56d23ab0645d6550aa1a6b4a3ba7e6d5f713c58a4c1027b5399ce09786899886444a40
+  version: 1.5.252
+  resolution: "electron-to-chromium@npm:1.5.252"
+  checksum: cad9319e24d08d2d1d254bca3fa41785c6b8de6baaa6737de1e151b0ff02a360e93f0623a4db54e72eae1c586cc3280ba1075d1b770567537b048f504f42eac0
   languageName: node
   linkType: hard
 
@@ -7419,10 +7421,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"env-paths@npm:^3.0.0":
-  version: 3.0.0
-  resolution: "env-paths@npm:3.0.0"
-  checksum: b2b0a0d0d9931a13d279c22ed94d78648a1cc5f408f05d47ff3e0c1616f0aa0c38fb33deec5e5be50497225d500607d57f9c8652c4d39c2f2b7608cd45768128
+"env-paths@npm:^2.2.0":
+  version: 2.2.1
+  resolution: "env-paths@npm:2.2.1"
+  checksum: 65b5df55a8bab92229ab2b40dad3b387fad24613263d103a97f91c9fe43ceb21965cd3392b1ccb5d77088021e525c4e0481adb309625d0cb94ade1d1fb8dc17e
   languageName: node
   linkType: hard
 
@@ -8555,8 +8557,8 @@ __metadata:
     "@mui/x-date-pickers": ^8.17.0
     "@types/jest": 30.0.0
     "@types/node": 24.10.0
-    "@types/react": 17.0.39
-    "@types/react-dom": 17.0.11
+    "@types/react": 18.3.11
+    "@types/react-dom": 18.3.5
     "@types/react-router-dom": 5.3.3
     "@typescript-eslint/eslint-plugin": 8.46.4
     "@typescript-eslint/parser": 8.46.4
@@ -8581,8 +8583,8 @@ __metadata:
     loglevel: 1.9.2
     monaco-editor: ^0.54.0
     prettier: 3.6.2
-    react: 17.0.2
-    react-dom: 17.0.2
+    react: 18.3.1
+    react-dom: 18.3.1
     react-ga4: ^2.1.0
     react-i18next: ^13.3.1
     react-json-pretty: 2.2.0
@@ -11131,13 +11133,13 @@ __metadata:
   linkType: hard
 
 "js-yaml@npm:^4.1.0":
-  version: 4.1.0
-  resolution: "js-yaml@npm:4.1.0"
+  version: 4.1.1
+  resolution: "js-yaml@npm:4.1.1"
   dependencies:
     argparse: ^2.0.1
   bin:
     js-yaml: bin/js-yaml.js
-  checksum: c7830dfd456c3ef2c6e355cc5a92e6700ceafa1d14bba54497b34a99f0376cecbb3e9ac14d3e5849b426d5a5140709a66237a8c991c675431271c4ce5504151a
+  checksum: ea2339c6930fe048ec31b007b3c90be2714ab3e7defcc2c27ebf30c74fd940358f29070b4345af0019ef151875bf3bc3f8644bea1bab0372652b5044813ac02d
   languageName: node
   linkType: hard
 
@@ -11801,21 +11803,21 @@ __metadata:
   linkType: hard
 
 "make-fetch-happen@npm:^15.0.0":
-  version: 15.0.2
-  resolution: "make-fetch-happen@npm:15.0.2"
+  version: 15.0.3
+  resolution: "make-fetch-happen@npm:15.0.3"
   dependencies:
     "@npmcli/agent": ^4.0.0
     cacache: ^20.0.1
     http-cache-semantics: ^4.1.1
     minipass: ^7.0.2
-    minipass-fetch: ^4.0.0
+    minipass-fetch: ^5.0.0
     minipass-flush: ^1.0.5
     minipass-pipeline: ^1.2.4
     negotiator: ^1.0.0
-    proc-log: ^5.0.0
+    proc-log: ^6.0.0
     promise-retry: ^2.0.1
-    ssri: ^12.0.0
-  checksum: 27413f3d69e4cc9277417d279941476ef099c86a551256500918c3adfcfc32fc8a940766991143675ddf7754c9a9ac3753b445da7d675eb46b9880e7253feb55
+    ssri: ^13.0.0
+  checksum: 4fb9dbb739b33565c85dacdcff7eb9388d8f36f326a59dc13375f01af809c42c48aa5d1f4840ee36623b2461a15476e1e79e4548ca1af30b42e1e324705ac8b3
   languageName: node
   linkType: hard
 
@@ -11882,8 +11884,8 @@ __metadata:
   linkType: hard
 
 "memfs@npm:^4.43.1":
-  version: 4.50.0
-  resolution: "memfs@npm:4.50.0"
+  version: 4.51.0
+  resolution: "memfs@npm:4.51.0"
   dependencies:
     "@jsonjoy.com/json-pack": ^1.11.0
     "@jsonjoy.com/util": ^1.9.0
@@ -11891,7 +11893,7 @@ __metadata:
     thingies: ^2.5.0
     tree-dump: ^1.0.3
     tslib: ^2.0.0
-  checksum: 4b1f79321596603d74e23caa450a17307a8feedc2dad4d09ab7007c6980c8348af7e4cc74647a5f239b8c3b97d62f280658140e735beb51f8e4b8f20ab05d91d
+  checksum: 69e1bd27952cb7929070539bf37dfe4de8db5f15ca5c5900808a879411afa5383fffcb6a79af5621c947d595d1e8592cd3b0881a159981764d6cb62796665f57
   languageName: node
   linkType: hard
 
@@ -12095,9 +12097,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"minipass-fetch@npm:^4.0.0":
-  version: 4.0.1
-  resolution: "minipass-fetch@npm:4.0.1"
+"minipass-fetch@npm:^5.0.0":
+  version: 5.0.0
+  resolution: "minipass-fetch@npm:5.0.0"
   dependencies:
     encoding: ^0.1.13
     minipass: ^7.0.3
@@ -12106,7 +12108,7 @@ __metadata:
   dependenciesMeta:
     encoding:
       optional: true
-  checksum: 3dfca705ce887ca9ff14d73e8d8593996dea1a1ecd8101fdbb9c10549d1f9670bc8fb66ad0192769ead4c2dc01b4f9ca1cf567ded365adff17827a303b948140
+  checksum: 416645d1e54c09fdfe64ec1676541ac2f6f2af3abc7ad25f2f22c4518535997c1ecd2c0c586ea8a5c6499ad7d8f97671f50ff38488ada54bf61fde309f731379
   languageName: node
   linkType: hard
 
@@ -12296,10 +12298,10 @@ __metadata:
   linkType: hard
 
 "node-gyp@npm:latest":
-  version: 12.0.0
-  resolution: "node-gyp@npm:12.0.0"
+  version: 12.1.0
+  resolution: "node-gyp@npm:12.1.0"
   dependencies:
-    env-paths: ^3.0.0
+    env-paths: ^2.2.0
     exponential-backoff: ^3.1.1
     graceful-fs: ^4.2.6
     make-fetch-happen: ^15.0.0
@@ -12311,7 +12313,7 @@ __metadata:
     which: ^6.0.0
   bin:
     node-gyp: bin/node-gyp.js
-  checksum: d8f1cad700883ff40e8dd573bd0ffdf566c6042fa256cb2a0773bf11d65862fd6e8c2a380987412d7768cf8c815818aaf47a9ecdc8069c261136357eef9504e9
+  checksum: 198d91c535fe9940bcdc0db4e578f94cf9872e0d068e88ef2f4656924248bb67245b270b48eded6634c7513841c0cd42f3da3ac9d77c8e16437fcd90703b9ef3
   languageName: node
   linkType: hard
 
@@ -13935,13 +13937,6 @@ __metadata:
     ansi-styles: ^5.0.0
     react-is: ^18.0.0
   checksum: e69f857358a3e03d271252d7524bec758c35e44680287f36c1cb905187fbc82da9981a6eb07edfd8a03bc3cbeebfa6f5234c13a3d5b59f2bbdf9b4c4053e0a7f
-  languageName: node
-  linkType: hard
-
-"proc-log@npm:^5.0.0":
-  version: 5.0.0
-  resolution: "proc-log@npm:5.0.0"
-  checksum: c78b26ecef6d5cce4a7489a1e9923d7b4b1679028c8654aef0463b27f4a90b0946cd598f55799da602895c52feb085ec76381d007ab8dcceebd40b89c2f9dfe0
   languageName: node
   linkType: hard
 
@@ -15726,6 +15721,15 @@ __metadata:
   dependencies:
     minipass: ^7.0.3
   checksum: ef4b6b0ae47b4a69896f5f1c4375f953b9435388c053c36d27998bc3d73e046969ccde61ab659e679142971a0b08e50478a1228f62edb994105b280f17900c98
+  languageName: node
+  linkType: hard
+
+"ssri@npm:^13.0.0":
+  version: 13.0.0
+  resolution: "ssri@npm:13.0.0"
+  dependencies:
+    minipass: ^7.0.3
+  checksum: 9705dff9e686b11f3035fb4c3d44ce690359a15a54adcd6a18951f2763f670877321178dc72c37a2b804dba3287ecaa48726dbd0cff79b2715b1cc24521b3af3
   languageName: node
   linkType: hard
 
