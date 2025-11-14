@@ -6,17 +6,16 @@ This repository is for the frontend web application side of [FIA](https://github
 
 ### Downloading the code
 
-To get started developing for the frontend, first you will need to have [Node.js](https://nodejs.org/en/download/package-manager) and [Yarn](https://classic.yarnpkg.com/en/docs/install) installed and set-up on your machine. When following the install wizards just keep to default settings. You will then want to clone the [SciGateway](https://github.com/ral-facilities/scigateway) repository. From now on stick to SciGateway's `release/v2.0.0` branch (worth noting that `develop` is the repository's default branch instead of "main" or "master").
+To get started developing for the frontend, first you will need to have [Node.js](https://nodejs.org/en/download/package-manager) and [Yarn](https://classic.yarnpkg.com/en/docs/install) installed and set-up on your machine. When following the install wizards just keep to default settings. You will then want to clone the [SciGateway](https://github.com/ral-facilities/scigateway) repository. From now on stick to SciGateway's `release/v3.0.0` branch (worth noting that `develop` is the repository's default branch instead of "main" or "master").
 
 With that done, you can now clone the FIA frontend repository.
 
 ### Setting up FIA as a plugin
 
-The frontend works by building the project and then running it through SciGateway as a plugin. You will want to create a `settings.json` file in SciGateway's `public` folder. Do this by simply duplicating [`settings.example.json`](https://github.com/ral-facilities/scigateway/tree/release/v2.0.0/public/settings.example.json) and renaming it. A few adjustments will need to be made, like adding FIA as a plugin, setting `"homepageUrl"` to `"/fia"`, and pointing the `"authUrl"` to `"https://dev.reduce.isis.cclrc.ac.uk/auth"`. The `"auth-provider"` can be set to `null` so login isn't required. Aside from that, keep everything else as is:
+The frontend works by building the project and then running it through SciGateway as a plugin. You will want to create a `settings.json` file in SciGateway's `public` folder. Do this by simply duplicating [`settings.example.json`](https://github.com/ral-facilities/scigateway/tree/release/v3.0.0/public/settings.example.json) and renaming it. A few adjustments will need to be made, like adding FIA as a plugin, setting `"homepageUrl"` to `"/fia"`, and pointing the `"authUrl"` to `"https://dev.reduce.isis.cclrc.ac.uk/auth"`. The `"auth-provider"` can be set to `null` or `"jwt"`. Aside from that, keep everything else as is:
 
 ```json
 // settings.json
-
 "plugins": [
   {
     "name": "fia",
@@ -31,11 +30,10 @@ The frontend works by building the project and then running it through SciGatewa
 ]
 ```
 
-A `dev-plugin-settings.json` file is also needed in SciGateway's `micro-frontend-tools` folder. Like before, simply duplicate [`dev-plugin-settings.example.json`](https://github.com/ral-facilities/scigateway/blob/release/v2.0.0/micro-frontend-tools/dev-plugin-settings.example.json), rename it, and add the path to the FIA frontend build folder:
+A `dev-plugin-settings.json` file is also needed in SciGateway's `micro-frontend-tools` folder. Like before, simply duplicate [`dev-plugin-settings.example.json`](https://github.com/ral-facilities/scigateway/blob/release/v3.0.0/micro-frontend-tools/dev-plugin-settings.example.json), rename it, and add the path to the FIA frontend build folder:
 
 ```json
 // dev-plugin-settings.json
-
 "plugins": [
   {
     "type": "static",
