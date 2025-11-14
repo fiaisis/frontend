@@ -478,7 +478,15 @@ const Row: React.FC<{
         }}
         onClick={() => setOpen(!open)}
       >
-        <TableCell sx={{ py: 0, px: 1, ...ellipsisWrap }}>
+        <TableCell
+          sx={{
+            py: 0,
+            px: 1,
+            width: '80px',
+            minWidth: '80px',
+            maxWidth: '80px',
+          }}
+        >
           <Box display="flex" alignItems="center" gap={0.5}>
             <Checkbox
               color="primary"
