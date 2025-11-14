@@ -3,9 +3,9 @@ FROM node:lts-alpine3.19@sha256:ec0c413b1d84f3f7f67ec986ba885930c57b5318d2eb3abc
 
 WORKDIR /app
 
-ENV REACT_APP_FIA_REST_API_URL="/api"
-ENV REACT_APP_FIA_DATA_VIEWER_URL="/data-viewer"
-ENV REACT_APP_PLUGIN_URL="/f-i-a"
+ENV VITE_FIA_REST_API_URL="/api"
+ENV VITE_FIA_DATA_VIEWER_URL="/data-viewer"
+ENV VITE_PLUGIN_URL="/f-i-a"
 
 COPY . .
 
@@ -19,7 +19,7 @@ FROM nginx:stable-alpine3.17-slim@sha256:0a8c5686d40beca3cf231e223668cf77c91344d
 COPY --from=build /app/build /usr/share/nginx/html
 COPY ./container/healthz /usr/share/nginx/html/healthz
 
-ENV REACT_APP_FIA_REST_API_URL="/api"
+ENV VITE_FIA_REST_API_URL="/api"
 
 EXPOSE 80
 
