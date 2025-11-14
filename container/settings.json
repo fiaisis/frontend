@@ -54,13 +54,33 @@
       "content": "Click here to open or close the navigation menu"
     },
     {
-      "target": ".tour-instruments",
+      "target": ".tour-homepage-instruments",
       "content": "Click here to see a list of all Instruments"
     },
     {
-      "target": ".tour-reduction-history",
-      "content": "Click here to see a list of all reductions"
-    }
+      "target": ".tour-homepage-reduction-history",
+      "content": "Click here to see a list of all Reductions"
+    },
+    {
+      "target": ".tour-homepage-overview",
+      "content": "Main homepage box"
+    },
+    {
+      "target": ".tour-homepage-neutron-muon",
+      "content": "Click here to read more about the ISIS Neutron and Muon Facilities"
+    },
+    {
+      "target": ".tour-Instruments-instruments",
+      "content": "Click on each Instrument to expand and see info about it; from here you can also access all data reduction files for experiments on this specific Instrument."
+    },
+    {
+      "target": ".tour-red-his-select-all",
+      "content": "Click here to Select All data reductions currently shown on the table."
+    },
+    {
+      "target": ".tour-red-his-tablehead",
+      "content": "Here you will find entries for data reductions performed on experiment data. They can be ordered by the columns, and filtered by many parameters."
+    },
   ],
   "auth-provider": "jwt",
   "authUrl": "/auth",

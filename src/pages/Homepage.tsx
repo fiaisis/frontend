@@ -194,7 +194,7 @@ const Homepage = (): React.ReactElement => {
                 md: 6,
               }}
             >
-              <Box sx={paperContentStyles}>
+              <Box className="tour-homepage-overview" sx={paperContentStyles}>
                 <Typography
                   variant="h3"
                   sx={(theme) => ({
@@ -266,7 +266,7 @@ const Homepage = (): React.ReactElement => {
             }}
           >
             <Paper sx={paperStyles} elevation={1}>
-              <Box sx={paperContentStyles}>
+              <Box className="tour-homepage-instruments" sx={paperContentStyles}>
                 <Avatar sx={avatarStyles}>
                   <SearchIcon sx={avatarIconStyles} />
                 </Avatar>
@@ -295,7 +295,7 @@ const Homepage = (): React.ReactElement => {
             }}
           >
             <Paper sx={paperStyles} elevation={1}>
-              <Box sx={paperContentStyles}>
+              <Box className="tour-homepage-reduction-history" sx={paperContentStyles}>
                 <Avatar sx={avatarStyles}>
                   <SearchIcon sx={avatarIconStyles} />
                 </Avatar>
@@ -333,7 +333,7 @@ const Homepage = (): React.ReactElement => {
                   height: '100%',
                 }}
               >
-                <Box sx={paperContentStyles}>
+                <Box className="tour-homepage-neutron-muon" sx={paperContentStyles}>
                   <BluePaperHeading variant="h4">{t('ISIS Neutron and Muon Source')}</BluePaperHeading>
                   <BluePaperDescription variant="body1">
                     {t(
