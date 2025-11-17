@@ -218,15 +218,21 @@ const Homepage = (): React.ReactElement => {
                     perform automatic reductions for beamline instruments from the web.
                   </Trans>
                 </PaperDescription>
-                <Box marginTop="16px">
-                  <Button
+                <Box marginTop="16px" marginBottom="8px">
+                  <Button style={{
+                      backgroundImage: `url(${GreenSwirl1Image})`,
+                      backgroundRepeat: 'no-repeat',
+                      backgroundPosition: 'top left',
+                      backgroundSize: '100%',
+                      height: '120%',
+                    }}
                     color="primary"
                     variant="contained"
                     component={Link}
-                    to={t('instruments')}
+                    to="/reduction-history"
                     data-testid="browse-button"
                   >
-                    {t('Browse instruments')}
+                    {t('View FIA\'s data reductions')}
                   </Button>
                 </Box>
               </Box>
@@ -265,64 +271,6 @@ const Homepage = (): React.ReactElement => {
               md: 4,
             }}
           >
-            <Paper sx={paperStyles} elevation={1}>
-              <Box className="tour-homepage-instruments" sx={paperContentStyles}>
-                <Avatar sx={avatarStyles}>
-                  <SearchIcon sx={avatarIconStyles} />
-                </Avatar>
-                <PaperHeading variant="h4">{t('ISIS instruments')}</PaperHeading>
-                <PaperDescription variant="body1">
-                  {t("Browse a list of ISIS Neutron and Muon Source's instruments.")}
-                </PaperDescription>
-                <Box marginTop="auto">
-                  <Button
-                    color="primary"
-                    variant="contained"
-                    component={Link}
-                    to={t('instruments')}
-                    data-testid="browse-button"
-                  >
-                    {t('Browse instruments')}
-                  </Button>
-                </Box>
-              </Box>
-            </Paper>
-          </Grid>
-          <Grid
-            size={{
-              xs: 12,
-              md: 4,
-            }}
-          >
-            <Paper sx={paperStyles} elevation={1}>
-              <Box className="tour-homepage-reduction-history" sx={paperContentStyles}>
-                <Avatar sx={avatarStyles}>
-                  <SearchIcon sx={avatarIconStyles} />
-                </Avatar>
-                <PaperHeading variant="h4">{t('Historic reductions')}</PaperHeading>
-                <PaperDescription variant="body1">
-                  {t('Browse a list of interactable reductions performed on this platform.')}
-                </PaperDescription>
-                <Box marginTop="auto">
-                  <Button
-                    color="primary"
-                    variant="contained"
-                    component={Link}
-                    to="/reduction-history"
-                    data-testid="browse-button"
-                  >
-                    {t('Browse reductions')}
-                  </Button>
-                </Box>
-              </Box>
-            </Paper>
-          </Grid>
-          <Grid
-            size={{
-              xs: 12,
-              md: 4,
-            }}
-          >
             <Paper sx={{ ...paperStyles, backgroundColor: '#003088' }} elevation={1}>
               <div
                 style={{
@@ -333,25 +281,78 @@ const Homepage = (): React.ReactElement => {
                   height: '100%',
                 }}
               >
-                <Box className="tour-homepage-neutron-muon" sx={paperContentStyles}>
-                  <BluePaperHeading variant="h4">{t('ISIS Neutron and Muon Source')}</BluePaperHeading>
-                  <BluePaperDescription variant="body1">
-                    {t(
-                      'World-leading centre for research giving unique insights into the properties of materials on the atomic scale.'
-                    )}
-                  </BluePaperDescription>
+                <Box className="tour-homepage-instruments" sx={paperContentStyles}>
+                  <Avatar sx={avatarStyles}>
+                    <SearchIcon sx={avatarIconStyles} />
+                  </Avatar>
+                  <BluePaperHeading variant="h4">
+                    {t("Browse a list of ISIS Neutron and Muon Source's instruments.")}
+                  </BluePaperHeading>
                   <Box marginTop="auto">
-                    <LightBlueButton
+                    <Button
                       color="primary"
                       variant="contained"
-                      href={t('https://www.isis.stfc.ac.uk/Pages/About.aspx')}
-                      data-testid="facility-button"
+                      component={Link}
+                      to={t('instruments')}
+                      data-testid="browse-button"
                     >
-                      {t('Read more')}
-                    </LightBlueButton>
+                      {t('Browse instruments')}
+                    </Button>
                   </Box>
                 </Box>
               </div>
+            </Paper>
+          </Grid>
+          <Grid
+            size={{
+              xs: 12,
+              md: 4,
+            }}
+          >
+            <Paper sx={paperStyles} elevation={1}>
+              <Box className="tour-homepage-neutron-muon" sx={paperContentStyles}>
+                <PaperHeading variant="h4">{t('ISIS Neutron and Muon Source')}</PaperHeading>
+                <PaperDescription variant="body1">
+                  {t(
+                    'World-leading centre for research giving unique insights into the properties of materials on the atomic scale.'
+                  )}
+                </PaperDescription>
+                <Box marginTop="auto">
+                  <LightBlueButton
+                    color="primary"
+                    variant="contained"
+                    href={t('https://www.isis.stfc.ac.uk/Pages/About.aspx')}
+                    data-testid="facility-button"
+                  >
+                    {t('Read more [exteranal link]')}
+                  </LightBlueButton>
+                </Box>
+              </Box>
+            </Paper>
+          </Grid>
+          <Grid
+            size={{
+              xs: 12,
+              md: 4,
+            }}
+          >
+            <Paper sx={paperStyles} elevation={1}>
+              <Box className="tour-homepage-learn-more" sx={paperContentStyles}>
+                <PaperHeading variant="h4">{t('Learn more')}</PaperHeading>
+                <PaperDescription variant="body1">
+                  {t('Read more info about ISIS\'s Target Stations 1 and 2 and instrument science')}
+                </PaperDescription>
+                <Box marginTop="auto">
+                  <Button
+                    color="primary"
+                    variant="contained"
+                    href={t('https://www.isis.stfc.ac.uk/Pages/Instruments.aspx')}
+                    data-testid="browse-button"
+                  >
+                    {t('Instrument info [external link]')}
+                  </Button>
+                </Box>
+              </Box>
             </Paper>
           </Grid>
         </Grid>
