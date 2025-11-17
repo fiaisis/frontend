@@ -72,7 +72,7 @@ const Instruments: React.FC = () => {
       <Typography variant="h3" component="h1" style={{ color: theme.palette.text.primary, padding: '20px' }}>
         ISIS instruments
       </Typography>
-      <Box sx={{ paddingBottom: '2rem' }}>
+      <Box className="tour-instruments" sx={{ paddingBottom: '2rem' }}>
         {sortedInstruments.map((instrument) => (
           <Box
             key={instrument.id}

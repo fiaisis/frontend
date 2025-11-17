@@ -443,7 +443,7 @@ const JobTable: React.FC<{
             )}
           </Box>
 
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Box className="tour-job-table-adv-filters" sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <Typography
               display={'flex'}
               alignItems={'center'}

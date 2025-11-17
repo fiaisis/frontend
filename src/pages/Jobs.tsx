@@ -238,7 +238,7 @@ const Jobs: React.FC = (): ReactElement => {
             )}
           </Box>
         </Box>
-        <Box display="flex" alignItems="center">
+        <Box className="tour-view-as-user" display="flex" alignItems="center">
           {userRole === 'staff' && (
             <FormControlLabel
               control={<Switch checked={asUser} onChange={() => setAsUser(!asUser)} color="secondary" />}
@@ -267,7 +267,7 @@ const Jobs: React.FC = (): ReactElement => {
         setDrawerOpen={setConfigDrawerOpen}
         selectedInstrument={selectedInstrument}
       />
-      <Box sx={{ padding: '0 20px 20px' }}>
+      <Box className="tour-red-his-tablehead" sx={{ padding: '0 20px 20px' }}>
         {selectedInstrument === 'IMAT' ? (
           <IMATView />
         ) : (
