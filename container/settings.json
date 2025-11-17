@@ -74,12 +74,12 @@
       "content": "Click on each Instrument to expand and see info about it; from here you can also access all data reduction files for experiments on this specific Instrument."
     },
     {
-      "target": ".tour-red-his-select-all",
-      "content": "Click here to Select All data reductions currently shown on the table."
-    },
-    {
       "target": ".tour-red-his-tablehead",
       "content": "Here you will find entries for data reductions performed on experiment data. Reductions can be ordered by the columns, and filtered by many parameters. Click on one of the rows to expand information about the data reduction, including the experiment run details and data reduction job inputs."
+    },
+    {
+      "target": ".tour-red-his-select-all",
+      "content": "Click here to Select All data reductions currently shown on the table."
     },
     {
       "target": ".tour-job-table-adv-filters",
