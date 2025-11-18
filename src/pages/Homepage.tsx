@@ -215,7 +215,7 @@ const Homepage = (): React.ReactElement => {
                 </PaperDescription>
                 <PaperDescription variant="body1">
                   <Trans i18nKey="home-page.browse.description2">
-                    <strong>Flexible Interactive Automation</strong> focuses on providing scientists an interface to
+                    <strong>Flexible Interactive Automation (FIA)</strong> focuses on providing scientists an interface to
                     perform automatic reductions for beamline instruments from the web.
                   </Trans>
                 </PaperDescription>
@@ -283,11 +283,8 @@ const Homepage = (): React.ReactElement => {
                 }}
               >
                 <Box className="tour-homepage-instruments" sx={paperContentStyles}>
-                  <Avatar sx={avatarStyles}>
-                    <SearchIcon sx={avatarIconStyles} />
-                  </Avatar>
                   <BluePaperHeading variant="h4">
-                    {t("Browse a list of ISIS Neutron and Muon Source's instruments.")}
+                    {t("Browse a list of ISIS Neutron and Muon Source's instruments on the FIA platform")}
                   </BluePaperHeading>
                   <Box marginTop="auto">
                     <Button
@@ -341,7 +338,7 @@ const Homepage = (): React.ReactElement => {
               <Box className="tour-homepage-learn-more" sx={paperContentStyles}>
                 <PaperHeading variant="h4">{t('Learn more')}</PaperHeading>
                 <PaperDescription variant="body1">
-                  {t('Read more info about ISIS\'s Target Stations 1 and 2 and instrument science')}
+                  {t('Read more info about ISIS\'s Target Stations 1 and 2, and learn about instruments by their scientific technique.')}
                 </PaperDescription>
                 <Box marginTop="auto">
                   <a href="https://www.isis.stfc.ac.uk/Pages/Instruments.aspx" target="_blank" rel="noopener noreferrer">
