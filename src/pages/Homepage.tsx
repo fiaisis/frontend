@@ -7,6 +7,7 @@ import { Trans, useTranslation } from 'react-i18next';
 import { alpha, Avatar, Box, Button, Paper, styled, Typography, useMediaQuery, useTheme } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import Grid from '@mui/material/Grid2';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 
 // Local data
 import BackgroundImage from '../images/background.jpg';
@@ -318,14 +319,14 @@ const Homepage = (): React.ReactElement => {
                   )}
                 </PaperDescription>
                 <Box marginTop="auto">
-                  <LightBlueButton
+                  <a href="https://www.isis.stfc.ac.uk/Pages/About.aspx" target ="_blank" rel="noopener noreferrer">
+                    <Button
                     color="primary"
                     variant="contained"
-                    href={t('https://www.isis.stfc.ac.uk/Pages/About.aspx')}
                     data-testid="facility-button"
-                  >
-                    {t('Read more [exteranal link]')}
-                  </LightBlueButton>
+                    endIcon={<OpenInNewIcon/>}
+                    >{t('Read more')}</Button>
+                  </a>
                 </Box>
               </Box>
             </Paper>
@@ -343,14 +344,14 @@ const Homepage = (): React.ReactElement => {
                   {t('Read more info about ISIS\'s Target Stations 1 and 2 and instrument science')}
                 </PaperDescription>
                 <Box marginTop="auto">
-                  <Button
-                    color="primary"
-                    variant="contained"
-                    href={t('https://www.isis.stfc.ac.uk/Pages/Instruments.aspx')}
-                    data-testid="browse-button"
-                  >
-                    {t('Instrument info [external link]')}
-                  </Button>
+                  <a href="https://www.isis.stfc.ac.uk/Pages/Instruments.aspx" target="_blank" rel="noopener noreferrer">
+                    <Button
+                        color="primary"
+                        variant="contained"
+                        data-testid="browse-button"
+                        endIcon={<OpenInNewIcon/>}
+                    >{t('Instrument info')}</Button>
+                  </a> 
                 </Box>
               </Box>
             </Paper>

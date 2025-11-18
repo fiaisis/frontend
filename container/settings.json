@@ -23,35 +23,35 @@
   "help-tour-steps": [
     {
       "target": ".tour-title",
-      "content": "Hello, and welcome to FIA! This tour will show you the important features of this application"
+      "content": "Hello, and welcome to FIA! This tour will show you the important features of this application."
     },
     {
       "target": ".tour-user-profile",
-      "content": "Click here to sign in or sign out"
+      "content": "Click here to sign in or sign out."
     },
     {
       "target": ".tour-notifications",
-      "content": "Click here to see any notifications you may have"
+      "content": "Click here to see any notifications you may have."
     },
     {
       "target": ".tour-settings",
-      "content": "Click here to change the settings for cookies, dark/light mode and high-contrast mode"
+      "content": "Click here to change the settings for cookies, dark/light mode and high-contrast mode."
     },
     {
       "target": ".tour-contact",
-      "content": "Click here to contact the support team with any issues or feedback"
+      "content": "Click here to contact the support team with any issues or feedback."
     },
     {
       "target": ".tour-help",
-      "content": "Click here to get help"
+      "content": "Click here to get detailed help using FIA's services, or report a problem."
     },
     {
       "target": ".tour-admin",
-      "content": "Click here to access the admin interface"
+      "content": "Click here to access the admin interface."
     },
     {
       "target": ".tour-nav-menu",
-      "content": "Click here to open or close the navigation menu"
+      "content": "Click here to open or close the navigation menu."
     },
     {
       "target": ".tour-homepage-overview",
@@ -59,11 +59,11 @@
     },
     {
       "target": ".tour-homepage-instruments",
-      "content": "Click here to see a list of all instruments"
+      "content": "Click here to see a list of all instruments."
     },
     {
       "target": ".tour-homepage-neutron-muon",
-      "content": "Click here to nagivate externally and read more about the ISIS Neutron and Muon Facility"
+      "content": "Click here to nagivate externally and read more about the ISIS Neutron and Muon Facility."
     },
     {
       "target": ".tour-homepage-learn-more",
@@ -83,7 +83,7 @@
     },
     {
       "target": ".tour-job-table-adv-filters",
-      "content": "Click here to filter the table by Reduction state, Filename, Title, Instrument, Experiment number, or dates of Run start/end or Job start/end"
+      "content": "Click here to filter the table by Reduction state, Filename, Title, Instrument, Experiment number, or dates of Run start/end or Job start/end."
     },
     {
       "target": ".tour-instruments",
