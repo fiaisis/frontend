@@ -391,6 +391,7 @@ const JobTable: React.FC<{
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <Button
+              className="tour-red-his-select-all"
               variant="contained"
               color="primary"
               size="small"
@@ -443,7 +444,7 @@ const JobTable: React.FC<{
             )}
           </Box>
 
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Box className="tour-job-table-adv-filters" sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <Typography
               display={'flex'}
               alignItems={'center'}

@@ -7,6 +7,7 @@ import { Trans, useTranslation } from 'react-i18next';
 import { alpha, Avatar, Box, Button, Paper, styled, Typography, useMediaQuery, useTheme } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import Grid from '@mui/material/Grid2';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 
 // Local data
 import BackgroundImage from '../images/background.jpg';
@@ -194,7 +195,7 @@ const Homepage = (): React.ReactElement => {
                 md: 6,
               }}
             >
-              <Box sx={paperContentStyles}>
+              <Box className="tour-homepage-overview" sx={paperContentStyles}>
                 <Typography
                   variant="h3"
                   sx={(theme) => ({
@@ -214,19 +215,25 @@ const Homepage = (): React.ReactElement => {
                 </PaperDescription>
                 <PaperDescription variant="body1">
                   <Trans i18nKey="home-page.browse.description2">
-                    <strong>Flexible Interactive Automation</strong> focuses on providing scientists an interface to
+                    <strong>Flexible Interactive Automation (FIA)</strong> focuses on providing scientists an interface to
                     perform automatic reductions for beamline instruments from the web.
                   </Trans>
                 </PaperDescription>
-                <Box marginTop="16px">
-                  <Button
+                <Box marginTop="16px" marginBottom="8px">
+                  <Button style={{
+                      backgroundImage: `url(${GreenSwirl1Image})`,
+                      backgroundRepeat: 'no-repeat',
+                      backgroundPosition: 'top left',
+                      backgroundSize: '100%',
+                      height: '120%',
+                    }}
                     color="primary"
                     variant="contained"
                     component={Link}
-                    to={t('instruments')}
+                    to="/reduction-history"
                     data-testid="browse-button"
                   >
-                    {t('Browse instruments')}
+                    {t('View FIA\'s data reductions')}
                   </Button>
                 </Box>
               </Box>
@@ -265,64 +272,6 @@ const Homepage = (): React.ReactElement => {
               md: 4,
             }}
           >
-            <Paper sx={paperStyles} elevation={1}>
-              <Box sx={paperContentStyles}>
-                <Avatar sx={avatarStyles}>
-                  <SearchIcon sx={avatarIconStyles} />
-                </Avatar>
-                <PaperHeading variant="h4">{t('ISIS instruments')}</PaperHeading>
-                <PaperDescription variant="body1">
-                  {t("Browse a list of ISIS Neutron and Muon Source's instruments.")}
-                </PaperDescription>
-                <Box marginTop="auto">
-                  <Button
-                    color="primary"
-                    variant="contained"
-                    component={Link}
-                    to={t('instruments')}
-                    data-testid="browse-button"
-                  >
-                    {t('Browse instruments')}
-                  </Button>
-                </Box>
-              </Box>
-            </Paper>
-          </Grid>
-          <Grid
-            size={{
-              xs: 12,
-              md: 4,
-            }}
-          >
-            <Paper sx={paperStyles} elevation={1}>
-              <Box sx={paperContentStyles}>
-                <Avatar sx={avatarStyles}>
-                  <SearchIcon sx={avatarIconStyles} />
-                </Avatar>
-                <PaperHeading variant="h4">{t('Historic reductions')}</PaperHeading>
-                <PaperDescription variant="body1">
-                  {t('Browse a list of interactable reductions performed on this platform.')}
-                </PaperDescription>
-                <Box marginTop="auto">
-                  <Button
-                    color="primary"
-                    variant="contained"
-                    component={Link}
-                    to="/reduction-history"
-                    data-testid="browse-button"
-                  >
-                    {t('Browse reductions')}
-                  </Button>
-                </Box>
-              </Box>
-            </Paper>
-          </Grid>
-          <Grid
-            size={{
-              xs: 12,
-              md: 4,
-            }}
-          >
             <Paper sx={{ ...paperStyles, backgroundColor: '#003088' }} elevation={1}>
               <div
                 style={{
@@ -333,25 +282,75 @@ const Homepage = (): React.ReactElement => {
                   height: '100%',
                 }}
               >
-                <Box sx={paperContentStyles}>
-                  <BluePaperHeading variant="h4">{t('ISIS Neutron and Muon Source')}</BluePaperHeading>
-                  <BluePaperDescription variant="body1">
-                    {t(
-                      'World-leading centre for research giving unique insights into the properties of materials on the atomic scale.'
-                    )}
-                  </BluePaperDescription>
+                <Box className="tour-homepage-instruments" sx={paperContentStyles}>
+                  <BluePaperHeading variant="h4">
+                    {t("Browse a list of ISIS Neutron and Muon Source's instruments on the FIA platform")}
+                  </BluePaperHeading>
                   <Box marginTop="auto">
-                    <LightBlueButton
+                    <Button
                       color="primary"
                       variant="contained"
-                      href={t('https://www.isis.stfc.ac.uk/Pages/About.aspx')}
-                      data-testid="facility-button"
+                      component={Link}
+                      to={t('instruments')}
+                      data-testid="browse-button"
                     >
-                      {t('Read more')}
-                    </LightBlueButton>
+                      {t('Browse instruments')}
+                    </Button>
                   </Box>
                 </Box>
               </div>
+            </Paper>
+          </Grid>
+          <Grid
+            size={{
+              xs: 12,
+              md: 4,
+            }}
+          >
+            <Paper sx={paperStyles} elevation={1}>
+              <Box className="tour-homepage-neutron-muon" sx={paperContentStyles}>
+                <PaperHeading variant="h4">{t('ISIS Neutron and Muon Source')}</PaperHeading>
+                <PaperDescription variant="body1">
+                  {t(
+                    'World-leading centre for research giving unique insights into the properties of materials on the atomic scale.'
+                  )}
+                </PaperDescription>
+                <Box marginTop="auto">
+                  <a href="https://www.isis.stfc.ac.uk/Pages/About.aspx" target ="_blank" rel="noopener noreferrer">
+                    <Button
+                    color="primary"
+                    variant="contained"
+                    data-testid="facility-button"
+                    endIcon={<OpenInNewIcon/>}
+                    >{t('Read more')}</Button>
+                  </a>
+                </Box>
+              </Box>
+            </Paper>
+          </Grid>
+          <Grid
+            size={{
+              xs: 12,
+              md: 4,
+            }}
+          >
+            <Paper sx={paperStyles} elevation={1}>
+              <Box className="tour-homepage-learn-more" sx={paperContentStyles}>
+                <PaperHeading variant="h4">{t('Learn more')}</PaperHeading>
+                <PaperDescription variant="body1">
+                  {t('Read more info about ISIS\'s Target Stations 1 and 2, and learn about instruments by their scientific technique.')}
+                </PaperDescription>
+                <Box marginTop="auto">
+                  <a href="https://www.isis.stfc.ac.uk/Pages/Instruments.aspx" target="_blank" rel="noopener noreferrer">
+                    <Button
+                        color="primary"
+                        variant="contained"
+                        data-testid="browse-button"
+                        endIcon={<OpenInNewIcon/>}
+                    >{t('Instrument info')}</Button>
+                  </a> 
+                </Box>
+              </Box>
             </Paper>
           </Grid>
         </Grid>

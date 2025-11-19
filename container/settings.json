@@ -23,35 +23,75 @@
   "help-tour-steps": [
     {
       "target": ".tour-title",
-      "content": "Hello, and welcome to FIA! This tour will show you the important features of this application"
+      "content": "Hello, and welcome to FIA! This tour will show you the important features of this application."
     },
     {
       "target": ".tour-user-profile",
-      "content": "Click here to sign in or sign out"
+      "content": "Click here to sign in or sign out."
     },
     {
       "target": ".tour-notifications",
-      "content": "Click here to see any notifications you may have"
+      "content": "Click here to see any notifications you may have."
     },
     {
       "target": ".tour-settings",
-      "content": "Click here to change the settings for cookies, dark/light mode and high-contrast mode"
+      "content": "Click here to change the settings for cookies, dark/light mode and high-contrast mode."
     },
     {
       "target": ".tour-contact",
-      "content": "Click here to contact the support team with any issues or feedback"
+      "content": "Click here to contact the support team with any issues or feedback."
     },
     {
       "target": ".tour-help",
-      "content": "Click here to get help"
+      "content": "Click here to get detailed help using FIA's services, or report a problem."
     },
     {
       "target": ".tour-admin",
-      "content": "Click here to access the admin interface"
+      "content": "Click here to access the admin interface."
     },
     {
       "target": ".tour-nav-menu",
-      "content": "Click here to open or close the navigation menu"
+      "content": "Click here to open or close the navigation menu."
+    },
+    {
+      "target": ".tour-homepage-overview",
+      "content": "Click here to view all data reductions. You can re-run data reduction jobs, download data, and view more info about experiment runs."
+    },
+    {
+      "target": ".tour-homepage-instruments",
+      "content": "Click here to see a list of all instruments."
+    },
+    {
+      "target": ".tour-homepage-neutron-muon",
+      "content": "Click here to nagivate externally and read more about the ISIS Neutron and Muon Facility."
+    },
+    {
+      "target": ".tour-homepage-learn-more",
+      "content": "Click here to navigate externally and read about TS1, TS2, and each ISIS instrument by scientific technique."
+    },
+    {
+      "target": ".tour-Instruments-instruments",
+      "content": "Click on each Instrument to expand and see info about it; from here you can also access all data reduction files for experiments on this specific Instrument."
+    },
+    {
+      "target": ".tour-red-his-tablehead",
+      "content": "Here you will find entries for data reductions performed on experiment data. Reductions can be ordered by the columns, and filtered by many parameters. Click on one of the rows to expand information about the data reduction, including the experiment run details and data reduction job inputs."
+    },
+    {
+      "target": ".tour-red-his-select-all",
+      "content": "Click here to Select All data reductions currently shown on the table."
+    },
+    {
+      "target": ".tour-job-table-adv-filters",
+      "content": "Click here to filter the table by Reduction state, Filename, Title, Instrument, Experiment number, or dates of Run start/end or Job start/end."
+    },
+    {
+      "target": ".tour-instruments",
+      "content": "This is a list of all of the instruments at ISIS Neutron and Muon Source. Click on any of them to see a description of the Instrument, navigate to its information page on the ISIS website, see relevant scientist contacts, or go to its data reduction history."
+    },
+    {
+      "target": ".tour-view-as-user",
+      "content": "Click here to access configurations for some instruments, or filter the table by instrument."
     }
   ],
   "auth-provider": "jwt",

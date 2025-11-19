@@ -66,9 +66,9 @@ const reactLifecycles = singleSpaReact({
 // 4. How high up in the section should your link be - ascending order
 // 5. Help text renders a tooltip in the site tour for this link
 // 6. Whether the link should be visible to unauthenticated users
-createRoute('Reductions', 'Home page', '/fia', 1, 'Data help text', false);
-createRoute('Reductions', 'Instruments', '/fia/instruments', 2, 'Data help text', false);
-createRoute('Reductions', 'Reduction history', '/fia/reduction-history', 3, 'Data help text', false);
+createRoute('Reductions', 'Home page', '/fia', 1, '', false);
+createRoute('Reductions', 'Instruments', '/fia/instruments', 2, 'Click here to see a list of all Instruments.', false);
+createRoute('Reductions', 'Reduction history', '/fia/reduction-history', 3, 'Click here to see a list of all reductions.', false);
 
 // Single-SPA bootstrap methods have no idea what type of inputs may be
 // pushed down from the parent app
