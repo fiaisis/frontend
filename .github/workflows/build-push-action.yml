@@ -18,7 +18,7 @@ jobs:
 
     steps:
       - name: Check out code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Log in to the Container registry
         uses: docker/login-action@v3
@@ -45,18 +45,18 @@ jobs:
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/scigateway:${{ github.sha }}
 
       - name: Checkout the Gitops repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           repository: fiaisis/gitops
           token: ${{ secrets.GITOPS_STAGING_EDIT_TOKEN }}
 
       - name: Edit the YAML frontend file for staging
-        uses: mikefarah/yq@v4.48.1
+        uses: mikefarah/yq@v4.48.2
         with:
           cmd: yq e -i '.spec.template.spec.containers[] |= select(.name == "frontend").image = "ghcr.io/fiaisis/frontend@${{ steps.frontend_build.outputs.digest }}"' './components/frontend/envs/staging/frontend.yml'
 
       - name: Edit the YAML scigateway file for staging
-        uses: mikefarah/yq@v4.48.1
+        uses: mikefarah/yq@v4.48.2
         with:
           cmd: yq e -i '.spec.template.spec.containers[] |= select(.name == "scigateway").image = "ghcr.io/fiaisis/scigateway@${{ steps.scigateway_build.outputs.digest }}"' './components/scigateway/envs/staging/scigateway.yml'
 
