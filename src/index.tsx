@@ -69,6 +69,7 @@ const reactLifecycles = singleSpaReact({
 createRoute('Reductions', 'Home page', '/fia', 1, '', false);
 createRoute('Reductions', 'Instruments', '/fia/instruments', 2, 'Click here to see a list of all Instruments.', false);
 createRoute('Reductions', 'Reduction history', '/fia/reduction-history', 3, 'Click here to see a list of all reductions.', false);
+createRoute('Reductions', 'H5 Data Viewer', '/fia/h5-viewer', 4, 'View and visualize HDF5 data files from reduction jobs.', false);
 
 // Single-SPA bootstrap methods have no idea what type of inputs may be
 // pushed down from the parent app

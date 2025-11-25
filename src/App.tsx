@@ -7,6 +7,7 @@ import ReactGA from 'react-ga4';
 import Instruments from './pages/Instruments';
 import Homepage from './pages/Homepage';
 import ValueEditor from './pages/ValueEditor';
+import H5Viewer from './pages/H5Viewer';
 import GlobalStyles from './GlobalStyles';
 import Jobs from './pages/Jobs';
 import { clearFailedAuthRequestsQueue, retryFailedAuthRequests } from './lib/api';
@@ -75,6 +76,9 @@ const App: FC = () => {
             </Route>
             <Route path="/reduction-history/:instrumentName/value-editor-:jobId">
               <ValueEditor />
+            </Route>
+            <Route path="/reduction-history/:instrumentName/h5-viewer-:jobId">
+              <H5Viewer />
             </Route>
             {/* Blank route for login page*/}
             <Route path="/login" />
