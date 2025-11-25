@@ -80,6 +80,9 @@ const App: FC = () => {
             <Route path="/reduction-history/:instrumentName/h5-viewer-:jobId">
               <H5Viewer />
             </Route>
+            <Route path="/h5-viewer">
+              <H5Viewer />
+            </Route>
             {/* Blank route for login page*/}
             <Route path="/login" />
             {/* Catch-all that redirects unmatched routes to the homepage*/}

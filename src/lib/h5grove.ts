@@ -39,7 +39,7 @@ export interface FileStructure {
  */
 export async function fetchEntityMetadata(file: string, path: string = '/'): Promise<Entity> {
   try {
-    const response = await h5Api.get<Entity>('/h5grove/meta', {
+    const response = await h5Api.get<Entity>('/meta', {
       params: { file, path },
     });
     return response.data;
@@ -55,7 +55,7 @@ export async function fetchEntityMetadata(file: string, path: string = '/'): Pro
  */
 export async function fetchSearchablePaths(file: string): Promise<string[]> {
   try {
-    const response = await h5Api.get<string[]>('/h5grove/paths', {
+    const response = await h5Api.get<string[]>('/paths', {
       params: { file },
     });
     return response.data;
@@ -72,7 +72,7 @@ export async function fetchSearchablePaths(file: string): Promise<string[]> {
  */
 export async function fetchAttributes(file: string, path: string): Promise<Record<string, unknown>> {
   try {
-    const response = await h5Api.get<Record<string, unknown>>('/h5grove/attr', {
+    const response = await h5Api.get<Record<string, unknown>>('/attr', {
       params: { file, path },
     });
     return response.data;
