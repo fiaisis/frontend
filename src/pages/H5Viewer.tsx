@@ -4,10 +4,11 @@ import { useParams } from 'react-router-dom';
 import { Box, Typography, CircularProgress, Alert, Switch, FormControlLabel, useTheme } from '@mui/material';
 import FileTree from '../components/h5viewer/FileTree';
 import PlotViewer from '../components/h5viewer/Graph';
+import ExperimentSearch from '../components/h5viewer/ExperimentSearch';
 import { fetchData1D, fetchErrorData, fetchFilePath } from '../lib/h5Api';
 import { discoverFileStructure } from '../lib/h5grove';
 import { fiaApi } from '../lib/api';
-import type { FileConfig, LinePlotData, Job, DatasetInfo } from '../lib/types';
+import type { FileConfig, LinePlotData, Job, DatasetInfo, JobQueryFilters } from '../lib/types';
 import type { NumericType } from '@h5web/app';
 
 // Default colors for multiple lines - bright, vibrant colors
@@ -37,7 +38,12 @@ const H5Viewer: React.FC = (): JSX.Element => {
   const [error, setError] = useState<string | null>(null);
   const [autoSelectPrimary, setAutoSelectPrimary] = useState(true);
 
-  // Fetch jobs on mount
+  // Search state
+  const [searchInstrument, setSearchInstrument] = useState<string | null>(null);
+  const [searchExperimentNumber, setSearchExperimentNumber] = useState<number | null>(null);
+  const [isSearchActive, setIsSearchActive] = useState(false);
+
+  // Fetch jobs based on URL params or search
   useEffect(() => {
     const loadJobs = async () => {
       try {
@@ -45,35 +51,51 @@ const H5Viewer: React.FC = (): JSX.Element => {
         let jobsData: Job[];
 
         if (jobId) {
-          // Fetch specific job by ID
+          // Fetch specific job by ID (from URL)
           const response = await fiaApi.get<Job>(`/job/${jobId}`);
           jobsData = [response.data];
         } else if (instrumentName) {
-          // Fetch jobs for instrument
+          // Fetch jobs for instrument (from URL)
           const filters = {
             instrument_in: [instrumentName],
             job_state_in: ['SUCCESSFUL'],
           };
-          const response = await fiaApi.get<Job[]>('/job', {
+          const response = await fiaApi.get<Job[]>('/jobs', {
             params: {
               filters: JSON.stringify(filters),
               include_run: 'true',
             },
           });
           jobsData = response.data;
-        } else {
-          // No filters - fetch recent jobs
-          const response = await fiaApi.get<Job[]>('/job', {
+        } else if (isSearchActive) {
+          // Fetch jobs based on search criteria
+          const filters: JobQueryFilters = {
+            job_state_in: ['SUCCESSFUL'],
+          };
+
+          if (searchInstrument) {
+            filters.instrument_in = [searchInstrument];
+          }
+
+          if (searchExperimentNumber) {
+            filters.experiment_number_in = [searchExperimentNumber];
+          }
+
+          const response = await fiaApi.get<Job[]>('/jobs', {
             params: {
+              filters: JSON.stringify(filters),
               include_run: 'true',
-              limit: 50,
+              limit: 100, // Reasonable limit for experiment search
             },
           });
           jobsData = response.data;
+        } else {
+          // No URL params and no search - don't fetch
+          setLoading(false);
+          return;
         }
 
         console.log('Fetched jobs:', jobsData);
-        setJobs(jobsData);
 
         // Create file configs for all output files and fetch their full paths
         const allFiles: FileConfig[] = [];
@@ -83,21 +105,43 @@ const H5Viewer: React.FC = (): JSX.Element => {
         const allFilenames: string[] = [];
         const jobOutputMap = new Map<string, { instrumentName: string; experimentNumber: number }>();
 
-        jobsData.forEach((job) => {
-          const outputs = parseOutputs(job.outputs);
-          outputs.forEach((output) => {
-            // Only include .h5 and .hdf5 files
-            if (output.endsWith('.h5') || output.endsWith('.hdf5') || output.endsWith('.nxs')) {
-              if (!allFilenames.includes(output)) {
-                allFilenames.push(output);
-                jobOutputMap.set(output, {
-                  instrumentName: job.run.instrument_name,
-                  experimentNumber: job.run.experiment_number,
-                });
-              }
+        // Filter jobs to only include H5 files in outputs and store filtered outputs back
+        const filteredJobs = jobsData.map((job) => {
+          console.log('Job outputs:', job.outputs);
+          const outputs = JSON.parse(job.outputs.replace(/'/g, '"')) as string[];
+          console.log('Parsed outputs:', outputs);
+          const h5Outputs = outputs.filter(
+            (output) =>
+              output.endsWith('.h5') ||
+              output.endsWith('.hdf5') ||
+              output.endsWith('.nxs') ||
+              output.endsWith('.nxspe')
+          );
+
+          console.log('Filtered job outputs:', h5Outputs);
+
+          // Collect unique filenames
+          h5Outputs.forEach((output) => {
+            if (!allFilenames.includes(output)) {
+              allFilenames.push(output);
+              jobOutputMap.set(output, {
+                instrumentName: job.run.instrument_name,
+                experimentNumber: job.run.experiment_number,
+              });
             }
           });
+
+          console.log('All filenames:', allFilenames);
+
+          // Return job with filtered outputs as comma-separated string for FileTree
+          return {
+            ...job,
+            outputs: h5Outputs.join(', '),
+          };
         });
+
+        console.log('Filtered jobs with H5 outputs:', filteredJobs);
+        setJobs(filteredJobs);
 
         // Fetch full paths for all files in parallel
         const filePathPromises = allFilenames.map(async (filename) => {
@@ -118,22 +162,17 @@ const H5Viewer: React.FC = (): JSX.Element => {
         const filePathMap = new Map(filePathResults.map((r) => [r.filename, r.fullPath]));
 
         // Create file configs with full paths
-        jobsData.forEach((job) => {
-          const outputs = parseOutputs(job.outputs);
-          outputs.forEach((output) => {
-            if (output.endsWith('.h5') || output.endsWith('.hdf5') || output.endsWith('.nxs')) {
-              allFiles.push({
-                filename: output,
-                fullPath: filePathMap.get(output),
-                path: undefined,
-                errorPath: undefined,
-                enabled: false,
-                color: DEFAULT_COLORS[colorIndex % DEFAULT_COLORS.length],
-                selection: 0,
-              });
-              colorIndex++;
-            }
+        allFilenames.forEach((filename) => {
+          allFiles.push({
+            filename: filename,
+            fullPath: filePathMap.get(filename),
+            path: undefined,
+            errorPath: undefined,
+            enabled: false,
+            color: DEFAULT_COLORS[colorIndex % DEFAULT_COLORS.length],
+            selection: 0,
           });
+          colorIndex++;
         });
 
         console.log('Files with paths:', allFiles);
@@ -147,19 +186,40 @@ const H5Viewer: React.FC = (): JSX.Element => {
     };
 
     loadJobs();
-  }, [jobId, instrumentName]);
+  }, [jobId, instrumentName, isSearchActive, searchInstrument, searchExperimentNumber]);
 
-  // Helper to parse outputs
+  // Search handlers
+  const handleSearch = (instrument: string | null, experimentNumber: number | null) => {
+    setSearchInstrument(instrument);
+    setSearchExperimentNumber(experimentNumber);
+    setIsSearchActive(true);
+    setError(null);
+  };
+
+  const handleClearSearch = () => {
+    setSearchInstrument(null);
+    setSearchExperimentNumber(null);
+    setIsSearchActive(false);
+    setJobs([]);
+    setFiles([]);
+    setLinePlotData([]);
+    setError(null);
+  };
+
   const parseOutputs = (outputs: string | string[]): string[] => {
     if (typeof outputs === 'string') {
       try {
-        // Split by comma for simple comma-separated strings
+        // Try parsing as JSON array first
+        const parsed = JSON.parse(outputs);
+        if (Array.isArray(parsed)) {
+          return parsed;
+        }
+      } catch {
+        // If JSON parsing fails, fall back to comma-separated split
         return outputs
           .split(',')
           .map((s) => s.trim())
           .filter((s) => s.length > 0);
-      } catch {
-        return [];
       }
     }
     return Array.isArray(outputs) ? outputs : [];
@@ -324,93 +384,167 @@ const H5Viewer: React.FC = (): JSX.Element => {
     fetchAllData();
   }, [files, showErrors]);
 
+  // Determine if we should show search (not viewing specific job from URL)
+  const showSearch = !jobId;
+
   return (
-    <Box sx={{ display: 'flex', height: '100vh', width: '100%' }}>
-      {/* Left panel - File Tree */}
-      <Box
-        sx={{
-          width: 320,
-          borderRight: 1,
-          borderColor: 'divider',
-          display: 'flex',
-          flexDirection: 'column',
-        }}
-      >
-        <FileTree
-          jobs={jobs}
-          files={files}
-          onFileToggle={handleFileToggle}
-          onDatasetChange={handleDatasetChange}
-          onSelectionChange={handleSelectionChange}
-          autoSelectPrimary={autoSelectPrimary}
-          onAutoSelectPrimaryChange={setAutoSelectPrimary}
-        />
-      </Box>
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100%' }}>
+      {/* Search bar - only show when not viewing specific job */}
+      {showSearch && (
+        <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+          <ExperimentSearch
+            onSearch={handleSearch}
+            onClear={handleClearSearch}
+            initialInstrument={searchInstrument || undefined}
+            initialExperimentNumber={searchExperimentNumber || undefined}
+            isLoading={loading}
+            isSearchActive={isSearchActive}
+          />
+        </Box>
+      )}
 
-      {/* Right panel - Plot */}
-      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative' }}>
-        {/* Error bar toggle */}
-        {linePlotData.length > 0 && (
+      {/* Main content area */}
+      <Box sx={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+        {/* Empty state - no search active and no URL params */}
+        {!jobId && !instrumentName && !isSearchActive && (
           <Box
             sx={{
-              position: 'absolute',
-              top: 16,
-              right: 16,
-              zIndex: 20,
-            }}
-          >
-            <FormControlLabel
-              control={
-                <Switch checked={showErrors} onChange={(e) => setShowErrors(e.target.checked)} color="primary" />
-              }
-              label="Show Error Bars"
-              sx={{
-                bgcolor: 'background.paper',
-                boxShadow: 3,
-                borderRadius: 2,
-                px: 2,
-                py: 1,
-                m: 0,
-              }}
-            />
-          </Box>
-        )}
-
-        {/* Loading indicator */}
-        {loading && (
-          <Box
-            sx={{
-              position: 'absolute',
-              inset: 0,
+              flex: 1,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              bgcolor: 'rgba(255, 255, 255, 0.8)',
-              zIndex: 10,
+              bgcolor: 'background.default',
             }}
           >
-            <CircularProgress size={60} />
+            <Box sx={{ textAlign: 'center', maxWidth: 500, p: 4 }}>
+              <Typography variant="h5" color="text.primary" sx={{ mb: 2 }}>
+                Search for HDF5 Data
+              </Typography>
+              <Typography variant="body1" color="text.secondary">
+                Enter an instrument and/or experiment number above to search for jobs with HDF5 output files.
+              </Typography>
+            </Box>
           </Box>
         )}
 
-        {/* Error message */}
-        {error && (
+        {/* No results state */}
+        {isSearchActive && jobs.length === 0 && !loading && (
           <Box
             sx={{
-              position: 'absolute',
-              top: 16,
-              left: '50%',
-              transform: 'translateX(-50%)',
-              zIndex: 20,
+              flex: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
             }}
           >
-            <Alert severity="error" onClose={() => setError(null)}>
-              {error}
-            </Alert>
+            <Box sx={{ textAlign: 'center', maxWidth: 500, p: 4 }}>
+              <Typography variant="h5" color="text.primary" sx={{ mb: 2 }}>
+                No Jobs Found
+              </Typography>
+              <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
+                {searchInstrument && `Instrument: ${searchInstrument}`}
+                {searchInstrument && searchExperimentNumber && ' | '}
+                {searchExperimentNumber && `Experiment: ${searchExperimentNumber}`}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Try adjusting your search criteria or clearing the search to start over.
+              </Typography>
+            </Box>
           </Box>
         )}
 
-        <PlotViewer linePlotData={linePlotData} showErrors={showErrors} />
+        {/* Results - show FileTree and Graph when we have jobs */}
+        {(jobId || instrumentName || (isSearchActive && jobs.length > 0)) && (
+          <>
+            {/* Left panel - File Tree */}
+            <Box
+              sx={{
+                width: 320,
+                borderRight: 1,
+                borderColor: 'divider',
+                display: 'flex',
+                flexDirection: 'column',
+                overflow: 'hidden',
+              }}
+            >
+              <FileTree
+                jobs={jobs}
+                files={files}
+                onFileToggle={handleFileToggle}
+                onDatasetChange={handleDatasetChange}
+                onSelectionChange={handleSelectionChange}
+                autoSelectPrimary={autoSelectPrimary}
+                onAutoSelectPrimaryChange={setAutoSelectPrimary}
+              />
+            </Box>
+
+            {/* Right panel - Plot */}
+            <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative' }}>
+              {/* Error bar toggle */}
+              {linePlotData.length > 0 && (
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    top: 16,
+                    right: 16,
+                    zIndex: 20,
+                  }}
+                >
+                  <FormControlLabel
+                    control={
+                      <Switch checked={showErrors} onChange={(e) => setShowErrors(e.target.checked)} color="primary" />
+                    }
+                    label="Show Error Bars"
+                    sx={{
+                      bgcolor: 'background.paper',
+                      boxShadow: 3,
+                      borderRadius: 2,
+                      px: 2,
+                      py: 1,
+                      m: 0,
+                    }}
+                  />
+                </Box>
+              )}
+
+              {/* Loading indicator */}
+              {loading && (
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    inset: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    bgcolor: 'rgba(255, 255, 255, 0.8)',
+                    zIndex: 10,
+                  }}
+                >
+                  <CircularProgress size={60} />
+                </Box>
+              )}
+
+              {/* Error message */}
+              {error && (
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    top: 16,
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    zIndex: 20,
+                  }}
+                >
+                  <Alert severity="error" onClose={() => setError(null)}>
+                    {error}
+                  </Alert>
+                </Box>
+              )}
+
+              <PlotViewer linePlotData={linePlotData} showErrors={showErrors} />
+            </Box>
+          </>
+        )}
       </Box>
     </Box>
   );

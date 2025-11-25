@@ -30,7 +30,6 @@ const PlotViewer: React.FC<PlotViewerProps> = ({ linePlotData, showErrors }): JS
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          bgcolor: 'background.default',
         }}
       >
         <Box sx={{ textAlign: 'center' }}>
@@ -102,8 +101,6 @@ const PlotViewer: React.FC<PlotViewerProps> = ({ linePlotData, showErrors }): JS
           display: 'flex',
           height: '100%',
           width: '100%',
-          bgcolor: 'grey.200',
-          '--h5w-line--color': primaryData.color || '#00bfff',
         }}
       >
         <LineVis
