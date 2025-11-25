@@ -46,6 +46,8 @@ const Jobs: React.FC = (): ReactElement => {
     return storedValue ? JSON.parse(storedValue) : false;
   });
   const [userRole, setUserRole] = useState<'staff' | 'user' | null>(null);
+  const [orderDirection, setOrderDirection] = useState<'asc' | 'desc'>('desc');
+  const [orderBy, setOrderBy] = useState<string>('run_start');
 
   const getUserRole = (): 'staff' | 'user' | null => {
     const token = localStorage.getItem('scigateway:token');
@@ -61,7 +63,7 @@ const Jobs: React.FC = (): ReactElement => {
 
   // Keep table state mirrored in the browser URL so views are shareable
   const updateQueryParams = React.useCallback(
-    (next: { page?: number; rowsPerPage?: JobRowsPerPage; filters?: JobQueryFilters }) => {
+    (next: { page?: number; rowsPerPage?: JobRowsPerPage; filters?: JobQueryFilters; orderBy?: string; orderDirection?: "desc" | "asc" }) => {
       const params = new URLSearchParams(location.search);
 
       if (next.page !== undefined) {
@@ -89,6 +91,24 @@ const Jobs: React.FC = (): ReactElement => {
         }
       }
 
+      if (next.orderBy !== undefined) {
+        const orderByValue = next.orderBy;
+        if (orderByValue && orderBy) {
+          params.set('orderBy', JSON.stringify(orderByValue));
+        } else {
+          params.delete('orderBy');
+        }
+      }
+
+      if (next.orderDirection !== undefined) {
+        const orderDirValue = next.orderDirection;
+        if (orderDirValue && orderDirection) {
+          params.set('orderDir', JSON.stringify(orderDirValue));
+        } else {
+          params.delete('orderDir');
+        }
+      }
+
       const newSearch = params.toString();
       const searchString = newSearch ? `?${newSearch}` : '';
       if (searchString !== location.search) {
@@ -97,6 +117,10 @@ const Jobs: React.FC = (): ReactElement => {
     },
     [history, location.pathname, location.search]
   );
+
+    React.useEffect(() => {
+    updateQueryParams({ orderBy, orderDirection });
+  }, [orderBy, orderDirection, updateQueryParams]);
 
   const handleInstrumentChange = (event: SelectChangeEvent<string>): void => {
     const newInstrument = event.target.value;
@@ -109,6 +133,16 @@ const Jobs: React.FC = (): ReactElement => {
       search: search ? `?${search}` : '',
     });
   };
+
+  const handleSort = (sortKey: string): void => {
+    if (sortKey === orderBy) {
+      setOrderDirection(orderDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setOrderBy(sortKey);
+    }
+    handlePageChange(0);
+  };
+
 
   const handlePageChange = React.useCallback(
     (newPage: number) => {
@@ -280,6 +314,9 @@ const Jobs: React.FC = (): ReactElement => {
             handleRowsPerPageChange={handleRowsPerPageChange}
             filters={currentFilters}
             handleFiltersChange={handleFiltersChange}
+            orderBy={orderBy}
+            orderDirection={orderDirection}
+            handleSort={handleSort}
           />
         )}
       </Box>
