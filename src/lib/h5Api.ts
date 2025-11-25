@@ -10,7 +10,7 @@ const h5Api = axios.create({
 // Request interceptor to add authentication and base URL
 h5Api.interceptors.request.use(async (config) => {
   // Use FIA REST API base URL from environment
-  const baseURL = import.meta.env.VITE_FIA_REST_API_URL;
+  const baseURL = import.meta.env.VITE_FIA_PLOTTING_API_URL;
   config.baseURL = baseURL;
 
   // Add JWT token from localStorage if not in dev mode
@@ -109,7 +109,7 @@ export const fetchFilePath = async (
   experimentNumber: number
 ): Promise<string> => {
   try {
-    const url = `/plottingapi/find_file/instrument/${instrumentName}/experiment_number/${experimentNumber}`;
+    const url = `/find_file/instrument/${instrumentName}/experiment_number/${experimentNumber}`;
     const response = await h5Api.get<string>(url, {
       params: { filename },
     });

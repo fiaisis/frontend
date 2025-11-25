@@ -72,7 +72,10 @@ const FileTree: React.FC<FileTreeProps> = ({
   const getJobOutputs = (job: Job): string[] => {
     try {
       if (typeof job.outputs === 'string') {
-        return job.outputs.split(',').map((s) => s.trim()).filter((s) => s.length > 0);
+        return job.outputs
+          .split(',')
+          .map((s) => s.trim())
+          .filter((s) => s.length > 0);
       }
       return [];
     } catch {
@@ -98,7 +101,7 @@ const FileTree: React.FC<FileTreeProps> = ({
       }}
     >
       <Box sx={{ mb: 2 }}>
-        <Typography variant="h5" fontWeight="bold" sx={{ mb: 1, color: 'text.primary' }}>
+        <Typography variant="h5" fontWeight="bold" sx={{ mb: 1 }}>
           File Tree
         </Typography>
 
@@ -143,7 +146,7 @@ const FileTree: React.FC<FileTreeProps> = ({
       </Box>
 
       {filteredJobs.length === 0 && (
-        <Typography variant="body2" color="text.secondary" align="center" sx={{ mt: 4 }}>
+        <Typography variant="body2" align="center" sx={{ mt: 4 }}>
           {jobs.length === 0 ? 'No jobs available' : 'No jobs with files'}
         </Typography>
       )}
@@ -155,31 +158,29 @@ const FileTree: React.FC<FileTreeProps> = ({
           onChange={handleAccordionChange(job.id)}
           sx={{ mb: 1, boxShadow: 2 }}
         >
-          <AccordionSummary
-            expandIcon={<ExpandMoreIcon />}
-            slotProps={{
-              content: {
-                sx: { minWidth: 0 },
-              },
-            }}
-            sx={{
-              bgcolor: 'background.paper',
-              '&:hover': {
-                bgcolor: 'grey.100',
-              },
-            }}
-          >
+          <AccordionSummary expandIcon={<ExpandMoreIcon />} slotProps={{ content: { sx: { maxWidth: '100%' } } }}>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, flex: 1, minWidth: 0, overflow: 'hidden' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
-                <FolderIcon color="primary" fontSize="small" />
-                <Typography variant="body2" fontWeight="600" sx={{ flex: 1 }}>
-                  {job.run.filename}
-                </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%', minWidth: 0 }}>
+                <FolderIcon color="primary" fontSize="small" sx={{ flexShrink: 0 }} />
+                <Tooltip title={job.run.filename} arrow placement="top">
+                  <Typography
+                    variant="body2"
+                    fontWeight="600"
+                    noWrap
+                    sx={{
+                      flex: 1,
+                      minWidth: 0,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                  >
+                    {job.run.filename}
+                  </Typography>
+                </Tooltip>
                 <Chip
                   label={`${job.outputsArray.length} files`}
                   size="small"
-                  color="primary"
-                  sx={{ height: 20, fontSize: '0.7rem' }}
+                  sx={{ height: 20, fontSize: '0.7rem', flexShrink: 0 }}
                 />
               </Box>
               <Tooltip title={job.run.title} arrow>
@@ -198,7 +199,7 @@ const FileTree: React.FC<FileTreeProps> = ({
               </Tooltip>
             </Box>
           </AccordionSummary>
-          <AccordionDetails sx={{ p: 1, bgcolor: 'grey.50' }}>
+          <AccordionDetails sx={{ p: 1 }}>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
               {job.outputsArray.map((output, outputIndex) => {
                 const fileIndex = getFileIndex(output);
@@ -211,7 +212,6 @@ const FileTree: React.FC<FileTreeProps> = ({
                     key={outputIndex}
                     variant="outlined"
                     sx={{
-                      bgcolor: 'background.paper',
                       border: file.enabled ? 2 : 1,
                       borderColor: file.enabled ? 'primary.main' : 'divider',
                     }}
@@ -230,7 +230,6 @@ const FileTree: React.FC<FileTreeProps> = ({
                               sx={{
                                 wordBreak: 'break-all',
                                 fontSize: '0.8rem',
-                                color: 'text.primary',
                               }}
                             >
                               {output}
@@ -339,14 +338,14 @@ const FileTree: React.FC<FileTreeProps> = ({
                             ) : file.isDiscovered ? (
                               // Datasets discovered but none found
                               <Box sx={{ textAlign: 'center', py: 2 }}>
-                                <Typography variant="caption" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                                <Typography variant="caption" sx={{ fontStyle: 'italic' }}>
                                   No numeric datasets found
                                 </Typography>
                               </Box>
                             ) : (
                               // Discovering datasets
                               <Box sx={{ textAlign: 'center', py: 2 }}>
-                                <Typography variant="caption" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                                <Typography variant="caption" sx={{ fontStyle: 'italic' }}>
                                   Discovering datasets...
                                 </Typography>
                               </Box>
@@ -376,30 +375,6 @@ const FileTree: React.FC<FileTreeProps> = ({
                                 }}
                                 helperText="Slice 2D dataset along first dimension"
                               />
-                            </Box>
-                          )}
-
-                          {/* Full path indicator */}
-                          {file.fullPath && (
-                            <Box>
-                              <Typography variant="body2" fontWeight="500" sx={{ mb: 0.5 }}>
-                                Full Path:
-                              </Typography>
-                              <Typography
-                                variant="caption"
-                                sx={{
-                                  wordBreak: 'break-all',
-                                  color: 'text.secondary',
-                                  fontFamily: 'monospace',
-                                  fontSize: '0.7rem',
-                                  display: 'block',
-                                  bgcolor: 'grey.100',
-                                  p: 1,
-                                  borderRadius: 1,
-                                }}
-                              >
-                                {file.fullPath}
-                              </Typography>
                             </Box>
                           )}
                         </Box>
