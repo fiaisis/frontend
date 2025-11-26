@@ -1,7 +1,7 @@
 import '@h5web/lib/styles.css';
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams } from 'react-router-dom';
-import { Box, Typography, CircularProgress, Alert, Switch, FormControlLabel, useTheme } from '@mui/material';
+import { useParams, useLocation, useHistory } from 'react-router-dom';
+import { Box, Typography, CircularProgress, Alert, useTheme } from '@mui/material';
 import FileTree from '../components/h5viewer/FileTree';
 import PlotViewer from '../components/h5viewer/Graph';
 import ExperimentSearch from '../components/h5viewer/ExperimentSearch';
@@ -28,7 +28,12 @@ interface RouteParams {
 
 const H5Viewer: React.FC = (): JSX.Element => {
   const { instrumentName, jobId } = useParams<RouteParams>();
+  const location = useLocation();
+  const history = useHistory();
   const theme = useTheme();
+
+  // Parse URL search params
+  const searchParams = new URLSearchParams(location.search);
 
   const [jobs, setJobs] = useState<Job[]>([]);
   const [files, setFiles] = useState<FileConfig[]>([]);
@@ -38,10 +43,15 @@ const H5Viewer: React.FC = (): JSX.Element => {
   const [error, setError] = useState<string | null>(null);
   const [autoSelectPrimary, setAutoSelectPrimary] = useState(true);
 
-  // Search state
-  const [searchInstrument, setSearchInstrument] = useState<string | null>(null);
-  const [searchExperimentNumber, setSearchExperimentNumber] = useState<number | null>(null);
-  const [isSearchActive, setIsSearchActive] = useState(false);
+  // Search state - initialize from URL params
+  const [searchInstrument, setSearchInstrument] = useState<string | null>(() => searchParams.get('instrument'));
+  const [searchExperimentNumber, setSearchExperimentNumber] = useState<number | null>(() => {
+    const exp = searchParams.get('experiment');
+    return exp ? parseInt(exp, 10) : null;
+  });
+  const [isSearchActive, setIsSearchActive] = useState<boolean>(() => {
+    return Boolean(searchParams.get('instrument') || searchParams.get('experiment'));
+  });
 
   // Fetch jobs based on URL params or search
   useEffect(() => {
@@ -194,6 +204,16 @@ const H5Viewer: React.FC = (): JSX.Element => {
     setSearchExperimentNumber(experimentNumber);
     setIsSearchActive(true);
     setError(null);
+
+    // Update URL search params
+    const params = new URLSearchParams();
+    if (instrument) {
+      params.set('instrument', instrument);
+    }
+    if (experimentNumber !== null) {
+      params.set('experiment', experimentNumber.toString());
+    }
+    history.push({ search: params.toString() });
   };
 
   const handleClearSearch = () => {
@@ -204,6 +224,9 @@ const H5Viewer: React.FC = (): JSX.Element => {
     setFiles([]);
     setLinePlotData([]);
     setError(null);
+
+    // Clear URL search params
+    history.push({ search: '' });
   };
 
   const parseOutputs = (outputs: string | string[]): string[] => {
@@ -480,33 +503,6 @@ const H5Viewer: React.FC = (): JSX.Element => {
 
             {/* Right panel - Plot */}
             <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative' }}>
-              {/* Error bar toggle */}
-              {linePlotData.length > 0 && (
-                <Box
-                  sx={{
-                    position: 'absolute',
-                    top: 16,
-                    right: 16,
-                    zIndex: 20,
-                  }}
-                >
-                  <FormControlLabel
-                    control={
-                      <Switch checked={showErrors} onChange={(e) => setShowErrors(e.target.checked)} color="primary" />
-                    }
-                    label="Show Error Bars"
-                    sx={{
-                      bgcolor: 'background.paper',
-                      boxShadow: 3,
-                      borderRadius: 2,
-                      px: 2,
-                      py: 1,
-                      m: 0,
-                    }}
-                  />
-                </Box>
-              )}
-
               {/* Loading indicator */}
               {loading && (
                 <Box
@@ -541,7 +537,7 @@ const H5Viewer: React.FC = (): JSX.Element => {
                 </Box>
               )}
 
-              <PlotViewer linePlotData={linePlotData} showErrors={showErrors} />
+              <PlotViewer linePlotData={linePlotData} showErrors={showErrors} onShowErrorsChange={setShowErrors} />
             </Box>
           </>
         )}

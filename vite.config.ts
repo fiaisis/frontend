@@ -11,7 +11,12 @@ export default defineConfig({
   server: {
     port: 3000,
   },
+  css: {
+    // Ensure CSS is processed
+    devSourcemap: true,
+  },
   build: {
+    cssCodeSplit: true,
     outDir: 'build',
     sourcemap: false,
     emptyOutDir: false,
