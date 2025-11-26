@@ -75,7 +75,8 @@ export interface FileConfig {
   errorPath?: string; // Path to error dataset if available
   color?: string; // For multi-line plotting
   enabled: boolean; // Whether this file is selected for discovery
-  selection?: number; // Selection index for slicing (for 2D→1D plots)
+  selection?: number[]; // Selection indices for slicing (for 2D→1D plots) - supports multiple slices
+  selectionInputMode?: 'text' | 'chips'; // UI mode for selection input
 
   // Discovered datasets from h5grove
   discoveredDatasets?: DatasetInfo[]; // All numeric datasets found in the file
@@ -98,5 +99,5 @@ export interface LinePlotData {
 export interface DataRequestParams {
   file: string;
   path: string;
-  selection?: number;
+  selection?: string; // Single selection index as string
 }

@@ -7,6 +7,7 @@ const h5Api = axios.create({
   timeout: 30000, // 30 second timeout for potentially large data transfers
 });
 
+
 // Request interceptor to add authentication and base URL
 h5Api.interceptors.request.use(async (config) => {
   // Use FIA REST API base URL from environment
@@ -48,7 +49,7 @@ h5Api.interceptors.response.use(
  * Fetch 1D data from the backend (for line plots)
  * @param file - The full file path to query
  * @param path - The HDF5 dataset path
- * @param selection - Selection index (only for slicing 2D datasets; omit for true 1D datasets)
+ * @param selection - Single selection index (for slicing 2D datasets; omit for true 1D datasets)
  * @returns Promise with the 1D data array
  */
 export const fetchData1D = async (
@@ -60,7 +61,7 @@ export const fetchData1D = async (
     const params: DataRequestParams = { file, path };
     // Only include selection parameter if provided (for 2D->1D slicing)
     if (selection !== undefined) {
-      params.selection = selection;
+      params.selection = selection.toString();
     }
     const response = await h5Api.get<DataArray1D>('/data', { params });
     return response.data;
@@ -74,7 +75,7 @@ export const fetchData1D = async (
  * Fetch error data for error bars
  * @param file - The full file path to query
  * @param errorPath - The HDF5 path to the error data
- * @param selection - Selection index (only for slicing 2D datasets; omit for true 1D datasets)
+ * @param selection - Single selection index (for slicing 2D datasets; omit for true 1D datasets)
  * @returns Promise with the error data array
  */
 export const fetchErrorData = async (
@@ -86,7 +87,7 @@ export const fetchErrorData = async (
     const params: DataRequestParams = { file, path: errorPath };
     // Only include selection parameter if provided (for 2D->1D slicing)
     if (selection !== undefined) {
-      params.selection = selection;
+      params.selection = selection.toString();
     }
     const response = await h5Api.get<DataArray1D>('/data', { params });
     return response.data;

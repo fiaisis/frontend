@@ -180,7 +180,8 @@ const H5Viewer: React.FC = (): JSX.Element => {
             errorPath: undefined,
             enabled: false,
             color: DEFAULT_COLORS[colorIndex % DEFAULT_COLORS.length],
-            selection: 0,
+            selection: [],  // Initialize as empty array for multi-slice support
+            selectionInputMode: 'text',  // Default to text input mode
           });
           colorIndex++;
         });
@@ -324,7 +325,7 @@ const H5Viewer: React.FC = (): JSX.Element => {
               path: selectedDataset.path,
               errorPath: selectedDataset.errorPath,
               selectedDatasetIs2D: selectedDataset.is2D,
-              selection: 0,
+              selection: [],  // Reset to empty array when dataset changes
             };
           }
         }
@@ -333,9 +334,9 @@ const H5Viewer: React.FC = (): JSX.Element => {
     });
   };
 
-  // Handle selection change
-  const handleSelectionChange = (index: number, selection: number) => {
-    setFiles((prevFiles) => prevFiles.map((file, i) => (i === index ? { ...file, selection } : file)));
+  // Handle selection change - now accepts array of selections
+  const handleSelectionChange = (index: number, selections: number[]) => {
+    setFiles((prevFiles) => prevFiles.map((file, i) => (i === index ? { ...file, selection: selections } : file)));
   };
 
   // Fetch data for all enabled files with paths selected
@@ -352,45 +353,74 @@ const H5Viewer: React.FC = (): JSX.Element => {
       setError(null);
 
       try {
-        const lineDataPromises = enabledFiles.map(async (file) => {
+        // For each file, create separate fetch promises for each selected slice
+        const lineDataPromises = enabledFiles.flatMap((file) => {
           const fileToFetch = file.fullPath || file.filename;
           const is1DDataset = !file.selectedDatasetIs2D;
-          const selectionParam = is1DDataset ? undefined : (file.selection ?? 0);
-
-          console.log(
-            'Fetching data for: ',
-            fileToFetch,
-            ' - path: ',
-            file.path,
-            ' - is1D: ',
-            is1DDataset,
-            ' - selection: ',
-            selectionParam ?? 'none'
-          );
 
           if (!file.path) {
             throw new Error('No dataset path selected');
           }
 
-          const data = await fetchData1D(fileToFetch, file.path, selectionParam);
-          console.log(`Fetched data for ${file.filename}:`, data);
+          // For 1D datasets, single fetch with no selection
+          if (is1DDataset) {
+            return [
+              (async () => {
+                console.log('Fetching 1D data for:', fileToFetch, '- path:', file.path);
+                const data = await fetchData1D(fileToFetch, file.path, undefined);
 
-          let errors: number[] | undefined;
-          if (showErrors && file.errorPath) {
-            console.log(`Fetching error data for ${file.filename}`);
-            try {
-              errors = await fetchErrorData(fileToFetch, file.errorPath, selectionParam);
-            } catch (err) {
-              console.warn(`Failed to fetch error data for ${file.filename}:`, err);
-            }
+                let errors: number[] | undefined;
+                if (showErrors && file.errorPath) {
+                  try {
+                    errors = await fetchErrorData(fileToFetch, file.errorPath, undefined);
+                  } catch (err) {
+                    console.warn(`Failed to fetch error data for ${file.filename}:`, err);
+                  }
+                }
+
+                return {
+                  filename: file.filename,
+                  data,
+                  errors,
+                  color: file.color,
+                };
+              })()
+            ];
           }
 
-          return {
-            filename: file.filename,
-            data,
-            errors,
-            color: file.color,
-          };
+          // For 2D datasets, make separate API call for each slice
+          const selections = file.selection && file.selection.length > 0 ? file.selection : [0];
+
+          return selections.map((slice) =>
+            (async () => {
+              console.log(
+                'Fetching slice',
+                slice,
+                'for:',
+                fileToFetch,
+                '- path:',
+                file.path
+              );
+
+              const data = await fetchData1D(fileToFetch, file.path!, slice);
+
+              let errors: number[] | undefined;
+              if (showErrors && file.errorPath) {
+                try {
+                  errors = await fetchErrorData(fileToFetch, file.errorPath, slice);
+                } catch (err) {
+                  console.warn(`Failed to fetch error data for ${file.filename} slice ${slice}:`, err);
+                }
+              }
+
+              return {
+                filename: `${file.filename} [slice ${slice}]`,
+                data,
+                errors,
+                color: file.color,
+              };
+            })()
+          );
         });
 
         const lineResults = await Promise.all(lineDataPromises);
