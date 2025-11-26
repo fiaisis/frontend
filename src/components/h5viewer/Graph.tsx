@@ -2,22 +2,21 @@ import React, { useState } from 'react';
 import ndarray from 'ndarray';
 import { getDomain, LineVis, ScaleType, ScaleSelector, Separator, ToggleBtn, Toolbar } from '@h5web/lib';
 import type { LinePlotData } from '../../lib/types';
-import { Box, Typography } from '@mui/material';
+import { Box, Paper, Typography, useTheme } from '@mui/material';
 
 interface PlotViewerProps {
   linePlotData: LinePlotData[];
   showErrors: boolean;
+  onShowErrorsChange: (showErrors: boolean) => void;
 }
 
-const PlotViewer: React.FC<PlotViewerProps> = ({ linePlotData, showErrors }): JSX.Element => {
+const PlotViewer: React.FC<PlotViewerProps> = ({ linePlotData, showErrors, onShowErrorsChange }): JSX.Element => {
+  const theme = useTheme();
+
   // State for line plot controls
   const [lineShowGrid, setLineShowGrid] = useState(true);
-  const [xScaleType, setXScaleType] = useState<ScaleType.Linear | ScaleType.Log | ScaleType.SymLog>(
-    ScaleType.Linear
-  );
-  const [yScaleType, setYScaleType] = useState<ScaleType.Linear | ScaleType.Log | ScaleType.SymLog>(
-    ScaleType.Linear
-  );
+  const [xScaleType, setXScaleType] = useState<ScaleType.Linear | ScaleType.Log | ScaleType.SymLog>(ScaleType.Linear);
+  const [yScaleType, setYScaleType] = useState<ScaleType.Linear | ScaleType.Log | ScaleType.SymLog>(ScaleType.Linear);
 
   console.log('PlotViewer rendered with data:', linePlotData);
 
@@ -30,6 +29,7 @@ const PlotViewer: React.FC<PlotViewerProps> = ({ linePlotData, showErrors }): JS
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
+          backgroundColor: theme.palette.background.default,
         }}
       >
         <Box sx={{ textAlign: 'center' }}>
@@ -73,47 +73,49 @@ const PlotViewer: React.FC<PlotViewerProps> = ({ linePlotData, showErrors }): JS
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
-      <Box sx={{ display: 'flex', gap: 1 }}>
-        <Toolbar>
-          {/* Y-axis scale selector */}
-          <ScaleSelector
-            value={yScaleType}
-            onScaleChange={setYScaleType}
-            options={[ScaleType.Linear, ScaleType.Log, ScaleType.SymLog]}
-            label="Y scale"
-          />
-          <Separator />
-          {/* X-axis scale selector */}
-          <ScaleSelector
-            value={xScaleType}
-            onScaleChange={setXScaleType}
-            options={[ScaleType.Linear, ScaleType.Log, ScaleType.SymLog]}
-            label="X scale"
-          />
-          <Separator />
-          <ToggleBtn label="Grid" value={lineShowGrid} onToggle={() => setLineShowGrid(!lineShowGrid)} />
-          <Separator />
-        </Toolbar>
-      </Box>
-
-      <Box
+      <Paper
+        elevation={1}
         sx={{
-          display: 'flex',
-          height: '100%',
-          width: '100%',
+          // For more customization please see https://h5web-docs.panosc.eu/?path=/docs/customization--docs
+          '--h5w-btn-hover--bgColor': theme.palette.background.default,
+          '--h5w-toolbar--bgColor': theme.palette.background.paper,
+          '--h5w-btnPressed--bgColor': theme.palette.primary.main,
         }}
       >
-        <LineVis
-          dataArray={primaryArray}
-          domain={domain}
-          errorsArray={errorsArray}
-          showErrors={showErrors}
-          auxiliaries={auxiliaries.length > 0 ? auxiliaries : undefined}
-          showGrid={lineShowGrid}
-          scaleType={yScaleType}
-          abscissaParams={{ scaleType: xScaleType }}
-        />
-      </Box>
+        <Box sx={{ display: 'flex' }} className={'toolbar'}>
+          <Toolbar>
+            {/* Y-axis scale selector */}
+            <ScaleSelector
+              value={yScaleType}
+              onScaleChange={setYScaleType}
+              options={[ScaleType.Linear, ScaleType.Log, ScaleType.SymLog]}
+              label="Y scale"
+            />
+            <Separator />
+            {/* X-axis scale selector */}
+            <ScaleSelector
+              value={xScaleType}
+              onScaleChange={setXScaleType}
+              options={[ScaleType.Linear, ScaleType.Log, ScaleType.SymLog]}
+              label="X scale"
+            />
+            <Separator />
+            <ToggleBtn label="Grid" value={lineShowGrid} onToggle={() => setLineShowGrid(!lineShowGrid)} />
+            <Separator />
+            <ToggleBtn label="Error Bars" value={showErrors} onToggle={() => onShowErrorsChange(!showErrors)} />
+          </Toolbar>
+        </Box>
+      </Paper>
+      <LineVis
+        dataArray={primaryArray}
+        domain={domain}
+        errorsArray={errorsArray}
+        showErrors={showErrors}
+        auxiliaries={auxiliaries.length > 0 ? auxiliaries : undefined}
+        showGrid={lineShowGrid}
+        scaleType={yScaleType}
+        abscissaParams={{ scaleType: xScaleType }}
+      />
     </Box>
   );
 };
