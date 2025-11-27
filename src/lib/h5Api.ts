@@ -1,6 +1,8 @@
 import axios from 'axios';
 import type { DataArray1D, DataRequestParams } from './types';
 
+//TODO this probably needs to be in line with api.ts
+
 // Create axios instance for H5-specific API calls
 // Separate from fiaApi to allow different base URL configuration
 const h5Api = axios.create({
@@ -9,7 +11,6 @@ const h5Api = axios.create({
 
 // Request interceptor to add authentication and base URL
 h5Api.interceptors.request.use(async (config) => {
-  // Use FIA REST API base URL from environment
   config.baseURL = import.meta.env.VITE_FIA_PLOTTING_API_URL;
 
   // Add JWT token from localStorage if not in dev mode

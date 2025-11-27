@@ -6,6 +6,8 @@
 import h5Api from './h5Api';
 import { type Attribute, type DType, type Entity, isDataset, isNumericType } from '@h5web/app';
 
+//TODO this probably needs to be combined with h5Api.ts
+
 /**
  * Discovered dataset with error path if available
  */
@@ -212,8 +214,7 @@ export async function discoverFileStructure(filename: string, fullPath: string):
 
           // If they're in the same parent directory or have similar structure, link them
           if (dataPathParts.length === errorPathParts.length) {
-            const sameParent =
-              dataPathParts.slice(0, -1).join('/') === errorPathParts.slice(0, -1).join('/');
+            const sameParent = dataPathParts.slice(0, -1).join('/') === errorPathParts.slice(0, -1).join('/');
             if (sameParent) {
               dataDs.errorPath = errorDs.path;
               break; // Found a match, move to next data dataset
@@ -222,11 +223,6 @@ export async function discoverFileStructure(filename: string, fullPath: string):
         }
       }
     }
-
-    // Mark datasets with 'signal' attribute as primary
-    datasets.forEach((ds) => {
-      ds.isPrimary = ds.attributes?.some((attr) => attr.name === 'signal') || false;
-    });
 
     // Identify primary data and error datasets
     // A primary dataset has an attribute with name "signal" at any position
