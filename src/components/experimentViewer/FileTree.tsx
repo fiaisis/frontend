@@ -29,7 +29,7 @@ interface FileTreeProps {
   files: FileConfig[];
   onFileToggle: (index: number) => void;
   onDatasetChange: (index: number, datasetPath: string) => void;
-  onSelectionChange: (index: number, selections: number[]) => void; // Now accepts array
+  onSelectionChange: (index: number, selections: number[]) => void;
   autoSelectPrimary?: boolean;
   onAutoSelectPrimaryChange?: (enabled: boolean) => void;
 }
@@ -430,8 +430,8 @@ const FileTree: React.FC<FileTreeProps> = ({
                                     size="small"
                                     type="number"
                                     placeholder="Add slice"
-                                    inputProps={{ min: 0 }}
-                                    onKeyPress={(e) => {
+                                    inputProps={{ min: 0 }} //TODO deprecated
+                                    onKeyDown={(e) => {
                                       if (e.key === 'Enter') {
                                         const input = e.target as HTMLInputElement;
                                         const value = parseInt(input.value);

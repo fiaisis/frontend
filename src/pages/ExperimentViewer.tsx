@@ -83,7 +83,7 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
             params: {
               filters: JSON.stringify(filters),
               include_run: 'true',
-              limit: 100, // Reasonable limit for experiment search
+              limit: 100,
             },
           });
           jobsData = response.data;
