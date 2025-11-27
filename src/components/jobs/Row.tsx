@@ -131,7 +131,10 @@ const JobOutput: React.FC<{
                 View
               </Button>
               {/* Show H5 Viewer button for HDF5 files */}
-              {(output.endsWith('.h5') || output.endsWith('.hdf5') || output.endsWith('.nxs') || output.endsWith('.nxspe')) && (
+              {(output.endsWith('.h5') ||
+                output.endsWith('.hdf5') ||
+                output.endsWith('.nxs') ||
+                output.endsWith('.nxspe')) && (
                 <Button
                   variant="outlined"
                   component={Link}

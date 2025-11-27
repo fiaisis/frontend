@@ -26,18 +26,18 @@ const ExperimentSearch: React.FC<ExperimentSearchProps> = ({
     initialExperimentNumber ? initialExperimentNumber.toString() : ''
   );
 
-  const handleSearch = () => {
+  const handleSearch = (): void => {
     const expNum = experimentNumber.trim() ? parseInt(experimentNumber) : null;
     onSearch(selectedInstrument, expNum);
   };
 
-  const handleClear = () => {
+  const handleClear = (): void => {
     setSelectedInstrument(null);
     setExperimentNumber('');
     onClear();
   };
 
-  const handleKeyPress = (event: React.KeyboardEvent) => {
+  const handleKeyPress = (event: React.KeyboardEvent<HTMLInputElement>): void => {
     if (event.key === 'Enter') {
       handleSearch();
     }
@@ -101,8 +101,7 @@ const ExperimentSearch: React.FC<ExperimentSearchProps> = ({
       {isSearchActive && (selectedInstrument || experimentNumber) && (
         <Box sx={{ mt: 1 }}>
           <Typography variant="body2" color="text.secondary">
-            Searching for:{' '}
-            {selectedInstrument && <strong>Instrument: {selectedInstrument}</strong>}
+            Searching for: {selectedInstrument && <strong>Instrument: {selectedInstrument}</strong>}
             {selectedInstrument && experimentNumber && ' | '}
             {experimentNumber && <strong>Experiment: {experimentNumber}</strong>}
           </Typography>

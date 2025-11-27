@@ -1,38 +1,26 @@
 import '@h5web/lib/styles.css';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useLocation, useHistory } from 'react-router-dom';
-import { Box, Typography, CircularProgress, Alert, useTheme } from '@mui/material';
-import FileTree from '../components/h5viewer/FileTree';
-import PlotViewer from '../components/h5viewer/Graph';
-import ExperimentSearch from '../components/h5viewer/ExperimentSearch';
+import { Box, Typography, CircularProgress, Alert } from '@mui/material';
+import FileTree from '../components/experimentViewer/FileTree';
+import PlotViewer from '../components/experimentViewer/Graph';
+import ExperimentSearch from '../components/experimentViewer/ExperimentSearch';
 import { fetchData1D, fetchErrorData, fetchFilePath } from '../lib/h5Api';
 import { discoverFileStructure } from '../lib/h5grove';
 import { fiaApi } from '../lib/api';
 import type { FileConfig, LinePlotData, Job, DatasetInfo, JobQueryFilters } from '../lib/types';
 import type { NumericType } from '@h5web/app';
 
-// Default colors for multiple lines - bright, vibrant colors
-const DEFAULT_COLORS = [
-  '#00bfff', // sky blue
-  '#f97316', // orange
-  '#22c55e', // green
-  '#eab308', // yellow
-  '#a855f7', // purple
-  '#f472b6', // pink
-];
-
 interface RouteParams {
   instrumentName: string;
   jobId: string;
 }
 
-const H5Viewer: React.FC = (): JSX.Element => {
+const ExperimentViewer: React.FC = (): JSX.Element => {
   const { instrumentName, jobId } = useParams<RouteParams>();
   const location = useLocation();
   const history = useHistory();
-  const theme = useTheme();
 
-  // Parse URL search params
   const searchParams = new URLSearchParams(location.search);
 
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -55,7 +43,7 @@ const H5Viewer: React.FC = (): JSX.Element => {
 
   // Fetch jobs based on URL params or search
   useEffect(() => {
-    const loadJobs = async () => {
+    const loadJobs = async (): Promise<void> => {
       try {
         setLoading(true);
         let jobsData: Job[];
@@ -109,7 +97,6 @@ const H5Viewer: React.FC = (): JSX.Element => {
 
         // Create file configs for all output files and fetch their full paths
         const allFiles: FileConfig[] = [];
-        let colorIndex = 0;
 
         // Parse outputs and collect all unique filenames
         const allFilenames: string[] = [];
@@ -122,10 +109,7 @@ const H5Viewer: React.FC = (): JSX.Element => {
           console.log('Parsed outputs:', outputs);
           const h5Outputs = outputs.filter(
             (output) =>
-              output.endsWith('.h5') ||
-              output.endsWith('.hdf5') ||
-              output.endsWith('.nxs') ||
-              output.endsWith('.nxspe')
+              output.endsWith('.h5') || output.endsWith('.hdf5') || output.endsWith('.nxs') || output.endsWith('.nxspe')
           );
 
           console.log('Filtered job outputs:', h5Outputs);
@@ -179,11 +163,9 @@ const H5Viewer: React.FC = (): JSX.Element => {
             path: undefined,
             errorPath: undefined,
             enabled: false,
-            color: DEFAULT_COLORS[colorIndex % DEFAULT_COLORS.length],
-            selection: [],  // Initialize as empty array for multi-slice support
-            selectionInputMode: 'text',  // Default to text input mode
+            selection: [], // Initialize as empty array for multi-slice support
+            selectionInputMode: 'text', // Default to text input mode
           });
-          colorIndex++;
         });
 
         console.log('Files with paths:', allFiles);
@@ -200,7 +182,7 @@ const H5Viewer: React.FC = (): JSX.Element => {
   }, [jobId, instrumentName, isSearchActive, searchInstrument, searchExperimentNumber]);
 
   // Search handlers
-  const handleSearch = (instrument: string | null, experimentNumber: number | null) => {
+  const handleSearch = (instrument: string | null, experimentNumber: number | null): void => {
     setSearchInstrument(instrument);
     setSearchExperimentNumber(experimentNumber);
     setIsSearchActive(true);
@@ -217,7 +199,7 @@ const H5Viewer: React.FC = (): JSX.Element => {
     history.push({ search: params.toString() });
   };
 
-  const handleClearSearch = () => {
+  const handleClearSearch = (): void => {
     setSearchInstrument(null);
     setSearchExperimentNumber(null);
     setIsSearchActive(false);
@@ -230,28 +212,9 @@ const H5Viewer: React.FC = (): JSX.Element => {
     history.push({ search: '' });
   };
 
-  const parseOutputs = (outputs: string | string[]): string[] => {
-    if (typeof outputs === 'string') {
-      try {
-        // Try parsing as JSON array first
-        const parsed = JSON.parse(outputs);
-        if (Array.isArray(parsed)) {
-          return parsed;
-        }
-      } catch {
-        // If JSON parsing fails, fall back to comma-separated split
-        return outputs
-          .split(',')
-          .map((s) => s.trim())
-          .filter((s) => s.length > 0);
-      }
-    }
-    return Array.isArray(outputs) ? outputs : [];
-  };
-
   // Discover datasets in a file
   const discoverDatasets = useCallback(
-    async (index: number) => {
+    async (index: number): Promise<void> => {
       const file = files[index];
       if (!file.fullPath || file.isDiscovered) {
         return;
@@ -300,7 +263,7 @@ const H5Viewer: React.FC = (): JSX.Element => {
   );
 
   // Handle file toggle
-  const handleFileToggle = async (index: number) => {
+  const handleFileToggle = async (index: number): Promise<void> => {
     const file = files[index];
     const willBeEnabled = !file.enabled;
 
@@ -314,7 +277,7 @@ const H5Viewer: React.FC = (): JSX.Element => {
   };
 
   // Handle dataset selection
-  const handleDatasetChange = (index: number, datasetPath: string) => {
+  const handleDatasetChange = (index: number, datasetPath: string): void => {
     setFiles((prevFiles) => {
       return prevFiles.map((file, i) => {
         if (i === index && file.discoveredDatasets) {
@@ -325,7 +288,7 @@ const H5Viewer: React.FC = (): JSX.Element => {
               path: selectedDataset.path,
               errorPath: selectedDataset.errorPath,
               selectedDatasetIs2D: selectedDataset.is2D,
-              selection: [],  // Reset to empty array when dataset changes
+              selection: [], // Reset to empty array when dataset changes
             };
           }
         }
@@ -335,7 +298,7 @@ const H5Viewer: React.FC = (): JSX.Element => {
   };
 
   // Handle selection change - now accepts array of selections
-  const handleSelectionChange = (index: number, selections: number[]) => {
+  const handleSelectionChange = (index: number, selections: number[]): void => {
     setFiles((prevFiles) => prevFiles.map((file, i) => (i === index ? { ...file, selection: selections } : file)));
   };
 
@@ -348,7 +311,7 @@ const H5Viewer: React.FC = (): JSX.Element => {
       return;
     }
 
-    const fetchAllData = async () => {
+    const fetchAllData = async (): Promise<void> => {
       setLoading(true);
       setError(null);
 
@@ -367,7 +330,7 @@ const H5Viewer: React.FC = (): JSX.Element => {
             return [
               (async () => {
                 console.log('Fetching 1D data for:', fileToFetch, '- path:', file.path);
-                const data = await fetchData1D(fileToFetch, file.path, undefined);
+                const data = await fetchData1D(fileToFetch, file.path!, undefined);
 
                 let errors: number[] | undefined;
                 if (showErrors && file.errorPath) {
@@ -382,9 +345,8 @@ const H5Viewer: React.FC = (): JSX.Element => {
                   filename: file.filename,
                   data,
                   errors,
-                  color: file.color,
                 };
-              })()
+              })(),
             ];
           }
 
@@ -393,14 +355,7 @@ const H5Viewer: React.FC = (): JSX.Element => {
 
           return selections.map((slice) =>
             (async () => {
-              console.log(
-                'Fetching slice',
-                slice,
-                'for:',
-                fileToFetch,
-                '- path:',
-                file.path
-              );
+              console.log('Fetching slice', slice, 'for:', fileToFetch, '- path:', file.path);
 
               const data = await fetchData1D(fileToFetch, file.path!, slice);
 
@@ -417,7 +372,6 @@ const H5Viewer: React.FC = (): JSX.Element => {
                 filename: `${file.filename} [slice ${slice}]`,
                 data,
                 errors,
-                color: file.color,
               };
             })()
           );
@@ -576,4 +530,4 @@ const H5Viewer: React.FC = (): JSX.Element => {
   );
 };
 
-export default H5Viewer;
+export default ExperimentViewer;

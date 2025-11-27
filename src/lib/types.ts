@@ -73,7 +73,6 @@ export interface FileConfig {
   fullPath?: string; // Full path from the plotting API
   path?: string; // Selected dataset path (undefined until user selects)
   errorPath?: string; // Path to error dataset if available
-  color?: string; // For multi-line plotting
   enabled: boolean; // Whether this file is selected for discovery
   selection?: number[]; // Selection indices for slicing (for 2D→1D plots) - supports multiple slices
   selectionInputMode?: 'text' | 'chips'; // UI mode for selection input

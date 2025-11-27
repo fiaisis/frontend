@@ -29,7 +29,7 @@ interface FileTreeProps {
   files: FileConfig[];
   onFileToggle: (index: number) => void;
   onDatasetChange: (index: number, datasetPath: string) => void;
-  onSelectionChange: (index: number, selections: number[]) => void;  // Now accepts array
+  onSelectionChange: (index: number, selections: number[]) => void; // Now accepts array
   autoSelectPrimary?: boolean;
   onAutoSelectPrimaryChange?: (enabled: boolean) => void;
 }
@@ -359,7 +359,9 @@ const FileTree: React.FC<FileTreeProps> = ({
                           {file.path && file.selectedDatasetIs2D && (
                             <Box>
                               {/* Mode toggle */}
-                              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                              <Box
+                                sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}
+                              >
                                 <Typography variant="body2" fontWeight="500">
                                   Slice Selection (2D → 1D)
                                 </Typography>
@@ -391,8 +393,8 @@ const FileTree: React.FC<FileTreeProps> = ({
                                     } else {
                                       const selections = value
                                         .split(',')
-                                        .map(s => parseInt(s.trim()))
-                                        .filter(n => !isNaN(n) && n >= 0);
+                                        .map((s) => parseInt(s.trim()))
+                                        .filter((n) => !isNaN(n) && n >= 0);
                                       onSelectionChange(fileIndex, selections);
                                     }
                                   }}
