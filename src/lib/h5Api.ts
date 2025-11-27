@@ -7,12 +7,10 @@ const h5Api = axios.create({
   timeout: 30000, // 30 second timeout for potentially large data transfers
 });
 
-
 // Request interceptor to add authentication and base URL
 h5Api.interceptors.request.use(async (config) => {
   // Use FIA REST API base URL from environment
-  const baseURL = import.meta.env.VITE_FIA_PLOTTING_API_URL;
-  config.baseURL = baseURL;
+  config.baseURL = import.meta.env.VITE_FIA_PLOTTING_API_URL;
 
   // Add JWT token from localStorage if not in dev mode
   const isDev = import.meta.env.DEV || import.meta.env.VITE_DEV_MODE === 'true';
@@ -52,11 +50,7 @@ h5Api.interceptors.response.use(
  * @param selection - Single selection index (for slicing 2D datasets; omit for true 1D datasets)
  * @returns Promise with the 1D data array
  */
-export const fetchData1D = async (
-  file: string,
-  path: string,
-  selection?: number
-): Promise<DataArray1D> => {
+export const fetchData1D = async (file: string, path: string, selection?: number): Promise<DataArray1D> => {
   try {
     const params: DataRequestParams = { file, path };
     // Only include selection parameter if provided (for 2D->1D slicing)
@@ -78,11 +72,7 @@ export const fetchData1D = async (
  * @param selection - Single selection index (for slicing 2D datasets; omit for true 1D datasets)
  * @returns Promise with the error data array
  */
-export const fetchErrorData = async (
-  file: string,
-  errorPath: string,
-  selection?: number
-): Promise<DataArray1D> => {
+export const fetchErrorData = async (file: string, errorPath: string, selection?: number): Promise<DataArray1D> => {
   try {
     const params: DataRequestParams = { file, path: errorPath };
     // Only include selection parameter if provided (for 2D->1D slicing)

@@ -83,8 +83,8 @@ const App: FC = () => {
             <Route path="/experiment-viewer">
               <ExperimentViewer />
             </Route>
-            <Route path="/h5-viewer">
-              <H5Viewer />
+            <Route path="/experiment-viewer">
+              <ExperimentViewer />
             </Route>
             {/* Blank route for login page*/}
             <Route path="/login" />

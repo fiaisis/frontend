@@ -114,6 +114,7 @@ export async function discoverFileStructure(filename: string, fullPath: string):
             let stringClass: string;
 
             // HDF5 class codes: 0=Integer, 1=Float, 2=Time, 3=String, etc.
+            // https://github.com/silx-kit/h5web/blob/main/packages/shared/src/h5t.ts
             switch (numericClass) {
               case 0:
                 stringClass = 'Integer';
