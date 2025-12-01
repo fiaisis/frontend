@@ -1,12 +1,76 @@
+import { h5Api } from './api';
+import { Attribute, DType, Entity, isDataset, isNumericType } from '@h5web/app';
+
 /**
- * H5Grove-style API client for HDF5 file exploration
- * Provides automatic discovery of datasets and their structure
+ * Fetch 1D data from the backend (for line plots)
+ * @param file - The full file path to query
+ * @param path - The HDF5 dataset path
+ * @param selection - Single selection index (for slicing 2D datasets; omit for true 1D datasets)
+ * @returns Promise with the 1D data array
  */
+export const fetchData1D = async (file: string, path: string, selection?: number): Promise<DataArray1D> => {
+  try {
+    const params: DataRequestParams = { file, path };
+    // Only include selection parameter if provided (for 2D->1D slicing)
+    if (selection !== undefined) {
+      params.selection = selection.toString();
+    }
+    const response = await h5Api.get<DataArray1D>('/data', { params });
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching 1D data for file ${file}:`, error);
+    throw error;
+  }
+};
 
-import h5Api from './h5Api';
-import { type Attribute, type DType, type Entity, isDataset, isNumericType } from '@h5web/app';
+/**
+ * Fetch error data for error bars
+ * @param file - The full file path to query
+ * @param errorPath - The HDF5 path to the error data
+ * @param selection - Single selection index (for slicing 2D datasets; omit for true 1D datasets)
+ * @returns Promise with the error data array
+ */
+export const fetchErrorData = async (file: string, errorPath: string, selection?: number): Promise<DataArray1D> => {
+  try {
+    const params: DataRequestParams = { file, path: errorPath };
+    // Only include selection parameter if provided (for 2D->1D slicing)
+    if (selection !== undefined) {
+      params.selection = selection.toString();
+    }
+    const response = await h5Api.get<DataArray1D>('/data', { params });
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching error data for file ${file}:`, error);
+    throw error;
+  }
+};
 
-//TODO this probably needs to be combined with h5Api.ts
+/**
+ * Fetch full file path from the plotting API
+ * @param filename - The filename to query
+ * @param instrumentName - The instrument name
+ * @param experimentNumber - The experiment number
+ * @returns Promise with the full file path
+ */
+export const fetchFilePath = async (
+  filename: string,
+  instrumentName: string,
+  experimentNumber: number
+): Promise<string> => {
+  try {
+    const url = `/find_file/instrument/${instrumentName}/experiment_number/${experimentNumber}`;
+    const response = await h5Api.get<string>(url, {
+      params: { filename },
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching file path for ${filename}:`, error);
+    throw error;
+  }
+};
+
+// API response types for H5 data
+export type DataArray1D = number[];
 
 /**
  * Discovered dataset with error path if available
@@ -32,6 +96,13 @@ export interface FileStructure {
   datasets: DiscoveredDataset[];
   dataDataset?: DiscoveredDataset; // Primary data dataset
   errorDataset?: DiscoveredDataset; // Error dataset if found
+}
+
+// API request parameters for H5 data fetching
+interface DataRequestParams {
+  file: string;
+  path: string;
+  selection?: string; // Single selection index as string
 }
 
 /**

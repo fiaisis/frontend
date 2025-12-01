@@ -1,3 +1,9 @@
+// ============= H5 Viewer Types =============
+// Types for HDF5 data visualization
+
+import type { DType } from '@h5web/app';
+import { DataArray1D } from './plottingServiceAPI';
+
 export const reductionStates = ['ERROR', 'UNSUCCESSFUL', 'SUCCESSFUL', 'NOT_STARTED'] as const;
 
 export type ReductionState = (typeof reductionStates)[number];
@@ -51,11 +57,6 @@ export interface JobQueryFilters {
 
 export type MantidVersionMap = Record<string, string>;
 
-// ============= H5 Viewer Types =============
-// Types for HDF5 data visualization
-
-import type { DType } from '@h5web/app';
-
 // Discovered dataset information from H5 files
 export interface DatasetInfo {
   path: string;
@@ -83,20 +84,10 @@ export interface FileConfig {
   selectedDatasetIs2D?: boolean; // Whether the selected dataset is 2D (for slice support)
 }
 
-// API response types for H5 data
-export type DataArray1D = number[];
-
 // Data point for line plotting
 export interface LinePlotData {
   filename: string;
   data: DataArray1D;
   errors?: DataArray1D;
   color?: string;
-}
-
-// API request parameters for H5 data fetching
-export interface DataRequestParams {
-  file: string;
-  path: string;
-  selection?: string; // Single selection index as string
 }
