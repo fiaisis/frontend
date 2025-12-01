@@ -57,11 +57,6 @@ export interface JobQueryFilters {
 
 export type MantidVersionMap = Record<string, string>;
 
-// ============= H5 Viewer Types =============
-// Types for HDF5 data visualization
-
-import type { DType } from '@h5web/app';
-
 // Discovered dataset information from H5 files
 export interface DatasetInfo {
   path: string;
