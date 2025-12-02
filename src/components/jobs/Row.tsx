@@ -136,7 +136,7 @@ const JobOutput: React.FC<{
                 output.endsWith('.nxs') ||
                 output.endsWith('.nxspe')) && (
                 <Button
-                  variant="outlined"
+                  variant="contained"
                   component={Link}
                   to={`/reduction-history/${job.run?.instrument_name || 'unknown'}/h5-viewer-${job.id}`}
                   sx={{ flexShrink: 0, whiteSpace: 'nowrap' }}
