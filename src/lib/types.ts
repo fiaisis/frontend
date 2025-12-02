@@ -93,4 +93,4 @@ export interface LinePlotData {
 }
 
 // Filter for the h5 files to include
-export const outputFilter = ['*.h5', '*.hdf5', '*.nxs', '*.nxspe'];
+export const outputFilter = ['.h5', '.hdf5', '.nxs', '.nxspe'];
