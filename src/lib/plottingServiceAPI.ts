@@ -170,6 +170,9 @@ export async function discoverFileStructure(filename: string, fullPath: string):
 
     // Explore each path
     for (const path of allPaths) {
+      if (!path.toLowerCase().startsWith('/')) {
+        throw new Error(`Invalid path: ${path}`);
+      }
       try {
         const metadata = await fetchEntityMetadata(fullPath, path);
         console.log('[H5Grove] Fetching metadata for:', path);
