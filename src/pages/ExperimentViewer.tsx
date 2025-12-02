@@ -7,7 +7,7 @@ import PlotViewer from '../components/experimentViewer/Graph';
 import ExperimentSearch from '../components/experimentViewer/ExperimentSearch';
 import { discoverFileStructure, fetchData1D, fetchErrorData, fetchFilePath } from '../lib/plottingServiceAPI';
 import { fiaApi } from '../lib/api';
-import type { FileConfig, LinePlotData, Job, DatasetInfo, JobQueryFilters } from '../lib/types';
+import { FileConfig, LinePlotData, Job, DatasetInfo, JobQueryFilters, outputFilter } from '../lib/types';
 import type { NumericType } from '@h5web/app';
 
 interface RouteParams {
@@ -106,10 +106,7 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
           console.log('Job outputs:', job.outputs);
           const outputs = JSON.parse(job.outputs.replace(/'/g, '"')) as string[];
           console.log('Parsed outputs:', outputs);
-          const h5Outputs = outputs.filter(
-            (output) =>
-              output.endsWith('.h5') || output.endsWith('.hdf5') || output.endsWith('.nxs') || output.endsWith('.nxspe')
-          );
+          const h5Outputs = outputs.filter((output) => outputFilter.some((filter) => output.endsWith(filter)));
 
           console.log('Filtered job outputs:', h5Outputs);
 
