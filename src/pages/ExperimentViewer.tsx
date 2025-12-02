@@ -238,11 +238,34 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
         setFiles((prevFiles) =>
           prevFiles.map((f, i) => {
             if (i === index) {
-              return {
+              let updatedFile = {
                 ...f,
                 discoveredDatasets,
                 isDiscovered: true,
               };
+
+              // Auto-select primary dataset if enabled and no dataset selected yet
+              if (autoSelectPrimary && !f.path && discoveredDatasets.length > 0) {
+                // Find first dataset with isPrimary flag
+                const primaryDataset = discoveredDatasets.find((ds) => ds.isPrimary);
+                const datasetToSelect = primaryDataset || discoveredDatasets[0];
+
+                // Set selected dataset fields
+                updatedFile = {
+                  ...updatedFile,
+                  path: datasetToSelect.path,
+                  errorPath: datasetToSelect.errorPath,
+                  selectedDatasetIs2D: datasetToSelect.is2D,
+                  selection: [],
+                };
+
+                console.log(
+                  `[H5Grove] Auto-selected ${primaryDataset ? 'primary' : 'first'} dataset:`,
+                  datasetToSelect.path
+                );
+              }
+
+              return updatedFile;
             }
             return f;
           })
@@ -255,7 +278,7 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
         setFiles((prevFiles) => prevFiles.map((f, i) => (i === index ? { ...f, isDiscovered: true } : f)));
       }
     },
-    [files]
+    [files, autoSelectPrimary]
   );
 
   // Handle file toggle

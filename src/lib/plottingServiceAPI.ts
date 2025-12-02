@@ -248,6 +248,7 @@ export async function discoverFileStructure(filename: string, fullPath: string):
               isNumeric: true,
               is1D: shape.length === 1,
               is2D: shape.length === 2,
+              isPrimary: attributes?.some((attr) => attr.name === 'signal') || false,
             });
           } else {
             console.log('[H5Grove] Skipping non-numeric dataset:', { path, shape, dtype });
