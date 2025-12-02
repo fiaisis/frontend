@@ -66,6 +66,7 @@ const ExperimentSearch: React.FC<ExperimentSearchProps> = ({
         <TextField
           label="Experiment Number"
           value={experimentNumber}
+          slotProps={{ htmlInput: { min: 0 } }}
           onChange={(e) => setExperimentNumber(e.target.value)}
           onKeyPress={handleKeyPress}
           type="number"
