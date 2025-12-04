@@ -156,6 +156,37 @@ export async function fetchAttributes(file: string, path: string): Promise<Recor
 }
 
 /**
+ * Process an array of items in parallel batches
+ * @param items - Array of items to process
+ * @param batchSize - Number of items to process in parallel
+ * @param processor - Async function to process each item
+ * @returns Array of successful results (failures are filtered out)
+ */
+async function processBatches<T, R>(
+  items: T[],
+  batchSize: number,
+  processor: (item: T) => Promise<R>
+): Promise<R[]> {
+  const results: R[] = [];
+
+  for (let i = 0; i < items.length; i += batchSize) {
+    const batch = items.slice(i, i + batchSize);
+
+    // Process batch in parallel
+    const batchResults = await Promise.allSettled(batch.map((item) => processor(item)));
+
+    // Collect successful results, skip failures
+    batchResults.forEach((result) => {
+      if (result.status === 'fulfilled') {
+        results.push(result.value);
+      }
+    });
+  }
+
+  return results;
+}
+
+/**
  * Discover the structure of an HDF5 file
  * @param filename - Original filename
  * @param fullPath - Full path to the HDF5 file
@@ -168,100 +199,114 @@ export async function discoverFileStructure(filename: string, fullPath: string):
     // Collect all numeric datasets
     const datasets: DiscoveredDataset[] = [];
 
-    // Explore each path
-    for (const path of allPaths) {
-      if (!path.toLowerCase().startsWith('/')) {
-        throw new Error(`Invalid path: ${path}`);
-      }
-      try {
+    // Process paths in parallel batches (OPTIMIZED for performance)
+    const BATCH_SIZE = Number(import.meta.env.VITE_H5GROVE_BATCH_SIZE) || 50;
+
+    const discoveredDatasets = await processBatches(
+      allPaths,
+      BATCH_SIZE,
+      async (path: string): Promise<DiscoveredDataset | null> => {
+        // Validation
+        if (!path.toLowerCase().startsWith('/')) {
+          throw new Error(`Invalid path: ${path}`);
+        }
+
+        // Fetch metadata for this path
         const metadata = await fetchEntityMetadata(fullPath, path);
         console.log('[H5Grove] Fetching metadata for:', path);
         console.log('[H5Grove] Fetched metadata was:', metadata);
-        if (isDataset(metadata)) {
-          console.log('[H5Grove] Dataset metadata:', metadata);
-          const shape = metadata.shape || [];
-          let dtype = metadata.type;
 
-          // Convert numeric class codes to string class names
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          if (dtype && typeof dtype === 'object' && typeof (dtype as any).class === 'number') {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const numericClass = (dtype as any).class;
-            let stringClass: string;
-
-            // HDF5 class codes: 0=Integer, 1=Float, 2=Time, 3=String, etc.
-            // https://github.com/silx-kit/h5web/blob/main/packages/shared/src/h5t.ts
-            switch (numericClass) {
-              case 0:
-                stringClass = 'Integer';
-                break;
-              case 1:
-                stringClass = 'Float';
-                break;
-              case 2:
-                stringClass = 'Time';
-                break;
-              case 3:
-                stringClass = 'String';
-                break;
-              case 4:
-                stringClass = 'Bitfield';
-                break;
-              case 5:
-                stringClass = 'Opaque';
-                break;
-              case 6:
-                stringClass = 'Compound';
-                break;
-              case 7:
-                stringClass = 'Reference';
-                break;
-              case 8:
-                stringClass = 'Enumeration';
-                break;
-              case 9:
-                stringClass = 'Array (variable length)';
-                break;
-              case 10:
-                stringClass = 'Array';
-                break;
-              default:
-                console.warn(`[H5Grove] Unknown class code: ${numericClass}`);
-                stringClass = 'Unknown';
-            }
-
-            dtype = {
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              ...(dtype as any),
-              class: stringClass,
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            } as DType;
-
-            console.log('[H5Grove] Converted dtype class:', { from: numericClass, to: stringClass });
-          }
-
-          if (dtype && isNumericType(dtype) && shape.length > 0) {
-            const attributes = metadata.attributes;
-            console.log('[H5Grove] Discovered numeric dataset:', { path, shape, dtype });
-            datasets.push({
-              path: path,
-              shape,
-              dtype,
-              attributes,
-              isNumeric: true,
-              is1D: shape.length === 1,
-              is2D: shape.length === 2,
-              isPrimary: attributes?.some((attr) => attr.name === 'signal') || false,
-            });
-          } else {
-            console.log('[H5Grove] Skipping non-numeric dataset:', { path, shape, dtype });
-          }
+        // Only process datasets
+        if (!isDataset(metadata)) {
+          return null; // Not a dataset, skip
         }
-      } catch (error) {
-        // Skip inaccessible paths
-        continue;
+
+        console.log('[H5Grove] Dataset metadata:', metadata);
+        const shape = metadata.shape || [];
+        let dtype = metadata.type;
+
+        // Convert numeric class codes to string class names
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        if (dtype && typeof dtype === 'object' && typeof (dtype as any).class === 'number') {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const numericClass = (dtype as any).class;
+          let stringClass: string;
+
+          // HDF5 class codes: 0=Integer, 1=Float, 2=Time, 3=String, etc.
+          // https://github.com/silx-kit/h5web/blob/main/packages/shared/src/h5t.ts
+          switch (numericClass) {
+            case 0:
+              stringClass = 'Integer';
+              break;
+            case 1:
+              stringClass = 'Float';
+              break;
+            case 2:
+              stringClass = 'Time';
+              break;
+            case 3:
+              stringClass = 'String';
+              break;
+            case 4:
+              stringClass = 'Bitfield';
+              break;
+            case 5:
+              stringClass = 'Opaque';
+              break;
+            case 6:
+              stringClass = 'Compound';
+              break;
+            case 7:
+              stringClass = 'Reference';
+              break;
+            case 8:
+              stringClass = 'Enumeration';
+              break;
+            case 9:
+              stringClass = 'Array (variable length)';
+              break;
+            case 10:
+              stringClass = 'Array';
+              break;
+            default:
+              console.warn(`[H5Grove] Unknown class code: ${numericClass}`);
+              stringClass = 'Unknown';
+          }
+
+          dtype = {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            ...(dtype as any),
+            class: stringClass,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          } as DType;
+
+          console.log('[H5Grove] Converted dtype class:', { from: numericClass, to: stringClass });
+        }
+
+        // Only keep numeric datasets with shape
+        if (dtype && isNumericType(dtype) && shape.length > 0) {
+          const attributes = metadata.attributes;
+          console.log('[H5Grove] Discovered numeric dataset:', { path, shape, dtype });
+
+          return {
+            path: path,
+            shape,
+            dtype,
+            attributes,
+            isNumeric: true,
+            is1D: shape.length === 1,
+            is2D: shape.length === 2,
+            isPrimary: attributes?.some((attr) => attr.name === 'signal') || false,
+          };
+        }
+
+        console.log('[H5Grove] Skipping non-numeric dataset:', { path, shape, dtype });
+        return null; // Not numeric, skip
       }
-    }
+    );
+
+    // Filter out null results and add to datasets array
+    datasets.push(...discoveredDatasets.filter((ds): ds is DiscoveredDataset => ds !== null));
 
     console.log('[H5Grove] Discovered datasets:', datasets);
 

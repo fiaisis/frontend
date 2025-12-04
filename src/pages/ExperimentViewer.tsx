@@ -104,9 +104,37 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
         // Filter jobs to only include H5 files in outputs and store filtered outputs back
         const filteredJobs = jobsData.map((job) => {
           console.log('Job outputs:', job.outputs);
-          const outputs = JSON.parse(job.outputs.replace(/'/g, '"')) as string[];
+
+          // Parse outputs - handle 3 cases:
+          // 1. Lists like "['file1', 'file2']" - split on "', '"
+          // 2. Individual files without brackets - treat as single file
+          // 3. Lists with non-file garbage - filter out non-files
+          let outputs: string[] = [];
+
+          const outputStr = job.outputs.trim();
+
+          // Case 1 & 3: Check if it's a list (starts with [ and ends with ])
+          if (outputStr.startsWith('[') && outputStr.endsWith(']')) {
+            // Remove brackets and split on "', '"
+            const withoutBrackets = outputStr.slice(1, -1);
+            outputs = withoutBrackets
+              .split("', '")
+              .map((s) => s.replace(/^['"]|['"]$/g, '').trim()) // Remove quotes and trim
+              .filter((s) => s.length > 0); // Remove empty strings
+          } else {
+            // Case 2: Individual file without brackets
+            outputs = [outputStr];
+          }
+
           console.log('Parsed outputs:', outputs);
-          const h5Outputs = outputs.filter((output) => outputFilter.some((filter) => output.endsWith(filter)));
+
+          // Filter to only keep valid H5 files (handles case 3 - filters garbage)
+          const h5Outputs = outputs.filter((output) => {
+            // Must be a string with valid file extension
+            return typeof output === 'string' &&
+                   output.length > 0 &&
+                   outputFilter.some((filter) => output.endsWith(filter));
+          });
 
           console.log('Filtered job outputs:', h5Outputs);
 
