@@ -3,6 +3,7 @@ import {
   Box,
   Typography,
   Checkbox,
+  Radio,
   FormControlLabel,
   TextField,
   Select,
@@ -32,6 +33,9 @@ interface FileTreeProps {
   onSelectionChange: (index: number, selections: number[]) => void;
   autoSelectPrimary?: boolean;
   onAutoSelectPrimaryChange?: (enabled: boolean) => void;
+  activeViewerTab?: '1d' | '2d';
+  selected2DFile?: string | null;
+  onSelect2DFile?: (filename: string) => void;
 }
 
 const FileTree: React.FC<FileTreeProps> = ({
@@ -42,6 +46,9 @@ const FileTree: React.FC<FileTreeProps> = ({
   onSelectionChange,
   autoSelectPrimary = false,
   onAutoSelectPrimaryChange,
+  activeViewerTab = '1d',
+  selected2DFile = null,
+  onSelect2DFile,
 }): JSX.Element => {
   const [expandedJobs, setExpandedJobs] = useState<Set<number>>(new Set());
   const [showEmptyJobs, setShowEmptyJobs] = useState(false);
@@ -220,10 +227,18 @@ const FileTree: React.FC<FileTreeProps> = ({
                     }}
                   >
                     <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                      {/* File checkbox */}
+                      {/* File selection - checkbox in 1D mode, radio in 2D mode */}
                       <FormControlLabel
                         control={
-                          <Checkbox size="small" checked={file.enabled} onChange={() => onFileToggle(fileIndex)} />
+                          activeViewerTab === '2d' ? (
+                            <Radio
+                              size="small"
+                              checked={selected2DFile === output}
+                              onChange={() => onSelect2DFile?.(output)}
+                            />
+                          ) : (
+                            <Checkbox size="small" checked={file.enabled} onChange={() => onFileToggle(fileIndex)} />
+                          )
                         }
                         label={
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
@@ -242,8 +257,15 @@ const FileTree: React.FC<FileTreeProps> = ({
                         sx={{ m: 0, width: '100%', alignItems: 'flex-start' }}
                       />
 
-                      {/* File controls - only show if enabled */}
-                      {file.enabled && (
+                      {/* Helper text in 2D mode */}
+                      {activeViewerTab === '2d' && selected2DFile === output && (
+                        <Typography variant="caption" color="text.secondary" sx={{ ml: 4, display: 'block', mt: 1 }}>
+                          Select datasets in the 2D viewer panel →
+                        </Typography>
+                      )}
+
+                      {/* File controls - only show in 1D mode if enabled */}
+                      {activeViewerTab === '1d' && file.enabled && (
                         <Box sx={{ mt: 2, ml: 4, display: 'flex', flexDirection: 'column', gap: 2 }}>
                           {/* Dataset selector - dropdown for discovered datasets */}
                           <Box>
