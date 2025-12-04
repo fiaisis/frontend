@@ -15,7 +15,7 @@ export const fetchData1D = async (file: string, path: string, selection?: number
     if (selection !== undefined) {
       params.selection = selection.toString();
     }
-    const response = await h5Api.get<DataArray1D>('/data', { params });
+    const response = await h5Api.get<DataArray1D>('/data/', { params });
     return response.data;
   } catch (error) {
     console.error(`Error fetching 1D data for file ${file}:`, error);
@@ -37,7 +37,7 @@ export const fetchErrorData = async (file: string, errorPath: string, selection?
     if (selection !== undefined) {
       params.selection = selection.toString();
     }
-    const response = await h5Api.get<DataArray1D>('/data', { params });
+    const response = await h5Api.get<DataArray1D>('/data/', { params });
     return response.data;
   } catch (error) {
     console.error(`Error fetching error data for file ${file}:`, error);
@@ -112,7 +112,7 @@ interface DataRequestParams {
  */
 export async function fetchEntityMetadata(file: string, path: string = '/'): Promise<Entity> {
   try {
-    const response = await h5Api.get<Entity>('/meta', {
+    const response = await h5Api.get<Entity>('/meta/', {
       params: { file, path },
     });
     return response.data;
@@ -128,7 +128,7 @@ export async function fetchEntityMetadata(file: string, path: string = '/'): Pro
  */
 export async function fetchSearchablePaths(file: string): Promise<string[]> {
   try {
-    const response = await h5Api.get<string[]>('/paths', {
+    const response = await h5Api.get<string[]>('/paths/', {
       params: { file },
     });
     return response.data;
@@ -145,7 +145,7 @@ export async function fetchSearchablePaths(file: string): Promise<string[]> {
  */
 export async function fetchAttributes(file: string, path: string): Promise<Record<string, unknown>> {
   try {
-    const response = await h5Api.get<Record<string, unknown>>('/attr', {
+    const response = await h5Api.get<Record<string, unknown>>('/attr/', {
       params: { file, path },
     });
     return response.data;
