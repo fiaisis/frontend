@@ -38,6 +38,13 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
   const [loading2DPath, setLoading2DPath] = useState(false);
   const [viewer2DError, setViewer2DError] = useState<string | null>(null);
 
+  // 2D Viewer state
+  const [activeViewerTab, setActiveViewerTab] = useState<'1d' | '2d'>('1d');
+  const [selected2DFile, setSelected2DFile] = useState<string | null>(null);
+  const [selected2DFilePath, setSelected2DFilePath] = useState<string | null>(null);
+  const [loading2DPath, setLoading2DPath] = useState(false);
+  const [viewer2DError, setViewer2DError] = useState<string | null>(null);
+
   // Search state - initialize from URL params
   const [searchInstrument, setSearchInstrument] = useState<string | null>(() => searchParams.get('instrument'));
   const [searchExperimentNumber, setSearchExperimentNumber] = useState<number | null>(() => {

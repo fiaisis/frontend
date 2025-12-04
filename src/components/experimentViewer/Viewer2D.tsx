@@ -15,6 +15,9 @@ import { h5Api } from '../../lib/api';
 
 interface Viewer2DProps {
   filepath: string | null;
+  plottingApiUrl: string;
+  authToken: string | null;
+  onError?: (error: string) => void;
 }
 
 const Viewer2D: React.FC<Viewer2DProps> = ({ filepath }): JSX.Element => {
