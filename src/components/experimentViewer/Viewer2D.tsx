@@ -1,8 +1,16 @@
 import '@h5web/app/styles.css';
-import React, { useMemo } from 'react';
-import { App, H5GroveProvider } from '@h5web/app';
+import React, { Suspense, useMemo, useState } from 'react';
 import axios from 'axios';
 import { Box, Typography } from '@mui/material';
+import H5GroveProvider from '../../h5web/packages/app/src/providers/h5grove/H5GroveProvider';
+import { ErrorBoundary } from 'react-error-boundary';
+import ErrorFallback from '../../h5web/packages/app/src/ErrorFallback';
+import { ReflexContainer, ReflexElement } from 'react-reflex';
+import styles from '../../h5web/packages/app/src/App.module.css';
+import VisConfigProvider from '../../h5web/packages/app/src/VisConfigProvider';
+import { DimMappingProvider } from '../../h5web/packages/app/src/dim-mapping-store';
+import EntityLoader from '../../h5web/packages/app/src/EntityLoader';
+import Visualizer from '../../h5web/packages/app/src/visualizer/Visualizer';
 
 interface Viewer2DProps {
   filepath: string | null;
@@ -12,6 +20,8 @@ interface Viewer2DProps {
 }
 
 const Viewer2D: React.FC<Viewer2DProps> = ({ filepath, plottingApiUrl, authToken, onError }): JSX.Element => {
+  const [selectedPath] = useState<string>('/');
+
   // Create authenticated axios instance for h5web
   const axiosInstance = useMemo(() => {
     return axios.create({
@@ -55,7 +65,31 @@ const Viewer2D: React.FC<Viewer2DProps> = ({ filepath, plottingApiUrl, authToken
           headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
         }}
       >
-        <App sidebarOpen={false} disableDarkMode={true} />
+        <ErrorBoundary
+          FallbackComponent={ErrorFallback}
+          onError={(err) => {
+            throw err;
+          }}
+        >
+          <ReflexContainer
+            className={styles.root}
+            data-fullscreen-root
+            data-allow-dark-mode={''}
+            orientation="vertical"
+          >
+            <ReflexElement className={styles.mainArea} flex={75} minSize={500}>
+              <VisConfigProvider>
+                <DimMappingProvider>
+                  <ErrorBoundary resetKeys={[selectedPath]} FallbackComponent={ErrorFallback}>
+                    <Suspense fallback={<EntityLoader isInspecting={false} />}>
+                      <Visualizer path={selectedPath} />
+                    </Suspense>
+                  </ErrorBoundary>
+                </DimMappingProvider>
+              </VisConfigProvider>
+            </ReflexElement>
+          </ReflexContainer>
+        </ErrorBoundary>
       </H5GroveProvider>
     </Box>
   );

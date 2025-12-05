@@ -13,7 +13,14 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-    "jsx": "preserve"
+    "jsx": "preserve",
+    "baseUrl": ".",
+    "paths": {
+      "@h5web/shared/*": ["src/h5web/packages/shared/src/*"],
+      "@h5web/shared": ["src/h5web/packages/shared/src/index.ts"],
+      "@h5web/app": ["src/h5web/packages/app/src/index.ts"],
+      "@h5web/lib": ["src/h5web/packages/lib/src/index.ts"]
+    }
   },
   "include": ["src", "cypress/component/Homepage.cy.tsx"]
 }
