@@ -1,0 +1,3 @@
+[submodule "src/h5web"]
+	path = src/h5web
+	url = https://github.com/silx-kit/h5web

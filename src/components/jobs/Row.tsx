@@ -130,6 +130,20 @@ const JobOutput: React.FC<{
               >
                 View
               </Button>
+              {/* Show H5 Viewer button for HDF5 files */}
+              {(output.endsWith('.h5') ||
+                output.endsWith('.hdf5') ||
+                output.endsWith('.nxs') ||
+                output.endsWith('.nxspe')) && (
+                <Button
+                  variant="contained"
+                  component={Link}
+                  to={`/reduction-history/${job.run?.instrument_name || 'unknown'}/h5-viewer-${job.id}`}
+                  sx={{ flexShrink: 0, whiteSpace: 'nowrap' }}
+                >
+                  H5 Viewer
+                </Button>
+              )}
               <Button
                 variant="contained"
                 startIcon={downloadingSingle === output ? null : <Download />}

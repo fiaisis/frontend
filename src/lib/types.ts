@@ -1,3 +1,9 @@
+// ============= H5 Viewer Types =============
+// Types for HDF5 data visualization
+
+import type { DType } from '@h5web/app';
+import { DataArray1D } from './plottingServiceAPI';
+
 export const reductionStates = ['ERROR', 'UNSUCCESSFUL', 'SUCCESSFUL', 'NOT_STARTED'] as const;
 
 export type ReductionState = (typeof reductionStates)[number];
@@ -50,3 +56,41 @@ export interface JobQueryFilters {
 }
 
 export type MantidVersionMap = Record<string, string>;
+
+// Discovered dataset information from H5 files
+export interface DatasetInfo {
+  path: string;
+  shape: number[];
+  dtype: DType;
+  errorPath?: string;
+  is1D: boolean;
+  is2D: boolean;
+  isPrimary?: boolean; // Whether this dataset has a 'signal' attribute (primary data)
+}
+
+// File configuration for H5 data fetching and visualization
+export interface FileConfig {
+  filename: string;
+  fullPath?: string; // Full path from the plotting API
+  path?: string; // Selected dataset path (undefined until user selects)
+  errorPath?: string; // Path to error dataset if available
+  enabled: boolean; // Whether this file is selected for discovery
+  selection?: number[]; // Selection indices for slicing (for 2D→1D plots) - supports multiple slices
+  selectionInputMode?: 'text' | 'chips'; // UI mode for selection input
+
+  // Discovered datasets from h5grove
+  discoveredDatasets?: DatasetInfo[]; // All numeric datasets found in the file
+  isDiscovered?: boolean; // Whether datasets have been discovered
+  selectedDatasetIs2D?: boolean; // Whether the selected dataset is 2D (for slice support)
+}
+
+// Data point for line plotting
+export interface LinePlotData {
+  filename: string;
+  data: DataArray1D;
+  errors?: DataArray1D;
+  color?: string;
+}
+
+// Filter for the h5 files to include
+export const outputFilter = ['.h5', '.hdf5', '.nxs', '.nxspe'];
