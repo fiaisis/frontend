@@ -4,8 +4,7 @@ import { Link } from 'react-router-dom';
 import { Trans, useTranslation } from 'react-i18next';
 
 // Material UI imports
-import { alpha, Avatar, Box, Button, Paper, styled, Typography, useMediaQuery, useTheme } from '@mui/material';
-import SearchIcon from '@mui/icons-material/Search';
+import { Box, Button, Paper, styled, Typography, useMediaQuery, useTheme } from '@mui/material';
 import Grid from '@mui/material/Grid2';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 
@@ -50,14 +49,6 @@ const paperStyles = {
   width: '100%',
 };
 
-const avatarStyles = {
-  backgroundColor: '#1E5DF8',
-  color: '#FFFFFF',
-  width: '60px',
-  height: '60px',
-  marginBottom: 2,
-};
-
 const paperContentStyles = {
   padding: 2,
   display: 'flex',
@@ -65,10 +56,6 @@ const paperContentStyles = {
   justifyContent: 'flex-start',
   height: '100%',
   boxSizing: 'border-box',
-};
-
-const avatarIconStyles = {
-  transform: 'scale(1.75)',
 };
 
 const PaperHeading = styled(Typography)(({ theme }) => ({
@@ -93,13 +80,6 @@ const BluePaperHeading = styled(Typography)(({ theme }) => ({
   marginBottom: theme.spacing(2),
 }));
 
-const BluePaperDescription = styled(Typography)(({ theme }) => ({
-  textAlign: 'left',
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  color: (theme as any).colours?.homepage?.blueDescription,
-  marginBottom: theme.spacing(2),
-}));
-
 interface BrowseDecalProps {
   decal2Image: string;
   decal2DarkImage: string;
@@ -120,19 +100,6 @@ const BrowseDecal = styled('div', {
   backgroundPosition: 'top left',
   backgroundSize: 'auto 100%',
   height: '100%',
-}));
-
-const LightBlueButton = styled(Button)(({ theme }) => ({
-  color: '#FFFFFF',
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  backgroundColor: (theme as any).colours?.homepage?.blueButton,
-  '&:hover': {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    backgroundColor: (theme as any).colours?.homepage?.blueButton
-      ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        alpha((theme as any).colours?.homepage?.blueButton, 0.8)
-      : '#FFFFFF',
-  },
 }));
 
 const Homepage = (): React.ReactElement => {
@@ -215,12 +182,13 @@ const Homepage = (): React.ReactElement => {
                 </PaperDescription>
                 <PaperDescription variant="body1">
                   <Trans i18nKey="home-page.browse.description2">
-                    <strong>Flexible Interactive Automation (FIA)</strong> focuses on providing scientists an interface to
-                    perform automatic reductions for beamline instruments from the web.
+                    <strong>Flexible Interactive Automation (FIA)</strong> focuses on providing scientists an interface
+                    to perform automatic reductions for beamline instruments from the web.
                   </Trans>
                 </PaperDescription>
                 <Box marginTop="16px" marginBottom="8px">
-                  <Button style={{
+                  <Button
+                    style={{
                       backgroundImage: `url(${GreenSwirl1Image})`,
                       backgroundRepeat: 'no-repeat',
                       backgroundPosition: 'top left',
@@ -233,7 +201,7 @@ const Homepage = (): React.ReactElement => {
                     to="/reduction-history"
                     data-testid="browse-button"
                   >
-                    {t('View FIA\'s data reductions')}
+                    {t("View FIA's data reductions")}
                   </Button>
                 </Box>
               </Box>
@@ -316,13 +284,15 @@ const Homepage = (): React.ReactElement => {
                   )}
                 </PaperDescription>
                 <Box marginTop="auto">
-                  <a href="https://www.isis.stfc.ac.uk/Pages/About.aspx" target ="_blank" rel="noopener noreferrer">
+                  <a href="https://www.isis.stfc.ac.uk/Pages/About.aspx" target="_blank" rel="noopener noreferrer">
                     <Button
-                    color="primary"
-                    variant="contained"
-                    data-testid="facility-button"
-                    endIcon={<OpenInNewIcon/>}
-                    >{t('Read more')}</Button>
+                      color="primary"
+                      variant="contained"
+                      data-testid="facility-button"
+                      endIcon={<OpenInNewIcon />}
+                    >
+                      {t('Read more')}
+                    </Button>
                   </a>
                 </Box>
               </Box>
@@ -338,17 +308,20 @@ const Homepage = (): React.ReactElement => {
               <Box className="tour-homepage-learn-more" sx={paperContentStyles}>
                 <PaperHeading variant="h4">{t('Learn more')}</PaperHeading>
                 <PaperDescription variant="body1">
-                  {t('Read more info about ISIS\'s Target Stations 1 and 2, and learn about instruments by their scientific technique.')}
+                  {t(
+                    "Read more info about ISIS's Target Stations 1 and 2, and learn about instruments by their scientific technique."
+                  )}
                 </PaperDescription>
                 <Box marginTop="auto">
-                  <a href="https://www.isis.stfc.ac.uk/Pages/Instruments.aspx" target="_blank" rel="noopener noreferrer">
-                    <Button
-                        color="primary"
-                        variant="contained"
-                        data-testid="browse-button"
-                        endIcon={<OpenInNewIcon/>}
-                    >{t('Instrument info')}</Button>
-                  </a> 
+                  <a
+                    href="https://www.isis.stfc.ac.uk/Pages/Instruments.aspx"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <Button color="primary" variant="contained" data-testid="browse-button" endIcon={<OpenInNewIcon />}>
+                      {t('Instrument info')}
+                    </Button>
+                  </a>
                 </Box>
               </Box>
             </Paper>

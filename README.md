@@ -52,6 +52,9 @@ Unless you have a working API and data viewer set up locally, point the frontend
 - `VITE_PLUGIN_URL` (used for certain asset URLs)
 - `VITE_DEV_MODE` (optional)
 
+If you want to run the experiment viewer, you must have the plotting service running locally as remote server restricts access from the outside.
+To control where the plotting service is running, set `VITE_FIA_PLOTTING_API_URL` in your `.env` file.
+
 ## Running the frontend for the first time
 
 Assuming all the previous steps have been completed, you can now use these commands in the terminal to get the web application running.

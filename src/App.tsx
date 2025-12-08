@@ -7,6 +7,7 @@ import ReactGA from 'react-ga4';
 import Instruments from './pages/Instruments';
 import Homepage from './pages/Homepage';
 import ValueEditor from './pages/ValueEditor';
+import ExperimentViewer from './pages/ExperimentViewer';
 import GlobalStyles from './GlobalStyles';
 import Jobs from './pages/Jobs';
 import { clearFailedAuthRequestsQueue, retryFailedAuthRequests } from './lib/api';
@@ -75,6 +76,12 @@ const App: FC = () => {
             </Route>
             <Route path="/reduction-history/:instrumentName/value-editor-:jobId">
               <ValueEditor />
+            </Route>
+            <Route path="/reduction-history/:instrumentName/experiment-viewer-:jobId">
+              <ExperimentViewer />
+            </Route>
+            <Route path="/experiment-viewer">
+              <ExperimentViewer />
             </Route>
             {/* Blank route for login page*/}
             <Route path="/login" />
