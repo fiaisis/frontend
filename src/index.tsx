@@ -58,24 +58,10 @@ const reactLifecycles = singleSpaReact({
   },
 });
 
-// Create route registration events being fired back to the parent
-// Args:
-// 1. What section of the menu route will appear under
-// 2. Text of the link
-// 3. Route to link to
-// 4. How high up in the section should your link be - ascending order
-// 5. Help text renders a tooltip in the site tour for this link
-// 6. Whether the link should be visible to unauthenticated users
-createRoute('Reductions', 'Home page', '/fia', 1, '', false);
-createRoute('Reductions', 'Instruments', '/fia/instruments', 2, 'Click here to see a list of all Instruments.', false);
-createRoute(
-  'Reductions',
-  'Reduction history',
-  '/fia/reduction-history',
-  3,
-  'Click here to see a list of all reductions.',
-  false
-);
+createRoute('Browse', 'Homepage', '/fia', 1, 'Data help text', false);
+createRoute('Browse', 'Instruments', '/fia/instruments', 2, 'Data help text', false);
+createRoute('Browse', 'Reduction history', '/fia/reduction-history', 3, 'Data help text', false);
+createRoute('Browse', 'IMAT viewer', '/fia/imat-viewer', 4, 'Latest IMAT heatmap', false);
 createRoute(
   'Viewers',
   'Expriment viewer',
