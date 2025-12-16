@@ -5,6 +5,7 @@ import { Box, Typography, CircularProgress, Alert } from '@mui/material';
 import FileTree from '../components/experimentViewer/FileTree';
 import PlotViewer from '../components/experimentViewer/Graph';
 import ExperimentSearch from '../components/experimentViewer/ExperimentSearch';
+import NavArrows from '../components/navigation/NavArrows';
 import { discoverFileStructure, fetchData1D, fetchErrorData, fetchFilePath } from '../lib/plottingServiceAPI';
 import { fiaApi } from '../lib/api';
 import { FileConfig, LinePlotData, Job, DatasetInfo, JobQueryFilters, outputFilter } from '../lib/types';
@@ -442,7 +443,9 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
   const showSearch = !jobId;
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100%' }}>
+    <>
+      <NavArrows />
+      <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100%' }}>
       {/* Search bar - only show when not viewing specific job */}
       {showSearch && (
         <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
@@ -573,7 +576,8 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
           </>
         )}
       </Box>
-    </Box>
+      </Box>
+    </>
   );
 };
 
