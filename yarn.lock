@@ -18718,6 +18718,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"zrender@npm:5.6.1":
+  version: 5.6.1
+  resolution: "zrender@npm:5.6.1"
+  dependencies:
+    tslib: 2.3.0
+  checksum: 01caeac2d30f0083009aafa531ccb7fe991b6ac0ddd8134dc7b0015f794ed7e3d4fbfe5d32f61cb591014245eca15aeebcfc962cdebfe3829598f0c94ba3dc29
+  languageName: node
+  linkType: hard
+
 "zustand@npm:5.0.8":
   version: 5.0.8
   resolution: "zustand@npm:5.0.8"

@@ -84,13 +84,13 @@ const App: FC = () => {
             <Route path="/experiment-viewer">
               <ExperimentViewer />
             </Route>
+            <Route exact path="/imat-viewer">
+              <IMATViewer />
+            </Route>
             {/* Blank route for login page*/}
             <Route path="/login" />
             {/* Catch-all that redirects unmatched routes to the homepage*/}
             <Route render={() => <Redirect to="/" />} />
-            <Route exact path="/imat-viewer">
-              <IMATViewer />
-            </Route>
           </Switch>
         </Router>
       </GlobalStyles>
