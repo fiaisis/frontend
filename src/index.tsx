@@ -61,7 +61,7 @@ const reactLifecycles = singleSpaReact({
 createRoute('Browse', 'Homepage', '/fia', 1, 'Data help text', false);
 createRoute('Browse', 'Instruments', '/fia/instruments', 2, 'Data help text', false);
 createRoute('Browse', 'Reduction history', '/fia/reduction-history', 3, 'Data help text', false);
-createRoute('Viewer', 'IMAT viewer', '/fia/imat-viewer', 4, 'Latest IMAT heatmap', false);
+createRoute('Viewers', 'IMAT viewer', '/fia/imat-viewer', 4, 'Latest IMAT heatmap', false);
 createRoute(
   'Viewers',
   'Expriment viewer',
