@@ -82,8 +82,8 @@ const App: FC = () => {
               <ExperimentViewer />
             </Route>
             <Route path="/experiment-viewer">
-            <ExperimentViewer />
-          </Route>
+              <ExperimentViewer />
+            </Route>
             {/* Blank route for login page*/}
             <Route path="/login" />
             <Route exact path="/imat-viewer">
