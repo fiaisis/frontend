@@ -279,7 +279,7 @@ const IMATViewer: React.FC = () => {
     const controller = new AbortController();
 
     const fetchLatestImage = async (): Promise<void> => {
-      const baseUrl = import.meta.env.VITE_PLOTTING_API_URL;
+      const baseUrl = import.meta.env.VITE_FIA_PLOTTING_API_URL;
       if (!baseUrl) {
         setError('Plotting API is not configured');
         setDataset(null);

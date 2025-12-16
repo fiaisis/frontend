@@ -1,10 +1,11 @@
 import axios from 'axios';
 
 const isDev = import.meta.env.DEV || import.meta.env.VITE_DEV_MODE === 'true';
+const plottingBaseURL = import.meta.env.VITE_FIA_PLOTTING_API_URL;
 
 export const fiaApi = axios.create();
 export const plottingApi = axios.create({
-  baseURL: import.meta.env.VITE_PLOTTING_API_URL,
+  baseURL: plottingBaseURL,
 });
 
 let isFetchingAccessToken = false;
@@ -73,7 +74,7 @@ export const h5Api = axios.create({
 });
 
 h5Api.interceptors.request.use(async (config) => {
-  config.baseURL = import.meta.env.VITE_FIA_PLOTTING_API_URL;
+  config.baseURL = plottingBaseURL;
   config.headers['Authorization'] = `Bearer ${!isDev ? localStorage.getItem('scigateway:token') : ''}`;
   return config;
 });
