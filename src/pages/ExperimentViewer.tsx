@@ -131,9 +131,9 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
           // Filter to only keep valid H5 files (handles case 3 - filters garbage)
           const h5Outputs = outputs.filter((output) => {
             // Must be a string with valid file extension
-            return typeof output === 'string' &&
-                   output.length > 0 &&
-                   outputFilter.some((filter) => output.endsWith(filter));
+            return (
+              typeof output === 'string' && output.length > 0 && outputFilter.some((filter) => output.endsWith(filter))
+            );
           });
 
           console.log('Filtered job outputs:', h5Outputs);
