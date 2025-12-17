@@ -8,6 +8,7 @@ import Instruments from './pages/Instruments';
 import Homepage from './pages/Homepage';
 import ValueEditor from './pages/ValueEditor';
 import ExperimentViewer from './pages/ExperimentViewer';
+import IMATViewer from './pages/IMATViewer';
 import GlobalStyles from './GlobalStyles';
 import Jobs from './pages/Jobs';
 import { clearFailedAuthRequestsQueue, retryFailedAuthRequests } from './lib/api';
@@ -85,6 +86,9 @@ const App: FC = () => {
             </Route>
             {/* Blank route for login page*/}
             <Route path="/login" />
+            <Route exact path="/imat-viewer">
+              <IMATViewer />
+            </Route>
             {/* Catch-all that redirects unmatched routes to the homepage*/}
             <Route render={() => <Redirect to="/" />} />
           </Switch>
