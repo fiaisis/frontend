@@ -6,7 +6,6 @@ import React, { ReactElement, useState } from 'react';
 import InstrumentSelector from '../components/jobs/InstrumentSelector';
 import InstrumentConfigDrawer from '../components/configsettings/InstrumentConfigDrawer';
 import { jwtDecode } from 'jwt-decode';
-import IMATView from '../components/imat/IMATView';
 import { JobQueryFilters } from '../lib/types';
 import { JOB_ROWS_PER_PAGE_OPTIONS, JobRowsPerPage, isJobRowsPerPage } from '../components/jobs/constants';
 import NavArrows from '../components/navigation/NavArrows';
@@ -63,7 +62,13 @@ const Jobs: React.FC = (): ReactElement => {
 
   // Keep table state mirrored in the browser URL so views are shareable
   const updateQueryParams = React.useCallback(
-    (next: { page?: number; rowsPerPage?: JobRowsPerPage; filters?: JobQueryFilters; orderBy?: string; orderDirection?: "desc" | "asc" }) => {
+    (next: {
+      page?: number;
+      rowsPerPage?: JobRowsPerPage;
+      filters?: JobQueryFilters;
+      orderBy?: string;
+      orderDirection?: 'desc' | 'asc';
+    }) => {
       const params = new URLSearchParams(location.search);
 
       if (next.page !== undefined) {
@@ -118,7 +123,7 @@ const Jobs: React.FC = (): ReactElement => {
     [history, location.pathname, location.search]
   );
 
-    React.useEffect(() => {
+  React.useEffect(() => {
     updateQueryParams({ orderBy, orderDirection });
   }, [orderBy, orderDirection, updateQueryParams]);
 
@@ -142,7 +147,6 @@ const Jobs: React.FC = (): ReactElement => {
     }
     handlePageChange(0);
   };
-
 
   const handlePageChange = React.useCallback(
     (newPage: number) => {
@@ -302,23 +306,19 @@ const Jobs: React.FC = (): ReactElement => {
         selectedInstrument={selectedInstrument}
       />
       <Box className="tour-red-his-tablehead" sx={{ padding: '0 20px 20px' }}>
-        {selectedInstrument === 'IMAT' ? (
-          <IMATView />
-        ) : (
-          <JobTable
-            selectedInstrument={selectedInstrument}
-            currentPage={currentPage}
-            handlePageChange={handlePageChange}
-            asUser={asUser}
-            rowsPerPage={rowsPerPage}
-            handleRowsPerPageChange={handleRowsPerPageChange}
-            filters={currentFilters}
-            handleFiltersChange={handleFiltersChange}
-            orderBy={orderBy}
-            orderDirection={orderDirection}
-            handleSort={handleSort}
-          />
-        )}
+        <JobTable
+          selectedInstrument={selectedInstrument}
+          currentPage={currentPage}
+          handlePageChange={handlePageChange}
+          asUser={asUser}
+          rowsPerPage={rowsPerPage}
+          handleRowsPerPageChange={handleRowsPerPageChange}
+          filters={currentFilters}
+          handleFiltersChange={handleFiltersChange}
+          orderBy={orderBy}
+          orderDirection={orderDirection}
+          handleSort={handleSort}
+        />
       </Box>
     </>
   );
