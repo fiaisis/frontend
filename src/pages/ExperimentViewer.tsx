@@ -5,6 +5,7 @@ import { Box, Typography, CircularProgress, Alert } from '@mui/material';
 import FileTree from '../components/experimentViewer/FileTree';
 import PlotViewer from '../components/experimentViewer/Graph';
 import ExperimentSearch from '../components/experimentViewer/ExperimentSearch';
+import NavArrows from '../components/navigation/NavArrows';
 import { discoverFileStructure, fetchData1D, fetchErrorData, fetchFilePath } from '../lib/plottingServiceAPI';
 import { fiaApi } from '../lib/api';
 import { FileConfig, LinePlotData, Job, DatasetInfo, JobQueryFilters, outputFilter } from '../lib/types';
@@ -131,9 +132,9 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
           // Filter to only keep valid H5 files (handles case 3 - filters garbage)
           const h5Outputs = outputs.filter((output) => {
             // Must be a string with valid file extension
-            return typeof output === 'string' &&
-                   output.length > 0 &&
-                   outputFilter.some((filter) => output.endsWith(filter));
+            return (
+              typeof output === 'string' && output.length > 0 && outputFilter.some((filter) => output.endsWith(filter))
+            );
           });
 
           console.log('Filtered job outputs:', h5Outputs);
@@ -442,7 +443,9 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
   const showSearch = !jobId;
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100%' }}>
+    <>
+      <NavArrows />
+      <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100%' }}>
       {/* Search bar - only show when not viewing specific job */}
       {showSearch && (
         <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
@@ -573,7 +576,8 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
           </>
         )}
       </Box>
-    </Box>
+      </Box>
+    </>
   );
 };
 

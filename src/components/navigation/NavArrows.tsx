@@ -108,9 +108,16 @@ const NavArrows: React.FC = () => {
           if (label === 'reduction-history') {
             label = 'Reduction history';
           }
-          const regex = new RegExp('^value-editor-(\\d+)$', 'i');
-          if (label.match(regex)) {
+          if (label === 'experiment-viewer') {
+            label = 'Experiment viewer';
+          }
+          const valueEditorRegex = /^value-editor-(\d+)$/i;
+          if (valueEditorRegex.test(label)) {
             label = 'Value editor';
+          }
+          const experimentViewerRegex = /^experiment-viewer-(\d+)$/i;
+          if (experimentViewerRegex.test(label)) {
+            label = 'Experiment viewer';
           }
           if (isLast) {
             return (
