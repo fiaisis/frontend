@@ -76,7 +76,7 @@
     "eject": "react-scripts eject",
     "cypress:open": "cypress open",
     "cypress:run": "cypress run",
-    "run-frontend": "yarn build && cd ../scigateway && yarn start",
+    "run-frontend": "yarn build && cd ../scigateway && yarn dev",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
