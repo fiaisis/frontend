@@ -108,9 +108,6 @@ const NavArrows: React.FC = () => {
           if (label === 'reduction-history') {
             label = 'Reduction history';
           }
-          if (label === 'imat-viewer') {
-            label = 'IMAT viewer';
-          }
           if (label === 'experiment-viewer') {
             label = 'Experiment viewer';
           }
