@@ -138,10 +138,10 @@ const JobOutput: React.FC<{
                 <Button
                   variant="contained"
                   component={Link}
-                  to={`/reduction-history/${job.run?.instrument_name || 'unknown'}/h5-viewer-${job.id}`}
+                  to={`/reduction-history/${job.run?.instrument_name || 'unknown'}/experiment-viewer-${job.id}`}
                   sx={{ flexShrink: 0, whiteSpace: 'nowrap' }}
                 >
-                  H5 Viewer
+                  H5 viewer
                 </Button>
               )}
               <Button
