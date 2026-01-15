@@ -9451,6 +9451,7 @@ __metadata:
     single-spa-react: 4.6.1
     three: 0.181.1
     typescript: 5.7.x
+    utif: ^3.1.0
     vite: ^5.4.21
     ws: 8.18.0
   languageName: unknown
@@ -13572,6 +13573,13 @@ __metadata:
   version: 1.0.1
   resolution: "package-json-from-dist@npm:1.0.1"
   checksum: 58ee9538f2f762988433da00e26acc788036914d57c71c246bf0be1b60cdbd77dd60b6a3e1a30465f0b248aeb80079e0b34cb6050b1dfa18c06953bb1cbc7602
+  languageName: node
+  linkType: hard
+
+"pako@npm:^1.0.5":
+  version: 1.0.11
+  resolution: "pako@npm:1.0.11"
+  checksum: 1be2bfa1f807608c7538afa15d6f25baa523c30ec870a3228a89579e474a4d992f4293859524e46d5d87fd30fa17c5edf34dbef0671251d9749820b488660b16
   languageName: node
   linkType: hard
 
@@ -17796,6 +17804,15 @@ __metadata:
     querystringify: ^2.1.1
     requires-port: ^1.0.0
   checksum: fbdba6b1d83336aca2216bbdc38ba658d9cfb8fc7f665eb8b17852de638ff7d1a162c198a8e4ed66001ddbf6c9888d41e4798912c62b4fd777a31657989f7bdf
+  languageName: node
+  linkType: hard
+
+"utif@npm:^3.1.0":
+  version: 3.1.0
+  resolution: "utif@npm:3.1.0"
+  dependencies:
+    pako: ^1.0.5
+  checksum: 03abe9e04fa50588ae67077ced2e89c869c0c140442a0c5d8cfb559bf587a692a7c92187d49ab1c7e852eae78ff40a298b1325c2461ab7e51c4a0a6ae7ec74e3
   languageName: node
   linkType: hard
 

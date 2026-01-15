@@ -1,15 +1,25 @@
 import { Link, useHistory, useLocation, useParams } from 'react-router-dom';
 import JobTable from '../components/jobs/JobTable';
-import { Box, Button, FormControlLabel, SelectChangeEvent, Switch, Typography, useTheme } from '@mui/material';
+import {
+  Box,
+  Button,
+  FormControlLabel,
+  SelectChangeEvent,
+  Switch,
+  Tab,
+  Tabs,
+  Typography,
+  useTheme,
+} from '@mui/material';
 import { ArrowBack, Settings } from '@mui/icons-material';
 import React, { ReactElement, useState } from 'react';
 import InstrumentSelector from '../components/jobs/InstrumentSelector';
 import InstrumentConfigDrawer from '../components/configsettings/InstrumentConfigDrawer';
 import { jwtDecode } from 'jwt-decode';
-import IMATView from '../components/imat/IMATView';
 import { JobQueryFilters } from '../lib/types';
 import { JOB_ROWS_PER_PAGE_OPTIONS, JobRowsPerPage, isJobRowsPerPage } from '../components/jobs/constants';
 import NavArrows from '../components/navigation/NavArrows';
+import IMATViewer from './IMATViewer';
 
 const DEFAULT_ROWS_PER_PAGE: JobRowsPerPage = JOB_ROWS_PER_PAGE_OPTIONS[1];
 
@@ -32,11 +42,41 @@ const hasFilters = (filters: JobQueryFilters): boolean =>
     return value !== undefined && value !== null && value !== '';
   });
 
+interface TabPanelProps {
+  children?: React.ReactNode;
+  index: number;
+  value: number;
+}
+
+const TabPanel = (props: TabPanelProps): JSX.Element => {
+  const { children, value, index, ...other } = props;
+
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`imat-tabpanel-${index}`}
+      aria-labelledby={`imat-tab-${index}`}
+      {...other}
+    >
+      {value === index ? <Box sx={{ pt: 2 }}>{children}</Box> : null}
+    </div>
+  );
+};
+
+const a11yProps = (index: number): { id: string; 'aria-controls': string } => {
+  return {
+    id: `imat-tab-${index}`,
+    'aria-controls': `imat-tabpanel-${index}`,
+  };
+};
+
 const Jobs: React.FC = (): ReactElement => {
   const { instrumentName } = useParams<{ instrumentName?: string }>();
   const history = useHistory();
   const location = useLocation();
   const [selectedInstrument, setSelectedInstrument] = React.useState<string>(instrumentName || 'ALL');
+  const [imatTab, setImatTab] = React.useState<number>(1);
   const theme = useTheme();
   const [currentPage, setCurrentPage] = React.useState<number>(0);
   const [rowsPerPage, setRowsPerPage] = React.useState<JobRowsPerPage>(getStoredRowsPerPage);
@@ -63,7 +103,13 @@ const Jobs: React.FC = (): ReactElement => {
 
   // Keep table state mirrored in the browser URL so views are shareable
   const updateQueryParams = React.useCallback(
-    (next: { page?: number; rowsPerPage?: JobRowsPerPage; filters?: JobQueryFilters; orderBy?: string; orderDirection?: "desc" | "asc" }) => {
+    (next: {
+      page?: number;
+      rowsPerPage?: JobRowsPerPage;
+      filters?: JobQueryFilters;
+      orderBy?: string;
+      orderDirection?: 'desc' | 'asc';
+    }) => {
       const params = new URLSearchParams(location.search);
 
       if (next.page !== undefined) {
@@ -118,7 +164,7 @@ const Jobs: React.FC = (): ReactElement => {
     [history, location.pathname, location.search]
   );
 
-    React.useEffect(() => {
+  React.useEffect(() => {
     updateQueryParams({ orderBy, orderDirection });
   }, [orderBy, orderDirection, updateQueryParams]);
 
@@ -142,7 +188,6 @@ const Jobs: React.FC = (): ReactElement => {
     }
     handlePageChange(0);
   };
-
 
   const handlePageChange = React.useCallback(
     (newPage: number) => {
@@ -242,6 +287,17 @@ const Jobs: React.FC = (): ReactElement => {
   const showConfigButton = ['LOQ', 'MARI', 'SANS2D', 'VESUVIO', 'OSIRIS', 'IRIS', 'ENGINX'].includes(
     selectedInstrument
   );
+  const isImat = selectedInstrument.toUpperCase() === 'IMAT';
+
+  React.useEffect(() => {
+    if (isImat) {
+      setImatTab(1);
+    }
+  }, [isImat]);
+
+  const handleImatTabChange = (_event: React.SyntheticEvent, newValue: number): void => {
+    setImatTab(newValue);
+  };
 
   return (
     <>
@@ -301,10 +357,50 @@ const Jobs: React.FC = (): ReactElement => {
         setDrawerOpen={setConfigDrawerOpen}
         selectedInstrument={selectedInstrument}
       />
-      <Box className="tour-red-his-tablehead" sx={{ padding: '0 20px 20px' }}>
-        {selectedInstrument === 'IMAT' ? (
-          <IMATView />
-        ) : (
+      {isImat ? (
+        <>
+          <Box sx={{ borderBottom: 1, borderColor: 'divider', px: 2 }}>
+            <Tabs
+              value={imatTab}
+              onChange={handleImatTabChange}
+              aria-label="IMAT reduction history tabs"
+              sx={{
+                '& .MuiTab-root': {
+                  color: theme.palette.mode === 'dark' ? theme.palette.common.white : undefined,
+                  '&.Mui-selected': {
+                    color: theme.palette.mode === 'dark' ? theme.palette.common.white : undefined,
+                    backgroundColor: theme.palette.mode === 'dark' ? theme.palette.grey[800] : undefined,
+                  },
+                },
+              }}
+            >
+              <Tab label="Viewer" {...a11yProps(0)} />
+              <Tab label="Reductions" {...a11yProps(1)} />
+            </Tabs>
+          </Box>
+          <TabPanel value={imatTab} index={0}>
+            <IMATViewer showNav={false} />
+          </TabPanel>
+          <TabPanel value={imatTab} index={1}>
+            <Box className="tour-red-his-tablehead" sx={{ padding: '0 20px 20px' }}>
+              <JobTable
+                selectedInstrument={selectedInstrument}
+                currentPage={currentPage}
+                handlePageChange={handlePageChange}
+                asUser={asUser}
+                rowsPerPage={rowsPerPage}
+                handleRowsPerPageChange={handleRowsPerPageChange}
+                filters={currentFilters}
+                handleFiltersChange={handleFiltersChange}
+                orderBy={orderBy}
+                orderDirection={orderDirection}
+                handleSort={handleSort}
+              />
+            </Box>
+          </TabPanel>
+        </>
+      ) : (
+        <Box className="tour-red-his-tablehead" sx={{ padding: '0 20px 20px' }}>
           <JobTable
             selectedInstrument={selectedInstrument}
             currentPage={currentPage}
@@ -318,8 +414,8 @@ const Jobs: React.FC = (): ReactElement => {
             orderDirection={orderDirection}
             handleSort={handleSort}
           />
-        )}
-      </Box>
+        </Box>
+      )}
     </>
   );
 };
