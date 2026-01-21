@@ -13,7 +13,7 @@ const ViewerTabs: React.FC<ViewerTabsProps> = ({ activeTab, onTabChange }): JSX.
     <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
       <Tabs value={activeTab} onChange={(_, newTab) => onTabChange(newTab)} variant="fullWidth">
         <Tab value="1d" label="1D View" icon={<ShowChartIcon />} iconPosition="start" />
-        <Tab value="2d" label="2D View" icon={<GridOnIcon />} iconPosition="start" />
+        <Tab value="2d" label="MD View" icon={<GridOnIcon />} iconPosition="start" />
       </Tabs>
     </Box>
   );
