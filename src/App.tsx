@@ -83,9 +83,6 @@ const App: FC = () => {
             <Route path="/experiment-viewer">
               <ExperimentViewer />
             </Route>
-            <Route path="/experiment-viewer">
-              <ExperimentViewer />
-            </Route>
             {/* Blank route for login page*/}
             <Route path="/login" />
             {/* Catch-all that redirects unmatched routes to the homepage*/}
