@@ -257,13 +257,6 @@ const FileTree: React.FC<FileTreeProps> = ({
                         sx={{ m: 0, width: '100%', alignItems: 'flex-start' }}
                       />
 
-                      {/* Helper text in 2D mode */}
-                      {activeViewerTab === '2d' && selected2DFile === output && (
-                        <Typography variant="caption" color="text.secondary" sx={{ ml: 4, display: 'block', mt: 1 }}>
-                          Select datasets in the 2D viewer panel →
-                        </Typography>
-                      )}
-
                       {/* File controls - only show in 1D mode if enabled */}
                       {activeViewerTab === '1d' && file.enabled && (
                         <Box sx={{ mt: 2, ml: 4, display: 'flex', flexDirection: 'column', gap: 2 }}>
