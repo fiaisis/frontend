@@ -77,3 +77,15 @@ h5Api.interceptors.request.use(async (config) => {
 
 // Response interceptor for error handling and token refresh
 h5Api.interceptors.response.use((response) => response, refreshTokenInterceptor);
+
+export const h5Fetcher = axios.create({
+  timeout: 30000, // 30 second timeout for potentially large data transfers
+});
+
+h5Fetcher.interceptors.request.use(async (config) => {
+  config.headers['Authorization'] = `Bearer ${!isDev ? localStorage.getItem('scigateway:token') : ''}`;
+  return config;
+});
+
+// Response interceptor for error handling and token refresh
+h5Fetcher.interceptors.response.use((response) => response, refreshTokenInterceptor);

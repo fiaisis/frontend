@@ -647,7 +647,7 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
                 ) : (
                   <Viewer2D
                     filepath={selected2DFilePath}
-                    plottingApiUrl={import.meta.env.VITE_FIA_PLOTTING_API_URL}
+                    plottingApiUrl={import.meta.env.VITE_FIA_PLOTTING_API_URL_FOR_H5}
                     authToken={localStorage.getItem('scigateway:token')}
                     onError={setViewer2DError}
                   />

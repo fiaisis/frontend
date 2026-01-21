@@ -7,6 +7,7 @@ ENV VITE_FIA_REST_API_URL="/api"
 ENV VITE_FIA_DATA_VIEWER_URL="/data-viewer"
 ENV VITE_PLUGIN_URL="/f-i-a"
 ENV VITE_FIA_PLOTTING_API_URL="/plottingapi"
+ENV VITE_FIA_PLOTTING_API_URL_FOR_H5="https://dev.reduce.isis.cclrc.ac.uk/plottingapi"
 
 COPY . .
 

@@ -11,7 +11,7 @@ import { DimMappingProvider } from '../../h5web/packages/app/src/dim-mapping-sto
 import EntityLoader from '../../h5web/packages/app/src/EntityLoader';
 import Visualizer from '../../h5web/packages/app/src/visualizer/Visualizer';
 import { createAxiosFetcher } from '@h5web/app';
-import { h5Api } from '../../lib/api';
+import { h5Api, h5Fetcher } from '../../lib/api';
 
 interface Viewer2DProps {
   filepath: string | null;
