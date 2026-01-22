@@ -32,8 +32,6 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [autoSelectPrimary, setAutoSelectPrimary] = useState(true);
-
-  // 2D Viewer state
   const [activeViewerTab, setActiveViewerTab] = useState<'1d' | '2d'>('1d');
   const [selected2DFile, setSelected2DFile] = useState<string | null>(null);
   const [selected2DFilePath, setSelected2DFilePath] = useState<string | null>(null);
@@ -647,9 +645,6 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
                 ) : (
                   <Viewer2D
                     filepath={selected2DFilePath}
-                    plottingApiUrl={import.meta.env.VITE_FIA_PLOTTING_API_URL_FOR_H5}
-                    authToken={localStorage.getItem('scigateway:token')}
-                    onError={setViewer2DError}
                   />
                 )}
               </Box>

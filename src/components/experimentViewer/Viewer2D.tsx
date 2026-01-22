@@ -11,16 +11,13 @@ import { DimMappingProvider } from '../../h5web/packages/app/src/dim-mapping-sto
 import EntityLoader from '../../h5web/packages/app/src/EntityLoader';
 import Visualizer from '../../h5web/packages/app/src/visualizer/Visualizer';
 import { createAxiosFetcher } from '@h5web/app';
-import { h5Api, h5Fetcher } from '../../lib/api';
+import { h5Api } from '../../lib/api';
 
 interface Viewer2DProps {
   filepath: string | null;
-  plottingApiUrl: string;
-  authToken: string | null;
-  onError?: (error: string) => void;
 }
 
-const Viewer2D: React.FC<Viewer2DProps> = ({ filepath, plottingApiUrl, authToken, onError }): JSX.Element => {
+const Viewer2D: React.FC<Viewer2DProps> = ({ filepath }): JSX.Element => {
   const [selectedPath] = useState<string>('/');
 
   const fetcher = createAxiosFetcher(h5Api);
@@ -52,7 +49,12 @@ const Viewer2D: React.FC<Viewer2DProps> = ({ filepath, plottingApiUrl, authToken
   // Render h5web App with H5GroveProvider
   return (
     <Box sx={{ height: '100%', width: '100%' }}>
-      <H5GroveProvider url={plottingApiUrl} filepath={filepath} fetcher={fetcher}>
+      <H5GroveProvider
+        url={''}
+        filepath={filepath}
+        fetcher={fetcher}
+        getExportURL={() => new URL(`${window.location.origin}${import.meta.env.VITE_FIA_PLOTTING_API_URL}`)}
+      >
         <ErrorBoundary
           FallbackComponent={ErrorFallback}
           onError={(err) => {
