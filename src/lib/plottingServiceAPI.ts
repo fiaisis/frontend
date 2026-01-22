@@ -22,7 +22,7 @@ export const fetchLiveDataInstruments = async (): Promise<string[]> => {
  */
 export const fetchLiveDataFiles = async (instrument: string): Promise<string[]> => {
   try {
-    const response = await h5Api.get<string[]>(`/live-data/${instrument}/files`);
+    const response = await h5Api.get<string[]>(`/live/live-data/${instrument}/files`);
     return response.data;
   } catch (error) {
     console.error(`Error fetching live data files for ${instrument}:`, error);

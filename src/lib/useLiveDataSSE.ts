@@ -54,7 +54,7 @@ export function useLiveDataSSE(instrument: string | null, enabled: boolean = tru
 
       const baseUrl = import.meta.env.VITE_FIA_PLOTTING_API_URL;
       const token = !isDev ? localStorage.getItem('scigateway:token') : '';
-      const url = `${baseUrl}/live-data/${instrument}${token ? `?token=${token}` : ''}`;
+      const url = `${baseUrl}/live/live-data/${instrument}${token ? `?token=${token}` : ''}`;
 
       const eventSource = new EventSource(url);
       eventSourceRef.current = eventSource;
