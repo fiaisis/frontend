@@ -4,6 +4,8 @@ import { useParams, useLocation, useHistory } from 'react-router-dom';
 import { Box, Typography, CircularProgress, Alert } from '@mui/material';
 import FileTree from '../components/experimentViewer/FileTree';
 import PlotViewer from '../components/experimentViewer/Graph';
+import Viewer2D from '../components/experimentViewer/Viewer2D';
+import ViewerTabs from '../components/experimentViewer/ViewerTabs';
 import ExperimentSearch from '../components/experimentViewer/ExperimentSearch';
 import NavArrows from '../components/navigation/NavArrows';
 import { discoverFileStructure, fetchData1D, fetchErrorData, fetchFilePath } from '../lib/plottingServiceAPI';
@@ -30,6 +32,11 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [autoSelectPrimary, setAutoSelectPrimary] = useState(true);
+  const [activeViewerTab, setActiveViewerTab] = useState<'1d' | '2d'>('1d');
+  const [selected2DFile, setSelected2DFile] = useState<string | null>(null);
+  const [selected2DFilePath, setSelected2DFilePath] = useState<string | null>(null);
+  const [loading2DPath, setLoading2DPath] = useState(false);
+  const [viewer2DError, setViewer2DError] = useState<string | null>(null);
 
   // Search state - initialize from URL params
   const [searchInstrument, setSearchInstrument] = useState<string | null>(() => searchParams.get('instrument'));
@@ -439,6 +446,57 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
     fetchAllData();
   }, [files, showErrors]);
 
+  // Fetch filepath for 2D viewer when file is selected
+  useEffect(() => {
+    if (activeViewerTab !== '2d' || !selected2DFile) {
+      setSelected2DFilePath(null);
+      setViewer2DError(null);
+      return;
+    }
+
+    const fetchPath = async (): Promise<void> => {
+      setLoading2DPath(true);
+      setViewer2DError(null);
+
+      try {
+        // Find file config (may have cached fullPath)
+        const fileConfig = files.find((f) => f.filename === selected2DFile);
+
+        if (!fileConfig) {
+          throw new Error('File configuration not found');
+        }
+
+        // Use cached path if available
+        if (fileConfig.fullPath) {
+          setSelected2DFilePath(fileConfig.fullPath);
+        } else {
+          // Find job that contains this file (to get instrument/experiment info)
+          const job = jobs.find((job) => {
+            const outputs = job.outputs.split(',').map((s) => s.trim());
+            return outputs.includes(selected2DFile);
+          });
+
+          if (!job) {
+            throw new Error('Job information not found for file');
+          }
+
+          // Fetch full path from API
+          const fullPath = await fetchFilePath(selected2DFile, job.run.instrument_name, job.run.experiment_number);
+
+          setSelected2DFilePath(fullPath);
+        }
+      } catch (error) {
+        console.error('Error fetching file path for 2D viewer:', error);
+        setViewer2DError('Failed to load file path');
+        setSelected2DFilePath(null);
+      } finally {
+        setLoading2DPath(false);
+      }
+    };
+
+    fetchPath();
+  }, [activeViewerTab, selected2DFile, files, jobs]);
+
   // Determine if we should show search (not viewing specific job from URL)
   const showSearch = !jobId;
 
@@ -446,136 +504,153 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
     <>
       <NavArrows />
       <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100%' }}>
-      {/* Search bar - only show when not viewing specific job */}
-      {showSearch && (
-        <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
-          <ExperimentSearch
-            onSearch={handleSearch}
-            onClear={handleClearSearch}
-            initialInstrument={searchInstrument || undefined}
-            initialExperimentNumber={searchExperimentNumber || undefined}
-            isLoading={loading}
-            isSearchActive={isSearchActive}
-          />
-        </Box>
-      )}
-
-      {/* Main content area */}
-      <Box sx={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-        {/* Empty state - no search active and no URL params */}
-        {!jobId && !instrumentName && !isSearchActive && (
-          <Box
-            sx={{
-              flex: 1,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              bgcolor: 'background.default',
-            }}
-          >
-            <Box sx={{ textAlign: 'center', maxWidth: 500, p: 4 }}>
-              <Typography variant="h5" color="text.primary" sx={{ mb: 2 }}>
-                Search for HDF5 Data
-              </Typography>
-              <Typography variant="body1" color="text.secondary">
-                Enter an instrument and/or experiment number above to search for jobs with HDF5 output files.
-              </Typography>
-            </Box>
+        {/* Search bar - only show when not viewing specific job */}
+        {showSearch && (
+          <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+            <ExperimentSearch
+              onSearch={handleSearch}
+              onClear={handleClearSearch}
+              initialInstrument={searchInstrument || undefined}
+              initialExperimentNumber={searchExperimentNumber || undefined}
+              isLoading={loading}
+              isSearchActive={isSearchActive}
+            />
           </Box>
         )}
 
-        {/* No results state */}
-        {isSearchActive && jobs.length === 0 && !loading && (
-          <Box
-            sx={{
-              flex: 1,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Box sx={{ textAlign: 'center', maxWidth: 500, p: 4 }}>
-              <Typography variant="h5" color="text.primary" sx={{ mb: 2 }}>
-                No Jobs Found
-              </Typography>
-              <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
-                {searchInstrument && `Instrument: ${searchInstrument}`}
-                {searchInstrument && searchExperimentNumber && ' | '}
-                {searchExperimentNumber && `Experiment: ${searchExperimentNumber}`}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Try adjusting your search criteria or clearing the search to start over.
-              </Typography>
-            </Box>
-          </Box>
-        )}
-
-        {/* Results - show FileTree and Graph when we have jobs */}
-        {(jobId || instrumentName || (isSearchActive && jobs.length > 0)) && (
-          <>
-            {/* Left panel - File Tree */}
+        {/* Main content area */}
+        <Box sx={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+          {/* Empty state - no search active and no URL params */}
+          {!jobId && !instrumentName && !isSearchActive && (
             <Box
               sx={{
-                width: 320,
-                borderRight: 1,
-                borderColor: 'divider',
+                flex: 1,
                 display: 'flex',
-                flexDirection: 'column',
-                overflow: 'hidden',
+                alignItems: 'center',
+                justifyContent: 'center',
+                bgcolor: 'background.default',
               }}
             >
-              <FileTree
-                jobs={jobs}
-                files={files}
-                onFileToggle={handleFileToggle}
-                onDatasetChange={handleDatasetChange}
-                onSelectionChange={handleSelectionChange}
-                autoSelectPrimary={autoSelectPrimary}
-                onAutoSelectPrimaryChange={setAutoSelectPrimary}
-              />
+              <Box sx={{ textAlign: 'center', maxWidth: 500, p: 4 }}>
+                <Typography variant="h5" color="text.primary" sx={{ mb: 2 }}>
+                  Search for HDF5 Data
+                </Typography>
+                <Typography variant="body1" color="text.secondary">
+                  Enter an instrument and/or experiment number above to search for jobs with HDF5 output files.
+                </Typography>
+              </Box>
             </Box>
+          )}
 
-            {/* Right panel - Plot */}
-            <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative' }}>
-              {/* Loading indicator */}
-              {loading && (
-                <Box
-                  sx={{
-                    position: 'absolute',
-                    inset: 0,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    bgcolor: 'rgba(255, 255, 255, 0.8)',
-                    zIndex: 10,
-                  }}
-                >
-                  <CircularProgress size={60} />
-                </Box>
-              )}
-
-              {/* Error message */}
-              {error && (
-                <Box
-                  sx={{
-                    position: 'absolute',
-                    top: 16,
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                    zIndex: 20,
-                  }}
-                >
-                  <Alert severity="error" onClose={() => setError(null)}>
-                    {error}
-                  </Alert>
-                </Box>
-              )}
-
-              <PlotViewer linePlotData={linePlotData} showErrors={showErrors} onShowErrorsChange={setShowErrors} />
+          {/* No results state */}
+          {isSearchActive && jobs.length === 0 && !loading && (
+            <Box
+              sx={{
+                flex: 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Box sx={{ textAlign: 'center', maxWidth: 500, p: 4 }}>
+                <Typography variant="h5" color="text.primary" sx={{ mb: 2 }}>
+                  No Jobs Found
+                </Typography>
+                <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
+                  {searchInstrument && `Instrument: ${searchInstrument}`}
+                  {searchInstrument && searchExperimentNumber && ' | '}
+                  {searchExperimentNumber && `Experiment: ${searchExperimentNumber}`}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Try adjusting your search criteria or clearing the search to start over.
+                </Typography>
+              </Box>
             </Box>
-          </>
-        )}
-      </Box>
+          )}
+
+          {/* Results - show FileTree and Graph when we have jobs */}
+          {(jobId || instrumentName || (isSearchActive && jobs.length > 0)) && (
+            <>
+              {/* Left panel - File Tree */}
+              <Box
+                sx={{
+                  width: 320,
+                  borderRight: 1,
+                  borderColor: 'divider',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  overflow: 'hidden',
+                }}
+              >
+                <ViewerTabs activeTab={activeViewerTab} onTabChange={setActiveViewerTab} />
+                <FileTree
+                  jobs={jobs}
+                  files={files}
+                  onFileToggle={handleFileToggle}
+                  onDatasetChange={handleDatasetChange}
+                  onSelectionChange={handleSelectionChange}
+                  autoSelectPrimary={autoSelectPrimary}
+                  onAutoSelectPrimaryChange={setAutoSelectPrimary}
+                  activeViewerTab={activeViewerTab}
+                  selected2DFile={selected2DFile}
+                  onSelect2DFile={setSelected2DFile}
+                />
+              </Box>
+
+              {/* Right panel - Plot or 2D Viewer */}
+              <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative' }}>
+                {/* Loading indicator */}
+                {(loading || loading2DPath) && (
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      inset: 0,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      bgcolor: 'rgba(255, 255, 255, 0.8)',
+                      zIndex: 10,
+                    }}
+                  >
+                    <CircularProgress size={60} />
+                  </Box>
+                )}
+
+                {/* Error message */}
+                {(error || viewer2DError) && (
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      top: 16,
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      zIndex: 20,
+                    }}
+                  >
+                    <Alert
+                      severity="error"
+                      onClose={() => {
+                        setError(null);
+                        setViewer2DError(null);
+                      }}
+                    >
+                      {error || viewer2DError}
+                    </Alert>
+                  </Box>
+                )}
+
+                {/* Conditional viewer rendering */}
+                {activeViewerTab === '1d' ? (
+                  <PlotViewer linePlotData={linePlotData} showErrors={showErrors} onShowErrorsChange={setShowErrors} />
+                ) : (
+                  <Viewer2D
+                    filepath={selected2DFilePath}
+                  />
+                )}
+              </Box>
+            </>
+          )}
+        </Box>
       </Box>
     </>
   );

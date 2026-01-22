@@ -8,6 +8,7 @@ ENV VITE_FIA_DATA_VIEWER_URL="/data-viewer"
 ENV VITE_PLUGIN_URL="/f-i-a"
 ENV VITE_FIA_PLOTTING_API_URL="/plottingapi"
 
+
 COPY . .
 
 RUN yarn install --frozen-lockfile
