@@ -18,7 +18,7 @@ jobs:
 
     steps:
       - name: Check out code
-        uses: actions/checkout@v6.0.1
+        uses: actions/checkout@v6.0.2
         with:
           submodules: 'recursive'
 
@@ -47,7 +47,7 @@ jobs:
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/scigateway:${{ github.sha }}
 
       - name: Checkout the Gitops repository
-        uses: actions/checkout@v6.0.1
+        uses: actions/checkout@v6.0.2
         with:
           repository: fiaisis/gitops
           token: ${{ secrets.GITOPS_STAGING_EDIT_TOKEN }}
