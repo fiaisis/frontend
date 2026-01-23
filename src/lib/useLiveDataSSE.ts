@@ -7,6 +7,7 @@ interface FileChangedEvent {
 
 interface SSEState {
   isConnected: boolean;
+  directory: string | null;
   changedFile: FileChangedEvent | null;
   lastUpdated: Date | null;
   error: string | null;
@@ -22,6 +23,7 @@ const isDev = import.meta.env.DEV || import.meta.env.VITE_DEV_MODE === 'true';
  */
 export function useLiveDataSSE(instrument: string | null, enabled: boolean = true): SSEState {
   const [isConnected, setIsConnected] = useState(false);
+  const [directory, setDirectory] = useState<string | null>(null);
   const [changedFile, setChangedFile] = useState<FileChangedEvent | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -44,6 +46,7 @@ export function useLiveDataSSE(instrument: string | null, enabled: boolean = tru
     if (!instrument || !enabled) {
       cleanup();
       setIsConnected(false);
+      setDirectory(null);
       setChangedFile(null);
       setError(null);
       return;
@@ -62,6 +65,7 @@ export function useLiveDataSSE(instrument: string | null, enabled: boolean = tru
       eventSource.addEventListener('connected', (event) => {
         const data = JSON.parse(event.data);
         console.log('[LiveDataSSE] Connected to directory:', data.directory);
+        setDirectory(data.directory);
         setIsConnected(true);
         setError(null);
       });
@@ -103,5 +107,5 @@ export function useLiveDataSSE(instrument: string | null, enabled: boolean = tru
     return cleanup;
   }, [instrument, enabled, cleanup]);
 
-  return { isConnected, changedFile, lastUpdated, error };
+  return { isConnected, directory, changedFile, lastUpdated, error };
 }

@@ -36,10 +36,10 @@ const LiveData: React.FC = (): JSX.Element => {
   const [error, setError] = useState<string | null>(null);
 
   // SSE connection
-  const { isConnected, changedFile, lastUpdated, error: sseError } = useLiveDataSSE(selectedInstrument, true);
+  const { isConnected, directory, changedFile, lastUpdated, error: sseError } = useLiveDataSSE(selectedInstrument, true);
 
-  // Build full file path for the viewer
-  const selectedFilePath = selectedInstrument && selectedFile ? `${selectedInstrument}/live_data/${selectedFile}` : null;
+  // Build full file path using directory from SSE and selected file
+  const selectedFilePath = directory && selectedFile ? `${directory}/${selectedFile}` : null;
 
   // Fetch available instruments on mount
   useEffect(() => {
@@ -273,9 +273,6 @@ const LiveData: React.FC = (): JSX.Element => {
             <Viewer2D
               key={viewerKey}
               filepath={selectedFilePath}
-              plottingApiUrl={import.meta.env.VITE_FIA_PLOTTING_API_URL}
-              authToken={localStorage.getItem('scigateway:token')}
-              onError={setError}
             />
           </Box>
         </Box>
