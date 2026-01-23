@@ -130,20 +130,6 @@ const JobOutput: React.FC<{
               >
                 View
               </Button>
-              {/* Show H5 Viewer button for HDF5 files */}
-              {(output.endsWith('.h5') ||
-                output.endsWith('.hdf5') ||
-                output.endsWith('.nxs') ||
-                output.endsWith('.nxspe')) && (
-                <Button
-                  variant="contained"
-                  component={Link}
-                  to={`/reduction-history/${job.run?.instrument_name || 'unknown'}/experiment-viewer-${job.id}`}
-                  sx={{ flexShrink: 0, whiteSpace: 'nowrap' }}
-                >
-                  H5 viewer
-                </Button>
-              )}
               <Button
                 variant="contained"
                 startIcon={downloadingSingle === output ? null : <Download />}
@@ -730,6 +716,22 @@ const Row: React.FC<{
                     >
                       <Button variant="contained" sx={{ flexShrink: 0, whiteSpace: 'nowrap' }}>
                         Value editor
+                      </Button>
+                    </Link>
+                    <Link
+                      to={`/experiment-viewer?instrument=${job.run.instrument_name}&experiment=${job.run.experiment_number}`}
+                      onClick={() =>
+                        ReactGA.event({
+                          category: 'Button',
+                          action: 'Click',
+                          label: 'Experiment viewer button',
+                          value: job.id,
+                        })
+                      }
+                      style={{ textDecoration: 'none' }}
+                    >
+                      <Button variant="contained" sx={{ flexShrink: 0, whiteSpace: 'nowrap' }}>
+                        Experiment viewer
                       </Button>
                     </Link>
                     <Button
