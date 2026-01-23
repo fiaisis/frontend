@@ -19,6 +19,7 @@ import Viewer2D from '../components/experimentViewer/Viewer2D';
 import NavArrows from '../components/navigation/NavArrows';
 import { fetchLiveDataInstruments, fetchLiveDataFiles } from '../lib/plottingServiceAPI';
 import { useLiveDataSSE } from '../lib/useLiveDataSSE';
+import { outputFilter } from '../lib/types';
 
 const LiveData: React.FC = (): JSX.Element => {
   // Instrument selection
@@ -75,11 +76,15 @@ const LiveData: React.FC = (): JSX.Element => {
       setLoadingFiles(true);
       setError(null);
       const fileList = await fetchLiveDataFiles(selectedInstrument);
-      setFiles(fileList);
+      // Filter to only show valid H5 files
+      const filteredFiles = fileList.filter((file) =>
+        outputFilter.some((ext) => file.endsWith(ext))
+      );
+      setFiles(filteredFiles);
 
       // Auto-select first file if available and no file is currently selected
-      if (fileList.length > 0 && !selectedFile) {
-        setSelectedFile(fileList[0]);
+      if (filteredFiles.length > 0 && !selectedFile) {
+        setSelectedFile(filteredFiles[0]);
       }
     } catch (err) {
       console.error('Failed to load files:', err);
@@ -99,6 +104,12 @@ const LiveData: React.FC = (): JSX.Element => {
   // Handle file changes from SSE
   useEffect(() => {
     if (!changedFile) {
+      return;
+    }
+
+    // Ignore files that don't match the output filter
+    const isValidFile = outputFilter.some((ext) => changedFile.file.endsWith(ext));
+    if (!isValidFile) {
       return;
     }
 
