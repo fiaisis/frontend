@@ -19,7 +19,9 @@ import {
   InputLabel,
   ToggleButton,
   ToggleButtonGroup,
+  InputAdornment,
 } from '@mui/material';
+import SearchIcon from '@mui/icons-material/Search';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import FolderIcon from '@mui/icons-material/Folder';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
@@ -53,6 +55,8 @@ const FileTree: React.FC<FileTreeProps> = ({
   const [expandedJobs, setExpandedJobs] = useState<Set<number>>(new Set());
   const [showEmptyJobs, setShowEmptyJobs] = useState(false);
   const [inputMode, setInputMode] = useState<'text' | 'chips'>('text');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [resultLimit, setResultLimit] = useState(10);
 
   console.log('FileTree rendered with files:', files);
 

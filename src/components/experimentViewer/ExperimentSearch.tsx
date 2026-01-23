@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { Box, TextField, Button, Paper, Autocomplete, Typography } from '@mui/material';
+import { Box, TextField, Button, Paper, Autocomplete, Typography, ToggleButtonGroup, ToggleButton } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
 import { instruments } from '../../lib/instrumentData';
 
 interface ExperimentSearchProps {
-  onSearch: (instrumentName: string | null, experimentNumber: number | null) => void;
+  onSearch: (instrumentName: string | null, experimentNumber: number | null, limit: number) => void;
   onClear: () => void;
   initialInstrument?: string;
   initialExperimentNumber?: number;
@@ -25,10 +25,11 @@ const ExperimentSearch: React.FC<ExperimentSearchProps> = ({
   const [experimentNumber, setExperimentNumber] = useState<string>(
     initialExperimentNumber ? initialExperimentNumber.toString() : ''
   );
+  const [resultLimit, setResultLimit] = useState<number>(10);
 
   const handleSearch = (): void => {
     const expNum = experimentNumber.trim() ? parseInt(experimentNumber) : null;
-    onSearch(selectedInstrument, expNum);
+    onSearch(selectedInstrument, expNum, resultLimit);
   };
 
   const handleClear = (): void => {
@@ -97,6 +98,25 @@ const ExperimentSearch: React.FC<ExperimentSearchProps> = ({
             Clear
           </Button>
         )}
+      </Box>
+
+      {/* Result limit selector */}
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 2 }}>
+        <Typography variant="body2" color="text.secondary">
+          Results limit:
+        </Typography>
+        <ToggleButtonGroup
+          value={resultLimit}
+          exclusive
+          onChange={(_, newLimit) => newLimit !== null && setResultLimit(newLimit)}
+          size="small"
+          disabled={isLoading}
+        >
+          <ToggleButton value={10}>10</ToggleButton>
+          <ToggleButton value={25}>25</ToggleButton>
+          <ToggleButton value={50}>50</ToggleButton>
+          <ToggleButton value={100}>100</ToggleButton>
+        </ToggleButtonGroup>
       </Box>
 
       {isSearchActive && (selectedInstrument || experimentNumber) && (
