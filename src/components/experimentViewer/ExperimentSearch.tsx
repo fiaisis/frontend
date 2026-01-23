@@ -98,12 +98,13 @@ const ExperimentSearch: React.FC<ExperimentSearchProps> = ({
             Clear
           </Button>
         )}
-      </Box>
 
-      {/* Result limit selector */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 2 }}>
+        {/* Spacer to push limit controls to the right */}
+        <Box sx={{ flex: 1 }} />
+
+        {/* Result limit selector */}
         <Typography variant="body2" color="text.secondary">
-          Results limit:
+          Limit:
         </Typography>
         <ToggleButtonGroup
           value={resultLimit}
