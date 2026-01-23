@@ -44,6 +44,7 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
     const exp = searchParams.get('experiment');
     return exp ? parseInt(exp, 10) : null;
   });
+  const [searchLimit, setSearchLimit] = useState<number>(10);
   const [isSearchActive, setIsSearchActive] = useState<boolean>(() => {
     return Boolean(searchParams.get('instrument') || searchParams.get('experiment'));
   });
@@ -90,7 +91,7 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
             params: {
               filters: JSON.stringify(filters),
               include_run: 'true',
-              limit: 100,
+              limit: searchLimit,
             },
           });
           jobsData = response.data;
@@ -211,12 +212,13 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
     };
 
     loadJobs();
-  }, [jobId, instrumentName, isSearchActive, searchInstrument, searchExperimentNumber]);
+  }, [jobId, instrumentName, isSearchActive, searchInstrument, searchExperimentNumber, searchLimit]);
 
   // Search handlers
-  const handleSearch = (instrument: string | null, experimentNumber: number | null): void => {
+  const handleSearch = (instrument: string | null, experimentNumber: number | null, limit: number): void => {
     setSearchInstrument(instrument);
     setSearchExperimentNumber(experimentNumber);
+    setSearchLimit(limit);
     setIsSearchActive(true);
     setError(null);
 
