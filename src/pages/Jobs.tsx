@@ -76,7 +76,7 @@ const Jobs: React.FC = (): ReactElement => {
   const history = useHistory();
   const location = useLocation();
   const [selectedInstrument, setSelectedInstrument] = React.useState<string>(instrumentName || 'ALL');
-  const [imatTab, setImatTab] = React.useState<number>(1);
+  const [imatTab, setImatTab] = React.useState<number>(0);
   const theme = useTheme();
   const [currentPage, setCurrentPage] = React.useState<number>(0);
   const [rowsPerPage, setRowsPerPage] = React.useState<JobRowsPerPage>(getStoredRowsPerPage);
@@ -291,9 +291,15 @@ const Jobs: React.FC = (): ReactElement => {
 
   React.useEffect(() => {
     if (isImat) {
-      setImatTab(1);
+      const params = new URLSearchParams(location.search);
+      if (params.has('jobId')) {
+        setImatTab(2); // Stack Viewer
+      } else {
+        // Default to Reductions list (index 0)
+        setImatTab(0);
+      }
     }
-  }, [isImat]);
+  }, [isImat, location.search]);
 
   const handleImatTabChange = (_event: React.SyntheticEvent, newValue: number): void => {
     setImatTab(newValue);
@@ -374,14 +380,12 @@ const Jobs: React.FC = (): ReactElement => {
                 },
               }}
             >
-              <Tab label="Viewer" {...a11yProps(0)} />
-              <Tab label="Reductions" {...a11yProps(1)} />
+              <Tab label="Reductions" {...a11yProps(0)} />
+              <Tab label="Latest Image" {...a11yProps(1)} />
+              <Tab label="Stack Viewer" {...a11yProps(2)} />
             </Tabs>
           </Box>
           <TabPanel value={imatTab} index={0}>
-            <IMATViewer showNav={false} />
-          </TabPanel>
-          <TabPanel value={imatTab} index={1}>
             <Box className="tour-red-his-tablehead" sx={{ padding: '0 20px 20px' }}>
               <JobTable
                 selectedInstrument={selectedInstrument}
@@ -397,6 +401,12 @@ const Jobs: React.FC = (): ReactElement => {
                 handleSort={handleSort}
               />
             </Box>
+          </TabPanel>
+          <TabPanel value={imatTab} index={1}>
+            <IMATViewer mode="latest" showNav={false} />
+          </TabPanel>
+          <TabPanel value={imatTab} index={2}>
+            <IMATViewer mode="stack" showNav={false} />
           </TabPanel>
         </>
       ) : (

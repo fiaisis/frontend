@@ -135,15 +135,15 @@ const JobOutput: React.FC<{
                 output.endsWith('.hdf5') ||
                 output.endsWith('.nxs') ||
                 output.endsWith('.nxspe')) && (
-                <Button
-                  variant="contained"
-                  component={Link}
-                  to={`/reduction-history/${job.run?.instrument_name || 'unknown'}/experiment-viewer-${job.id}`}
-                  sx={{ flexShrink: 0, whiteSpace: 'nowrap' }}
-                >
-                  H5 viewer
-                </Button>
-              )}
+                  <Button
+                    variant="contained"
+                    component={Link}
+                    to={`/reduction-history/${job.run?.instrument_name || 'unknown'}/experiment-viewer-${job.id}`}
+                    sx={{ flexShrink: 0, whiteSpace: 'nowrap' }}
+                  >
+                    H5 viewer
+                  </Button>
+                )}
               <Button
                 variant="contained"
                 startIcon={downloadingSingle === output ? null : <Download />}
@@ -375,9 +375,9 @@ const Row: React.FC<{
       label: 'Job type:',
       value: job.type
         ? job.type
-            .replace('JobType.', '')
-            .toLowerCase()
-            .replace(/^\w/, (c) => c.toUpperCase())
+          .replace('JobType.', '')
+          .toLowerCase()
+          .replace(/^\w/, (c) => c.toUpperCase())
         : '—',
     },
     {
@@ -510,6 +510,18 @@ const Row: React.FC<{
               sx={{ p: 0.5 }}
             />
             <JobStatusIcon state={job.state} />
+            {job.run?.instrument_name === 'IMAT' && job.state === 'SUCCESSFUL' && (
+              <Tooltip title="View image stack">
+                <IconButton
+                  component={Link}
+                  to={`/reduction-history/IMAT?jobId=${job.id}&experiment=${job.run?.experiment_number}&instrument=${job.run?.instrument_name}`}
+                  onClick={(e) => e.stopPropagation()}
+                  sx={{ p: 0.5 }}
+                >
+                  <StackedBarChart fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            )}
           </Box>
         </TableCell>
 
@@ -600,6 +612,18 @@ const Row: React.FC<{
               >
                 {open ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
               </IconButton>
+              {job.run?.instrument_name === 'IMAT' && job.state === 'SUCCESSFUL' && (
+                <Tooltip title="View image stack">
+                  <IconButton
+                    component={Link}
+                    to={`/reduction-history/IMAT?jobId=${job.id}&experiment=${job.run?.experiment_number}&instrument=${job.run?.instrument_name}`}
+                    onClick={(e) => e.stopPropagation()}
+                    sx={{ ml: 1 }}
+                  >
+                    <StackedBarChart />
+                  </IconButton>
+                </Tooltip>
+              )}
             </Box>
           </TableCell>
         ) : (
@@ -629,6 +653,18 @@ const Row: React.FC<{
               >
                 {open ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
               </IconButton>
+              {job.run?.instrument_name === 'IMAT' && job.state === 'SUCCESSFUL' && (
+                <Tooltip title="View image stack">
+                  <IconButton
+                    component={Link}
+                    to={`/reduction-history/IMAT?jobId=${job.id}&experiment=${job.run?.experiment_number}&instrument=${job.run?.instrument_name}`}
+                    onClick={(e) => e.stopPropagation()}
+                    sx={{ ml: 1 }}
+                  >
+                    <StackedBarChart />
+                  </IconButton>
+                </Tooltip>
+              )}
             </Box>
           </TableCell>
         )}
@@ -732,6 +768,16 @@ const Row: React.FC<{
                         Value editor
                       </Button>
                     </Link>
+                    {job.run?.instrument_name === 'IMAT' && job.state === 'SUCCESSFUL' && (
+                      <Link
+                        to={`/reduction-history/IMAT?jobId=${job.id}&experiment=${job.run?.experiment_number}&instrument=${job.run?.instrument_name}`}
+                        style={{ textDecoration: 'none' }}
+                      >
+                        <Button variant="contained" sx={{ flexShrink: 0, whiteSpace: 'nowrap' }}>
+                          Stack viewer
+                        </Button>
+                      </Link>
+                    )}
                     <Button
                       variant="contained"
                       sx={{ flexShrink: 0, whiteSpace: 'nowrap', width: 60, height: 38 }}
