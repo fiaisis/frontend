@@ -120,7 +120,6 @@ const LiveData: React.FC = (): JSX.Element => {
 
     // Refresh viewer if the currently selected file was modified
     if (changedFile.file === selectedFile && changedFile.change_type === 'modified') {
-      console.log('[LiveData] Selected file modified, refreshing viewer');
       setViewerKey((prev) => prev + 1);
     }
   }, [changedFile, selectedFile, loadFiles]);

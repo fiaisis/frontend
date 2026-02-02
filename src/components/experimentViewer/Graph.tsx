@@ -18,8 +18,6 @@ const PlotViewer: React.FC<PlotViewerProps> = ({ linePlotData, showErrors, onSho
   const [xScaleType, setXScaleType] = useState<ScaleType.Linear | ScaleType.Log | ScaleType.SymLog>(ScaleType.Linear);
   const [yScaleType, setYScaleType] = useState<ScaleType.Linear | ScaleType.Log | ScaleType.SymLog>(ScaleType.Linear);
 
-  console.log('PlotViewer rendered with data:', linePlotData);
-
   // Handle empty state
   if (linePlotData.length === 0) {
     return (
@@ -49,15 +47,12 @@ const PlotViewer: React.FC<PlotViewerProps> = ({ linePlotData, showErrors, onSho
   const sortedData = [...linePlotData].sort((a, b) => b.data.length - a.data.length);
 
   // Render line plots - largest domain as primary, rest as auxiliaries
-  console.log('Rendering line plots with data:', sortedData);
   const primaryData = sortedData[0];
-  console.log('Primary data:', primaryData.filename, 'data:', primaryData.data);
 
   const primaryArray = ndarray(primaryData.data, [primaryData.data.length]);
 
   // Generate abscissas (x-values) for primary data based on its length
   const primaryAbscissas = Float32Array.from({ length: primaryData.data.length }, (_, i) => i);
-  console.log('Primary abscisaas: ', primaryAbscissas);
 
   // Create error array if available and showErrors is true
   const primaryErrorsArray =
@@ -108,7 +103,6 @@ const PlotViewer: React.FC<PlotViewerProps> = ({ linePlotData, showErrors, onSho
   }
 
   const domain = combinedDomain;
-  console.log('Combined Y-axis domain for scale', yScaleType, ':', domain);
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>

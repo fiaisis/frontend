@@ -101,8 +101,6 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
           return;
         }
 
-        console.log('Fetched jobs:', jobsData);
-
         // Create file configs for all output files and fetch their full paths
         const allFiles: FileConfig[] = [];
 
@@ -112,7 +110,6 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
 
         // Filter jobs to only include H5 files in outputs and store filtered outputs back
         const filteredJobs = jobsData.map((job) => {
-          console.log('Job outputs:', job.outputs);
 
           // Parse outputs - handle 3 cases:
           // 1. Lists like "['file1', 'file2']" - split on "', '"
@@ -135,8 +132,6 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
             outputs = [outputStr];
           }
 
-          console.log('Parsed outputs:', outputs);
-
           // Filter to only keep valid H5 files (handles case 3 - filters garbage)
           const h5Outputs = outputs.filter((output) => {
             // Must be a string with valid file extension
@@ -144,8 +139,6 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
               typeof output === 'string' && output.length > 0 && outputFilter.some((filter) => output.endsWith(filter))
             );
           });
-
-          console.log('Filtered job outputs:', h5Outputs);
 
           // Collect unique filenames
           h5Outputs.forEach((output) => {
@@ -158,8 +151,6 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
             }
           });
 
-          console.log('All filenames:', allFilenames);
-
           // Return job with filtered outputs as comma-separated string for FileTree
           return {
             ...job,
@@ -167,7 +158,6 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
           };
         });
 
-        console.log('Filtered jobs with H5 outputs:', filteredJobs);
         setJobs(filteredJobs);
 
         // Fetch full paths for all files in parallel
@@ -201,7 +191,6 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
           });
         });
 
-        console.log('Files with paths:', allFiles);
         setFiles(allFiles);
       } catch (err) {
         console.error('Error loading jobs:', err);
@@ -255,9 +244,7 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
       }
 
       try {
-        console.log(`[H5Grove] Discovering datasets in ${file.filename}...`);
         const structure = await discoverFileStructure(file.filename, file.fullPath);
-        console.log('[H5Grove] API response:', structure);
 
         // Convert discovered datasets to our format
         const discoveredDatasets: DatasetInfo[] = structure.datasets.map((ds) => ({
@@ -269,8 +256,6 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
           is2D: ds.is2D,
           isPrimary: ds.isPrimary,
         }));
-
-        console.log('[H5Grove] Discovered datasets:', discoveredDatasets);
 
         // Update file config with discovered datasets
         setFiles((prevFiles) =>
@@ -297,10 +282,6 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
                   selection: [],
                 };
 
-                console.log(
-                  `[H5Grove] Auto-selected ${primaryDataset ? 'primary' : 'first'} dataset:`,
-                  datasetToSelect.path
-                );
               }
 
               return updatedFile;
@@ -308,8 +289,6 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
             return f;
           })
         );
-
-        console.log(`[H5Grove] Discovered ${discoveredDatasets.length} datasets in ${file.filename}`);
       } catch (error) {
         console.error(`[H5Grove] Failed to discover datasets in ${file.filename}:`, error);
         // Mark as discovered anyway to avoid repeated attempts
@@ -386,7 +365,6 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
           if (is1DDataset) {
             return [
               (async () => {
-                console.log('Fetching 1D data for:', fileToFetch, '- path:', file.path);
                 const data = await fetchData1D(fileToFetch, file.path!, undefined);
 
                 let errors: number[] | undefined;
@@ -412,8 +390,6 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
 
           return selections.map((slice) =>
             (async () => {
-              console.log('Fetching slice', slice, 'for:', fileToFetch, '- path:', file.path);
-
               const data = await fetchData1D(fileToFetch, file.path!, slice);
 
               let errors: number[] | undefined;

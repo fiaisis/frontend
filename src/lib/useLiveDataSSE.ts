@@ -64,7 +64,6 @@ export function useLiveDataSSE(instrument: string | null, enabled: boolean = tru
 
       eventSource.addEventListener('connected', (event) => {
         const data = JSON.parse(event.data);
-        console.log('[LiveDataSSE] Connected to directory:', data.directory);
         setDirectory(data.directory);
         setIsConnected(true);
         setError(null);
@@ -72,7 +71,6 @@ export function useLiveDataSSE(instrument: string | null, enabled: boolean = tru
 
       eventSource.addEventListener('file_changed', (event) => {
         const data: FileChangedEvent = JSON.parse(event.data);
-        console.log('[LiveDataSSE] File changed:', data);
         setChangedFile(data);
         setLastUpdated(new Date());
       });
@@ -92,13 +90,8 @@ export function useLiveDataSSE(instrument: string | null, enabled: boolean = tru
 
         // Attempt to reconnect after 5 seconds
         reconnectTimeoutRef.current = setTimeout(() => {
-          console.log('[LiveDataSSE] Reconnecting...');
           connect();
         }, 5000);
-      };
-
-      eventSource.onopen = () => {
-        console.log('[LiveDataSSE] Connection opened');
       };
     };
 
