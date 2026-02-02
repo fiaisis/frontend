@@ -1,5 +1,34 @@
-import { h5Api } from './api';
+import { fiaApi, h5Api } from './api';
 import { Attribute, DType, Entity, isDataset, isNumericType } from '@h5web/app';
+
+/**
+ * Fetch list of instruments that support live data from the FIA API
+ * @returns Promise with list of instrument names
+ */
+export const fetchLiveDataInstruments = async (): Promise<string[]> => {
+  try {
+    const response = await fiaApi.get<string[]>('/live-data/instruments');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching live data instruments:', error);
+    throw error;
+  }
+};
+
+/**
+ * Fetch list of files in an instrument's live data directory
+ * @param instrument - The instrument name
+ * @returns Promise with list of filenames
+ */
+export const fetchLiveDataFiles = async (instrument: string): Promise<string[]> => {
+  try {
+    const response = await h5Api.get<string[]>(`/live/live-data/${instrument}/files`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching live data files for ${instrument}:`, error);
+    throw error;
+  }
+};
 
 /**
  * Fetch 1D data from the backend (for line plots)
