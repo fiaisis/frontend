@@ -2,6 +2,32 @@ import { fiaApi, h5Api } from './api';
 import { Attribute, DType, Entity, isDataset, isNumericType } from '@h5web/app';
 
 /**
+ * HDF5 type class codes mapped to human-readable names
+ * @see https://github.com/silx-kit/h5web/blob/main/packages/shared/src/h5t.ts
+ */
+const HDF5_CLASS_NAMES: Record<number, string> = {
+  0: 'Integer',
+  1: 'Float',
+  2: 'Time',
+  3: 'String',
+  4: 'Bitfield',
+  5: 'Opaque',
+  6: 'Compound',
+  7: 'Reference',
+  8: 'Enumeration',
+  9: 'Array (variable length)',
+  10: 'Array',
+};
+
+/**
+ * Check if a dataset path indicates an error/uncertainty dataset
+ */
+const isErrorDataset = (path: string): boolean => {
+  const lowerPath = path.toLowerCase();
+  return lowerPath.includes('error') || lowerPath.includes('err');
+};
+
+/**
  * Fetch list of instruments that support live data from the FIA API
  * @returns Promise with list of instrument names
  */
@@ -242,15 +268,12 @@ export async function discoverFileStructure(filename: string, fullPath: string):
 
         // Fetch metadata for this path
         const metadata = await fetchEntityMetadata(fullPath, path);
-        console.log('[H5Grove] Fetching metadata for:', path);
-        console.log('[H5Grove] Fetched metadata was:', metadata);
 
         // Only process datasets
         if (!isDataset(metadata)) {
           return null; // Not a dataset, skip
         }
 
-        console.log('[H5Grove] Dataset metadata:', metadata);
         const shape = metadata.shape || [];
         let dtype = metadata.type;
 
@@ -259,48 +282,7 @@ export async function discoverFileStructure(filename: string, fullPath: string):
         if (dtype && typeof dtype === 'object' && typeof (dtype as any).class === 'number') {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const numericClass = (dtype as any).class;
-          let stringClass: string;
-
-          // HDF5 class codes: 0=Integer, 1=Float, 2=Time, 3=String, etc.
-          // https://github.com/silx-kit/h5web/blob/main/packages/shared/src/h5t.ts
-          switch (numericClass) {
-            case 0:
-              stringClass = 'Integer';
-              break;
-            case 1:
-              stringClass = 'Float';
-              break;
-            case 2:
-              stringClass = 'Time';
-              break;
-            case 3:
-              stringClass = 'String';
-              break;
-            case 4:
-              stringClass = 'Bitfield';
-              break;
-            case 5:
-              stringClass = 'Opaque';
-              break;
-            case 6:
-              stringClass = 'Compound';
-              break;
-            case 7:
-              stringClass = 'Reference';
-              break;
-            case 8:
-              stringClass = 'Enumeration';
-              break;
-            case 9:
-              stringClass = 'Array (variable length)';
-              break;
-            case 10:
-              stringClass = 'Array';
-              break;
-            default:
-              console.warn(`[H5Grove] Unknown class code: ${numericClass}`);
-              stringClass = 'Unknown';
-          }
+          const stringClass = HDF5_CLASS_NAMES[numericClass] || 'Unknown';
 
           dtype = {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -308,14 +290,11 @@ export async function discoverFileStructure(filename: string, fullPath: string):
             class: stringClass,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
           } as DType;
-
-          console.log('[H5Grove] Converted dtype class:', { from: numericClass, to: stringClass });
         }
 
         // Only keep numeric datasets with shape
         if (dtype && isNumericType(dtype) && shape.length > 0) {
           const attributes = metadata.attributes;
-          console.log('[H5Grove] Discovered numeric dataset:', { path, shape, dtype });
 
           return {
             path: path,
@@ -329,7 +308,6 @@ export async function discoverFileStructure(filename: string, fullPath: string):
           };
         }
 
-        console.log('[H5Grove] Skipping non-numeric dataset:', { path, shape, dtype });
         return null; // Not numeric, skip
       }
     );
@@ -337,16 +315,9 @@ export async function discoverFileStructure(filename: string, fullPath: string):
     // Filter out null results and add to datasets array
     datasets.push(...discoveredDatasets.filter((ds): ds is DiscoveredDataset => ds !== null));
 
-    console.log('[H5Grove] Discovered datasets:', datasets);
-
     // Separate data and error datasets
-    const dataDatasets = datasets.filter(
-      (ds) => !ds.path.toLowerCase().includes('error') && !ds.path.toLowerCase().includes('err')
-    );
-
-    const errorDatasets = datasets.filter(
-      (ds) => ds.path.toLowerCase().includes('error') || ds.path.toLowerCase().includes('err')
-    );
+    const dataDatasets = datasets.filter((ds) => !isErrorDataset(ds.path));
+    const errorDatasets = datasets.filter((ds) => isErrorDataset(ds.path));
 
     // Link error datasets to data datasets with matching shapes
     for (const dataDs of dataDatasets) {
@@ -378,27 +349,6 @@ export async function discoverFileStructure(filename: string, fullPath: string):
     const dataDataset =
       dataDatasets.find((ds) => ds.attributes?.some((attr) => attr.name === 'signal')) || dataDatasets[0];
     const errorDataset = errorDatasets[0];
-
-    // Log primary datasets for debugging
-    const primaryDatasets = datasets.filter((ds) => ds.isPrimary);
-    if (primaryDatasets.length > 0) {
-      console.log(
-        '[H5Grove] Primary datasets:',
-        primaryDatasets.map((ds) => ds.path)
-      );
-    }
-
-    // Log linked error paths for debugging
-    const datasetsWithErrors = datasets.filter((ds) => ds.errorPath);
-    if (datasetsWithErrors.length > 0) {
-      console.log(
-        '[H5Grove] Linked error paths:',
-        datasetsWithErrors.map((ds) => ({
-          data: ds.path,
-          error: ds.errorPath,
-        }))
-      );
-    }
 
     return {
       filename,
