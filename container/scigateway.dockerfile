@@ -1,4 +1,4 @@
-FROM harbor.stfc.ac.uk/datagateway/scigateway@sha256:a807d647dfbf183c848bab177b4ae8e503ac7cb784ab717848b6c01b0de6c2a9
+FROM harbor.stfc.ac.uk/datagateway/scigateway@sha256:b80383f50d4cddb9d6412f38eca97adc88c2611afa19753740028fcd9f03c5cd
 ENV AUTH_URL /auth
 ENV AUTH_PROVIDER jwt
 
