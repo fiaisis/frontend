@@ -150,8 +150,6 @@ A helper script which builds the frontend and then navigates to the `SciGateway`
 
 ## Learn more
 
-Read more:
-
 - [TypeScript documentation](https://www.typescriptlang.org/docs/)
 - [React documentation](https://react.dev/)
 - [Yarn documentation](https://classic.yarnpkg.com/en/docs/)
