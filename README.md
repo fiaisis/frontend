@@ -8,7 +8,19 @@ This repository is for the frontend web application side of [FIA](https://github
 
 To get started developing for the frontend, first you will need to have [Node.js](https://nodejs.org/en/download/package-manager) and [Yarn](https://classic.yarnpkg.com/en/docs/install) installed and set-up on your machine. When following the install wizards just keep to default settings. You will then want to clone the [SciGateway](https://github.com/ral-facilities/scigateway) repository. From now on stick to SciGateway's `release/v4.0.0` branch (worth noting that `develop` is the repository's default branch instead of "main" or "master").
 
-With that done, you can now clone the FIA frontend repository.
+With that done, you can now clone the FIA frontend repository. This repo includes the `src/h5web` git submodule, which is required for low-level H5Web components.
+
+Clone with submodules (recommended):
+
+```bash
+git clone --recurse-submodules https://github.com/fiaisis/frontend.git
+```
+
+Or, if you already cloned the repo:
+
+```bash
+git submodule update --init --recursive
+```
 
 ### Setting up FIA as a plugin
 
