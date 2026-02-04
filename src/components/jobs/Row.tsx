@@ -510,18 +510,6 @@ const Row: React.FC<{
               sx={{ p: 0.5 }}
             />
             <JobStatusIcon state={job.state} />
-            {job.run?.instrument_name === 'IMAT' && job.state === 'SUCCESSFUL' && (
-              <Tooltip title="View image stack">
-                <IconButton
-                  component={Link}
-                  to={`/reduction-history/IMAT?jobId=${job.id}&experiment=${job.run?.experiment_number}&instrument=${job.run?.instrument_name}`}
-                  onClick={(e) => e.stopPropagation()}
-                  sx={{ p: 0.5 }}
-                >
-                  <StackedBarChart fontSize="small" />
-                </IconButton>
-              </Tooltip>
-            )}
           </Box>
         </TableCell>
 

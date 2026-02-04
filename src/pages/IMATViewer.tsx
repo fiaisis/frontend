@@ -33,7 +33,6 @@ type IMATViewerProps = {
 };
 
 const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
-  const theme = useTheme();
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
   const initialJobId = queryParams.get('jobId');
@@ -127,7 +126,9 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
             try {
               const outputs = JSON.parse(path);
               path = Array.isArray(outputs) ? outputs[0] : path;
-            } catch (e) { /* ignore */ }
+            } catch (e) {
+              /* ignore */
+            }
           }
           if (path) {
             if (path.toLowerCase().endsWith('.tif') || path.toLowerCase().endsWith('.tiff')) {
@@ -155,7 +156,7 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
     const fetchList = async () => {
       try {
         const response = await h5Api.get<string[]>('/imat/list-images', {
-          params: { path: directoryPath }
+          params: { path: directoryPath },
         });
         setStackImages(response.data);
       } catch (err) {
@@ -166,33 +167,36 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
   }, [mode, directoryPath]);
 
   // Fetch individual stack image
-  const fetchStackImage = React.useCallback(async (index: number, downsample: number = 1) => {
-    if (!directoryPath || !stackImages[index]) return;
-    try {
-      setStackLoading(true);
-      const response = await h5Api.get<ImatImagePayload>('/imat/image', {
-        params: {
-          path: `${directoryPath}/${stackImages[index]}`,
-          downsample_factor: downsample
-        }
-      });
-      const payload = response.data;
-      // For 16-bit TIFFs, we use Float32Array to preserve precision in HeatmapVis
-      const typedData = Float32Array.from(payload.data);
-      setStackDataset({
-        data: typedData,
-        shape: payload.shape as [number, number],
-        originalWidth: payload.originalWidth,
-        originalHeight: payload.originalHeight,
-        sampledWidth: payload.sampledWidth,
-        sampledHeight: payload.sampledHeight,
-      });
-    } catch (err) {
-      setStackError('Failed to load stack image');
-    } finally {
-      setStackLoading(false);
-    }
-  }, [directoryPath, stackImages]);
+  const fetchStackImage = React.useCallback(
+    async (index: number, downsample: number = 1) => {
+      if (!directoryPath || !stackImages[index]) return;
+      try {
+        setStackLoading(true);
+        const response = await h5Api.get<ImatImagePayload>('/imat/image', {
+          params: {
+            path: `${directoryPath}/${stackImages[index]}`,
+            downsample_factor: downsample,
+          },
+        });
+        const payload = response.data;
+        // For 16-bit TIFFs, we use Float32Array to preserve precision in HeatmapVis
+        const typedData = Float32Array.from(payload.data);
+        setStackDataset({
+          data: typedData,
+          shape: payload.shape as [number, number],
+          originalWidth: payload.originalWidth,
+          originalHeight: payload.originalHeight,
+          sampledWidth: payload.sampledWidth,
+          sampledHeight: payload.sampledHeight,
+        });
+      } catch (err) {
+        setStackError('Failed to load stack image');
+      } finally {
+        setStackLoading(false);
+      }
+    },
+    [directoryPath, stackImages]
+  );
 
   // Load first image or respond to index changes
   React.useEffect(() => {
@@ -219,13 +223,16 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
     <>
       {showNav && <NavArrows />}
       <Box sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column' }}>
-
         {mode === 'latest' && (
           <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
             {latestLoading && !latestDataset ? (
-              <Box sx={{ display: 'flex', justifyContent: 'center', p: 8 }}><CircularProgress /></Box>
+              <Box sx={{ display: 'flex', justifyContent: 'center', p: 8 }}>
+                <CircularProgress />
+              </Box>
             ) : latestDataset ? (
-              <Box sx={{ flex: 1, position: 'relative', border: '1px solid #ccc', borderRadius: 1, overflow: 'hidden' }}>
+              <Box
+                sx={{ flex: 1, position: 'relative', border: '1px solid #ccc', borderRadius: 1, overflow: 'hidden' }}
+              >
                 <RgbVis dataArray={latestArray!} aspect="equal" flipYAxis style={{ height: '100%', width: '100%' }} />
               </Box>
             ) : (
@@ -243,11 +250,24 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
             ) : (
               <>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Typography variant="body2">Image {currentImageIndex + 1} of {stackImages.length}</Typography>
-                  <Typography variant="caption" sx={{ color: 'text.secondary' }}>{stackImages[currentImageIndex]}</Typography>
+                  <Typography variant="body2">
+                    Image {currentImageIndex + 1} of {stackImages.length}
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                    {stackImages[currentImageIndex]}
+                  </Typography>
                 </Box>
 
-                <Box sx={{ flex: 1, position: 'relative', border: '1px solid #ccc', borderRadius: 1, overflow: 'hidden', minHeight: 400 }}>
+                <Box
+                  sx={{
+                    flex: 1,
+                    position: 'relative',
+                    border: '1px solid #ccc',
+                    borderRadius: 1,
+                    overflow: 'hidden',
+                    minHeight: 400,
+                  }}
+                >
                   {stackDataset ? (
                     <HeatmapVis
                       dataArray={stackArray!}
@@ -257,10 +277,15 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
                       domain={[0, 65535]}
                     />
                   ) : stackLoading ? (
-                    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}><CircularProgress /></Box>
+                    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+                      <CircularProgress />
+                    </Box>
                   ) : (
                     <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-                      <Typography>{stackError ?? (stackImages.length === 0 ? 'No images found in this job stack.' : 'Loading stack images...')}</Typography>
+                      <Typography>
+                        {stackError ??
+                          (stackImages.length === 0 ? 'No images found in this job stack.' : 'Loading stack images...')}
+                      </Typography>
                     </Box>
                   )}
                 </Box>
