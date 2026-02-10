@@ -230,25 +230,30 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
     [directoryPath, stackImages]
   );
 
-  // Load first image or respond to index changes
+  // Consolidated image fetching with debounce
   React.useEffect(() => {
-    if (mode === 'stack' && stackImages.length > 0 && !isSliding) {
-      fetchStackImage(currentImageIndex, 1);
-    }
+    if (mode !== 'stack' || stackImages.length === 0) return;
+
+    const delay = isSliding ? 50 : 250;
+    const downsample = isSliding ? 8 : 1;
+
+    const timer = setTimeout(() => {
+      fetchStackImage(currentImageIndex, downsample);
+    }, delay);
+
+    return () => clearTimeout(timer);
   }, [mode, stackImages, currentImageIndex, isSliding, fetchStackImage]);
 
   const handleSliderChange = (_event: React.SyntheticEvent | Event, newValue: number | number[]) => {
     setIsSliding(true);
     const index = newValue as number;
     setCurrentImageIndex(index);
-    // Fetch low-res preview while sliding
-    fetchStackImage(index, 8);
   };
 
   const handleSliderChangeCommitted = (_event: React.SyntheticEvent | Event, newValue: number | number[]) => {
     setIsSliding(false);
     const index = newValue as number;
-    fetchStackImage(index, 1);
+    setCurrentImageIndex(index);
   };
 
   return (
