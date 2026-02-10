@@ -9,6 +9,7 @@ import ViewerTabs from '../components/experimentViewer/ViewerTabs';
 import ExperimentSearch from '../components/experimentViewer/ExperimentSearch';
 import NavArrows from '../components/navigation/NavArrows';
 import { discoverFileStructure, fetchData1D, fetchErrorData, fetchFilePath } from '../lib/plottingServiceAPI';
+import { isValidInstrument } from '../lib/instrumentData';
 import { fiaApi } from '../lib/api';
 import { FileConfig, LinePlotData, Job, DatasetInfo, JobQueryFilters, outputFilter } from '../lib/types';
 import type { NumericType } from '@h5web/app';
@@ -22,6 +23,13 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
   const { instrumentName, jobId } = useParams<RouteParams>();
   const location = useLocation();
   const history = useHistory();
+
+  // Redirect if an instrument is specified in the URL but it's not a valid instrument name
+  useEffect(() => {
+    if (instrumentName && !isValidInstrument(instrumentName)) {
+      history.replace('/reduction-history');
+    }
+  }, [instrumentName, history]);
 
   const searchParams = new URLSearchParams(location.search);
 

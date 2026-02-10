@@ -15,6 +15,7 @@ import { ArrowBack, Settings } from '@mui/icons-material';
 import React, { ReactElement, useState } from 'react';
 import InstrumentSelector from '../components/jobs/InstrumentSelector';
 import InstrumentConfigDrawer from '../components/configsettings/InstrumentConfigDrawer';
+import { isValidInstrument } from '../lib/instrumentData';
 import { jwtDecode } from 'jwt-decode';
 import { JobQueryFilters } from '../lib/types';
 import { JOB_ROWS_PER_PAGE_OPTIONS, JobRowsPerPage, isJobRowsPerPage } from '../components/jobs/constants';
@@ -77,6 +78,13 @@ const Jobs: React.FC = (): ReactElement => {
   const location = useLocation();
   const [selectedInstrument, setSelectedInstrument] = React.useState<string>(instrumentName || 'ALL');
   const [imatTab, setImatTab] = React.useState<number>(1);
+
+  // Redirect if an instrument is specified in the URL but it's not a valid instrument name
+  React.useEffect(() => {
+    if (instrumentName && !isValidInstrument(instrumentName)) {
+      history.replace('/reduction-history');
+    }
+  }, [instrumentName, history]);
   const theme = useTheme();
   const [currentPage, setCurrentPage] = React.useState<number>(0);
   const [rowsPerPage, setRowsPerPage] = React.useState<JobRowsPerPage>(getStoredRowsPerPage);

@@ -1,6 +1,7 @@
 // React components
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useHistory, useParams } from 'react-router-dom';
+import { isValidInstrument } from '../lib/instrumentData';
 
 // Material UI components
 import { Alert, Box, Button, CircularProgress, Snackbar, Tab, Tabs, Typography, useTheme } from '@mui/material';
@@ -40,7 +41,16 @@ const ValueEditor: React.FC = () => {
   const [value, setValue] = useState<number>(0);
   const [runnerVersion, setRunnerVersion] = useState<string>('');
   const [runners, setRunners] = useState<MantidVersionMap>({});
-  const { jobId } = useParams<{ jobId: string }>();
+  const { instrumentName: urlInstrumentName, jobId } = useParams<{ instrumentName: string; jobId: string }>();
+  const history = useHistory();
+
+  // Redirect if an instrument is specified in the URL but it's not a valid instrument name
+  useEffect(() => {
+    if (urlInstrumentName && !isValidInstrument(urlInstrumentName)) {
+      history.replace('/reduction-history');
+    }
+  }, [urlInstrumentName, history]);
+
   const [scriptValue, setScriptValue] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
   const [instrumentName, setInstrumentName] = useState<string | null>(null);

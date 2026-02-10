@@ -325,3 +325,15 @@ export const instruments: InstrumentData[] = [
     scientists: ['Diego Alba Venero', 'James Doutch'],
   },
 ];
+// Export a list of all valid instrument names in uppercase for validation
+export const VALID_INSTRUMENT_NAMES = instruments.map((inst) => inst.name.toUpperCase());
+
+/**
+ * Validates whether a given instrument name is in the list of valid ISIS instruments.
+ * @param name - The instrument name to validate.
+ * @returns True if the instrument is valid, false otherwise.
+ */
+export const isValidInstrument = (name: string | undefined): boolean => {
+  if (!name) return false;
+  return VALID_INSTRUMENT_NAMES.includes(name.toUpperCase());
+};
