@@ -18,8 +18,6 @@ const PlotViewer: React.FC<PlotViewerProps> = ({ linePlotData, showErrors, onSho
   const [xScaleType, setXScaleType] = useState<ScaleType.Linear | ScaleType.Log | ScaleType.SymLog>(ScaleType.Linear);
   const [yScaleType, setYScaleType] = useState<ScaleType.Linear | ScaleType.Log | ScaleType.SymLog>(ScaleType.Linear);
 
-  console.log('PlotViewer rendered with data:', linePlotData);
-
   // Handle empty state
   if (linePlotData.length === 0) {
     return (
@@ -44,32 +42,67 @@ const PlotViewer: React.FC<PlotViewerProps> = ({ linePlotData, showErrors, onSho
     );
   }
 
-  // Render line plots - first as primary, rest as auxiliaries
-  console.log('Rendering line plots with data:', linePlotData);
-  const primaryData = linePlotData[0];
-  console.log('Primary data:', primaryData.filename, 'data:', primaryData.data);
+  // Sort data by domain size (largest first) to ensure the file with the biggest domain is primary
+  // This prevents crashes when auxiliary data has a larger domain than primary
+  const sortedData = [...linePlotData].sort((a, b) => b.data.length - a.data.length);
+
+  // Render line plots - largest domain as primary, rest as auxiliaries
+  const primaryData = sortedData[0];
 
   const primaryArray = ndarray(primaryData.data, [primaryData.data.length]);
 
+  // Generate abscissas (x-values) for primary data based on its length
+  const primaryAbscissas = Float32Array.from({ length: primaryData.data.length }, (_, i) => i);
+
   // Create error array if available and showErrors is true
-  const errorsArray =
+  const primaryErrorsArray =
     showErrors && primaryData.errors ? ndarray(primaryData.errors, [primaryData.errors.length]) : undefined;
 
-  // Calculate Y domain based on Y scale type
-  // getDomain automatically filters out invalid values for log scales:
-  // - For Log scale: excludes negative and zero values
-  // - For SymLog scale: excludes zero values but allows negative
-  // - For Linear scale: includes all values
-  const domain = getDomain(primaryArray, yScaleType, errorsArray);
-  console.log('Y-axis domain for scale', yScaleType, ':', domain);
-
   // Create auxiliaries for additional lines with error bars
-  const auxiliaries = linePlotData.slice(1).map((data) => ({
-    array: ndarray(data.data, [data.data.length]),
-    label: data.filename,
-    color: data.color,
-    errors: showErrors && data.errors ? ndarray(data.errors, [data.errors.length]) : undefined,
-  }));
+  // Pad auxiliary arrays with NaN to match primary length (NaN values won't render)
+  const primaryLength = primaryData.data.length;
+  const auxiliaries = sortedData.slice(1).map((data) => {
+    // Pad data array with NaN if shorter than primary
+    const paddedData = new Float32Array(primaryLength);
+    paddedData.set(data.data);
+    if (data.data.length < primaryLength) {
+      paddedData.fill(NaN, data.data.length);
+    }
+
+    // Pad errors array with NaN if available and shorter than primary
+    let paddedErrors: Float32Array | undefined;
+    if (showErrors && data.errors) {
+      paddedErrors = new Float32Array(primaryLength);
+      paddedErrors.set(data.errors);
+      if (data.errors.length < primaryLength) {
+        paddedErrors.fill(NaN, data.errors.length);
+      }
+    }
+
+    return {
+      array: ndarray(paddedData, [primaryLength]),
+      label: data.filename,
+      color: data.color,
+      errors: paddedErrors ? ndarray(paddedErrors, [primaryLength]) : undefined,
+    };
+  });
+
+  // Calculate combined Y domain across all data to ensure proper graph sizing
+  // Start with primary data domain
+  let combinedDomain = getDomain(primaryArray, yScaleType, primaryErrorsArray);
+
+  // Extend domain to include all auxiliaries
+  for (const aux of auxiliaries) {
+    const auxDomain = getDomain(aux.array, yScaleType, aux.errors);
+    if (auxDomain && combinedDomain) {
+      combinedDomain = [
+        Math.min(combinedDomain[0], auxDomain[0]),
+        Math.max(combinedDomain[1], auxDomain[1]),
+      ];
+    }
+  }
+
+  const domain = combinedDomain;
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
@@ -109,12 +142,12 @@ const PlotViewer: React.FC<PlotViewerProps> = ({ linePlotData, showErrors, onSho
       <LineVis
         dataArray={primaryArray}
         domain={domain}
-        errorsArray={errorsArray}
+        errorsArray={primaryErrorsArray}
         showErrors={showErrors}
         auxiliaries={auxiliaries.length > 0 ? auxiliaries : undefined}
         showGrid={lineShowGrid}
         scaleType={yScaleType}
-        abscissaParams={{ scaleType: xScaleType }}
+        abscissaParams={{ scaleType: xScaleType, value: primaryAbscissas }}
       />
     </Box>
   );
