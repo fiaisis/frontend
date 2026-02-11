@@ -233,7 +233,8 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
         const response = await h5Api.get<string[]>('/imat/list-images', {
           params: { path: directoryPath },
         });
-        setStackImages(response.data);
+        const sortedData = response.data.sort(new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' }).compare);
+        setStackImages(sortedData);
       } catch (err) {
         setStackError('Failed to list images in stack');
       }
