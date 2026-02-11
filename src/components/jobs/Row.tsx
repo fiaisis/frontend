@@ -766,22 +766,24 @@ const Row: React.FC<{
                         </Button>
                       </Link>
                     )}
-                    <Link
-                      to={`/experiment-viewer?instrument=${job.run.instrument_name}&experiment=${job.run.experiment_number}`}
-                      onClick={() =>
-                        ReactGA.event({
-                          category: 'Button',
-                          action: 'Click',
-                          label: 'Experiment viewer button',
-                          value: job.id,
-                        })
-                      }
-                      style={{ textDecoration: 'none' }}
-                    >
-                      <Button variant="contained" sx={{ flexShrink: 0, whiteSpace: 'nowrap' }}>
-                        Experiment viewer
-                      </Button>
-                    </Link>
+                    {job.run?.instrument_name !== 'IMAT' && (
+                      <Link
+                        to={`/experiment-viewer?instrument=${job.run.instrument_name}&experiment=${job.run.experiment_number}`}
+                        onClick={() =>
+                          ReactGA.event({
+                            category: 'Button',
+                            action: 'Click',
+                            label: 'Experiment viewer button',
+                            value: job.id,
+                          })
+                        }
+                        style={{ textDecoration: 'none' }}
+                      >
+                        <Button variant="contained" sx={{ flexShrink: 0, whiteSpace: 'nowrap' }}>
+                          Experiment viewer
+                        </Button>
+                      </Link>
+                    )}
                     <Button
                       variant="contained"
                       sx={{ flexShrink: 0, whiteSpace: 'nowrap', width: 60, height: 38 }}
