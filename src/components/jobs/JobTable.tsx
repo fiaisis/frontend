@@ -45,7 +45,7 @@ const JobTable: React.FC<{
   handleFiltersChange: (filters: JobQueryFilters) => void;
   handleSort: (sortKey: string) => void;
   orderBy: string;
-  orderDirection: "desc" | "asc";
+  orderDirection: 'desc' | 'asc';
 }> = ({
   selectedInstrument,
   currentPage,

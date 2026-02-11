@@ -130,6 +130,20 @@ const JobOutput: React.FC<{
               >
                 View
               </Button>
+              {/* Show H5 Viewer button for HDF5 files */}
+              {(output.endsWith('.h5') ||
+                output.endsWith('.hdf5') ||
+                output.endsWith('.nxs') ||
+                output.endsWith('.nxspe')) && (
+                  <Button
+                    variant="contained"
+                    component={Link}
+                    to={`/reduction-history/${job.run?.instrument_name || 'unknown'}/experiment-viewer-${job.id}`}
+                    sx={{ flexShrink: 0, whiteSpace: 'nowrap' }}
+                  >
+                    H5 viewer
+                  </Button>
+                )}
               <Button
                 variant="contained"
                 startIcon={downloadingSingle === output ? null : <Download />}
@@ -361,9 +375,9 @@ const Row: React.FC<{
       label: 'Job type:',
       value: job.type
         ? job.type
-            .replace('JobType.', '')
-            .toLowerCase()
-            .replace(/^\w/, (c) => c.toUpperCase())
+          .replace('JobType.', '')
+          .toLowerCase()
+          .replace(/^\w/, (c) => c.toUpperCase())
         : '—',
     },
     {
@@ -578,7 +592,7 @@ const Row: React.FC<{
 
               <IconButton
                 aria-label="expand row"
-                onClick={(e) => {
+                onClick={(e: React.MouseEvent) => {
                   e.stopPropagation();
                   setOpen(!open);
                 }}
@@ -586,6 +600,18 @@ const Row: React.FC<{
               >
                 {open ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
               </IconButton>
+              {job.run?.instrument_name === 'IMAT' && job.state === 'SUCCESSFUL' && (
+                <Tooltip title="View image stack">
+                  <IconButton
+                    component={Link}
+                    to={`/reduction-history/IMAT?jobId=${job.id}&experiment=${job.run?.experiment_number}&instrument=${job.run?.instrument_name}&tab=2`}
+                    onClick={(e) => e.stopPropagation()}
+                    sx={{ ml: 1 }}
+                  >
+                    <StackedBarChart />
+                  </IconButton>
+                </Tooltip>
+              )}
             </Box>
           </TableCell>
         ) : (
@@ -607,7 +633,7 @@ const Row: React.FC<{
               </Tooltip>
               <IconButton
                 aria-label="expand row"
-                onClick={(e) => {
+                onClick={(e: React.MouseEvent) => {
                   e.stopPropagation();
                   setOpen(!open);
                 }}
@@ -615,6 +641,18 @@ const Row: React.FC<{
               >
                 {open ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
               </IconButton>
+              {job.run?.instrument_name === 'IMAT' && job.state === 'SUCCESSFUL' && (
+                <Tooltip title="View image stack">
+                  <IconButton
+                    component={Link}
+                    to={`/reduction-history/IMAT?jobId=${job.id}&experiment=${job.run?.experiment_number}&instrument=${job.run?.instrument_name}&tab=2`}
+                    onClick={(e) => e.stopPropagation()}
+                    sx={{ ml: 1 }}
+                  >
+                    <StackedBarChart />
+                  </IconButton>
+                </Tooltip>
+              )}
             </Box>
           </TableCell>
         )}
@@ -718,22 +756,34 @@ const Row: React.FC<{
                         Value editor
                       </Button>
                     </Link>
-                    <Link
-                      to={`/experiment-viewer?instrument=${job.run.instrument_name}&experiment=${job.run.experiment_number}`}
-                      onClick={() =>
-                        ReactGA.event({
-                          category: 'Button',
-                          action: 'Click',
-                          label: 'Experiment viewer button',
-                          value: job.id,
-                        })
-                      }
-                      style={{ textDecoration: 'none' }}
-                    >
-                      <Button variant="contained" sx={{ flexShrink: 0, whiteSpace: 'nowrap' }}>
-                        Experiment viewer
-                      </Button>
-                    </Link>
+                    {job.run?.instrument_name === 'IMAT' && job.state === 'SUCCESSFUL' && (
+                      <Link
+                        to={`/reduction-history/IMAT?jobId=${job.id}&experiment=${job.run?.experiment_number}&instrument=${job.run?.instrument_name}&tab=2`}
+                        style={{ textDecoration: 'none' }}
+                      >
+                        <Button variant="contained" sx={{ flexShrink: 0, whiteSpace: 'nowrap' }}>
+                          Stack viewer
+                        </Button>
+                      </Link>
+                    )}
+                    {job.run?.instrument_name !== 'IMAT' && (
+                      <Link
+                        to={`/experiment-viewer?instrument=${job.run.instrument_name}&experiment=${job.run.experiment_number}`}
+                        onClick={() =>
+                          ReactGA.event({
+                            category: 'Button',
+                            action: 'Click',
+                            label: 'Experiment viewer button',
+                            value: job.id,
+                          })
+                        }
+                        style={{ textDecoration: 'none' }}
+                      >
+                        <Button variant="contained" sx={{ flexShrink: 0, whiteSpace: 'nowrap' }}>
+                          Experiment viewer
+                        </Button>
+                      </Link>
+                    )}
                     <Button
                       variant="contained"
                       sx={{ flexShrink: 0, whiteSpace: 'nowrap', width: 60, height: 38 }}
