@@ -4,9 +4,18 @@ import ndarray from 'ndarray';
 import { RgbVis, HeatmapVis } from '@h5web/lib';
 import NavArrows from '../components/navigation/NavArrows';
 import axios from 'axios';
-import { Box, CircularProgress, Typography, useTheme, Slider, Paper, ToggleButton, ToggleButtonGroup } from '@mui/material';
+import {
+  Box,
+  CircularProgress,
+  Typography,
+  useTheme,
+  Slider,
+  Paper,
+  ToggleButton,
+  ToggleButtonGroup,
+} from '@mui/material';
 import { h5Api, fiaApi } from '../lib/api';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useHistory } from 'react-router-dom';
 import { Job } from '../lib/types';
 
 type ImatImagePayload = {
@@ -45,16 +54,51 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
   const [latestLoading, setLatestLoading] = React.useState<boolean>(false);
   const [latestError, setLatestError] = React.useState<string | null>(null);
 
+  const history = useHistory();
+  const initialImageIndex = parseInt(queryParams.get('imageIndex') || '0', 10);
+  const initialViewerSize = (queryParams.get('viewerSize') as any) || 'fit';
+
   // Stack Viewer state
   const [stackJobId] = React.useState<string | null>(initialJobId);
   const [stackImages, setStackImages] = React.useState<string[]>([]);
-  const [currentImageIndex, setCurrentImageIndex] = React.useState(0);
+  const [currentImageIndex, setCurrentImageIndex] = React.useState(initialImageIndex);
   const [stackDataset, setStackDataset] = React.useState<ImatImageDataset | null>(null);
   const [stackLoading, setStackLoading] = React.useState(false);
   const [stackError, setStackError] = React.useState<string | null>(null);
   const [directoryPath, setDirectoryPath] = React.useState<string | null>(null);
   const [isSliding, setIsSliding] = React.useState(false);
-  const [viewerSize, setViewerSize] = React.useState<'fit' | 'small' | 'medium' | 'large' | 'full'>('fit');
+  const [viewerSize, setViewerSize] = React.useState<'fit' | 'small' | 'medium' | 'large' | 'full'>(initialViewerSize);
+
+  // Sync state to URL
+  React.useEffect(() => {
+    if (mode !== 'stack') return;
+    const params = new URLSearchParams(location.search);
+    let changed = false;
+
+    if (currentImageIndex !== 0) {
+      if (params.get('imageIndex') !== currentImageIndex.toString()) {
+        params.set('imageIndex', currentImageIndex.toString());
+        changed = true;
+      }
+    } else if (params.has('imageIndex')) {
+      params.delete('imageIndex');
+      changed = true;
+    }
+
+    if (viewerSize !== 'fit') {
+      if (params.get('viewerSize') !== viewerSize) {
+        params.set('viewerSize', viewerSize);
+        changed = true;
+      }
+    } else if (params.has('viewerSize')) {
+      params.delete('viewerSize');
+      changed = true;
+    }
+
+    if (changed) {
+      history.replace({ search: params.toString() });
+    }
+  }, [mode, currentImageIndex, viewerSize, history, location.search]);
 
   // Memoized arrays for visualization
   const latestArray = React.useMemo(() => {
@@ -104,7 +148,7 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
           sampledHeight: payload.sampledHeight,
         });
       } catch (err: any) {
-        if (!isMounted || axios.isAxiosError(err) && err.code === 'ERR_CANCELED') return;
+        if (!isMounted || (axios.isAxiosError(err) && err.code === 'ERR_CANCELED')) return;
         setLatestError(err.response?.status === 404 ? 'Latest IMAT image could not be found' : 'Unable to load image');
       } finally {
         if (isMounted) setLatestLoading(false);
@@ -112,7 +156,10 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
     };
 
     fetchLatestImage();
-    return () => { isMounted = false; controller.abort(); };
+    return () => {
+      isMounted = false;
+      controller.abort();
+    };
   }, [mode]);
 
   // Resolve directory path for stack
@@ -125,6 +172,9 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
         setStackError(null);
 
         // Fetch job data to get the run number (from filename)
+        if (!initialInstrument || !initialExperiment) {
+          throw new Error('Missing instrument or experiment number');
+        }
         const jobResponse = await fiaApi.get<Job>(`/job/${stackJobId}`);
         const job = jobResponse.data;
         const filename = job.run?.filename || '';
@@ -133,9 +183,12 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
 
         // Try to resolve path via find_file
         try {
-          const response = await h5Api.get<string>(`/find_file/instrument/${initialInstrument}/experiment_number/${initialExperiment}`, {
-            params: { filename: '.' }
-          });
+          const response = await h5Api.get<string>(
+            `/find_file/instrument/${initialInstrument}/experiment_number/${initialExperiment}`,
+            {
+              params: { filename: '.' },
+            }
+          );
           let path = response.data;
           if (runNumber) path = `${path}/run-${runNumber}`;
           setDirectoryPath(path);
@@ -146,7 +199,9 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
             try {
               const outputs = JSON.parse(path);
               path = Array.isArray(outputs) ? outputs[0] : path;
-            } catch (e) { /* ignore */ }
+            } catch (e) {
+              /* ignore */
+            }
           }
           if (path) {
             if (path.toLowerCase().endsWith('.tif') || path.toLowerCase().endsWith('.tiff')) {
@@ -409,7 +464,9 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
                       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
                         <Typography color="white">
                           {stackError ??
-                            (stackImages.length === 0 ? 'No images found in this job stack.' : 'Loading stack images...')}
+                            (stackImages.length === 0
+                              ? 'No images found in this job stack.'
+                              : 'Loading stack images...')}
                         </Typography>
                       </Box>
                     )}

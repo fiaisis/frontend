@@ -643,9 +643,7 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
                 {activeViewerTab === '1d' ? (
                   <PlotViewer linePlotData={linePlotData} showErrors={showErrors} onShowErrorsChange={setShowErrors} />
                 ) : (
-                  <Viewer2D
-                    filepath={selected2DFilePath}
-                  />
+                  <Viewer2D filepath={selected2DFilePath} />
                 )}
               </Box>
             </>

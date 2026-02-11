@@ -75,9 +75,25 @@ const Jobs: React.FC = (): ReactElement => {
   const { instrumentName } = useParams<{ instrumentName?: string }>();
   const history = useHistory();
   const location = useLocation();
-  const [selectedInstrument, setSelectedInstrument] = React.useState<string>(instrumentName || 'ALL');
-  const [imatTab, setImatTab] = React.useState<number>(0);
   const theme = useTheme();
+
+  const isImat = (instrumentName || '').toUpperCase() === 'IMAT';
+  const showConfigButton = ['LOQ', 'MARI', 'SANS2D', 'VESUVIO', 'OSIRIS', 'IRIS', 'ENGINX'].includes(
+    instrumentName?.toUpperCase() || ''
+  );
+
+  const [selectedInstrument, setSelectedInstrument] = React.useState<string>(instrumentName || 'ALL');
+  const [imatTab, setImatTab] = React.useState<number>(() => {
+    const params = new URLSearchParams(location.search);
+    const tabParam = params.get('tab');
+    if (tabParam !== null) {
+      return parseInt(tabParam, 10) || 0;
+    }
+    if (params.has('jobId')) {
+      return 2; // Default to stack viewer if jobId is present
+    }
+    return 0;
+  });
   const [currentPage, setCurrentPage] = React.useState<number>(0);
   const [rowsPerPage, setRowsPerPage] = React.useState<JobRowsPerPage>(getStoredRowsPerPage);
   const [currentFilters, setCurrentFilters] = React.useState<JobQueryFilters>({});
@@ -109,6 +125,7 @@ const Jobs: React.FC = (): ReactElement => {
       filters?: JobQueryFilters;
       orderBy?: string;
       orderDirection?: 'desc' | 'asc';
+      imatTab?: number;
     }) => {
       const params = new URLSearchParams(location.search);
 
@@ -138,21 +155,58 @@ const Jobs: React.FC = (): ReactElement => {
       }
 
       if (next.orderBy !== undefined) {
-        const orderByValue = next.orderBy;
-        if (orderByValue && orderBy) {
-          params.set('orderBy', JSON.stringify(orderByValue));
+        if (next.orderBy) {
+          params.set('orderBy', JSON.stringify(next.orderBy));
         } else {
           params.delete('orderBy');
         }
       }
 
       if (next.orderDirection !== undefined) {
-        const orderDirValue = next.orderDirection;
-        if (orderDirValue && orderDirection) {
-          params.set('orderDir', JSON.stringify(orderDirValue));
+        if (next.orderDirection) {
+          params.set('orderDir', JSON.stringify(next.orderDirection));
         } else {
           params.delete('orderDir');
         }
+      }
+
+      let targetTab = next.imatTab;
+      if (targetTab === undefined) {
+        const tabParam = params.get('tab');
+        if (tabParam !== null) {
+          targetTab = parseInt(tabParam, 10);
+        } else if (params.has('jobId')) {
+          targetTab = 2; // Assume stack viewer if jobId is present
+        } else {
+          targetTab = imatTab;
+        }
+      }
+
+      if (isImat) {
+        if (targetTab === 2) {
+          params.set('tab', '2');
+        } else if (targetTab === 1) {
+          params.set('tab', '1');
+        } else {
+          params.delete('tab');
+        }
+
+        if (targetTab !== 2) {
+          // Clear stack params if on IMAT but not on tab 2
+          params.delete('jobId');
+          params.delete('experiment');
+          params.delete('instrument');
+          params.delete('imageIndex');
+          params.delete('viewerSize');
+        }
+      } else {
+        // Clear everything if NOT on IMAT
+        params.delete('tab');
+        params.delete('jobId');
+        params.delete('experiment');
+        params.delete('instrument');
+        params.delete('imageIndex');
+        params.delete('viewerSize');
       }
 
       const newSearch = params.toString();
@@ -161,7 +215,7 @@ const Jobs: React.FC = (): ReactElement => {
         history.replace({ pathname: location.pathname, search: searchString });
       }
     },
-    [history, location.pathname, location.search]
+    [history, location.pathname, location.search, imatTab]
   );
 
   React.useEffect(() => {
@@ -253,7 +307,18 @@ const Jobs: React.FC = (): ReactElement => {
     } else {
       setCurrentFilters((prev) => (Object.keys(prev).length > 0 ? {} : prev));
     }
-  }, [location.search, rowsPerPage, updateQueryParams]);
+    const tabParam = params.get('tab');
+    if (tabParam !== null) {
+      const parsedTab = parseInt(tabParam, 10);
+      if (!isNaN(parsedTab) && parsedTab !== imatTab) {
+        setImatTab(parsedTab);
+      }
+    } else if (isImat && imatTab !== 0 && !params.has('jobId')) {
+      // If tab is missing from URL, we are on IMAT, we are NOT on tab 0, and there is NO jobId (auto-switch trigger)
+      // then we should reset to 0.
+      setImatTab(0);
+    }
+  }, [location.search, rowsPerPage, updateQueryParams, imatTab, isImat]);
 
   React.useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -284,25 +349,20 @@ const Jobs: React.FC = (): ReactElement => {
   }, []);
 
   const [configDrawerOpen, setConfigDrawerOpen] = React.useState<boolean>(false);
-  const showConfigButton = ['LOQ', 'MARI', 'SANS2D', 'VESUVIO', 'OSIRIS', 'IRIS', 'ENGINX'].includes(
-    selectedInstrument
-  );
-  const isImat = selectedInstrument.toUpperCase() === 'IMAT';
 
   React.useEffect(() => {
     if (isImat) {
       const params = new URLSearchParams(location.search);
-      if (params.has('jobId')) {
+      if (!params.has('tab') && params.has('jobId')) {
         setImatTab(2); // Stack Viewer
-      } else {
-        // Default to Reductions list (index 0)
-        setImatTab(0);
+        updateQueryParams({ imatTab: 2 });
       }
     }
-  }, [isImat, location.search]);
+  }, [isImat, location.search, updateQueryParams]);
 
   const handleImatTabChange = (_event: React.SyntheticEvent, newValue: number): void => {
     setImatTab(newValue);
+    updateQueryParams({ imatTab: newValue });
   };
 
   return (

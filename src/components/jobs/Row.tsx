@@ -592,7 +592,7 @@ const Row: React.FC<{
 
               <IconButton
                 aria-label="expand row"
-                onClick={(e) => {
+                onClick={(e: React.MouseEvent) => {
                   e.stopPropagation();
                   setOpen(!open);
                 }}
@@ -604,7 +604,7 @@ const Row: React.FC<{
                 <Tooltip title="View image stack">
                   <IconButton
                     component={Link}
-                    to={`/reduction-history/IMAT?jobId=${job.id}&experiment=${job.run?.experiment_number}&instrument=${job.run?.instrument_name}`}
+                    to={`/reduction-history/IMAT?jobId=${job.id}&experiment=${job.run?.experiment_number}&instrument=${job.run?.instrument_name}&tab=2`}
                     onClick={(e) => e.stopPropagation()}
                     sx={{ ml: 1 }}
                   >
@@ -633,7 +633,7 @@ const Row: React.FC<{
               </Tooltip>
               <IconButton
                 aria-label="expand row"
-                onClick={(e) => {
+                onClick={(e: React.MouseEvent) => {
                   e.stopPropagation();
                   setOpen(!open);
                 }}
@@ -645,7 +645,7 @@ const Row: React.FC<{
                 <Tooltip title="View image stack">
                   <IconButton
                     component={Link}
-                    to={`/reduction-history/IMAT?jobId=${job.id}&experiment=${job.run?.experiment_number}&instrument=${job.run?.instrument_name}`}
+                    to={`/reduction-history/IMAT?jobId=${job.id}&experiment=${job.run?.experiment_number}&instrument=${job.run?.instrument_name}&tab=2`}
                     onClick={(e) => e.stopPropagation()}
                     sx={{ ml: 1 }}
                   >
@@ -758,7 +758,7 @@ const Row: React.FC<{
                     </Link>
                     {job.run?.instrument_name === 'IMAT' && job.state === 'SUCCESSFUL' && (
                       <Link
-                        to={`/reduction-history/IMAT?jobId=${job.id}&experiment=${job.run?.experiment_number}&instrument=${job.run?.instrument_name}`}
+                        to={`/reduction-history/IMAT?jobId=${job.id}&experiment=${job.run?.experiment_number}&instrument=${job.run?.instrument_name}&tab=2`}
                         style={{ textDecoration: 'none' }}
                       >
                         <Button variant="contained" sx={{ flexShrink: 0, whiteSpace: 'nowrap' }}>
