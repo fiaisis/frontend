@@ -47,7 +47,7 @@ const ValueEditor: React.FC = () => {
   // Redirect if an instrument is specified in the URL but it's not a valid instrument name
   useEffect(() => {
     if (urlInstrumentName && !isValidInstrument(urlInstrumentName)) {
-      history.replace('/reduction-history');
+      window.location.replace('/404/');
     }
   }, [urlInstrumentName, history]);
 

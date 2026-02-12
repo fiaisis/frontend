@@ -26,10 +26,13 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
 
   // Redirect if an instrument is specified in the URL but it's not a valid instrument name
   useEffect(() => {
-    if (instrumentName && !isValidInstrument(instrumentName)) {
-      history.replace('/reduction-history');
+    const queryInstrument = new URLSearchParams(location.search).get('instrument');
+    const instrumentToValidate = instrumentName || queryInstrument;
+
+    if (instrumentToValidate && !isValidInstrument(instrumentToValidate)) {
+      window.location.replace('/404/');
     }
-  }, [instrumentName, history]);
+  }, [instrumentName, location.search]);
 
   const searchParams = new URLSearchParams(location.search);
 

@@ -83,7 +83,7 @@ const Jobs: React.FC = (): ReactElement => {
   const [selectedInstrument, setSelectedInstrument] = React.useState<string>(instrumentName || 'ALL');
   const [imatTab, setImatTab] = React.useState<number>(() => {
     const params = new URLSearchParams(location.search);
-  const tabParam = params.get('tab');
+    const tabParam = params.get('tab');
     if (tabParam !== null) {
       return parseInt(tabParam, 10) || 0;
     }
@@ -95,7 +95,7 @@ const Jobs: React.FC = (): ReactElement => {
   // Redirect if an instrument is specified in the URL but it's not a valid instrument name
   React.useEffect(() => {
     if (instrumentName && !isValidInstrument(instrumentName)) {
-      history.replace('/reduction-history');
+      window.location.replace('/404/');
     }
   }, [instrumentName, history]);
   const theme = useTheme();
