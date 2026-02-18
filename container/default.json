@@ -45,8 +45,8 @@
     "title_line2": "for <1>large-scale</1> science facilities",
     "browse": {
       "title": "Browse, explore and visualise experimental data",
-      "description1": "SciGateway is a ReactJs based parent application within a micro-front end architecture. It provides access to large facilities science.",
-      "description2": "The <0>SciGateway</0> application offers features such as authentication and authorisation functionality, notifications, cookies management.",
+      "description1": "The FIA API frontend is a React-based interface designed to streamline experiment data reduction. It provides comprehensive access to experimental services, from real-time monitoring to historical job management.",
+      "description2": "The <0>FIA</0> application delivers powerful tools for job management, multi-dimensional data visualization, and interactive experiment auditing across ISIS instruments.",
       "link": "/browse/investigation",
       "button": "Browse data"
     },
@@ -71,14 +71,14 @@
   },
   "contact-page": {
     "title": "Contact",
-    "contact-details-description": "For problems with SciGateway, please contact <a href='mailto:example@email.com?subject=Feedback From SciGateway'>example@email.com</a>"
+    "contact-details-description": "For problems with FIA, please contact <a href='mailto:fia@stfc.ac.uk?subject=Feedback From FIA'>fia@stfc.ac.uk</a>"
   },
   "help-page": {
     "title": "Help",
     "table-of-contents": "Table of contents",
     "top-of-page-icon": "<a href=#help-page>&#11014;</a>",
     "contents": "<div style='word-wrap: break-word; max-width: 70ch; text-align: justify;'>Welcome to the Flexible Interactive Automation (FIA) web site. If you are struggling to navigate or use this service then hopefully this page will provide some guidance.<br><br>The project and help page are a work in progress. Both will be updated regularly as more components and features are added.<br><h2 id='logging-in'>Logging in</h2>When attempting to access restricted features of FIA, you will be presented with a login page.<br><br><img src='/res/images/login.png' style='max-width:1000px; height:auto;'><br>You can login by entering your username and password provided by the <a href='https://www.isis.stfc.ac.uk/Pages/User-Office.aspx'>ISIS User Office</a>.<br><br>Once you've successfully logged in, pages which you are authenticated for will now be available.<br><h2 id='page-navigation'>Page navigation</h2>To the top left of the screen you will see a menu icon of three horizontal lines. This opens and closes the sidebar menu.<br><br><img src='/res/images/homepage_point_to_top_left.png' style='max-width:1000px; height:auto;'><br><br>With the sidebar open you will now see the three main pages: \"Instruments\", \"Reduction history\", and \"Experiment Viewer\".<br><br><img src='/res/images/homepage_point_to_sidebar.png' style='max-width:1000px; height:auto;'><h2 id='instruments'> Instruments</h2>The Instruments tab gives you an overview of all of ISIS's instruments. These are presented as cards which can be expanded.<br><br>If you expand a card you will get more information about an instrument as well as a button which leads to historic runs specific to that instrument.<br><br><img src='/res/images/point_to_reduction_history_instrument_page.png' style='max-width:1000px; height:auto;'><h2 id='reduction-history'> Reduction history</h2>The Reduction History tab allows you to browse a list of all previous reductions. You can browse instrument specific reductions by clicking the instrument name in the right-most column.<br><br><img src='/res/images/point_at_instrument_reduction_page.png' style='max-width:1000px; height:auto;'><br><br>To get more information about a run, click on one to expand its box. From here you can perform re-runs or view the data of nexus files.<br><br><img src='/res/images/run_details.png' style='max-width:1000px; height:auto;'><h2 id='experiment-viewer'>Experiment Viewer</h2>The Experiment Viewer is an interactive tool for exploring and visualizing experimental data stored in NeXus and other HDF5-based file formats. It supports plotting 1D datasets and extracting 1D slices from compatible 2D datasets, allowing multiple slices to be compared on the same graph. <br><br><img src='/res/images/experiment_view_example_data.png' style='max-width:1000px; height:auto;'> Users can adjust key plot settings such as axis scaling, axis flipping, and optional error bars (when error data is included in the file). The viewer automatically identifies numerical datasets within a file and presents them in a structured, accessible way. Designed to streamline data inspection workflows, the Experiment Viewer integrates with backend services for file access and metadata retrieval, making it easier to browse, inspect, and compare experimental output<h2 id='helpful-resources'>Helpful Resources</h2>Here are some additional resources that may come in useful:<ul><li><a href='https://www.isis.stfc.ac.uk/Pages/User-Office.aspx'>ISIS User Office</a> - a User Office account is required to access certain pages of this web site</li><li><a href='https://github.com/fiaisis/frontend'>FIA frontend code</a> - the source code that went into making the frontend</li><li><a href='https://github.com/fiaisis'>FIA GitHub workgroup</a> - all of the code repositories that went into making this service</li></ul>"
-    },
+  },
   "admin": {
     "title": "Admin",
     "scheduled-maintenance-title": "Scheduled Maintenance",
@@ -141,7 +141,9 @@
   "accessibility-page": {
     "title": "Accessibility statement for FIA",
     "domains-list-text": "This accessibility statement applies to all facilities using FIA. This includes:",
-    "domains-list": ["reduce.isis.cclrc.ac.uk"],
+    "domains-list": [
+      "reduce.isis.cclrc.ac.uk"
+    ],
     "website-developed-by": "These sites are maintained by the Scientific Software Group, in the ISIS Computing Division. ",
     "how-accessible-this-website-is": "How Accessible This Website Is ",
     "how-accessible-this-website-is-text": "We want as many people as possible to be able to use this website. For example, that means you should be able to: ",
