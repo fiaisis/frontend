@@ -142,7 +142,9 @@ rm -rf node_modules && yarn cache clean && rm -f yarn.lock && yarn install
 
 The FIA frontend uses [Cypress](https://www.cypress.io/) for end-to-end and component testing. These tests run in a [workflow](.github/workflows/cypress_tests.yml) whenever a commit is pushed or a pull request is merged. Tests can also be run locally.
 
-For writing your own tests, follow the guide [here](https://docs.cypress.io/guides/end-to-end-testing/writing-your-first-end-to-end-test). Alternatively, replicate the methods used in pre-existing `.cy.tsx` files, like the [homepage](cypress/component/Homepage.cy.tsx).
+For writing your own tests, follow the guide [here](https://docs.cypress.io/guides/end-to-end-testing/writing-your-first-end-to-end-test). Component examples live in [`cypress/component`](cypress/component), and e2e examples live in [`cypress/e2e`](cypress/e2e).
+
+The e2e tests are written to work in plugin-style routing (`/fia/...`) and stub API responses with `cy.intercept(...)` so they do not require live SciGateway-backed authentication data.
 
 ## Additional scripts
 
@@ -154,7 +156,15 @@ Opens the Cypress Test Runner. This provides a graphical display for running end
 
 ### `yarn cypress run`
 
-Runs Cypress tests headlessly in the terminal. This is useful for running tests in a CI/CD pipeline (currently there are no e2e spec files so shouldn't do anything).
+Runs Cypress tests headlessly in the terminal.
+
+### `yarn cypress:run:e2e`
+
+Runs only end-to-end specs.
+
+### `yarn cypress:run:component`
+
+Runs only component specs.
 
 ### `yarn run-frontend`
 
