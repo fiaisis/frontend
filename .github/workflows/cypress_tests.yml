@@ -18,9 +18,7 @@ jobs:
         env:
           ELECTRON_EXTRA_LAUNCH_ARGS: '--disable-gpu'
         with:
-          start: yarn start --host 127.0.0.1
-          wait-on: 'http://127.0.0.1:3000'
-          wait-on-timeout: 300
+          install: false
           component: true
       - name: Run Cypress E2E Tests
         uses: cypress-io/github-action@v7
@@ -28,6 +26,6 @@ jobs:
           ELECTRON_EXTRA_LAUNCH_ARGS: '--disable-gpu'
         with:
           install: false
-          start: yarn start --host 127.0.0.1
+          start: yarn start --host 127.0.0.1 --port 3000 --strictPort
           wait-on: 'http://127.0.0.1:3000'
           wait-on-timeout: 300
