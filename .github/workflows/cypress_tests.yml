@@ -6,6 +6,10 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v6.0.2
+        with:
+          submodules: recursive
+      - name: Ensure Submodules
+        run: git submodule update --init --recursive
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
