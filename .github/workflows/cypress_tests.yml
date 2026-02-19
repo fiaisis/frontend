@@ -13,7 +13,7 @@ jobs:
           cache: 'yarn'
       - name: Install Dependencies
         run: yarn install
-      - name: Run Cypress Tests
+      - name: Run Cypress Component Tests
         uses: cypress-io/github-action@v7
         env:
           ELECTRON_EXTRA_LAUNCH_ARGS: '--disable-gpu'
@@ -22,3 +22,12 @@ jobs:
           wait-on: 'http://localhost:3000'
           wait-on-timeout: 300
           component: true
+      - name: Run Cypress E2E Tests
+        uses: cypress-io/github-action@v7
+        env:
+          ELECTRON_EXTRA_LAUNCH_ARGS: '--disable-gpu'
+        with:
+          install: false
+          start: yarn start
+          wait-on: 'http://localhost:3000'
+          wait-on-timeout: 300

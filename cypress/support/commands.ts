@@ -1,37 +1,34 @@
 /// <reference types="cypress" />
-// ***********************************************
-// This example commands.ts shows you how to
-// create various custom commands and overwrite
-// existing commands.
-//
-// For more comprehensive examples of custom
-// commands please read more here:
-// https://on.cypress.io/custom-commands
-// ***********************************************
-//
-//
-// -- This is a parent command --
-// Cypress.Commands.add('login', (email, password) => { ... })
-//
-//
-// -- This is a child command --
-// Cypress.Commands.add('drag', { prevSubject: 'element'}, (subject, options) => { ... })
-//
-//
-// -- This is a dual command --
-// Cypress.Commands.add('dismiss', { prevSubject: 'optional'}, (subject, options) => { ... })
-//
-//
-// -- This will overwrite an existing command --
-// Cypress.Commands.overwrite('visit', (originalFn, url, options) => { ... })
-//
-// declare global {
-//   namespace Cypress {
-//     interface Chainable {
-//       login(email: string, password: string): Chainable<void>
-//       drag(subject: string, options?: Partial<TypeOptions>): Chainable<Element>
-//       dismiss(subject: string, options?: Partial<TypeOptions>): Chainable<Element>
-//       visit(originalFn: CommandOriginalFn, url: string, options: Partial<VisitOptions>): Chainable<Element>
-//     }
-//   }
-// }
+
+const createUnsignedJwt = (win: Window, payload: Record<string, unknown>): string => {
+  const base64UrlEncode = (value: Record<string, unknown>): string =>
+    win.btoa(JSON.stringify(value)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+
+  const header = { alg: 'none', typ: 'JWT' };
+  return `${base64UrlEncode(header)}.${base64UrlEncode(payload)}.`;
+};
+
+Cypress.Commands.add('visitFia', (path = '/fia') => {
+  cy.visit(path, {
+    onBeforeLoad(win) {
+      const token = createUnsignedJwt(win, {
+        role: 'staff',
+        exp: Math.floor(Date.now() / 1000) + 60 * 60,
+      });
+
+      win.localStorage.setItem('scigateway:token', token);
+      win.localStorage.setItem('autoLogin', 'true');
+    },
+  });
+});
+
+declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
+  namespace Cypress {
+    interface Chainable {
+      visitFia(path?: string): Chainable<Window>;
+    }
+  }
+}
+
+export {};
