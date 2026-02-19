@@ -24,6 +24,7 @@ jobs:
         with:
           install: false
           component: true
+          spec: cypress/component/**/*.cy.{js,jsx,ts,tsx}
       - name: Run Cypress E2E Tests
         uses: cypress-io/github-action@v7
         env:
@@ -33,3 +34,4 @@ jobs:
           start: yarn start --host 127.0.0.1 --port 3000 --strictPort
           wait-on: 'http://127.0.0.1:3000'
           wait-on-timeout: 300
+          spec: cypress/e2e/**/*.cy.{js,jsx,ts,tsx}
