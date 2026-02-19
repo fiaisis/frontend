@@ -14,7 +14,11 @@ import {
   ListItemButton,
   ListItemText,
   Paper,
+  Button,
 } from '@mui/material';
+import { Edit } from '@mui/icons-material';
+import { useHistory } from 'react-router-dom';
+import { jwtDecode } from 'jwt-decode';
 import Viewer2D from '../components/experimentViewer/Viewer2D';
 import NavArrows from '../components/navigation/NavArrows';
 import { fetchLiveDataInstruments, fetchLiveDataFiles } from '../lib/plottingServiceAPI';
@@ -31,6 +35,20 @@ const LiveData: React.FC = (): JSX.Element => {
   const [files, setFiles] = useState<string[]>([]);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [loadingFiles, setLoadingFiles] = useState(false);
+  const history = useHistory();
+  const [userRole, setUserRole] = useState<'staff' | 'user' | null>(null);
+
+  useEffect(() => {
+    const token = localStorage.getItem('scigateway:token');
+    if (token) {
+      try {
+        const decoded = jwtDecode<{ role?: 'staff' | 'user' }>(token);
+        setUserRole(decoded.role || 'user');
+      } catch (error) {
+        console.error('Error decoding token:', error);
+      }
+    }
+  }, []);
 
   // Viewer state
   const [viewerKey, setViewerKey] = useState(0);
@@ -199,6 +217,18 @@ const LiveData: React.FC = (): JSX.Element => {
 
           {/* Loading indicator */}
           {loadingInstruments && <CircularProgress size={20} />}
+
+          {/* Edit Script Button */}
+          {userRole === 'staff' && selectedInstrument && (
+            <Button
+              variant="contained"
+              size="small"
+              onClick={() => history.push(`/live-data/${selectedInstrument}/edit-script`)}
+              sx={{ ml: 'auto' }}
+            >
+              Edit Script
+            </Button>
+          )}
         </Box>
 
         {/* Main content area */}
