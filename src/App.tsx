@@ -9,6 +9,7 @@ import Homepage from './pages/Homepage';
 import ValueEditor from './pages/ValueEditor';
 import ExperimentViewer from './pages/ExperimentViewer';
 import LiveData from './pages/LiveData';
+import LiveValueEditor from './pages/LiveValueEditor';
 import GlobalStyles from './GlobalStyles';
 import Jobs from './pages/Jobs';
 import { clearFailedAuthRequestsQueue, retryFailedAuthRequests } from './lib/api';
@@ -83,6 +84,9 @@ const App: FC = () => {
             </Route>
             <Route path="/experiment-viewer">
               <ExperimentViewer />
+            </Route>
+            <Route path="/live-data/:instrumentName/edit-script">
+              <LiveValueEditor />
             </Route>
             <Route path="/live-data">
               <LiveData />

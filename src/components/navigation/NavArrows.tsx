@@ -1,6 +1,6 @@
 import React from 'react';
 import { useLocation, Link as RouterLink } from 'react-router-dom';
-import { Breadcrumbs, Typography, Link as MuiLink, breadcrumbsClasses } from '@mui/material';
+import { Breadcrumbs, Typography, Link as MuiLink, breadcrumbsClasses, Theme } from '@mui/material';
 
 const NavArrows: React.FC = () => {
   const url = useLocation();
@@ -16,7 +16,7 @@ const NavArrows: React.FC = () => {
       <Breadcrumbs
         aria-label="breadcrumb"
         separator=""
-        sx={(theme) => ({
+        sx={(theme: Theme) => ({
           marginTop: theme.spacing(2),
           marginLeft: theme.spacing(2),
           backgroundColor: theme.palette.background.default,
@@ -110,6 +110,12 @@ const NavArrows: React.FC = () => {
           }
           if (label === 'experiment-viewer') {
             label = 'Experiment viewer';
+          }
+          if (label === 'live-data') {
+            label = 'Live data';
+          }
+          if (label === 'edit-script') {
+            label = 'Edit script';
           }
           const valueEditorRegex = /^value-editor-(\d+)$/i;
           if (valueEditorRegex.test(label)) {
