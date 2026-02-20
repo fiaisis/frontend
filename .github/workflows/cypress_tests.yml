@@ -6,6 +6,10 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v6.0.2
+        with:
+          submodules: recursive
+      - name: Ensure Submodules
+        run: git submodule update --init --recursive
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
@@ -13,12 +17,21 @@ jobs:
           cache: 'yarn'
       - name: Install Dependencies
         run: yarn install
-      - name: Run Cypress Tests
+      - name: Run Cypress Component Tests
         uses: cypress-io/github-action@v7
         env:
           ELECTRON_EXTRA_LAUNCH_ARGS: '--disable-gpu'
         with:
-          start: yarn start
-          wait-on: 'http://localhost:3000'
-          wait-on-timeout: 300
+          install: false
           component: true
+          spec: cypress/component/**/*.cy.{js,jsx,ts,tsx}
+      - name: Run Cypress E2E Tests
+        uses: cypress-io/github-action@v7
+        env:
+          ELECTRON_EXTRA_LAUNCH_ARGS: '--disable-gpu'
+        with:
+          install: false
+          start: yarn start --host 127.0.0.1 --port 3000 --strictPort
+          wait-on: 'http://127.0.0.1:3000'
+          wait-on-timeout: 300
+          spec: cypress/e2e/**/*.cy.{js,jsx,ts,tsx}
