@@ -166,7 +166,7 @@ const LiveValueEditor: React.FC = () => {
             </Box>
           ) : (
             <>
-              <Box sx={{ flex: 1, height: '100%' }}>
+              <Box sx={{ flex: 1, height: '100%', minWidth: 0 }}>
                 <Editor
                   onChange={(newValue) => {
                     if (newValue !== null) {
