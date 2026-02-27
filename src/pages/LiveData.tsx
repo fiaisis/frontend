@@ -1,27 +1,26 @@
 import '@h5web/lib/styles.css';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
-  Box,
-  Typography,
-  CircularProgress,
   Alert,
+  Box,
+  Button,
+  Chip,
+  CircularProgress,
   FormControl,
   InputLabel,
-  Select,
-  MenuItem,
-  Chip,
   List,
   ListItemButton,
   ListItemText,
+  MenuItem,
   Paper,
-  Button,
+  Select,
+  Typography,
 } from '@mui/material';
-import { Edit } from '@mui/icons-material';
 import { useHistory } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
 import Viewer2D from '../components/experimentViewer/Viewer2D';
 import NavArrows from '../components/navigation/NavArrows';
-import { fetchLiveDataInstruments, fetchLiveDataFiles } from '../lib/plottingServiceAPI';
+import { fetchLiveDataFiles, fetchLiveDataInstruments } from '../lib/plottingServiceAPI';
 import { useLiveDataSSE } from '../lib/useLiveDataSSE';
 import { outputFilter } from '../lib/types';
 
@@ -55,7 +54,13 @@ const LiveData: React.FC = (): JSX.Element => {
   const [error, setError] = useState<string | null>(null);
 
   // SSE connection
-  const { isConnected, directory, changedFile, lastUpdated, error: sseError } = useLiveDataSSE(selectedInstrument, true);
+  const {
+    isConnected,
+    directory,
+    changedFile,
+    lastUpdated,
+    error: sseError,
+  } = useLiveDataSSE(selectedInstrument, true);
 
   // Build full file path using directory from SSE and selected file
   const selectedFilePath = directory && selectedFile ? `${directory}/${selectedFile}` : null;
@@ -95,9 +100,7 @@ const LiveData: React.FC = (): JSX.Element => {
       setError(null);
       const fileList = await fetchLiveDataFiles(selectedInstrument);
       // Filter to only show valid H5 files
-      const filteredFiles = fileList.filter((file) =>
-        outputFilter.some((ext) => file.endsWith(ext))
-      );
+      const filteredFiles = fileList.filter((file) => outputFilter.some((ext) => file.endsWith(ext)));
       setFiles(filteredFiles);
 
       // Auto-select first file if available and no file is currently selected
@@ -300,20 +303,14 @@ const LiveData: React.FC = (): JSX.Element => {
                   zIndex: 20,
                 }}
               >
-                <Alert
-                  severity="error"
-                  onClose={() => setError(null)}
-                >
+                <Alert severity="error" onClose={() => setError(null)}>
                   {error || sseError}
                 </Alert>
               </Box>
             )}
 
             {/* Viewer */}
-            <Viewer2D
-              key={viewerKey}
-              filepath={selectedFilePath}
-            />
+            <Viewer2D key={viewerKey} filepath={selectedFilePath} />
           </Box>
         </Box>
       </Box>
