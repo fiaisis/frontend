@@ -2446,7 +2446,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@floating-ui/react-dom@npm:^2.1.5, @floating-ui/react-dom@npm:^2.1.6":
+"@floating-ui/react-dom@npm:^2.1.6":
   version: 2.1.6
   resolution: "@floating-ui/react-dom@npm:2.1.6"
   dependencies:
@@ -2455,20 +2455,6 @@ __metadata:
     react: ">=16.8.0"
     react-dom: ">=16.8.0"
   checksum: 24ff266806cd4cba6ad066f0eda7b99583f68af877f41df0b2a8d10a392692e3a1c1d666ebb75571a060818ede940bae59d833aa517ed538f7dba9dddd9991ae
-  languageName: node
-  linkType: hard
-
-"@floating-ui/react@npm:0.27.15":
-  version: 0.27.15
-  resolution: "@floating-ui/react@npm:0.27.15"
-  dependencies:
-    "@floating-ui/react-dom": ^2.1.5
-    "@floating-ui/utils": ^0.2.10
-    tabbable: ^6.0.0
-  peerDependencies:
-    react: ">=17.0.0"
-    react-dom: ">=17.0.0"
-  checksum: f9b1ec9239c5a48dce7b34b0e6e2f92963e7471bb9907445940a9ae253eea4d4714fca99e62efe292371c62ee460b45ba448692777a1e03942f626c0d49bbd3a
   languageName: node
   linkType: hard
 
@@ -2527,65 +2513,6 @@ __metadata:
     typescript:
       optional: true
   checksum: 876a12d92ce2802a89f5369c403b7e4951a7993654d170851ba96cea41cb8c668295642604d971e6c06c5e83acfeb37801f12f4d7eb7093ad1fbb992d509d7c9
-  languageName: node
-  linkType: hard
-
-"@h5web/lib@npm:15.0.0":
-  version: 15.0.0
-  resolution: "@h5web/lib@npm:15.0.0"
-  dependencies:
-    "@floating-ui/react": 0.27.15
-    "@react-hookz/web": 25.1.1
-    "@types/d3-array": ~3.2.1
-    "@types/d3-color": ~3.1.3
-    "@types/d3-format": ~3.0.4
-    "@types/d3-interpolate": ~3.0.4
-    "@types/d3-scale": ~4.0.9
-    "@types/d3-scale-chromatic": ~3.1.0
-    "@types/ndarray": ~1.0.14
-    "@types/react-measure": ~2.0.12
-    "@types/react-slider": ~1.3.6
-    "@types/react-window": ~1.8.8
-    "@visx/axis": 3.12.0
-    "@visx/drag": 3.12.0
-    "@visx/grid": 3.12.0
-    "@visx/scale": 3.12.0
-    "@visx/shape": 3.12.0
-    "@visx/tooltip": 3.12.0
-    d3-array: 3.2.4
-    d3-color: 3.1.0
-    d3-format: 3.1.0
-    d3-interpolate: 3.0.1
-    d3-scale: 4.0.2
-    d3-scale-chromatic: 3.1.0
-    ndarray: 1.0.19
-    ndarray-ops: 1.2.2
-    react-icons: 5.4.0
-    react-is: ^18.3.1
-    react-keyed-flatten-children: 5.0.1
-    react-measure: 2.5.2
-    react-slider: 2.0.4
-    react-window: 1.8.11
-    zustand: 5.0.8
-  peerDependencies:
-    "@react-three/fiber": 8.x
-    "@types/react": 18.x
-    "@types/react-dom": 18.x
-    "@types/three": ">=0.138"
-    react: 18.x
-    react-dom: 18.x
-    three: ">=0.138"
-    typescript: ">=4.5"
-  peerDependenciesMeta:
-    "@types/react":
-      optional: true
-    "@types/react-dom":
-      optional: true
-    "@types/three":
-      optional: true
-    typescript:
-      optional: true
-  checksum: 7bff455d53f17baa2be301195783c4429d5cba61efdc8b32e32c1fd125095519e4957d6323524311e9e2fb7d51e98ca22b512c0b52a7c10ce23a81562a699799
   languageName: node
   linkType: hard
 
@@ -4152,7 +4079,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/d3-array@npm:~3.2.1, @types/d3-array@npm:~3.2.2":
+"@types/d3-array@npm:~3.2.2":
   version: 3.2.2
   resolution: "@types/d3-array@npm:3.2.2"
   checksum: 72e8e2abe0911cb431d6f3fe0a1f71b915356b679d4d9c826f52941bb30210c0fe8299dde066b08d9986754c620f031b13b13ab6dfc60d404eceab66a075dd5d
@@ -4671,15 +4598,6 @@ __metadata:
   peerDependencies:
     "@types/react": "*"
   checksum: 13d36396cae4d3c316b03d4a0ba299f0d039c59368ba65e04b0c3dc06fd0a16f59d2c669c3e32d6d525a95423f156b84e550d26bff0bdd8df285f305f8f3a0ed
-  languageName: node
-  linkType: hard
-
-"@types/react-window@npm:~1.8.8":
-  version: 1.8.8
-  resolution: "@types/react-window@npm:1.8.8"
-  dependencies:
-    "@types/react": "*"
-  checksum: 253c9d6e0c942f34633edbddcbc369324403c42458ff004457c5bd5972961d8433a909c0cc1a89c918063d5eb85ecbdd774142af2555fae61f4ceb3ba9884b5a
   languageName: node
   linkType: hard
 
@@ -9439,7 +9357,7 @@ __metadata:
     "@emotion/react": 11.10.0
     "@emotion/styled": 11.13.5
     "@h5web/app": 16.0.1
-    "@h5web/lib": 15.0.0
+    "@h5web/lib": 16.0.1
     "@material-ui/core": ^4.12.4
     "@material-ui/icons": ^4.11.3
     "@monaco-editor/react": ^4.6.0
@@ -12794,13 +12712,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"memoize-one@npm:>=3.1.1 <6":
-  version: 5.2.1
-  resolution: "memoize-one@npm:5.2.1"
-  checksum: a3cba7b824ebcf24cdfcd234aa7f86f3ad6394b8d9be4c96ff756dafb8b51c7f71320785fbc2304f1af48a0467cbbd2a409efc9333025700ed523f254cb52e3d
-  languageName: node
-  linkType: hard
-
 "merge-descriptors@npm:1.0.3":
   version: 1.0.3
   resolution: "merge-descriptors@npm:1.0.3"
@@ -15334,17 +15245,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-slider@npm:2.0.4":
-  version: 2.0.4
-  resolution: "react-slider@npm:2.0.4"
-  dependencies:
-    prop-types: ^15.8.1
-  peerDependencies:
-    react: ^16 || ^17 || ^18
-  checksum: d7a70eba03017d2e35dc54430afefb1dad8ad2a1f3c39fbbdfdd4d48d41aea9fddf9ff006207a2ad2cf1f1b76295efddba3d23b2af2b8a3d0d1b2aa44390bbf7
-  languageName: node
-  linkType: hard
-
 "react-slider@npm:2.0.6":
   version: 2.0.6
   resolution: "react-slider@npm:2.0.6"
@@ -15381,19 +15281,6 @@ __metadata:
     react-dom:
       optional: true
   checksum: 5f00c14cf50b0710cdbd27b63a005be20283099d2fa2723a97f3a1cf0b2daedddd67249520c21e49e95348f56428689f3229c343dcb9ed37da58f9c227d29bee
-  languageName: node
-  linkType: hard
-
-"react-window@npm:1.8.11":
-  version: 1.8.11
-  resolution: "react-window@npm:1.8.11"
-  dependencies:
-    "@babel/runtime": ^7.0.0
-    memoize-one: ">=3.1.1 <6"
-  peerDependencies:
-    react: ^15.0.0 || ^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
-    react-dom: ^15.0.0 || ^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
-  checksum: 04f0835869fbc1dc69637416e91bd7dfd462dcb9bf33ed2db4b4a515116c7a1c1ded3ca5e6df8d9a9ea3ec4f34e8e05f642d50f969bb495a9e11906d6a8cc418
   languageName: node
   linkType: hard
 
