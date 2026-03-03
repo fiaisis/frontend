@@ -72,6 +72,11 @@ export const h5Api = axios.create({
 h5Api.interceptors.request.use(async (config) => {
   config.baseURL = import.meta.env.VITE_FIA_PLOTTING_API_URL;
   config.headers['Authorization'] = `Bearer ${!isDev ? localStorage.getItem('scigateway:token') : ''}`;
+
+  if (config.url) {
+    config.url = config.url.replace(/\/+(\?.*)?$/, '$1');
+  }
+
   return config;
 });
 
