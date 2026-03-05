@@ -42,6 +42,16 @@ export const fetchLiveDataInstruments = async (): Promise<string[]> => {
 };
 
 /**
+ * Fetch the sample env for a live data instrument
+ * @param instrument the instrument to fetch for
+ * @returns Promise with the sample env string
+ */
+export const fetchSampleEnv = async (instrument: string): Promise<string> => {
+  const response = await h5Api.get(`/live-data/${instrument}/sample-env`);
+  return response.data;
+};
+
+/**
  * Fetch list of files in an instrument's live data directory
  * @param instrument - The instrument name
  * @returns Promise with list of filenames
@@ -217,11 +227,7 @@ export async function fetchAttributes(file: string, path: string): Promise<Recor
  * @param processor - Async function to process each item
  * @returns Array of successful results (failures are filtered out)
  */
-async function processBatches<T, R>(
-  items: T[],
-  batchSize: number,
-  processor: (item: T) => Promise<R>
-): Promise<R[]> {
+async function processBatches<T, R>(items: T[], batchSize: number, processor: (item: T) => Promise<R>): Promise<R[]> {
   const results: R[] = [];
 
   for (let i = 0; i < items.length; i += batchSize) {

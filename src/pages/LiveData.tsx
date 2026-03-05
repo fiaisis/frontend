@@ -20,7 +20,7 @@ import { useHistory } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
 import Viewer2D from '../components/experimentViewer/Viewer2D';
 import NavArrows from '../components/navigation/NavArrows';
-import { fetchLiveDataFiles, fetchLiveDataInstruments } from '../lib/plottingServiceAPI';
+import { fetchLiveDataFiles, fetchLiveDataInstruments, fetchSampleEnv } from '../lib/plottingServiceAPI';
 import { useLiveDataSSE } from '../lib/useLiveDataSSE';
 import { outputFilter } from '../lib/types';
 
@@ -37,6 +37,8 @@ const LiveData: React.FC = (): JSX.Element => {
   const isH5File = selectedFile && outputFilter.some((ext) => selectedFile.endsWith(ext));
   const history = useHistory();
   const [userRole, setUserRole] = useState<'staff' | 'user' | null>(null);
+  const [sampleEnv, setSampleEnv] = useState<string>('');
+  const [loadingEnv, setLoadingEnv] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('scigateway:token');
@@ -150,6 +152,25 @@ const LiveData: React.FC = (): JSX.Element => {
     setSelectedFile(null);
     setError(null);
   };
+
+  // Fetch sample environment text when instrument changes
+  useEffect(() => {
+    const loadSampleEnv = async (): Promise<void> => {
+      if (!selectedInstrument) return;
+      try {
+        setLoadingEnv(true);
+        const data = await fetchSampleEnv(selectedInstrument);
+        setSampleEnv(data);
+      } catch (err) {
+        console.error('Failed to load sample env:', err);
+        setSampleEnv('No sample environment data available.');
+      } finally {
+        setLoadingEnv(false);
+      }
+    };
+
+    loadSampleEnv();
+  }, [selectedInstrument]);
 
   // Handle file selection
   const handleFileSelect = (file: string): void => {
@@ -312,7 +333,34 @@ const LiveData: React.FC = (): JSX.Element => {
             {isH5File ? (
               <Viewer2D key={viewerKey} filepath={selectedFilePath} />
             ) : (
-              <p>This would be where the file goes</p>
+              <Paper
+                variant="outlined"
+                sx={{
+                  p: 2,
+                  backgroundColor: '#f5f5f5',
+                  minHeight: '100%',
+                  fontFamily: 'monospace',
+                }}
+              >
+                <Typography variant="subtitle2" gutterBottom color="primary">
+                  Sample Environment ({selectedInstrument}_env.txt)
+                </Typography>
+                <hr />
+                {loadingEnv ? (
+                  <CircularProgress size={24} />
+                ) : (
+                  <pre
+                    style={{
+                      margin: 0,
+                      whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-all',
+                      fontSize: '0.875rem',
+                    }}
+                  >
+                    {sampleEnv}
+                  </pre>
+                )}
+              </Paper>
             )}
           </Box>
         </Box>
