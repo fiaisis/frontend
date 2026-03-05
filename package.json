@@ -9,7 +9,7 @@
     "@emotion/react": "11.10.0",
     "@emotion/styled": "11.13.5",
     "@h5web/app": "16.0.1",
-    "@h5web/lib": "15.0.0",
+    "@h5web/lib": "16.0.1",
     "@material-ui/core": "^4.12.4",
     "@material-ui/icons": "^4.11.3",
     "@monaco-editor/react": "^4.6.0",
