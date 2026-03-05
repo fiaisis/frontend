@@ -34,6 +34,7 @@ const LiveData: React.FC = (): JSX.Element => {
   const [files, setFiles] = useState<string[]>([]);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [loadingFiles, setLoadingFiles] = useState(false);
+  const isH5File = selectedFile && outputFilter.some((ext) => selectedFile.endsWith(ext));
   const history = useHistory();
   const [userRole, setUserRole] = useState<'staff' | 'user' | null>(null);
 
@@ -99,13 +100,11 @@ const LiveData: React.FC = (): JSX.Element => {
       setLoadingFiles(true);
       setError(null);
       const fileList = await fetchLiveDataFiles(selectedInstrument);
-      // Filter to only show valid H5 files
-      const filteredFiles = fileList.filter((file) => outputFilter.some((ext) => file.endsWith(ext)));
-      setFiles(filteredFiles);
+      setFiles(fileList);
 
       // Auto-select first file if available and no file is currently selected
-      if (filteredFiles.length > 0 && !selectedFile) {
-        setSelectedFile(filteredFiles[0]);
+      if (fileList.length > 0 && !selectedFile) {
+        setSelectedFile(fileList[0]);
       }
     } catch (err) {
       console.error('Failed to load files:', err);
@@ -310,7 +309,11 @@ const LiveData: React.FC = (): JSX.Element => {
             )}
 
             {/* Viewer */}
-            <Viewer2D key={viewerKey} filepath={selectedFilePath} />
+            {isH5File ? (
+              <Viewer2D key={viewerKey} filepath={selectedFilePath} />
+            ) : (
+              <p>This would be where the file goes</p>
+            )}
           </Box>
         </Box>
       </Box>
