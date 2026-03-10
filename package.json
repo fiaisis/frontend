@@ -56,7 +56,7 @@
       "prettier --config .prettierrc --write",
       "git add"
     ],
-    "cypress/**/*.{tsx,js,jsx}": [
+    "cypress/**/*.{ts,tsx,js,jsx}": [
       "eslint --fix",
       "prettier --config .prettierrc --write",
       "git add"
@@ -83,6 +83,10 @@
     "eject": "react-scripts eject",
     "cypress:open": "cypress open",
     "cypress:run": "cypress run",
+    "cypress:open:e2e": "cypress open --e2e",
+    "cypress:run:e2e": "cypress run --e2e",
+    "cypress:open:component": "cypress open --component",
+    "cypress:run:component": "cypress run --component",
     "run-frontend": "yarn build && cd ../scigateway && yarn dev",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
