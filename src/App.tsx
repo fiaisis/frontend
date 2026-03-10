@@ -12,6 +12,7 @@ import LiveData from './pages/LiveData';
 import LiveValueEditor from './pages/LiveValueEditor';
 import GlobalStyles from './GlobalStyles';
 import Jobs from './pages/Jobs';
+import FastStartJobs from './pages/FastStartJobs';
 import { clearFailedAuthRequestsQueue, retryFailedAuthRequests } from './lib/api';
 import 'dayjs/locale/en-gb';
 import { LocalizationProvider } from '@mui/x-date-pickers';
@@ -75,6 +76,9 @@ const App: FC = () => {
             </Route>
             <Route exact path="/reduction-history/:instrumentName">
               <Jobs />
+            </Route>
+            <Route exact path="/fast-start-jobs">
+              <FastStartJobs />
             </Route>
             <Route path="/reduction-history/:instrumentName/value-editor-:jobId">
               <ValueEditor />
