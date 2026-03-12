@@ -95,10 +95,7 @@ const PlotViewer: React.FC<PlotViewerProps> = ({ linePlotData, showErrors, onSho
   for (const aux of auxiliaries) {
     const auxDomain = getDomain(aux.array, yScaleType, aux.errors);
     if (auxDomain && combinedDomain) {
-      combinedDomain = [
-        Math.min(combinedDomain[0], auxDomain[0]),
-        Math.max(combinedDomain[1], auxDomain[1]),
-      ];
+      combinedDomain = [Math.min(combinedDomain[0], auxDomain[0]), Math.max(combinedDomain[1], auxDomain[1])];
     }
   }
 

@@ -1,6 +1,6 @@
 // React components
 import React, { FC } from 'react';
-import { BrowserRouter as Router, Route, Switch, Redirect } from 'react-router-dom';
+import { BrowserRouter as Router, Redirect, Route, Switch } from 'react-router-dom';
 import ReactGA from 'react-ga4';
 
 // Local data
@@ -12,6 +12,7 @@ import LiveData from './pages/LiveData';
 import LiveValueEditor from './pages/LiveValueEditor';
 import GlobalStyles from './GlobalStyles';
 import Jobs from './pages/Jobs';
+import DataViewer from './pages/DataViewer';
 import { clearFailedAuthRequestsQueue, retryFailedAuthRequests } from './lib/api';
 import 'dayjs/locale/en-gb';
 import { LocalizationProvider } from '@mui/x-date-pickers';
@@ -90,6 +91,15 @@ const App: FC = () => {
             </Route>
             <Route path="/live-data">
               <LiveData />
+            </Route>
+            <Route path="/data-viewer/generic/experiment_number/:experimentNumber/:filename">
+              <DataViewer />
+            </Route>
+            <Route path="/data-viewer/generic/user_number/:userNumber/:filename">
+              <DataViewer />
+            </Route>
+            <Route path="/data-viewer/:instrument/:experimentNumber/:filename">
+              <DataViewer />
             </Route>
             {/* Blank route for login page*/}
             <Route path="/login" />
