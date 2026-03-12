@@ -1,20 +1,20 @@
 import React from 'react';
 import {
   Box,
-  Typography,
-  Checkbox,
-  Radio,
-  FormControlLabel,
-  TextField,
-  Select,
-  MenuItem,
-  Chip,
   Card,
   CardContent,
+  Checkbox,
+  Chip,
   FormControl,
+  FormControlLabel,
   InputLabel,
+  MenuItem,
+  Radio,
+  Select,
+  TextField,
   ToggleButton,
   ToggleButtonGroup,
+  Typography,
 } from '@mui/material';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import type { FileConfig } from '../../lib/types';
@@ -59,11 +59,7 @@ const FileCard: React.FC<FileCardProps> = ({
         <FormControlLabel
           control={
             activeViewerTab === '2d' ? (
-              <Radio
-                size="small"
-                checked={selected2DFile === filename}
-                onChange={() => onSelect2DFile?.(filename)}
-              />
+              <Radio size="small" checked={selected2DFile === filename} onChange={() => onSelect2DFile?.(filename)} />
             ) : (
               <Checkbox size="small" checked={file.enabled} onChange={() => onFileToggle(fileIndex)} />
             )
@@ -163,11 +159,7 @@ const FileCard: React.FC<FileCardProps> = ({
                             color={dataset.is2D ? 'secondary' : 'primary'}
                             sx={{ height: 18, fontSize: '0.65rem' }}
                           />
-                          <Chip
-                            label={dataset.dtype.class}
-                            size="small"
-                            sx={{ height: 18, fontSize: '0.65rem' }}
-                          />
+                          <Chip label={dataset.dtype.class} size="small" sx={{ height: 18, fontSize: '0.65rem' }} />
                           {dataset.errorPath && (
                             <Chip
                               label="Supports error bars"
@@ -202,9 +194,7 @@ const FileCard: React.FC<FileCardProps> = ({
             {file.path && file.selectedDatasetIs2D && (
               <Box>
                 {/* Mode toggle */}
-                <Box
-                  sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}
-                >
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
                   <Typography variant="body2" fontWeight="500">
                     Slice Selection (2D → 1D)
                   </Typography>

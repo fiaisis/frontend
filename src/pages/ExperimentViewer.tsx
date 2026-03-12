@@ -1,7 +1,7 @@
 import '@h5web/lib/styles.css';
-import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, useLocation, useHistory } from 'react-router-dom';
-import { Box, Typography, CircularProgress, Alert } from '@mui/material';
+import React, { useCallback, useEffect, useState } from 'react';
+import { useHistory, useLocation, useParams } from 'react-router-dom';
+import { Alert, Box, CircularProgress, Typography } from '@mui/material';
 import FileTree from '../components/experimentViewer/FileTree';
 import PlotViewer from '../components/experimentViewer/Graph';
 import Viewer2D from '../components/experimentViewer/Viewer2D';
@@ -11,7 +11,7 @@ import NavArrows from '../components/navigation/NavArrows';
 import { discoverFileStructure, fetchData1D, fetchErrorData, fetchFilePath } from '../lib/plottingServiceAPI';
 import { isValidInstrument } from '../lib/instrumentData';
 import { fiaApi } from '../lib/api';
-import { FileConfig, LinePlotData, Job, DatasetInfo, JobQueryFilters, outputFilter } from '../lib/types';
+import { DatasetInfo, FileConfig, Job, JobQueryFilters, LinePlotData, outputFilter } from '../lib/types';
 import type { NumericType } from '@h5web/app';
 
 interface RouteParams {
@@ -121,7 +121,6 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
 
         // Filter jobs to only include H5 files in outputs and store filtered outputs back
         const filteredJobs = jobsData.map((job) => {
-
           // Parse outputs - handle 3 cases:
           // 1. Lists like "['file1', 'file2']" - split on "', '"
           // 2. Individual files without brackets - treat as single file
@@ -292,7 +291,6 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
                   selectedDatasetIs2D: datasetToSelect.is2D,
                   selection: [],
                 };
-
               }
 
               return updatedFile;
