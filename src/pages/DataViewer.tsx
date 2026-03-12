@@ -27,13 +27,13 @@ export default function DataViewer(): JSX.Element {
     <main
       className="h5-container"
       style={{
-        position: 'fixed', // Key: Breaks out of the host's layout containers
+        position: 'fixed', // Key: Breaks out of scigateways layout containers
         top: 0,
         left: 0,
         height: '100vh',
         width: '100vw',
-        zIndex: 9999, // Ensure this is higher than the host's navbar z-index
-        backgroundColor: '#000', // Optional: Prevents host content from "peeking" through
+        zIndex: 9999, // Ensure this is higher than the scigateway navbar z-index
+        backgroundColor: '#000',
         overflow: 'auto', // Keeps the internal viewers responsive/scrollable
       }}
     >
