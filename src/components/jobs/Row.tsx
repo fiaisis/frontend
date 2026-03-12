@@ -320,22 +320,34 @@ const Row: React.FC<{
 
   const extractFilename = (path: string): string => path.split('/').pop()?.split('.')[0] ?? '';
 
+  const loadingTimeoutRef = useRef<number | null>(null);
+
   const handleRerun = async (): Promise<void> => {
     setLoading(true);
-    rerunJobId.current = job.id;
-    submitRerun(job)
-      .then(() => (rerunSuccessful.current = true))
-      .catch((err) => {
-        console.log('Error rerunning job', err);
-        rerunSuccessful.current = false;
-      })
-      .finally(() => {
-        setTimeout(() => {
-          setLoading(false);
-          setSnackbarOpen(true);
-          refreshJobs();
-        }, 2000);
-      });
+
+    // Fallback that clears spinner after 20s if nothing happens
+    loadingTimeoutRef.current = window.setTimeout(() => {
+      setLoading(false);
+      rerunSuccessful.current = false;
+      setSnackbarOpen(true);
+    }, 20_000);
+
+    try {
+      await submitRerun(job);
+      rerunSuccessful.current = true;
+    } catch (err) {
+      console.log('Error rerunning job', err);
+      rerunSuccessful.current = false;
+    } finally {
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+      }
+      setTimeout(() => {
+        setLoading(false);
+        setSnackbarOpen(true);
+        refreshJobs();
+      }, 2000);
+    }
   };
 
   const bandedRows = {
