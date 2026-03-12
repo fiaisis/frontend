@@ -51,7 +51,7 @@ const ellipsisWrap = {
 const DATA_VIEWER_URL = import.meta.env.VITE_FIA_DATA_VIEWER_URL;
 
 const openDataViewer = (jobId: number, instrumentName: string, experimentNumber: number, output: string): void => {
-  const url = `${DATA_VIEWER_URL}/view/${instrumentName}/${experimentNumber}/${output}`;
+  const url = `/fia/data-viewer/view/${instrumentName}/${experimentNumber}/${output}`;
   window.open(url, '_blank');
   ReactGA.event({
     category: 'Button',
