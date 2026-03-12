@@ -51,7 +51,7 @@ export default function TextViewer({
           throw new Error('Data could not be loaded');
         }
       });
-  }, [apiUrl, instrument, experimentNumber, filename, loading]);
+  }, [apiUrl, instrument, experimentNumber, filename]);
 
   return (
     <ErrorBoundary FallbackComponent={Fallback}>
