@@ -24,7 +24,19 @@ export default function DataViewer(): JSX.Element {
   const textFiles: Array<string> = ['txt', 'csv', 'gss', 'abc', 'prm'];
 
   return (
-    <main className="h5-container" style={{ height: '100vh', width: '100vw' }}>
+    <main
+      className="h5-container"
+      style={{
+        position: 'fixed', // Key: Breaks out of the host's layout containers
+        top: 0,
+        left: 0,
+        height: '100vh',
+        width: '100vw',
+        zIndex: 9999, // Ensure this is higher than the host's navbar z-index
+        backgroundColor: '#000', // Optional: Prevents host content from "peeking" through
+        overflow: 'auto', // Keeps the internal viewers responsive/scrollable
+      }}
+    >
       {textFiles.includes(fileExtension) ? (
         <TextViewer
           apiUrl={apiUrl}
