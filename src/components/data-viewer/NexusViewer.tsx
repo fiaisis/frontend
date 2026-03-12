@@ -5,6 +5,7 @@ import { ErrorBoundary } from 'react-error-boundary';
 import { CircularProgress, Stack } from '@mui/material';
 import { FileQueryUrl } from './utils/FileQueryUrl';
 import { Fallback } from './utils/FallbackPage';
+import { h5Api } from '../../lib/api';
 
 export default function NexusViewer({
   filename,
@@ -34,21 +35,18 @@ export default function NexusViewer({
 
     const fileQueryUrl = FileQueryUrl(apiUrl, instrument, experimentNumber, userNumber);
     if (fileQueryUrl == null) {
+      setLoading(false);
       throw new Error('The API file query URL was not rendered correctly and returned null');
     }
 
     const fileQueryParams = `filename=${filename}`;
-    const headers: { [key: string]: string } = {
-      'Content-Type': 'application/json',
-    };
-    if (loadedToken !== '') {
-      headers['Authorization'] = `Bearer ${loadedToken}`;
-    }
 
-    fetch(`${fileQueryUrl}?${fileQueryParams}`, { method: 'GET', headers })
-      .then((res) => res.text())
-      .then((data) => {
-        const filepath_to_use = data.split('%20').join(' ').split('%C').join(',').replace(/"/g, '');
+    h5Api
+      .get(`${fileQueryUrl}?${fileQueryParams}`)
+      .then((res) => {
+        // Axios handles text response vs JSON differently, so we check if data is string or object
+        const dataStr = typeof res.data === 'string' ? res.data : JSON.stringify(res.data);
+        const filepath_to_use = dataStr.split('%20').join(' ').split('%C').join(',').replace(/"/g, '');
         setFilePath(filepath_to_use);
       })
       .catch((error) => {

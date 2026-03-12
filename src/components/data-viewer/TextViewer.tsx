@@ -3,6 +3,8 @@ import { ErrorBoundary } from 'react-error-boundary';
 import { CircularProgress } from '@mui/material';
 import { Stack } from '@mui/system';
 import { Fallback } from './utils/FallbackPage';
+import { TextQueryUrl } from './utils/TextQueryUrl';
+import { h5Api } from '../../lib/api';
 
 export default function TextViewer({
   filename,
@@ -22,26 +24,19 @@ export default function TextViewer({
 
   useEffect(() => {
     setLoading(true);
-    const loadedToken = localStorage.getItem('scigateway:token') ?? '';
-    const textQueryUrl = `${apiUrl}/text/instrument/${instrument}/experiment_number/${experimentNumber}`;
-    const textQueryParams = `filename=${filename}`;
-    const headers: { [key: string]: string } = {
-      'Content-Type': 'application/json',
-    };
-    if (loadedToken !== '') {
-      headers['Authorization'] = `Bearer ${loadedToken}`;
+
+    const textQueryUrl = TextQueryUrl(apiUrl, instrument, experimentNumber, userNumber);
+    if (textQueryUrl == null) {
+      setLoading(false);
+      throw new Error('The API text query URL was not rendered correctly and returned null');
     }
 
-    fetch(`${textQueryUrl}?${textQueryParams}`, { method: 'GET', headers })
+    const textQueryParams = `filename=${filename}`;
+
+    h5Api
+      .get(`${textQueryUrl}?${textQueryParams}`)
       .then((res) => {
-        if (!res.ok) {
-          throw new Error(res.statusText);
-        }
-        console.log('res ok');
-        return res.text();
-      })
-      .then((resultText) => {
-        setText(resultText);
+        setText(res.data);
         setLoading(false);
       })
       .catch((error) => {
