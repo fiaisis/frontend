@@ -11,7 +11,7 @@ export const Fallback = (): JSX.Element => (
     }}
   >
     <img
-      src={'/monkey.webp'}
+      src={'/res/images/monkey.webp'}
       alt={'Monkey holding excellent website award'}
       height={256}
       width={256}
