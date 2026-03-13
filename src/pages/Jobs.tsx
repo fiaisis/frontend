@@ -16,11 +16,11 @@ import React, { ReactElement, useState } from 'react';
 import InstrumentSelector from '../components/jobs/InstrumentSelector';
 import InstrumentConfigDrawer from '../components/configsettings/InstrumentConfigDrawer';
 import { isValidInstrument } from '../lib/instrumentData';
-import { jwtDecode } from 'jwt-decode';
 import { JobQueryFilters } from '../lib/types';
 import { JOB_ROWS_PER_PAGE_OPTIONS, JobRowsPerPage, isJobRowsPerPage } from '../components/jobs/constants';
 import NavArrows from '../components/navigation/NavArrows';
 import IMATViewer from './IMATViewer';
+import { getUserRole } from '../lib/auth';
 
 const DEFAULT_ROWS_PER_PAGE: JobRowsPerPage = JOB_ROWS_PER_PAGE_OPTIONS[1];
 
@@ -106,21 +106,9 @@ const Jobs: React.FC = (): ReactElement => {
     const storedValue = localStorage.getItem('asUser');
     return storedValue ? JSON.parse(storedValue) : false;
   });
-  const [userRole, setUserRole] = useState<'staff' | 'user' | null>(null);
+  const [userRole] = useState<'staff' | 'user' | null>(() => getUserRole());
   const [orderDirection, setOrderDirection] = useState<'asc' | 'desc'>('desc');
   const [orderBy, setOrderBy] = useState<string>('run_start');
-
-  const getUserRole = (): 'staff' | 'user' | null => {
-    const token = localStorage.getItem('scigateway:token');
-    if (!token) return null;
-    try {
-      const decoded = jwtDecode<{ role?: 'staff' | 'user' }>(token);
-      return decoded.role || 'user';
-    } catch (error) {
-      console.error('Error decoding token:', error);
-      return null;
-    }
-  };
 
   // Keep table state mirrored in the browser URL so views are shareable
   const updateQueryParams = React.useCallback(
@@ -220,7 +208,7 @@ const Jobs: React.FC = (): ReactElement => {
         history.replace({ pathname: location.pathname, search: searchString });
       }
     },
-    [history, location.pathname, location.search, imatTab]
+    [history, location.pathname, location.search, imatTab, isImat]
   );
 
   React.useEffect(() => {
@@ -349,10 +337,6 @@ const Jobs: React.FC = (): ReactElement => {
     previousInstrumentRef.current = selectedInstrument;
   }, [selectedInstrument, updateQueryParams]);
 
-  React.useEffect(() => {
-    setUserRole(getUserRole());
-  }, []);
-
   const [configDrawerOpen, setConfigDrawerOpen] = React.useState<boolean>(false);
 
   React.useEffect(() => {
@@ -410,6 +394,11 @@ const Jobs: React.FC = (): ReactElement => {
               }
               sx={{ marginRight: '16px' }}
             />
+          )}
+          {selectedInstrument === 'ALL' && userRole === 'staff' && !asUser && (
+            <Button component={Link} to="/fast-start-jobs" variant="outlined" sx={{ marginRight: '16px' }}>
+              Fast start jobs
+            </Button>
           )}
           <Button
             variant="contained"
