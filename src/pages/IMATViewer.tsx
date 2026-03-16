@@ -1,21 +1,12 @@
 import '@h5web/lib/styles.css';
 import React from 'react';
 import ndarray from 'ndarray';
-import { RgbVis, HeatmapVis } from '@h5web/lib';
+import { HeatmapVis, RgbVis } from '@h5web/lib';
 import NavArrows from '../components/navigation/NavArrows';
 import axios from 'axios';
-import {
-  Box,
-  CircularProgress,
-  Typography,
-  useTheme,
-  Slider,
-  Paper,
-  ToggleButton,
-  ToggleButtonGroup,
-} from '@mui/material';
-import { h5Api, fiaApi } from '../lib/api';
-import { useLocation, useHistory } from 'react-router-dom';
+import { Box, CircularProgress, Paper, Slider, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material';
+import { fiaApi, h5Api } from '../lib/api';
+import { useHistory, useLocation } from 'react-router-dom';
 import { Job } from '../lib/types';
 
 type ImatImagePayload = {
@@ -233,7 +224,9 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
         const response = await h5Api.get<string[]>('/imat/list-images', {
           params: { path: directoryPath },
         });
-        const sortedData = response.data.sort(new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' }).compare);
+        const sortedData = response.data.sort(
+          new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' }).compare
+        );
         setStackImages(sortedData);
       } catch (err) {
         setStackError('Failed to list images in stack');

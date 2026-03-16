@@ -1,5 +1,14 @@
 import React, { useState } from 'react';
-import { Box, TextField, Button, Paper, Autocomplete, Typography, ToggleButtonGroup, ToggleButton } from '@mui/material';
+import {
+  Box,
+  TextField,
+  Button,
+  Paper,
+  Autocomplete,
+  Typography,
+  ToggleButtonGroup,
+  ToggleButton,
+} from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
 import { instruments } from '../../lib/instrumentData';

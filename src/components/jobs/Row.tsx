@@ -3,8 +3,8 @@ import {
   Alert,
   Box,
   Button,
-  CircularProgress,
   Checkbox,
+  CircularProgress,
   Collapse,
   IconButton,
   Snackbar,
@@ -51,7 +51,7 @@ const ellipsisWrap = {
 const DATA_VIEWER_URL = import.meta.env.VITE_FIA_DATA_VIEWER_URL;
 
 const openDataViewer = (jobId: number, instrumentName: string, experimentNumber: number, output: string): void => {
-  const url = `${DATA_VIEWER_URL}/view/${instrumentName}/${experimentNumber}/${output}`;
+  const url = `/fia/data-viewer/view/${instrumentName}/${experimentNumber}/${output}`;
   window.open(url, '_blank');
   ReactGA.event({
     category: 'Button',
@@ -135,15 +135,15 @@ const JobOutput: React.FC<{
                 output.endsWith('.hdf5') ||
                 output.endsWith('.nxs') ||
                 output.endsWith('.nxspe')) && (
-                  <Button
-                    variant="contained"
-                    component={Link}
-                    to={`/reduction-history/${job.run?.instrument_name || 'unknown'}/experiment-viewer-${job.id}`}
-                    sx={{ flexShrink: 0, whiteSpace: 'nowrap' }}
-                  >
-                    H5 viewer
-                  </Button>
-                )}
+                <Button
+                  variant="contained"
+                  component={Link}
+                  to={`/reduction-history/${job.run?.instrument_name || 'unknown'}/experiment-viewer-${job.id}`}
+                  sx={{ flexShrink: 0, whiteSpace: 'nowrap' }}
+                >
+                  H5 viewer
+                </Button>
+              )}
               <Button
                 variant="contained"
                 startIcon={downloadingSingle === output ? null : <Download />}
@@ -375,9 +375,9 @@ const Row: React.FC<{
       label: 'Job type:',
       value: job.type
         ? job.type
-          .replace('JobType.', '')
-          .toLowerCase()
-          .replace(/^\w/, (c) => c.toUpperCase())
+            .replace('JobType.', '')
+            .toLowerCase()
+            .replace(/^\w/, (c) => c.toUpperCase())
         : '—',
     },
     {
