@@ -1,4 +1,4 @@
-import React, { ReactElement, useRef, useState } from 'react';
+import React, { ReactElement, useEffect, useRef, useState } from 'react';
 import {
   Alert,
   Box,
@@ -321,8 +321,23 @@ const Row: React.FC<{
   const extractFilename = (path: string): string => path.split('/').pop()?.split('.')[0] ?? '';
 
   const loadingTimeoutRef = useRef<number | null>(null);
+  const rerunFinalizeTimeoutRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (loadingTimeoutRef.current !== null) {
+        clearTimeout(loadingTimeoutRef.current);
+        loadingTimeoutRef.current = null;
+      }
+      if (rerunFinalizeTimeoutRef.current !== null) {
+        clearTimeout(rerunFinalizeTimeoutRef.current);
+        rerunFinalizeTimeoutRef.current = null;
+      }
+    };
+  }, []);
 
   const handleRerun = async (): Promise<void> => {
+    rerunJobId.current = job.id;
     setLoading(true);
 
     // Fallback that clears spinner after 20s if nothing happens
@@ -339,10 +354,11 @@ const Row: React.FC<{
       console.log('Error rerunning job', err);
       rerunSuccessful.current = false;
     } finally {
-      if (loadingTimeoutRef.current) {
+      if (loadingTimeoutRef.current !== null) {
         clearTimeout(loadingTimeoutRef.current);
+        loadingTimeoutRef.current = null;
       }
-      setTimeout(() => {
+      rerunFinalizeTimeoutRef.current = window.setTimeout(() => {
         setLoading(false);
         setSnackbarOpen(true);
         refreshJobs();

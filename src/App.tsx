@@ -34,7 +34,7 @@ const App: FC = () => {
     const action = (e as CustomEvent).detail?.type;
 
     // If SciGateway requests a plugin re-render, trigger a re-render
-    if (action === 'scigateway:api:plugin_rerender'){
+    if (action === 'scigateway:api:plugin_rerender') {
       forceUpdate();
     }
 
