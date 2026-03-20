@@ -7,6 +7,10 @@ import {
   CircularProgress,
   Collapse,
   IconButton,
+  ListItemIcon,
+  ListItemText,
+  Menu,
+  MenuItem,
   Snackbar,
   Table,
   TableBody,
@@ -17,7 +21,7 @@ import {
   Typography,
   useTheme,
 } from '@mui/material';
-import { Job, MantidVersionMap } from '../../lib/types';
+import { Job, MantidVersionMap, outputFilter } from '../../lib/types';
 import {
   CheckCircleOutline,
   Download,
@@ -26,10 +30,12 @@ import {
   ImageAspectRatio,
   KeyboardArrowDown,
   KeyboardArrowUp,
+  MoreVert,
   People,
   Schedule,
   Schema,
   StackedBarChart,
+  Visibility,
   VpnKey,
   WarningAmber,
   WorkOutline,
@@ -61,6 +67,9 @@ const openDataViewer = (jobId: number, instrumentName: string, experimentNumber:
   });
 };
 
+const isH5Output = (output: string): boolean =>
+  outputFilter.some((extension) => output.toLowerCase().endsWith(extension));
+
 const JobStatusIcon: React.FC<{ state: string }> = ({ state }: { state: string }): ReactElement => {
   const icons: Record<string, ReactElement> = {
     ERROR: <ErrorOutline color="error" />,
@@ -77,92 +86,130 @@ const JobOutput: React.FC<{
   downloadingSingle: string | null;
   handleDownload: (job: Job, output: string) => Promise<void>;
 }> = ({ job, downloadingSingle, handleDownload }) => {
-  try {
-    if (typeof job.outputs !== 'string') {
-      return <Typography>No outputs to show</Typography>;
+  const parsedOutputs = parseJobOutputs(job.outputs);
+  const [menuAnchorEl, setMenuAnchorEl] = useState<HTMLElement | null>(null);
+  const [selectedOutput, setSelectedOutput] = useState<string | null>(null);
+
+  const instrumentName = job.run?.instrument_name || 'unknown';
+  const experimentNumber = job.run?.experiment_number || 0;
+  const h5ViewerPath = `/reduction-history/${instrumentName}/experiment-viewer-${job.id}`;
+
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, output: string): void => {
+    event.stopPropagation();
+    setMenuAnchorEl(event.currentTarget);
+    setSelectedOutput(output);
+  };
+
+  const handleMenuClose = (): void => {
+    setMenuAnchorEl(null);
+    setSelectedOutput(null);
+  };
+
+  const handleView = (): void => {
+    if (!selectedOutput) {
+      return;
     }
 
-    let parsedOutputs;
-    if (job.outputs.startsWith('[') && job.outputs.endsWith(']')) {
-      parsedOutputs = JSON.parse(job.outputs.replace(/'/g, '"'));
-    } else {
-      parsedOutputs = [job.outputs];
+    openDataViewer(job.id, instrumentName, experimentNumber, selectedOutput);
+    handleMenuClose();
+  };
+
+  const handleMenuDownload = (): void => {
+    if (!selectedOutput) {
+      return;
     }
-    return parsedOutputs.map((output: string, index: number) => (
-      <TableRow key={index}>
+
+    const outputToDownload = selectedOutput;
+    handleMenuClose();
+    void handleDownload(job, outputToDownload);
+  };
+
+  if (parsedOutputs.length === 0) {
+    return (
+      <TableRow>
         <TableCell>
-          <Box
-            maxHeight="80px"
-            display="flex"
-            alignItems="center"
-            justifyContent="space-between"
-            width="100%"
-            sx={{ flexWrap: 'nowrap', gap: 2 }}
-          >
-            <Box display="flex" alignItems="center">
+          <Typography>No outputs to show</Typography>
+        </TableCell>
+      </TableRow>
+    );
+  }
+
+  return (
+    <>
+      {parsedOutputs.map((output: string, index: number) => (
+        <TableRow key={index}>
+          <TableCell>
+            <Box
+              maxHeight="80px"
+              display="flex"
+              alignItems="center"
+              justifyContent="space-between"
+              width="100%"
+              sx={{ flexWrap: 'nowrap', gap: 2 }}
+            >
               <Box display="flex" alignItems="center" sx={{ overflow: 'hidden' }}>
                 <Typography
                   variant="body2"
                   sx={{
                     ...ellipsisWrap,
-                    maxWidth: `calc(${ellipsisWrap.maxWidth} + 60px)`,
+                    maxWidth: `calc(${ellipsisWrap.maxWidth} + 120px)`,
                   }}
                   title={output}
                 >
                   {output}
                 </Typography>
               </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: 40 }}>
+                {downloadingSingle === output ? (
+                  <CircularProgress size={20} />
+                ) : (
+                  <Tooltip title="Open actions">
+                    <IconButton
+                      size="small"
+                      aria-label={`Open actions for ${output}`}
+                      onClick={(event) => handleMenuOpen(event, output)}
+                    >
+                      <MoreVert />
+                    </IconButton>
+                  </Tooltip>
+                )}
+              </Box>
             </Box>
-            <Box
-              sx={{
-                display: 'flex',
-                flexWrap: 'nowrap',
-                gap: 1,
-                whiteSpace: 'nowrap',
-                minWidth: 'fit-content',
-              }}
-            >
-              <Button
-                variant="contained"
-                onClick={() =>
-                  openDataViewer(job.id, job.run?.instrument_name || 'unknown', job.run?.experiment_number || 0, output)
-                }
-              >
-                View
-              </Button>
-              {/* Show H5 Viewer button for HDF5 files */}
-              {(output.endsWith('.h5') ||
-                output.endsWith('.hdf5') ||
-                output.endsWith('.nxs') ||
-                output.endsWith('.nxspe')) && (
-                <Button
-                  variant="contained"
-                  component={Link}
-                  to={`/reduction-history/${job.run?.instrument_name || 'unknown'}/experiment-viewer-${job.id}`}
-                  sx={{ flexShrink: 0, whiteSpace: 'nowrap' }}
-                >
-                  H5 viewer
-                </Button>
-              )}
-              <Button
-                variant="contained"
-                startIcon={downloadingSingle === output ? null : <Download />}
-                onClick={() => handleDownload(job, output)}
-                disabled={downloadingSingle === output}
-                sx={{ flexShrink: 0, whiteSpace: 'nowrap', width: 110, height: 38 }}
-              >
-                {downloadingSingle === output ? <CircularProgress size={24} color="inherit" /> : 'Download'}
-              </Button>
-            </Box>
-          </Box>
-        </TableCell>
-      </TableRow>
-    ));
-  } catch (error) {
-    console.error('Failed to parse job outputs as JSON:', job.outputs);
-    console.error('Error:', error);
-    return <TableCell>{job.outputs}</TableCell>;
-  }
+          </TableCell>
+        </TableRow>
+      ))}
+      <Menu
+        anchorEl={menuAnchorEl}
+        open={Boolean(menuAnchorEl)}
+        onClose={handleMenuClose}
+        onClick={(event: React.MouseEvent<HTMLElement>) => event.stopPropagation()}
+      >
+        <MenuItem onClick={handleView}>
+          <ListItemIcon>
+            <Visibility fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>View</ListItemText>
+        </MenuItem>
+        <MenuItem
+          component={Link}
+          to={h5ViewerPath}
+          onClick={handleMenuClose}
+          disabled={!selectedOutput || !isH5Output(selectedOutput)}
+        >
+          <ListItemIcon>
+            <Schema fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>H5 viewer</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={handleMenuDownload} disabled={!selectedOutput}>
+          <ListItemIcon>
+            <Download fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Download</ListItemText>
+        </MenuItem>
+      </Menu>
+    </>
+  );
 };
 
 const JobInput: React.FC<{ job: Job }> = ({ job }: { job: Job }): ReactElement => {
