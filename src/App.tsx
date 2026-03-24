@@ -32,20 +32,20 @@ const App: FC = () => {
 
   function handler(e: Event): void {
     // Handle custom SciGateway events for triggering actions in the app
-    const action = (e as CustomEvent).detail;
+    const action = (e as CustomEvent).detail?.type;
 
     // If SciGateway requests a plugin re-render, trigger a re-render
-    if ('scigateway:api:plugin_rerender'.match(action)) {
+    if (action === 'scigateway:api:plugin_rerender') {
       forceUpdate();
     }
 
     // If SciGateway invalidates the token, retry failed authentication requests
-    if ('scigateway:api:invalidate_token'.match(action)) {
+    if (action === 'scigateway:api:invalidate_token') {
       retryFailedAuthRequests();
     }
 
     // If SciGateway requests signout, clear the authentication request queue
-    if ('scigateway:api:signout'.match(action)) {
+    if (action === 'scigateway:api:signout') {
       clearFailedAuthRequestsQueue();
     }
   }
