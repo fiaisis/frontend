@@ -30,7 +30,7 @@ export default function NexusViewer({
     const loadedToken = localStorage.getItem('scigateway:token') ?? '';
     setToken(loadedToken);
 
-    const fileQueryUrl = FileQueryUrl(apiUrl, instrument, experimentNumber, userNumber);
+    const fileQueryUrl = FileQueryUrl(instrument, experimentNumber, userNumber);
     if (fileQueryUrl == null) {
       setLoading(false);
       throw new Error('The API file query URL was not rendered correctly and returned null');
