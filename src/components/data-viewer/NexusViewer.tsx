@@ -23,7 +23,7 @@ export default function NexusViewer({
   const [filepath, setFilePath] = useState<string>('');
   const [token, setToken] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
-  const [groveApiUrl, setApiUrl] = useState<string>(apiUrl);
+  const groveApiUrl = apiUrl;
 
   useEffect(() => {
     setLoading(true);
