@@ -25,7 +25,7 @@ export default function TextViewer({
   useEffect(() => {
     setLoading(true);
 
-    const textQueryUrl = TextQueryUrl(apiUrl, instrument, experimentNumber, userNumber);
+    const textQueryUrl = TextQueryUrl(instrument, experimentNumber, userNumber);
     if (textQueryUrl == null) {
       setLoading(false);
       throw new Error('The API text query URL was not rendered correctly and returned null');

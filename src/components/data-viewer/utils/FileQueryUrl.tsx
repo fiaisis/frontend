@@ -1,17 +1,12 @@
-export function FileQueryUrl(
-  apiUrl: string,
-  instrument?: string,
-  experimentNumber?: string,
-  userNumber?: string
-): string | null {
+export function FileQueryUrl(instrument?: string, experimentNumber?: string, userNumber?: string): string | null {
   if (instrument != null && experimentNumber != null) {
-    return `${apiUrl}/find_file/instrument/${instrument}/experiment_number/${experimentNumber}`;
+    return `find_file/instrument/${instrument}/experiment_number/${experimentNumber}`;
   }
   if (userNumber != null) {
-    return `${apiUrl}/find_file/generic/user_number/${userNumber}`;
+    return `find_file/generic/user_number/${userNumber}`;
   }
   if (experimentNumber != null) {
-    return `${apiUrl}/find_file/generic/experiment_number/${experimentNumber}`;
+    return `find_file/generic/experiment_number/${experimentNumber}`;
   }
   return null;
 }

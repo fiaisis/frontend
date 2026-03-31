@@ -23,14 +23,14 @@ export default function NexusViewer({
   const [filepath, setFilePath] = useState<string>('');
   const [token, setToken] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
-  const [groveApiUrl, setApiUrl] = useState<string>(apiUrl);
+  const groveApiUrl = apiUrl;
 
   useEffect(() => {
     setLoading(true);
     const loadedToken = localStorage.getItem('scigateway:token') ?? '';
     setToken(loadedToken);
 
-    const fileQueryUrl = FileQueryUrl(apiUrl, instrument, experimentNumber, userNumber);
+    const fileQueryUrl = FileQueryUrl(instrument, experimentNumber, userNumber);
     if (fileQueryUrl == null) {
       setLoading(false);
       throw new Error('The API file query URL was not rendered correctly and returned null');
