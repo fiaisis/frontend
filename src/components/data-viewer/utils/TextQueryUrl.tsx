@@ -3,10 +3,10 @@ export function TextQueryUrl(instrument?: string, experimentNumber?: string, use
     return `/text/instrument/${instrument}/experiment_number/${experimentNumber}`;
   }
   if (userNumber != null) {
-    return `/text/generic/user_number/${userNumber}`;
+    return `text/generic/user_number/${userNumber}`;
   }
   if (experimentNumber != null) {
-    return `/text/generic/experiment_number/${experimentNumber}`;
+    return `text/generic/experiment_number/${experimentNumber}`;
   }
   return null;
 }
