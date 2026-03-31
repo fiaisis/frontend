@@ -29,9 +29,6 @@ export default function NexusViewer({
     setLoading(true);
     const loadedToken = localStorage.getItem('scigateway:token') ?? '';
     setToken(loadedToken);
-    setApiUrl(
-      apiUrl.includes('localhost') ? apiUrl : `${window.location.protocol}//${window.location.hostname}/plottingapi`
-    );
 
     const fileQueryUrl = FileQueryUrl(apiUrl, instrument, experimentNumber, userNumber);
     if (fileQueryUrl == null) {
