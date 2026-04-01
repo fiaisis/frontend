@@ -11,17 +11,17 @@ import { Job } from '../lib/types';
 
 type ImatImagePayload = {
   data: number[];
-  shape: [number, number] | [number, number, number];
-  originalWidth: number;
-  originalHeight: number;
-  sampledWidth: number;
-  sampledHeight: number;
-  downsampleFactor: number;
+  shape: [number, number, number];
 };
 
-type ImatImageDataset = {
-  data: Uint8Array | Float32Array;
-  shape: [number, number] | [number, number, number];
+type LatestImatImageDataset = {
+  data: Uint8Array;
+  shape: [number, number, number];
+};
+
+type StackImatImageDataset = {
+  data: Float32Array;
+  shape: [number, number];
   originalWidth: number;
   originalHeight: number;
   sampledWidth: number;
@@ -41,7 +41,7 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
   const initialExperiment = queryParams.get('experiment');
 
   // Latest Image state
-  const [latestDataset, setLatestDataset] = React.useState<ImatImageDataset | null>(null);
+  const [latestDataset, setLatestDataset] = React.useState<LatestImatImageDataset | null>(null);
   const [latestLoading, setLatestLoading] = React.useState<boolean>(false);
   const [latestError, setLatestError] = React.useState<string | null>(null);
 
@@ -53,7 +53,7 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
   const [stackJobId] = React.useState<string | null>(initialJobId);
   const [stackImages, setStackImages] = React.useState<string[]>([]);
   const [currentImageIndex, setCurrentImageIndex] = React.useState(initialImageIndex);
-  const [stackDataset, setStackDataset] = React.useState<ImatImageDataset | null>(null);
+  const [stackDataset, setStackDataset] = React.useState<StackImatImageDataset | null>(null);
   const [stackLoading, setStackLoading] = React.useState(false);
   const [stackError, setStackError] = React.useState<string | null>(null);
   const [directoryPath, setDirectoryPath] = React.useState<string | null>(null);
@@ -102,10 +102,13 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
     return ndarray(stackDataset.data, stackDataset.shape);
   }, [stackDataset]);
 
+  const latestImageHeight = latestDataset?.shape[0] ?? 0;
+  const latestImageWidth = latestDataset?.shape[1] ?? 0;
+
   const latestAspectRatio = React.useMemo(() => {
-    if (!latestDataset || latestDataset.sampledHeight === 0) return 1;
-    return latestDataset.sampledWidth / latestDataset.sampledHeight;
-  }, [latestDataset]);
+    if (latestImageHeight === 0) return 1;
+    return latestImageWidth / latestImageHeight;
+  }, [latestImageHeight, latestImageWidth]);
 
   const stackAspectRatio = React.useMemo(() => {
     if (!stackDataset || stackDataset.sampledHeight === 0) return 1;
@@ -122,21 +125,14 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
       try {
         setLatestLoading(true);
         setLatestError(null);
-        const response = await h5Api.get<ImatImagePayload>('/imat/latest-image', {
-          signal: controller.signal,
-          params: { downsample_factor: 1 },
-        });
+        const response = await h5Api.get<ImatImagePayload>('/imat/latest-image', { signal: controller.signal });
 
         if (!isMounted) return;
         const payload = response.data;
         const typedData = Uint8Array.from(payload.data);
         setLatestDataset({
           data: typedData,
-          shape: payload.shape as [number, number, number],
-          originalWidth: payload.originalWidth,
-          originalHeight: payload.originalHeight,
-          sampledWidth: payload.sampledWidth,
-          sampledHeight: payload.sampledHeight,
+          shape: payload.shape,
         });
       } catch (err: any) {
         if (!isMounted || (axios.isAxiosError(err) && err.code === 'ERR_CANCELED')) return;
@@ -330,12 +326,12 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
                       viewerSize === 'fit'
                         ? '100%'
                         : viewerSize === 'small'
-                          ? latestDataset.sampledWidth * 0.25
+                          ? latestImageWidth * 0.25
                           : viewerSize === 'medium'
-                            ? latestDataset.sampledWidth * 0.5
+                            ? latestImageWidth * 0.5
                             : viewerSize === 'large'
-                              ? latestDataset.sampledWidth * 0.75
-                              : latestDataset.sampledWidth,
+                              ? latestImageWidth * 0.75
+                              : latestImageWidth,
                     aspectRatio: latestAspectRatio,
                     maxHeight: viewerSize === 'fit' ? 'calc(100vh - 250px)' : 'none',
                     position: 'relative',
