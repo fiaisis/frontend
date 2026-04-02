@@ -1,8 +1,28 @@
 import React, { useState } from 'react';
 import ndarray from 'ndarray';
-import { getDomain, LineVis, ScaleType, ScaleSelector, Separator, ToggleBtn, Toolbar } from '@h5web/lib';
-import type { LinePlotData } from '../../lib/types';
+import {
+  AXIS_SCALE_TYPES,
+  CurveType,
+  DomainWidget,
+  getCombinedDomain,
+  getDomain,
+  getSafeDomain,
+  getVisDomain,
+  Interpolation,
+  LineVis,
+  Menu,
+  RadioGroup,
+  ScaleSelector,
+  Separator,
+  type AxisScaleType,
+  type CustomDomain,
+  type Domain,
+  ScaleType,
+  ToggleBtn,
+  Toolbar,
+} from '@h5web/lib';
 import { Box, Paper, Typography, useTheme } from '@mui/material';
+import type { LinePlotData } from '../../lib/types';
 
 interface PlotViewerProps {
   linePlotData: LinePlotData[];
@@ -10,15 +30,26 @@ interface PlotViewerProps {
   onShowErrorsChange: (showErrors: boolean) => void;
 }
 
+const DEFAULT_DOMAIN: Domain = [0.1, 1];
+const CURVE_TYPE_OPTIONS = Object.values(CurveType) as CurveType[];
+const INTERPOLATION_OPTIONS = Object.values(Interpolation) as Interpolation[];
+
+const CURVE_TYPE_LABELS: Record<CurveType, string> = {
+  [CurveType.LineOnly]: 'Lines',
+  [CurveType.GlyphsOnly]: 'Points',
+  [CurveType.LineAndGlyphs]: 'Both',
+};
+
 const PlotViewer: React.FC<PlotViewerProps> = ({ linePlotData, showErrors, onShowErrorsChange }): JSX.Element => {
   const theme = useTheme();
 
-  // State for line plot controls
-  const [lineShowGrid, setLineShowGrid] = useState(true);
-  const [xScaleType, setXScaleType] = useState<ScaleType.Linear | ScaleType.Log | ScaleType.SymLog>(ScaleType.Linear);
-  const [yScaleType, setYScaleType] = useState<ScaleType.Linear | ScaleType.Log | ScaleType.SymLog>(ScaleType.Linear);
+  const [showGrid, setShowGrid] = useState(true);
+  const [xScaleType, setXScaleType] = useState<AxisScaleType>(ScaleType.Linear);
+  const [yScaleType, setYScaleType] = useState<AxisScaleType>(ScaleType.Linear);
+  const [curveType, setCurveType] = useState(CurveType.LineOnly);
+  const [interpolation, setInterpolation] = useState(Interpolation.Linear);
+  const [customDomain, setCustomDomain] = useState<CustomDomain>([null, null]);
 
-  // Handle empty state
   if (linePlotData.length === 0) {
     return (
       <Box
@@ -42,34 +73,23 @@ const PlotViewer: React.FC<PlotViewerProps> = ({ linePlotData, showErrors, onSho
     );
   }
 
-  // Sort data by domain size (largest first) to ensure the file with the biggest domain is primary
-  // This prevents crashes when auxiliary data has a larger domain than primary
+  // Keep the longest line as primary so auxiliary arrays can be padded safely.
   const sortedData = [...linePlotData].sort((a, b) => b.data.length - a.data.length);
-
-  // Render line plots - largest domain as primary, rest as auxiliaries
   const primaryData = sortedData[0];
+  const primaryLength = primaryData.data.length;
 
-  const primaryArray = ndarray(primaryData.data, [primaryData.data.length]);
-
-  // Generate abscissas (x-values) for primary data based on its length
-  const primaryAbscissas = Float32Array.from({ length: primaryData.data.length }, (_, i) => i);
-
-  // Create error array if available and showErrors is true
+  const primaryArray = ndarray(primaryData.data, [primaryLength]);
+  const primaryAbscissas = Float32Array.from({ length: primaryLength }, (_, index) => index);
   const primaryErrorsArray =
     showErrors && primaryData.errors ? ndarray(primaryData.errors, [primaryData.errors.length]) : undefined;
 
-  // Create auxiliaries for additional lines with error bars
-  // Pad auxiliary arrays with NaN to match primary length (NaN values won't render)
-  const primaryLength = primaryData.data.length;
   const auxiliaries = sortedData.slice(1).map((data) => {
-    // Pad data array with NaN if shorter than primary
     const paddedData = new Float32Array(primaryLength);
     paddedData.set(data.data);
     if (data.data.length < primaryLength) {
       paddedData.fill(NaN, data.data.length);
     }
 
-    // Pad errors array with NaN if available and shorter than primary
     let paddedErrors: Float32Array | undefined;
     if (showErrors && data.errors) {
       paddedErrors = new Float32Array(primaryLength);
@@ -82,69 +102,80 @@ const PlotViewer: React.FC<PlotViewerProps> = ({ linePlotData, showErrors, onSho
     return {
       array: ndarray(paddedData, [primaryLength]),
       label: data.filename,
-      color: data.color,
       errors: paddedErrors ? ndarray(paddedErrors, [primaryLength]) : undefined,
     };
   });
 
-  // Calculate combined Y domain across all data to ensure proper graph sizing
-  // Start with primary data domain
-  let combinedDomain = getDomain(primaryArray, yScaleType, primaryErrorsArray);
+  const combinedDomain =
+    getCombinedDomain([
+      getDomain(primaryArray, yScaleType, primaryErrorsArray),
+      ...auxiliaries.map((auxiliary) => getDomain(auxiliary.array, yScaleType, auxiliary.errors)),
+    ]) || DEFAULT_DOMAIN;
 
-  // Extend domain to include all auxiliaries
-  for (const aux of auxiliaries) {
-    const auxDomain = getDomain(aux.array, yScaleType, aux.errors);
-    if (auxDomain && combinedDomain) {
-      combinedDomain = [Math.min(combinedDomain[0], auxDomain[0]), Math.max(combinedDomain[1], auxDomain[1])];
-    }
-  }
-
-  const domain = combinedDomain;
+  const visDomain = getVisDomain(customDomain, combinedDomain);
+  const [safeDomain] = getSafeDomain(visDomain, combinedDomain, yScaleType);
+  const hasErrorSupport = linePlotData.some((plot) => plot.supportsErrors);
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
       <Paper
         elevation={1}
         sx={{
-          // For more customization please see https://h5web-docs.panosc.eu/?path=/docs/customization--docs
           '--h5w-btn-hover--bgColor': theme.palette.background.default,
           '--h5w-toolbar--bgColor': theme.palette.background.paper,
           '--h5w-btnPressed--bgColor': theme.palette.primary.main,
         }}
       >
-        <Box sx={{ display: 'flex' }} className={'toolbar'}>
+        <Box sx={{ display: 'flex' }} className="toolbar">
           <Toolbar>
-            {/* Y-axis scale selector */}
-            <ScaleSelector
-              value={yScaleType}
-              onScaleChange={setYScaleType}
-              options={[ScaleType.Linear, ScaleType.Log, ScaleType.SymLog]}
-              label="Y scale"
+            <DomainWidget
+              dataDomain={combinedDomain}
+              customDomain={customDomain}
+              scaleType={yScaleType}
+              onCustomDomainChange={setCustomDomain}
             />
             <Separator />
-            {/* X-axis scale selector */}
-            <ScaleSelector
-              value={xScaleType}
-              onScaleChange={setXScaleType}
-              options={[ScaleType.Linear, ScaleType.Log, ScaleType.SymLog]}
-              label="X scale"
-            />
+            <ScaleSelector value={xScaleType} onScaleChange={setXScaleType} options={AXIS_SCALE_TYPES} label="X" />
+            <ScaleSelector value={yScaleType} onScaleChange={setYScaleType} options={AXIS_SCALE_TYPES} label="Y" />
             <Separator />
-            <ToggleBtn label="Grid" value={lineShowGrid} onToggle={() => setLineShowGrid(!lineShowGrid)} />
-            <Separator />
-            <ToggleBtn label="Error Bars" value={showErrors} onToggle={() => onShowErrorsChange(!showErrors)} />
+            {hasErrorSupport && (
+              <ToggleBtn label="Error Bars" value={showErrors} onToggle={() => onShowErrorsChange(!showErrors)} />
+            )}
+            <ToggleBtn label="Grid" value={showGrid} onToggle={() => setShowGrid(!showGrid)} />
+            <Menu label="Style">
+              <RadioGroup
+                name="curve-type"
+                label="Curve"
+                options={CURVE_TYPE_OPTIONS}
+                optionsLabels={CURVE_TYPE_LABELS}
+                value={curveType}
+                onChange={setCurveType}
+              />
+              <RadioGroup
+                name="interpolation"
+                label="Interpolation"
+                options={INTERPOLATION_OPTIONS}
+                disabled={curveType === CurveType.GlyphsOnly}
+                value={interpolation}
+                onChange={setInterpolation}
+              />
+            </Menu>
           </Toolbar>
         </Box>
       </Paper>
+
       <LineVis
         dataArray={primaryArray}
-        domain={domain}
+        domain={safeDomain}
         errorsArray={primaryErrorsArray}
         showErrors={showErrors}
         auxiliaries={auxiliaries.length > 0 ? auxiliaries : undefined}
-        showGrid={lineShowGrid}
+        showGrid={showGrid}
         scaleType={yScaleType}
-        abscissaParams={{ scaleType: xScaleType, value: primaryAbscissas }}
+        curveType={curveType}
+        interpolation={interpolation}
+        ordinateLabel="Value"
+        abscissaParams={{ label: 'Index', scaleType: xScaleType, value: primaryAbscissas }}
       />
     </Box>
   );

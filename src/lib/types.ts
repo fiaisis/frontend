@@ -90,6 +90,7 @@ export interface LinePlotData {
   data: DataArray1D;
   errors?: DataArray1D;
   color?: string;
+  supportsErrors?: boolean;
 }
 
 // Filter for the h5 files to include

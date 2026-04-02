@@ -347,6 +347,14 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
     setFiles((prevFiles) => prevFiles.map((file, i) => (i === index ? { ...file, selection: selections } : file)));
   };
 
+  useEffect(() => {
+    const hasEnabledErrorSupport = files.some((file) => file.enabled && file.path && file.errorPath);
+
+    if (showErrors && !hasEnabledErrorSupport) {
+      setShowErrors(false);
+    }
+  }, [files, showErrors]);
+
   // Fetch data for all enabled files with paths selected
   useEffect(() => {
     const enabledFiles = files.filter((file) => file.enabled && file.path);
@@ -389,6 +397,7 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
                   filename: file.filename,
                   data,
                   errors,
+                  supportsErrors: Boolean(file.errorPath),
                 };
               })(),
             ];
@@ -414,6 +423,7 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
                 filename: `${file.filename} [slice ${slice}]`,
                 data,
                 errors,
+                supportsErrors: Boolean(file.errorPath),
               };
             })()
           );
