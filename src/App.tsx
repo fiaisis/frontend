@@ -92,13 +92,13 @@ const App: FC = () => {
             <Route path="/live-data">
               <LiveData />
             </Route>
-            <Route path="/data-viewer/generic/experiment_number/:experimentNumber/:filename">
+            <Route path="/data-viewer/view/generic/experiment_number/:experimentNumber/:filename">
               <DataViewer />
             </Route>
-            <Route path="/data-viewer/generic/user_number/:userNumber/:filename">
+            <Route path="/data-viewer/view/generic/user_number/:userNumber/:filename">
               <DataViewer />
             </Route>
-            <Route path="/data-viewer/:instrument/:experimentNumber/:filename">
+            <Route path="/data-viewer/view/:instrument/:experimentNumber/:filename">
               <DataViewer />
             </Route>
             {/* Blank route for login page*/}
