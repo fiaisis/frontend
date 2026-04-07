@@ -141,7 +141,7 @@ const JobOutput: React.FC<{
                   to={`/reduction-history/${job.run?.instrument_name || 'unknown'}/experiment-viewer-${job.id}`}
                   sx={{ flexShrink: 0, whiteSpace: 'nowrap' }}
                 >
-                  H5 viewer
+                  Experiment viewer
                 </Button>
               )}
               <Button
