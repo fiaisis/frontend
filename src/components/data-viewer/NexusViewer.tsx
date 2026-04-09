@@ -23,7 +23,8 @@ export default function NexusViewer({
   const [filepath, setFilePath] = useState<string>('');
   const [token, setToken] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
-  const groveApiUrl = apiUrl;
+
+  const absoluteGroveApiUrl = new URL(apiUrl, window.location.origin).toString();
 
   useEffect(() => {
     setLoading(true);
@@ -80,7 +81,7 @@ export default function NexusViewer({
           <CircularProgress />
         </Stack>
       ) : (
-        <H5GroveProvider url={groveApiUrl} filepath={filepath} fetcher={fetcher}>
+        <H5GroveProvider url={absoluteGroveApiUrl} filepath={filepath} fetcher={fetcher}>
           <App propagateErrors />
         </H5GroveProvider>
       )}
