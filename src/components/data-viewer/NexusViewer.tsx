@@ -24,6 +24,7 @@ export default function NexusViewer({
   const [token, setToken] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
   const groveApiUrl = apiUrl;
+  console.log('groveApiUrl: ', groveApiUrl);
 
   useEffect(() => {
     setLoading(true);
