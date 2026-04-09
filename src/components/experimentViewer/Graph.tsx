@@ -164,7 +164,7 @@ const PlotViewer: React.FC<PlotViewerProps> = ({ linePlotData, showErrors, onSho
             <ScaleSelector value={yScaleType} onScaleChange={setYScaleType} options={AXIS_SCALE_TYPES} label="Y" />
             <Separator />
             {hasErrorSupport && (
-              <ToggleBtn label="Error Bars" value={showErrors} onToggle={() => onShowErrorsChange(!showErrors)} />
+              <ToggleBtn label="Error bars" value={showErrors} onToggle={() => onShowErrorsChange(!showErrors)} />
             )}
             <ToggleBtn label="Grid" value={showGrid} onToggle={() => setShowGrid(!showGrid)} />
             <Menu label="Style">
