@@ -23,7 +23,8 @@ export default function NexusViewer({
   const [filepath, setFilePath] = useState<string>('');
   const [token, setToken] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
-  const groveApiUrl = apiUrl;
+
+  const absoluteGroveApiUrl = new URL(apiUrl, window.location.origin).toString();
 
   useEffect(() => {
     setLoading(true);
@@ -57,7 +58,11 @@ export default function NexusViewer({
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
-    return createBasicFetcher({ headers });
+    const basicFetcher = createBasicFetcher({ headers });
+    return (url: string, options: Record<string, string>) => {
+      const fixedUrl = url.replace(/\/+(\?|$)/, '$1');
+      return basicFetcher(fixedUrl, options);
+    };
   }, [token]);
 
   return (
@@ -76,7 +81,7 @@ export default function NexusViewer({
           <CircularProgress />
         </Stack>
       ) : (
-        <H5GroveProvider url={groveApiUrl} filepath={filepath} fetcher={fetcher}>
+        <H5GroveProvider url={absoluteGroveApiUrl} filepath={filepath} fetcher={fetcher}>
           <App propagateErrors />
         </H5GroveProvider>
       )}
