@@ -59,7 +59,7 @@ export default function NexusViewer({
     }
     const basicFetcher = createBasicFetcher({ headers });
     return (url: string, options: Record<string, string>) => {
-      const fixedUrl = 'hello';
+      const fixedUrl = url.replace(/\/+(\?|$)/, '$1');
       return basicFetcher(fixedUrl, options);
     };
   }, [token]);
