@@ -115,15 +115,40 @@ const PlotViewer: React.FC<PlotViewerProps> = ({ linePlotData, showErrors, onSho
   const visDomain = getVisDomain(customDomain, combinedDomain);
   const [safeDomain] = getSafeDomain(visDomain, combinedDomain, yScaleType);
   const hasErrorSupport = linePlotData.some((plot) => plot.supportsErrors);
+  const toolbarBackground = theme.palette.background.paper;
+  const popupBackground =
+    theme.palette.mode === 'dark' ? theme.palette.background.default : theme.palette.background.paper;
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
       <Paper
         elevation={1}
         sx={{
-          '--h5w-btn-hover--bgColor': theme.palette.background.default,
-          '--h5w-toolbar--bgColor': theme.palette.background.paper,
+          color: theme.palette.text.primary,
+          borderBottom: 1,
+          borderColor: 'divider',
+          '--h5w-btn-hover--bgColor': theme.palette.action.hover,
+          '--h5w-toolbar--bgColor': toolbarBackground,
+          '--h5w-toolbar-popup--bgColor': popupBackground,
           '--h5w-btnPressed--bgColor': theme.palette.primary.main,
+          '--h5w-toolbar-label--color': theme.palette.text.primary,
+          '--h5w-toolbar-separator--color': theme.palette.divider,
+          '--h5w-selector-label--color': theme.palette.text.primary,
+          '--h5w-selector-arrowIcon--color': theme.palette.text.secondary,
+          '--h5w-selector-groupLabel--color': theme.palette.text.secondary,
+          '--h5w-selector-menu--bgColor': popupBackground,
+          '--h5w-selector-option-hover--bgColor': theme.palette.action.hover,
+          '--h5w-selector-option-selected--bgColor': theme.palette.action.selected,
+          '--h5w-selector-option-focus--outlineColor': theme.palette.primary.main,
+          '--h5w-domainWidget-popup--bgColor': popupBackground,
+          '--h5w-domainControls--colorAlt': theme.palette.text.primary,
+          '--h5w-domainControls-boundInput--shadowColor': theme.palette.divider,
+          '--h5w-domainControls-boundInput-focus--shadowColor': theme.palette.primary.main,
+          '--h5w-domainControls-boundInput-editing--bgColor': theme.palette.background.paper,
+          '--h5w-domainControls-boundInput-editing--borderColor': theme.palette.primary.main,
+          '--h5w-toolbar-input--shadowColor': theme.palette.divider,
+          '--h5w-toolbar-input-hover--shadowColor': theme.palette.text.secondary,
+          '--h5w-toolbar-input-focus--shadowColor': theme.palette.primary.main,
         }}
       >
         <Box sx={{ display: 'flex' }} className="toolbar">
