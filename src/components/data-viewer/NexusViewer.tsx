@@ -24,7 +24,6 @@ export default function NexusViewer({
   const [token, setToken] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
   const groveApiUrl = apiUrl;
-  console.log('groveApiUrl: ', groveApiUrl);
 
   useEffect(() => {
     setLoading(true);
@@ -58,7 +57,11 @@ export default function NexusViewer({
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
-    return createBasicFetcher({ headers });
+    const basicFetcher = createBasicFetcher({ headers });
+    return (url: string, options: Record<string, string>) => {
+      const fixedUrl = url.replace(/\/+\?/, '?');
+      return basicFetcher(fixedUrl, options);
+    };
   }, [token]);
 
   return (
