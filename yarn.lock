@@ -1710,10 +1710,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@babel/runtime@npm:^7.0.0, @babel/runtime@npm:^7.17.8, @babel/runtime@npm:^7.2.0":
-  version: 7.28.4
-  resolution: "@babel/runtime@npm:7.28.4"
-  checksum: 934b0a0460f7d06637d93fcd1a44ac49adc33518d17253b5a0b55ff4cb90a45d8fe78bf034b448911dbec7aff2a90b918697559f78d21c99ff8dbadae9565b55
+"@babel/runtime@npm:^7.0.0, @babel/runtime@npm:^7.2.0":
+  version: 7.29.2
+  resolution: "@babel/runtime@npm:7.29.2"
+  checksum: d5548d1165de8995f8afc93a5694b8625409be16cd1f2250ac13e331335858ddac3cb9fd278e6c43956a130101a2203f09417938a1a96f9fb70f02b4b4172e1d
   languageName: node
   linkType: hard
 
@@ -1721,6 +1721,13 @@ __metadata:
   version: 7.27.6
   resolution: "@babel/runtime@npm:7.27.6"
   checksum: 3f7b879df1823c0926bd5dbc941c62f5d60faa790c1aab9758c04799e1f04ee8d93553be9ec059d4e5882f19fe03cbe8933ee4f46212dced0f6d8205992c9c9a
+  languageName: node
+  linkType: hard
+
+"@babel/runtime@npm:^7.17.8":
+  version: 7.28.4
+  resolution: "@babel/runtime@npm:7.28.4"
+  checksum: 934b0a0460f7d06637d93fcd1a44ac49adc33518d17253b5a0b55ff4cb90a45d8fe78bf034b448911dbec7aff2a90b918697559f78d21c99ff8dbadae9565b55
   languageName: node
   linkType: hard
 
@@ -2427,34 +2434,34 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@floating-ui/core@npm:^1.7.3":
-  version: 1.7.3
-  resolution: "@floating-ui/core@npm:1.7.3"
+"@floating-ui/core@npm:^1.7.5":
+  version: 1.7.5
+  resolution: "@floating-ui/core@npm:1.7.5"
   dependencies:
-    "@floating-ui/utils": ^0.2.10
-  checksum: 5adfb28ddfa1776ec83516439256b9026e5d62b5413f62ae51e50a870cf0df4bea9abf72aacc0610ee84bc00e85883d0d32f2a0976ee7fa89728a717a7494f27
+    "@floating-ui/utils": ^0.2.11
+  checksum: 9dda28bb1d301305ba407ad61fc1acf0f498819a6976e0b9c0a91069d92fb4b4bc8d6cffd1c68c4c281cffd0f7d267cbc2e56ea622f91c342aaa060d5b73d5db
   languageName: node
   linkType: hard
 
-"@floating-ui/dom@npm:^1.7.4":
-  version: 1.7.4
-  resolution: "@floating-ui/dom@npm:1.7.4"
+"@floating-ui/dom@npm:^1.7.6":
+  version: 1.7.6
+  resolution: "@floating-ui/dom@npm:1.7.6"
   dependencies:
-    "@floating-ui/core": ^1.7.3
-    "@floating-ui/utils": ^0.2.10
-  checksum: 806923e6f5b09e024c366070f2115a4db6e8ad28462bac29cd075170a6f7d900497da3ee542439bd0770b8e2fff12b636cc30873d1c82e9ec4a487870b080643
+    "@floating-ui/core": ^1.7.5
+    "@floating-ui/utils": ^0.2.11
+  checksum: 0c1ba371a2e5b8cdbd6a88daafd8bb22cc415a5b50dbf23d829842c1551efe8e74fed5d34c89644fa8ee5dcf9b0470f9b2e9a3f82f91622abe6e1284b272d1c1
   languageName: node
   linkType: hard
 
 "@floating-ui/react-dom@npm:^2.1.6":
-  version: 2.1.6
-  resolution: "@floating-ui/react-dom@npm:2.1.6"
+  version: 2.1.8
+  resolution: "@floating-ui/react-dom@npm:2.1.8"
   dependencies:
-    "@floating-ui/dom": ^1.7.4
+    "@floating-ui/dom": ^1.7.6
   peerDependencies:
     react: ">=16.8.0"
     react-dom: ">=16.8.0"
-  checksum: 24ff266806cd4cba6ad066f0eda7b99583f68af877f41df0b2a8d10a392692e3a1c1d666ebb75571a060818ede940bae59d833aa517ed538f7dba9dddd9991ae
+  checksum: f81777f92bfbdc3bdb852f3c15d2609ffcd207e15db7cd2b58680ea9bd0574ba37a472475dfb71dbfcbfbdef40792ab8120f327df2050d52193bafff8db9aa71
   languageName: node
   linkType: hard
 
@@ -2472,10 +2479,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@floating-ui/utils@npm:^0.2.10":
-  version: 0.2.10
-  resolution: "@floating-ui/utils@npm:0.2.10"
-  checksum: ffc4c24a46a665cfd0337e9aaf7de8415b572f8a0f323af39175e4b575582aed13d172e7f049eedeece9eaf022bad019c140a2d192580451984ae529bdf1285c
+"@floating-ui/utils@npm:^0.2.10, @floating-ui/utils@npm:^0.2.11":
+  version: 0.2.11
+  resolution: "@floating-ui/utils@npm:0.2.11"
+  checksum: e98a2da3e36bd476460b0b85c3ba37c254516790d8c5eafa79ecf67bae7f2230c46d5fabce196aaf08bcd31586828e2df718cd2ccd1d333f18120f8adef66828
   languageName: node
   linkType: hard
 
@@ -4412,9 +4419,9 @@ __metadata:
   linkType: hard
 
 "@types/lodash@npm:^4.14.172":
-  version: 4.17.21
-  resolution: "@types/lodash@npm:4.17.21"
-  checksum: e09e3eaf29b18b6c8e130fcbafd8e3c4ecc2110f35255079245e7d1bd310a5a8f93e4e70266533dce672f253bba899c721bc6870097e0a8c5448e0b628136d39
+  version: 4.17.24
+  resolution: "@types/lodash@npm:4.17.24"
+  checksum: 2b254973145ecdf9b052d83f00ebaa111245f319d45b217c78f81cea8892fda81180fc749bd50a99c08f4e5efceb834c774d3f74153a50a9c4a28648343dc9f3
   languageName: node
   linkType: hard
 
@@ -7602,7 +7609,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"d3-format@npm:1 - 3, d3-format@npm:3.1.0":
+"d3-format@npm:1 - 3":
+  version: 3.1.2
+  resolution: "d3-format@npm:3.1.2"
+  checksum: 2ce13417b3186311df3fd924028cd516ec3e96d7c3eb6df9c83f6c2ed43de1717e6c5119a385b7744ef84e2b8a4c678ad95a2b2998391803ceb0d809e235cff4
+  languageName: node
+  linkType: hard
+
+"d3-format@npm:3.1.0":
   version: 3.1.0
   resolution: "d3-format@npm:3.1.0"
   checksum: f345ec3b8ad3cab19bff5dead395bd9f5590628eb97a389b1dd89f0b204c7c4fc1d9520f13231c2c7cf14b7c9a8cf10f8ef15bde2befbab41454a569bd706ca2
@@ -7855,11 +7869,11 @@ __metadata:
   linkType: hard
 
 "delaunator@npm:5":
-  version: 5.0.1
-  resolution: "delaunator@npm:5.0.1"
+  version: 5.1.0
+  resolution: "delaunator@npm:5.1.0"
   dependencies:
     robust-predicates: ^3.0.2
-  checksum: 69ee43ec649b4a13b7f33c8a027fb3e8dfcb09266af324286118da757e04d3d39df619b905dca41421405c311317ccf632ecfa93db44519bacec3303c57c5a0b
+  checksum: ecefe0a6ad356466a1793fa7396e170e873b9b519ab28a0e2e025df1ce506d76df113f210d02f7131f906be3cf6493f07b2fd972bf972d726ac7cdd96c4de4cd
   languageName: node
   linkType: hard
 
@@ -15733,9 +15747,9 @@ __metadata:
   linkType: hard
 
 "robust-predicates@npm:^3.0.2":
-  version: 3.0.2
-  resolution: "robust-predicates@npm:3.0.2"
-  checksum: 36854c1321548ceca96d36ad9d6e0a5a512986029ec6929ad6ed3ec1612c22cc8b46cc72d2c5674af42e8074a119d793f6f0ea3a5b51373e3ab926c64b172d7a
+  version: 3.0.3
+  resolution: "robust-predicates@npm:3.0.3"
+  checksum: 23692b9451e296bf8f98bdd681d4950a27045cdee5df3fadb9c150c7df0889b5fcf658ab2f82a41675bf14b1e32c4c6b7a4591f8adbee056b845f0eb9d3ad69c
   languageName: node
   linkType: hard
 
@@ -17000,9 +17014,9 @@ __metadata:
   linkType: hard
 
 "tabbable@npm:^6.0.0":
-  version: 6.3.0
-  resolution: "tabbable@npm:6.3.0"
-  checksum: 5ffeb2db569db7f3fe11b766f599bc0b67100697034e5c6264995555e8dead029c2e51d6b1e5ea65781e9077bf05ca40d3313c1c47351124a7e68727bc0f3968
+  version: 6.4.0
+  resolution: "tabbable@npm:6.4.0"
+  checksum: 7084cba269ebbc7dcdeed5aca7f90c0a0fb59a295dd1e83703ab89cca5e6c53b78d02020e3d1065481984cd64bba7dd1ea3c0a48e92fdba83d586e6e86d62a74
   languageName: node
   linkType: hard
 
