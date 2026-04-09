@@ -149,7 +149,7 @@ const FileCard: React.FC<FileCardProps> = ({
                             />
                           )}
                           <Chip
-                            label={dataset.shape.join(' × ')}
+                            label={dataset.shape.join(' x ')}
                             size="small"
                             sx={{ height: 18, fontSize: '0.65rem' }}
                           />
@@ -196,7 +196,7 @@ const FileCard: React.FC<FileCardProps> = ({
                 {/* Mode toggle */}
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
                   <Typography variant="body2" fontWeight="500">
-                    Slice Selection (2D → 1D)
+                    Slice selection (2D → 1D)
                   </Typography>
                   <ToggleButtonGroup
                     size="small"

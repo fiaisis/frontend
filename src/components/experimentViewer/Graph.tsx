@@ -43,6 +43,7 @@ const CURVE_TYPE_LABELS: Record<CurveType, string> = {
 const PlotViewer: React.FC<PlotViewerProps> = ({ linePlotData, showErrors, onShowErrorsChange }): JSX.Element => {
   const theme = useTheme();
 
+  // State for line plot controls
   const [showGrid, setShowGrid] = useState(true);
   const [xScaleType, setXScaleType] = useState<AxisScaleType>(ScaleType.Linear);
   const [yScaleType, setYScaleType] = useState<AxisScaleType>(ScaleType.Linear);
@@ -50,6 +51,7 @@ const PlotViewer: React.FC<PlotViewerProps> = ({ linePlotData, showErrors, onSho
   const [interpolation, setInterpolation] = useState(Interpolation.Linear);
   const [customDomain, setCustomDomain] = useState<CustomDomain>([null, null]);
 
+  // Handle the empty state before building plot arrays
   if (linePlotData.length === 0) {
     return (
       <Box
@@ -73,23 +75,30 @@ const PlotViewer: React.FC<PlotViewerProps> = ({ linePlotData, showErrors, onSho
     );
   }
 
-  // Keep the longest line as primary so auxiliary arrays can be padded safely.
+  // Keep the longest series as primary so shorter auxiliary arrays can be padded safely
+  // This avoids h5web edge cases where an auxiliary line is longer than the primary one
   const sortedData = [...linePlotData].sort((a, b) => b.data.length - a.data.length);
+  // Render the longest series as primary and pass the rest to LineVis as auxiliaries
   const primaryData = sortedData[0];
   const primaryLength = primaryData.data.length;
 
   const primaryArray = ndarray(primaryData.data, [primaryLength]);
+  // Generate index-based x-values for the primary series
   const primaryAbscissas = Float32Array.from({ length: primaryLength }, (_, index) => index);
+  // Include error bars only when the dataset provides them and the toggle is enabled
   const primaryErrorsArray =
     showErrors && primaryData.errors ? ndarray(primaryData.errors, [primaryData.errors.length]) : undefined;
 
+  // Pad auxiliary series with NaN so shorter lines align with the primary length without rendering extra points
   const auxiliaries = sortedData.slice(1).map((data) => {
+    // h5web skips NaN samples, so padding preserves alignment without drawing fake values
     const paddedData = new Float32Array(primaryLength);
     paddedData.set(data.data);
     if (data.data.length < primaryLength) {
       paddedData.fill(NaN, data.data.length);
     }
 
+    // Error arrays need the same padding so error bars stay aligned with their data points
     let paddedErrors: Float32Array | undefined;
     if (showErrors && data.errors) {
       paddedErrors = new Float32Array(primaryLength);
@@ -106,24 +115,28 @@ const PlotViewer: React.FC<PlotViewerProps> = ({ linePlotData, showErrors, onSho
     };
   });
 
+  // Combine the visible Y-domain across the primary series and every auxiliary series
   const combinedDomain =
     getCombinedDomain([
       getDomain(primaryArray, yScaleType, primaryErrorsArray),
       ...auxiliaries.map((auxiliary) => getDomain(auxiliary.array, yScaleType, auxiliary.errors)),
     ]) || DEFAULT_DOMAIN;
 
+  // Merge any user-entered domain overrides, then clamp them to something safe for the active scale
   const visDomain = getVisDomain(customDomain, combinedDomain);
   const [safeDomain] = getSafeDomain(visDomain, combinedDomain, yScaleType);
   const hasErrorSupport = linePlotData.some((plot) => plot.supportsErrors);
   const toolbarBackground = theme.palette.background.paper;
   const popupBackground =
     theme.palette.mode === 'dark' ? theme.palette.background.default : theme.palette.background.paper;
+  const primaryCurveColor = theme.palette.mode === 'dark' ? theme.palette.info.light : theme.palette.primary.dark;
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
       <Paper
         elevation={1}
         sx={{
+          // Keep h5web toolbar and popup controls aligned with the surrounding MUI theme
           color: theme.palette.text.primary,
           borderBottom: 1,
           borderColor: 'divider',
@@ -153,6 +166,7 @@ const PlotViewer: React.FC<PlotViewerProps> = ({ linePlotData, showErrors, onSho
       >
         <Box sx={{ display: 'flex' }} className="toolbar">
           <Toolbar>
+            {/* Y-domain controls */}
             <DomainWidget
               dataDomain={combinedDomain}
               customDomain={customDomain}
@@ -160,6 +174,7 @@ const PlotViewer: React.FC<PlotViewerProps> = ({ linePlotData, showErrors, onSho
               onCustomDomainChange={setCustomDomain}
             />
             <Separator />
+            {/* Axis scale controls */}
             <ScaleSelector value={xScaleType} onScaleChange={setXScaleType} options={AXIS_SCALE_TYPES} label="X" />
             <ScaleSelector value={yScaleType} onScaleChange={setYScaleType} options={AXIS_SCALE_TYPES} label="Y" />
             <Separator />
@@ -167,6 +182,7 @@ const PlotViewer: React.FC<PlotViewerProps> = ({ linePlotData, showErrors, onSho
               <ToggleBtn label="Error bars" value={showErrors} onToggle={() => onShowErrorsChange(!showErrors)} />
             )}
             <ToggleBtn label="Grid" value={showGrid} onToggle={() => setShowGrid(!showGrid)} />
+            {/* Curve and interpolation controls */}
             <Menu label="Style">
               <RadioGroup
                 name="curve-type"
@@ -189,19 +205,21 @@ const PlotViewer: React.FC<PlotViewerProps> = ({ linePlotData, showErrors, onSho
         </Box>
       </Paper>
 
-      <LineVis
-        dataArray={primaryArray}
-        domain={safeDomain}
-        errorsArray={primaryErrorsArray}
-        showErrors={showErrors}
-        auxiliaries={auxiliaries.length > 0 ? auxiliaries : undefined}
-        showGrid={showGrid}
-        scaleType={yScaleType}
-        curveType={curveType}
-        interpolation={interpolation}
-        ordinateLabel="Value"
-        abscissaParams={{ label: 'Index', scaleType: xScaleType, value: primaryAbscissas }}
-      />
+      <Box sx={{ flex: 1, minHeight: 0, '--h5w-line--color': primaryCurveColor }}>
+        <LineVis
+          dataArray={primaryArray}
+          domain={safeDomain}
+          errorsArray={primaryErrorsArray}
+          showErrors={showErrors}
+          auxiliaries={auxiliaries.length > 0 ? auxiliaries : undefined}
+          showGrid={showGrid}
+          scaleType={yScaleType}
+          curveType={curveType}
+          interpolation={interpolation}
+          ordinateLabel="Value"
+          abscissaParams={{ label: 'Index', scaleType: xScaleType, value: primaryAbscissas }}
+        />
+      </Box>
     </Box>
   );
 };

@@ -21,6 +21,7 @@ interface FileTreeProps {
   onFileToggle: (index: number) => void;
   onDatasetChange: (index: number, datasetPath: string) => void;
   onSelectionChange: (index: number, selections: number[]) => void;
+  initialExpandedJobIds?: number[];
   autoSelectPrimary?: boolean;
   onAutoSelectPrimaryChange?: (enabled: boolean) => void;
   activeViewerTab?: '1d' | '2d';
@@ -34,13 +35,14 @@ const FileTree: React.FC<FileTreeProps> = ({
   onFileToggle,
   onDatasetChange,
   onSelectionChange,
+  initialExpandedJobIds = [],
   autoSelectPrimary = false,
   onAutoSelectPrimaryChange,
   activeViewerTab = '1d',
   selected2DFile = null,
   onSelect2DFile,
 }): JSX.Element => {
-  const [expandedJobs, setExpandedJobs] = useState<Set<number>>(new Set());
+  const [expandedJobs, setExpandedJobs] = useState<Set<number>>(() => new Set(initialExpandedJobIds));
   const [showEmptyJobs, setShowEmptyJobs] = useState(false);
   const [inputMode, setInputMode] = useState<'text' | 'chips'>('text');
 
@@ -100,7 +102,7 @@ const FileTree: React.FC<FileTreeProps> = ({
     >
       <Box sx={{ mb: 2 }}>
         <Typography variant="h5" fontWeight="bold" sx={{ mb: 1 }}>
-          File Tree
+          File tree
         </Typography>
 
         {/* Settings */}
