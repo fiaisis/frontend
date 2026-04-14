@@ -1,8 +1,38 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import ndarray from 'ndarray';
-import { getDomain, LineVis, ScaleType, ScaleSelector, Separator, ToggleBtn, Toolbar } from '@h5web/lib';
+import {
+  CurveType,
+  DomainWidget,
+  getDomain,
+  Interpolation,
+  LineVis,
+  Menu,
+  RadioGroup,
+  ScaleSelector,
+  ScaleType,
+  Separator,
+  ToggleBtn,
+  Toolbar,
+  useSafeDomain,
+} from '@h5web/lib';
+import type { AxisScaleType, CustomDomain, Domain } from '@h5web/lib';
 import type { LinePlotData } from '../../lib/types';
-import { Box, Paper, Typography, useTheme } from '@mui/material';
+import { Box, Paper, Typography } from '@mui/material';
+import { alpha, useTheme } from '@mui/material/styles';
+
+const DEFAULT_DOMAIN: Domain = [0.1, 1];
+const AXIS_SCALE_OPTIONS: AxisScaleType[] = [ScaleType.Linear, ScaleType.Log, ScaleType.SymLog];
+
+const CURVE_TYPE_LABELS: Record<CurveType, string> = {
+  [CurveType.LineOnly]: 'Line',
+  [CurveType.GlyphsOnly]: 'Glyphs',
+  [CurveType.LineAndGlyphs]: 'Line + Glyphs',
+};
+
+const INTERPOLATION_LABELS: Record<Interpolation, string> = {
+  [Interpolation.Linear]: 'Linear',
+  [Interpolation.Constant]: 'Constant',
+};
 
 interface PlotViewerProps {
   linePlotData: LinePlotData[];
@@ -15,8 +45,11 @@ const PlotViewer: React.FC<PlotViewerProps> = ({ linePlotData, showErrors, onSho
 
   // State for line plot controls
   const [lineShowGrid, setLineShowGrid] = useState(true);
-  const [xScaleType, setXScaleType] = useState<ScaleType.Linear | ScaleType.Log | ScaleType.SymLog>(ScaleType.Linear);
-  const [yScaleType, setYScaleType] = useState<ScaleType.Linear | ScaleType.Log | ScaleType.SymLog>(ScaleType.Linear);
+  const [xScaleType, setXScaleType] = useState<AxisScaleType>(ScaleType.Linear);
+  const [yScaleType, setYScaleType] = useState<AxisScaleType>(ScaleType.Linear);
+  const [customYDomain, setCustomYDomain] = useState<CustomDomain>([null, null]);
+  const [curveType, setCurveType] = useState<CurveType>(CurveType.LineOnly);
+  const [interpolation, setInterpolation] = useState<Interpolation>(Interpolation.Linear);
 
   // Handle empty state
   if (linePlotData.length === 0) {
@@ -50,9 +83,6 @@ const PlotViewer: React.FC<PlotViewerProps> = ({ linePlotData, showErrors, onSho
   const primaryData = sortedData[0];
 
   const primaryArray = ndarray(primaryData.data, [primaryData.data.length]);
-
-  // Generate abscissas (x-values) for primary data based on its length
-  const primaryAbscissas = Float32Array.from({ length: primaryData.data.length }, (_, i) => i);
 
   // Create error array if available and showErrors is true
   const primaryErrorsArray =
@@ -99,26 +129,74 @@ const PlotViewer: React.FC<PlotViewerProps> = ({ linePlotData, showErrors, onSho
     }
   }
 
-  const domain = combinedDomain;
+  const autoDomain = combinedDomain || DEFAULT_DOMAIN;
+  const effectiveYDomain = useMemo<Domain>(
+    () => [customYDomain[0] ?? autoDomain[0], customYDomain[1] ?? autoDomain[1]],
+    [autoDomain, customYDomain]
+  );
+  const [safeYDomain] = useSafeDomain(effectiveYDomain, autoDomain, yScaleType);
+
+  const h5WebThemeTokens = {
+    color: theme.palette.text.primary,
+    backgroundColor: theme.palette.background.paper,
+    '--h5w-btn-hover--bgColor': theme.palette.action.hover,
+    '--h5w-btn-hover--shadowColor': alpha(theme.palette.text.primary, theme.palette.mode === 'dark' ? 0.28 : 0.16),
+    '--h5w-btnRaised--bgColor': theme.palette.background.default,
+    '--h5w-btnRaised--shadowColor': alpha(theme.palette.text.primary, theme.palette.mode === 'dark' ? 0.3 : 0.18),
+    '--h5w-btnRaised-hover--shadowColor': alpha(
+      theme.palette.text.primary,
+      theme.palette.mode === 'dark' ? 0.42 : 0.24
+    ),
+    '--h5w-btnPressed--bgColor': alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.32 : 0.18),
+    '--h5w-btnPressed--shadowColor': alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.5 : 0.32),
+    '--h5w-btnPressed-hover--shadowColor': alpha(
+      theme.palette.primary.main,
+      theme.palette.mode === 'dark' ? 0.62 : 0.4
+    ),
+    '--h5w-toolbar--bgColor': theme.palette.background.paper,
+    '--h5w-toolbar-label--color': theme.palette.text.secondary,
+    '--h5w-toolbar-separator--color': alpha(theme.palette.text.primary, theme.palette.mode === 'dark' ? 0.2 : 0.14),
+    '--h5w-toolbar-popup--bgColor': theme.palette.background.paper,
+    '--h5w-toolbar-input-focus--shadowColor': theme.palette.primary.main,
+    '--h5w-selector-arrowIcon--color': theme.palette.text.secondary,
+    '--h5w-selector-label--color': theme.palette.text.secondary,
+    '--h5w-selector-groupLabel--color': theme.palette.text.secondary,
+    '--h5w-selector-menu--bgColor': theme.palette.background.paper,
+    '--h5w-selector-option-hover--bgColor': theme.palette.action.hover,
+    '--h5w-selector-option-selected--bgColor': alpha(
+      theme.palette.primary.main,
+      theme.palette.mode === 'dark' ? 0.3 : 0.16
+    ),
+    '--h5w-selector-option-focus--outlineColor': theme.palette.primary.main,
+    '--h5w-domainWidget-popup--bgColor': theme.palette.background.paper,
+    '--h5w-domainControls--colorAlt': theme.palette.text.primary,
+    '--h5w-domainControls-boundInput--shadowColor': alpha(
+      theme.palette.text.primary,
+      theme.palette.mode === 'dark' ? 0.3 : 0.16
+    ),
+    '--h5w-domainControls-boundInput-focus--shadowColor': theme.palette.primary.main,
+    '--h5w-domainControls-boundInput-editing--bgColor': theme.palette.background.default,
+    '--h5w-domainControls-boundInput-editing--borderColor': theme.palette.primary.main,
+    '--h5w-error--color': theme.palette.error.main,
+  };
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
-      <Paper
-        elevation={1}
-        sx={{
-          // For more customization please see https://h5web-docs.panosc.eu/?path=/docs/customization--docs
-          '--h5w-btn-hover--bgColor': theme.palette.background.default,
-          '--h5w-toolbar--bgColor': theme.palette.background.paper,
-          '--h5w-btnPressed--bgColor': theme.palette.primary.main,
-        }}
-      >
+      <Paper elevation={1} sx={h5WebThemeTokens}>
         <Box sx={{ display: 'flex' }} className={'toolbar'}>
           <Toolbar>
+            <DomainWidget
+              dataDomain={autoDomain}
+              customDomain={customYDomain}
+              scaleType={yScaleType}
+              onCustomDomainChange={setCustomYDomain}
+            />
+            <Separator />
             {/* Y-axis scale selector */}
             <ScaleSelector
               value={yScaleType}
               onScaleChange={setYScaleType}
-              options={[ScaleType.Linear, ScaleType.Log, ScaleType.SymLog]}
+              options={AXIS_SCALE_OPTIONS}
               label="Y scale"
             />
             <Separator />
@@ -126,25 +204,47 @@ const PlotViewer: React.FC<PlotViewerProps> = ({ linePlotData, showErrors, onSho
             <ScaleSelector
               value={xScaleType}
               onScaleChange={setXScaleType}
-              options={[ScaleType.Linear, ScaleType.Log, ScaleType.SymLog]}
+              options={AXIS_SCALE_OPTIONS}
               label="X scale"
             />
             <Separator />
             <ToggleBtn label="Grid" value={lineShowGrid} onToggle={() => setLineShowGrid(!lineShowGrid)} />
             <Separator />
             <ToggleBtn label="Error Bars" value={showErrors} onToggle={() => onShowErrorsChange(!showErrors)} />
+            <Separator />
+            <Menu label="Aspect">
+              <RadioGroup
+                name="curve-type"
+                label="Curve type"
+                value={curveType}
+                options={Object.values(CurveType) as CurveType[]}
+                optionsLabels={CURVE_TYPE_LABELS}
+                onChange={setCurveType}
+              />
+              <RadioGroup
+                name="interpolation"
+                label="Interpolation"
+                value={interpolation}
+                options={Object.values(Interpolation) as Interpolation[]}
+                optionsLabels={INTERPOLATION_LABELS}
+                disabled={curveType === CurveType.GlyphsOnly}
+                onChange={setInterpolation}
+              />
+            </Menu>
           </Toolbar>
         </Box>
       </Paper>
       <LineVis
         dataArray={primaryArray}
-        domain={domain}
+        domain={safeYDomain}
         errorsArray={primaryErrorsArray}
         showErrors={showErrors}
         auxiliaries={auxiliaries.length > 0 ? auxiliaries : undefined}
         showGrid={lineShowGrid}
         scaleType={yScaleType}
-        abscissaParams={{ scaleType: xScaleType, value: primaryAbscissas }}
+        curveType={curveType}
+        interpolation={interpolation}
+        abscissaParams={{ label: 'Index', scaleType: xScaleType }}
       />
     </Box>
   );
