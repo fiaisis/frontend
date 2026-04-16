@@ -57,7 +57,6 @@ const ExperimentSearch: React.FC<ExperimentSearchProps> = ({
 
   // Get instrument names for autocomplete
   const instrumentNames = instruments.map((instrument) => instrument.name);
-
   return (
     <Paper elevation={2} sx={{ p: 2, mb: 2 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
@@ -138,6 +137,18 @@ const ExperimentSearch: React.FC<ExperimentSearchProps> = ({
           onChange={(_, newLimit) => newLimit !== null && setResultLimit(newLimit)}
           size="small"
           disabled={isLoading}
+          sx={{
+            borderRadius: 0,
+            '& .MuiToggleButtonGroup-grouped': {
+              borderRadius: 0,
+              width: 56,
+              minWidth: 56,
+              height: 36,
+              px: 0,
+              justifyContent: 'center',
+              fontVariantNumeric: 'tabular-nums',
+            },
+          }}
         >
           <ToggleButton value={10}>10</ToggleButton>
           <ToggleButton value={25}>25</ToggleButton>
@@ -145,16 +156,6 @@ const ExperimentSearch: React.FC<ExperimentSearchProps> = ({
           <ToggleButton value={100}>100</ToggleButton>
         </ToggleButtonGroup>
       </Box>
-
-      {isSearchActive && (selectedInstrument || experimentNumber) && (
-        <Box sx={{ mt: 1 }}>
-          <Typography variant="body2" color="text.secondary">
-            Searching for: {selectedInstrument && <strong>Instrument: {selectedInstrument}</strong>}
-            {selectedInstrument && experimentNumber && ' | '}
-            {experimentNumber && <strong>Experiment: {experimentNumber}</strong>}
-          </Typography>
-        </Box>
-      )}
     </Paper>
   );
 };

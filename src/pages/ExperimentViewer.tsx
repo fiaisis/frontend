@@ -520,7 +520,7 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
             >
               <Box sx={{ textAlign: 'center', maxWidth: 500, p: 4 }}>
                 <Typography variant="h5" color="text.primary" sx={{ mb: 2 }}>
-                  Search for HDF5 Data
+                  Search for HDF5 data
                 </Typography>
                 <Typography variant="body1" color="text.secondary">
                   Enter an instrument and/or experiment number above to search for jobs with HDF5 output files.
@@ -541,7 +541,7 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
             >
               <Box sx={{ textAlign: 'center', maxWidth: 500, p: 4 }}>
                 <Typography variant="h5" color="text.primary" sx={{ mb: 2 }}>
-                  No Jobs Found
+                  No jobs found
                 </Typography>
                 <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
                   {searchInstrument && `Instrument: ${searchInstrument}`}

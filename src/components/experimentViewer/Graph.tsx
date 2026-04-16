@@ -19,6 +19,8 @@ import type { AxisScaleType, CustomDomain, Domain } from '@h5web/lib';
 import type { LinePlotData } from '../../lib/types';
 import { Box, Paper, Typography } from '@mui/material';
 import { alpha, useTheme } from '@mui/material/styles';
+import resetZoomButtonStyles from '../../h5web/packages/lib/src/toolbar/floating/ResetZoomButton.module.css';
+import tooltipStyles from '../../h5web/packages/lib/src/vis/shared/Tooltip.module.css';
 
 const DEFAULT_DOMAIN: Domain = [0.1, 1];
 const AXIS_SCALE_OPTIONS: AxisScaleType[] = [ScaleType.Linear, ScaleType.Log, ScaleType.SymLog];
@@ -138,7 +140,16 @@ const PlotViewer: React.FC<PlotViewerProps> = ({ linePlotData, showErrors, onSho
     );
   }
 
-  const h5WebThemeTokens = {
+  const tooltipBackground =
+    theme.palette.mode === 'dark' ? alpha(theme.palette.grey[900], 0.94) : alpha(theme.palette.background.paper, 0.97);
+  const tooltipBorderColor =
+    theme.palette.mode === 'dark' ? alpha(theme.palette.common.white, 0.12) : alpha(theme.palette.text.primary, 0.12);
+  const floatingControlBackground =
+    theme.palette.mode === 'dark' ? alpha(theme.palette.grey[900], 0.82) : alpha(theme.palette.background.paper, 0.84);
+  const floatingControlBorderColor =
+    theme.palette.mode === 'dark' ? alpha(theme.palette.common.white, 0.16) : alpha(theme.palette.text.primary, 0.12);
+
+  const toolbarThemeTokens = {
     color: theme.palette.text.primary,
     backgroundColor: theme.palette.background.paper,
     '--h5w-btn-hover--bgColor': theme.palette.action.hover,
@@ -182,9 +193,34 @@ const PlotViewer: React.FC<PlotViewerProps> = ({ linePlotData, showErrors, onSho
     '--h5w-error--color': theme.palette.error.main,
   };
 
+  const lineVisStyles = {
+    '--h5w-tooltip-guide--color': alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.82 : 0.6),
+    '--h5w-tooltip-guide--opacity': theme.palette.mode === 'dark' ? 0.9 : 0.72,
+    [`& .${tooltipStyles.tooltip}`]: {
+      backgroundColor: tooltipBackground,
+      color: theme.palette.text.primary,
+      border: `1px solid ${tooltipBorderColor}`,
+      boxShadow: `0 0 0 1px ${tooltipBorderColor}, 0 12px 28px ${alpha(
+        theme.palette.common.black,
+        theme.palette.mode === 'dark' ? 0.5 : 0.16
+      )}`,
+      backdropFilter: 'blur(8px)',
+    },
+    [`& .${resetZoomButtonStyles.btnLike}`]: {
+      color: theme.palette.text.primary,
+      backgroundColor: floatingControlBackground,
+      border: `1px solid ${floatingControlBorderColor}`,
+      boxShadow: `0 0 0 1px ${floatingControlBorderColor}, 0 10px 24px ${alpha(
+        theme.palette.common.black,
+        theme.palette.mode === 'dark' ? 0.42 : 0.14
+      )}`,
+      backdropFilter: 'blur(8px)',
+    },
+  };
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
-      <Paper elevation={1} sx={h5WebThemeTokens}>
+      <Paper elevation={1} sx={toolbarThemeTokens}>
         <Box sx={{ display: 'flex' }} className={'toolbar'}>
           <Toolbar>
             <DomainWidget
@@ -236,18 +272,20 @@ const PlotViewer: React.FC<PlotViewerProps> = ({ linePlotData, showErrors, onSho
           </Toolbar>
         </Box>
       </Paper>
-      <LineVis
-        dataArray={primaryArray}
-        domain={safeYDomain}
-        errorsArray={primaryErrorsArray}
-        showErrors={showErrors}
-        auxiliaries={auxiliaries.length > 0 ? auxiliaries : undefined}
-        showGrid={lineShowGrid}
-        scaleType={yScaleType}
-        curveType={curveType}
-        interpolation={interpolation}
-        abscissaParams={{ label: 'Index', scaleType: xScaleType }}
-      />
+      <Box sx={{ flex: 1, minHeight: 0, display: 'flex', ...lineVisStyles }}>
+        <LineVis
+          dataArray={primaryArray}
+          domain={safeYDomain}
+          errorsArray={primaryErrorsArray}
+          showErrors={showErrors}
+          auxiliaries={auxiliaries.length > 0 ? auxiliaries : undefined}
+          showGrid={lineShowGrid}
+          scaleType={yScaleType}
+          curveType={curveType}
+          interpolation={interpolation}
+          abscissaParams={{ label: 'Index', scaleType: xScaleType }}
+        />
+      </Box>
     </Box>
   );
 };

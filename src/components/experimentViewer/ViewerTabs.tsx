@@ -41,7 +41,7 @@ const ViewerTabs: React.FC<ViewerTabsProps> = ({ activeTab, onTabChange }): JSX.
       >
         <Tab
           value="1d"
-          label="1D View"
+          label="1D view"
           icon={<ShowChartIcon />}
           iconPosition="start"
           sx={{
@@ -71,7 +71,7 @@ const ViewerTabs: React.FC<ViewerTabsProps> = ({ activeTab, onTabChange }): JSX.
         />
         <Tab
           value="2d"
-          label="MD View"
+          label="MD view"
           icon={<GridOnIcon />}
           iconPosition="start"
           sx={{

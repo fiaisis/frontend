@@ -100,7 +100,7 @@ const FileTree: React.FC<FileTreeProps> = ({
     >
       <Box sx={{ mb: 2 }}>
         <Typography variant="h5" fontWeight="bold" sx={{ mb: 1 }}>
-          File Tree
+          File tree
         </Typography>
 
         {/* Settings */}
