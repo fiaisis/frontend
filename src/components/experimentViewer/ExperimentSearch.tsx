@@ -70,7 +70,7 @@ const ExperimentSearch: React.FC<ExperimentSearchProps> = ({
           options={instrumentNames}
           sx={{ width: 200 }}
           size="small"
-          renderInput={(params) => <TextField {...params} label="Instrument" placeholder="Select instrument" />}
+          renderInput={(params) => <TextField {...params} label="Instrument" />}
           disabled={isLoading}
         />
 
@@ -83,7 +83,6 @@ const ExperimentSearch: React.FC<ExperimentSearchProps> = ({
           type="number"
           size="small"
           sx={{ width: 175 }}
-          placeholder="Enter number"
           disabled={isLoading}
         />
 
