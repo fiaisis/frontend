@@ -18,7 +18,7 @@ type MockLineVisProps = {
 const mockLineVis = jest.fn();
 
 jest.mock('@h5web/lib', () => {
-  const React = require('react') as typeof import('react');
+  const React = jest.requireActual('react') as typeof import('react');
   const mockBuildDomain = (
     array: { data: ArrayLike<number> },
     _scaleType?: string,
@@ -155,7 +155,7 @@ const linePlotData: LinePlotData[] = [
 let mountedContainer: HTMLDivElement | null = null;
 let mountedRoot: Root | null = null;
 
-function renderPlotViewer(showErrors = false, onShowErrorsChange = jest.fn()) {
+function renderPlotViewer(showErrors = false, onShowErrorsChange = jest.fn()): HTMLDivElement {
   mountedContainer = document.createElement('div');
   document.body.appendChild(mountedContainer);
   mountedRoot = createRoot(mountedContainer);
@@ -243,7 +243,7 @@ test('updates LineVis props when the y range and style controls change', () => {
   clickButton(container, /X scale:/i);
   expect(getLastLineVisProps().abscissaParams?.scaleType).toBe('log');
 
-  clickButton(container, 'Error Bars');
+  clickButton(container, 'Error bars');
   expect(onShowErrorsChange).toHaveBeenCalledWith(true);
 
   clickButton(container, 'Reset y range');

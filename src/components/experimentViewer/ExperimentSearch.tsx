@@ -9,6 +9,7 @@ import {
   ToggleButtonGroup,
   ToggleButton,
 } from '@mui/material';
+import { alpha, useTheme } from '@mui/material/styles';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
 import { instruments } from '../../lib/instrumentData';
@@ -30,6 +31,7 @@ const ExperimentSearch: React.FC<ExperimentSearchProps> = ({
   isLoading = false,
   isSearchActive = false,
 }): JSX.Element => {
+  const theme = useTheme();
   const [selectedInstrument, setSelectedInstrument] = useState<string | null>(initialInstrument || null);
   const [experimentNumber, setExperimentNumber] = useState<string>(
     initialExperimentNumber ? initialExperimentNumber.toString() : ''
@@ -74,7 +76,7 @@ const ExperimentSearch: React.FC<ExperimentSearchProps> = ({
         />
 
         <TextField
-          label="Experiment Number"
+          label="Experiment number"
           value={experimentNumber}
           slotProps={{ htmlInput: { min: 0 } }}
           onChange={(e) => setExperimentNumber(e.target.value)}
@@ -102,7 +104,22 @@ const ExperimentSearch: React.FC<ExperimentSearchProps> = ({
             startIcon={<ClearIcon />}
             onClick={handleClear}
             disabled={isLoading}
-            sx={{ height: 40 }}
+            sx={{
+              height: 40,
+              color: theme.palette.mode === 'dark' ? theme.palette.common.white : theme.palette.text.primary,
+              borderColor:
+                theme.palette.mode === 'dark'
+                  ? alpha(theme.palette.common.white, 0.28)
+                  : alpha(theme.palette.text.primary, 0.18),
+              bgcolor:
+                theme.palette.mode === 'dark'
+                  ? alpha(theme.palette.common.white, 0.06)
+                  : alpha(theme.palette.background.paper, 0.95),
+              '&:hover': {
+                borderColor: theme.palette.primary.main,
+                bgcolor: alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.18 : 0.08),
+              },
+            }}
           >
             Clear
           </Button>

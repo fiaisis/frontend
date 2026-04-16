@@ -42,6 +42,7 @@ interface PlotViewerProps {
 
 const PlotViewer: React.FC<PlotViewerProps> = ({ linePlotData, showErrors, onShowErrorsChange }): JSX.Element => {
   const theme = useTheme();
+  const hasData = linePlotData.length > 0;
 
   // State for line plot controls
   const [lineShowGrid, setLineShowGrid] = useState(true);
@@ -51,8 +52,70 @@ const PlotViewer: React.FC<PlotViewerProps> = ({ linePlotData, showErrors, onSho
   const [curveType, setCurveType] = useState<CurveType>(CurveType.LineOnly);
   const [interpolation, setInterpolation] = useState<Interpolation>(Interpolation.Linear);
 
+  // Sort data by domain size (largest first) to ensure the file with the biggest domain is primary
+  // This prevents crashes when auxiliary data has a larger domain than primary
+  const sortedData = hasData ? [...linePlotData].sort((a, b) => b.data.length - a.data.length) : [];
+
+  // Render line plots - largest domain as primary, rest as auxiliaries
+  const primaryData = sortedData[0];
+  const primaryLength = primaryData?.data.length ?? DEFAULT_DOMAIN.length;
+  const primaryArray = ndarray(primaryData?.data ?? DEFAULT_DOMAIN, [primaryLength]);
+
+  // Create error array if available and showErrors is true
+  const primaryErrorsArray =
+    showErrors && primaryData?.errors ? ndarray(primaryData.errors, [primaryData.errors.length]) : undefined;
+
+  // Create auxiliaries for additional lines with error bars
+  // Pad auxiliary arrays with NaN to match primary length (NaN values won't render)
+  const auxiliaries = primaryData
+    ? sortedData.slice(1).map((data) => {
+        // Pad data array with NaN if shorter than primary
+        const paddedData = new Float32Array(primaryLength);
+        paddedData.set(data.data);
+        if (data.data.length < primaryLength) {
+          paddedData.fill(NaN, data.data.length);
+        }
+
+        // Pad errors array with NaN if available and shorter than primary
+        let paddedErrors: Float32Array | undefined;
+        if (showErrors && data.errors) {
+          paddedErrors = new Float32Array(primaryLength);
+          paddedErrors.set(data.errors);
+          if (data.errors.length < primaryLength) {
+            paddedErrors.fill(NaN, data.errors.length);
+          }
+        }
+
+        return {
+          array: ndarray(paddedData, [primaryLength]),
+          label: data.filename,
+          color: data.color,
+          errors: paddedErrors ? ndarray(paddedErrors, [primaryLength]) : undefined,
+        };
+      })
+    : [];
+
+  // Calculate combined Y domain across all data to ensure proper graph sizing
+  // Start with primary data domain
+  let combinedDomain = primaryData ? getDomain(primaryArray, yScaleType, primaryErrorsArray) : DEFAULT_DOMAIN;
+
+  // Extend domain to include all auxiliaries
+  for (const aux of auxiliaries) {
+    const auxDomain = getDomain(aux.array, yScaleType, aux.errors);
+    if (auxDomain && combinedDomain) {
+      combinedDomain = [Math.min(combinedDomain[0], auxDomain[0]), Math.max(combinedDomain[1], auxDomain[1])];
+    }
+  }
+
+  const autoDomain = combinedDomain || DEFAULT_DOMAIN;
+  const effectiveYDomain = useMemo<Domain>(
+    () => [customYDomain[0] ?? autoDomain[0], customYDomain[1] ?? autoDomain[1]],
+    [autoDomain, customYDomain]
+  );
+  const [safeYDomain] = useSafeDomain(effectiveYDomain, autoDomain, yScaleType);
+
   // Handle empty state
-  if (linePlotData.length === 0) {
+  if (!primaryData) {
     return (
       <Box
         sx={{
@@ -74,67 +137,6 @@ const PlotViewer: React.FC<PlotViewerProps> = ({ linePlotData, showErrors, onSho
       </Box>
     );
   }
-
-  // Sort data by domain size (largest first) to ensure the file with the biggest domain is primary
-  // This prevents crashes when auxiliary data has a larger domain than primary
-  const sortedData = [...linePlotData].sort((a, b) => b.data.length - a.data.length);
-
-  // Render line plots - largest domain as primary, rest as auxiliaries
-  const primaryData = sortedData[0];
-
-  const primaryArray = ndarray(primaryData.data, [primaryData.data.length]);
-
-  // Create error array if available and showErrors is true
-  const primaryErrorsArray =
-    showErrors && primaryData.errors ? ndarray(primaryData.errors, [primaryData.errors.length]) : undefined;
-
-  // Create auxiliaries for additional lines with error bars
-  // Pad auxiliary arrays with NaN to match primary length (NaN values won't render)
-  const primaryLength = primaryData.data.length;
-  const auxiliaries = sortedData.slice(1).map((data) => {
-    // Pad data array with NaN if shorter than primary
-    const paddedData = new Float32Array(primaryLength);
-    paddedData.set(data.data);
-    if (data.data.length < primaryLength) {
-      paddedData.fill(NaN, data.data.length);
-    }
-
-    // Pad errors array with NaN if available and shorter than primary
-    let paddedErrors: Float32Array | undefined;
-    if (showErrors && data.errors) {
-      paddedErrors = new Float32Array(primaryLength);
-      paddedErrors.set(data.errors);
-      if (data.errors.length < primaryLength) {
-        paddedErrors.fill(NaN, data.errors.length);
-      }
-    }
-
-    return {
-      array: ndarray(paddedData, [primaryLength]),
-      label: data.filename,
-      color: data.color,
-      errors: paddedErrors ? ndarray(paddedErrors, [primaryLength]) : undefined,
-    };
-  });
-
-  // Calculate combined Y domain across all data to ensure proper graph sizing
-  // Start with primary data domain
-  let combinedDomain = getDomain(primaryArray, yScaleType, primaryErrorsArray);
-
-  // Extend domain to include all auxiliaries
-  for (const aux of auxiliaries) {
-    const auxDomain = getDomain(aux.array, yScaleType, aux.errors);
-    if (auxDomain && combinedDomain) {
-      combinedDomain = [Math.min(combinedDomain[0], auxDomain[0]), Math.max(combinedDomain[1], auxDomain[1])];
-    }
-  }
-
-  const autoDomain = combinedDomain || DEFAULT_DOMAIN;
-  const effectiveYDomain = useMemo<Domain>(
-    () => [customYDomain[0] ?? autoDomain[0], customYDomain[1] ?? autoDomain[1]],
-    [autoDomain, customYDomain]
-  );
-  const [safeYDomain] = useSafeDomain(effectiveYDomain, autoDomain, yScaleType);
 
   const h5WebThemeTokens = {
     color: theme.palette.text.primary,
@@ -210,7 +212,7 @@ const PlotViewer: React.FC<PlotViewerProps> = ({ linePlotData, showErrors, onSho
             <Separator />
             <ToggleBtn label="Grid" value={lineShowGrid} onToggle={() => setLineShowGrid(!lineShowGrid)} />
             <Separator />
-            <ToggleBtn label="Error Bars" value={showErrors} onToggle={() => onShowErrorsChange(!showErrors)} />
+            <ToggleBtn label="Error bars" value={showErrors} onToggle={() => onShowErrorsChange(!showErrors)} />
             <Separator />
             <Menu label="Aspect">
               <RadioGroup
