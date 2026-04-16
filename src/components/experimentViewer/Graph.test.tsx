@@ -1,4 +1,5 @@
 import React, { act } from 'react';
+import { afterEach, beforeEach, expect, jest, test } from '@jest/globals';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { createRoot, type Root } from 'react-dom/client';
 
@@ -33,8 +34,9 @@ jest.mock('@h5web/lib', () => {
       }
 
       const error = errors ? Array.from(errors.data)[index] : undefined;
-      const low = Number.isFinite(error) ? value - error : value;
-      const high = Number.isFinite(error) ? value + error : value;
+      const hasFiniteError = typeof error === 'number' && Number.isFinite(error);
+      const low = hasFiniteError ? value - error : value;
+      const high = hasFiniteError ? value + error : value;
 
       min = Math.min(min, low);
       max = Math.max(max, high);
