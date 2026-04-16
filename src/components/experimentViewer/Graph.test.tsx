@@ -1,5 +1,5 @@
 import React, { act } from 'react';
-import { afterEach, beforeEach, expect, jest, test } from '@jest/globals';
+import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { createRoot, type Root } from 'react-dom/client';
 
@@ -16,10 +16,9 @@ type MockLineVisProps = {
   interpolation?: string;
 };
 
-const mockLineVis = jest.fn();
+const mockLineVis = vi.fn();
 
-jest.mock('@h5web/lib', () => {
-  const React = jest.requireActual('react') as typeof import('react');
+vi.mock('@h5web/lib', () => {
   const mockBuildDomain = (
     array: { data: ArrayLike<number> },
     _scaleType?: string,
@@ -84,7 +83,7 @@ jest.mock('@h5web/lib', () => {
       mockLineVis(props);
       return <div data-testid="line-vis" />;
     },
-    Menu: ({ label, children }: { label: string; children: React.ReactNode }) => (
+    Menu: ({ label, children }: { label: string; children: import('react').ReactNode }) => (
       <div>
         <span>{label}</span>
         {children}
@@ -134,7 +133,7 @@ jest.mock('@h5web/lib', () => {
         {label}
       </button>
     ),
-    Toolbar: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+    Toolbar: ({ children }: { children: import('react').ReactNode }) => <div>{children}</div>,
     useSafeDomain: (domain: [number, number]) => [domain],
   };
 });
@@ -157,7 +156,7 @@ const linePlotData: LinePlotData[] = [
 let mountedContainer: HTMLDivElement | null = null;
 let mountedRoot: Root | null = null;
 
-function renderPlotViewer(showErrors = false, onShowErrorsChange = jest.fn()): HTMLDivElement {
+function renderPlotViewer(showErrors = false, onShowErrorsChange = vi.fn()): HTMLDivElement {
   mountedContainer = document.createElement('div');
   document.body.appendChild(mountedContainer);
   mountedRoot = createRoot(mountedContainer);
@@ -227,7 +226,7 @@ test('renders the extended 1D toolbar and labels the x axis as Index', () => {
 });
 
 test('updates LineVis props when the y range and style controls change', () => {
-  const onShowErrorsChange = jest.fn();
+  const onShowErrorsChange = vi.fn();
 
   const container = renderPlotViewer(false, onShowErrorsChange);
 
