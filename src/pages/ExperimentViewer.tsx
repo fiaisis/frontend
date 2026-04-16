@@ -558,7 +558,7 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
           {/* Results - show FileTree and Graph when we have jobs */}
           {(jobId || instrumentName || (isSearchActive && jobs.length > 0)) && (
             <>
-              {/* Left panel - File Tree */}
+              {/* Left panel - File tree */}
               <Box
                 sx={{
                   width: 320,

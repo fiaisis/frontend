@@ -19,6 +19,8 @@ import type { AxisScaleType, CustomDomain, Domain } from '@h5web/lib';
 import type { LinePlotData } from '../../lib/types';
 import { Box, Paper, Typography } from '@mui/material';
 import { alpha, useTheme } from '@mui/material/styles';
+import { MdAutoGraph, MdGridOn } from 'react-icons/md';
+import ErrorsIcon from '../../h5web/packages/app/src/vis-packs/core/line/ErrorsIcon';
 import resetZoomButtonStyles from '../../h5web/packages/lib/src/toolbar/floating/ResetZoomButton.module.css';
 import tooltipStyles from '../../h5web/packages/lib/src/vis/shared/Tooltip.module.css';
 
@@ -27,8 +29,8 @@ const AXIS_SCALE_OPTIONS: AxisScaleType[] = [ScaleType.Linear, ScaleType.Log, Sc
 
 const CURVE_TYPE_LABELS: Record<CurveType, string> = {
   [CurveType.LineOnly]: 'Line',
-  [CurveType.GlyphsOnly]: 'Glyphs',
-  [CurveType.LineAndGlyphs]: 'Line + Glyphs',
+  [CurveType.GlyphsOnly]: 'Points',
+  [CurveType.LineAndGlyphs]: 'Line + Points',
 };
 
 const INTERPOLATION_LABELS: Record<Interpolation, string> = {
@@ -145,9 +147,15 @@ const PlotViewer: React.FC<PlotViewerProps> = ({ linePlotData, showErrors, onSho
   const tooltipBorderColor =
     theme.palette.mode === 'dark' ? alpha(theme.palette.common.white, 0.12) : alpha(theme.palette.text.primary, 0.12);
   const floatingControlBackground =
-    theme.palette.mode === 'dark' ? alpha(theme.palette.grey[900], 0.82) : alpha(theme.palette.background.paper, 0.84);
+    theme.palette.mode === 'dark' ? alpha(theme.palette.grey[800], 0.96) : alpha(theme.palette.background.paper, 0.9);
+  const floatingControlHoverBackground =
+    theme.palette.mode === 'dark' ? alpha(theme.palette.grey[700], 0.98) : alpha(theme.palette.background.paper, 0.98);
+  const floatingControlTextColor =
+    theme.palette.mode === 'dark' ? theme.palette.common.white : theme.palette.text.primary;
   const floatingControlBorderColor =
-    theme.palette.mode === 'dark' ? alpha(theme.palette.common.white, 0.16) : alpha(theme.palette.text.primary, 0.12);
+    theme.palette.mode === 'dark' ? alpha(theme.palette.common.white, 0.24) : alpha(theme.palette.text.primary, 0.12);
+  const floatingControlHoverBorderColor =
+    theme.palette.mode === 'dark' ? alpha(theme.palette.common.white, 0.34) : alpha(theme.palette.text.primary, 0.18);
 
   const toolbarThemeTokens = {
     color: theme.palette.text.primary,
@@ -207,7 +215,7 @@ const PlotViewer: React.FC<PlotViewerProps> = ({ linePlotData, showErrors, onSho
       backdropFilter: 'blur(8px)',
     },
     [`& .${resetZoomButtonStyles.btnLike}`]: {
-      color: theme.palette.text.primary,
+      color: floatingControlTextColor,
       backgroundColor: floatingControlBackground,
       border: `1px solid ${floatingControlBorderColor}`,
       boxShadow: `0 0 0 1px ${floatingControlBorderColor}, 0 10px 24px ${alpha(
@@ -215,6 +223,19 @@ const PlotViewer: React.FC<PlotViewerProps> = ({ linePlotData, showErrors, onSho
         theme.palette.mode === 'dark' ? 0.42 : 0.14
       )}`,
       backdropFilter: 'blur(8px)',
+      fontWeight: 500,
+    },
+    [`& .${resetZoomButtonStyles.btn}:hover > .${resetZoomButtonStyles.btnLike}, & .${resetZoomButtonStyles.btn}:focus-visible > .${resetZoomButtonStyles.btnLike}`]:
+      {
+        backgroundColor: floatingControlHoverBackground,
+        borderColor: floatingControlHoverBorderColor,
+        boxShadow: `0 0 0 1px ${floatingControlHoverBorderColor}, 0 12px 28px ${alpha(
+          theme.palette.common.black,
+          theme.palette.mode === 'dark' ? 0.5 : 0.16
+        )}`,
+      },
+    [`& .${resetZoomButtonStyles.btn}:focus-visible`]: {
+      outline: 'none',
     },
   };
 
@@ -246,11 +267,21 @@ const PlotViewer: React.FC<PlotViewerProps> = ({ linePlotData, showErrors, onSho
               label="X scale"
             />
             <Separator />
-            <ToggleBtn label="Grid" value={lineShowGrid} onToggle={() => setLineShowGrid(!lineShowGrid)} />
+            <ToggleBtn
+              label="Grid"
+              Icon={MdGridOn}
+              value={lineShowGrid}
+              onToggle={() => setLineShowGrid(!lineShowGrid)}
+            />
             <Separator />
-            <ToggleBtn label="Error bars" value={showErrors} onToggle={() => onShowErrorsChange(!showErrors)} />
+            <ToggleBtn
+              label="Error bars"
+              Icon={ErrorsIcon}
+              value={showErrors}
+              onToggle={() => onShowErrorsChange(!showErrors)}
+            />
             <Separator />
-            <Menu label="Aspect">
+            <Menu label="Aspect" Icon={MdAutoGraph}>
               <RadioGroup
                 name="curve-type"
                 label="Curve type"

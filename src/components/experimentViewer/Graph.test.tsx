@@ -234,7 +234,7 @@ test('updates LineVis props when the y range and style controls change', () => {
   clickButton(container, 'Set y min');
   expect(getLastLineVisProps().domain).toEqual([2.5, 4]);
 
-  clickButton(container, 'Line + Glyphs');
+  clickButton(container, 'Line + Points');
   expect(getLastLineVisProps().curveType).toBe('LineAndGlyphs');
 
   clickButton(container, 'Constant');
