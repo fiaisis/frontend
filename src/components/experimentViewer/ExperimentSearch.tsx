@@ -9,6 +9,7 @@ import {
   ToggleButtonGroup,
   ToggleButton,
 } from '@mui/material';
+import { alpha, useTheme } from '@mui/material/styles';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
 import { instruments } from '../../lib/instrumentData';
@@ -30,6 +31,7 @@ const ExperimentSearch: React.FC<ExperimentSearchProps> = ({
   isLoading = false,
   isSearchActive = false,
 }): JSX.Element => {
+  const theme = useTheme();
   const [selectedInstrument, setSelectedInstrument] = useState<string | null>(initialInstrument || null);
   const [experimentNumber, setExperimentNumber] = useState<string>(
     initialExperimentNumber ? initialExperimentNumber.toString() : ''
@@ -55,7 +57,6 @@ const ExperimentSearch: React.FC<ExperimentSearchProps> = ({
 
   // Get instrument names for autocomplete
   const instrumentNames = instruments.map((instrument) => instrument.name);
-
   return (
     <Paper elevation={2} sx={{ p: 2, mb: 2 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
@@ -69,12 +70,12 @@ const ExperimentSearch: React.FC<ExperimentSearchProps> = ({
           options={instrumentNames}
           sx={{ width: 200 }}
           size="small"
-          renderInput={(params) => <TextField {...params} label="Instrument" placeholder="Select instrument" />}
+          renderInput={(params) => <TextField {...params} label="Instrument" />}
           disabled={isLoading}
         />
 
         <TextField
-          label="Experiment Number"
+          label="Experiment number"
           value={experimentNumber}
           slotProps={{ htmlInput: { min: 0 } }}
           onChange={(e) => setExperimentNumber(e.target.value)}
@@ -82,7 +83,6 @@ const ExperimentSearch: React.FC<ExperimentSearchProps> = ({
           type="number"
           size="small"
           sx={{ width: 175 }}
-          placeholder="Enter number"
           disabled={isLoading}
         />
 
@@ -102,7 +102,22 @@ const ExperimentSearch: React.FC<ExperimentSearchProps> = ({
             startIcon={<ClearIcon />}
             onClick={handleClear}
             disabled={isLoading}
-            sx={{ height: 40 }}
+            sx={{
+              height: 40,
+              color: theme.palette.mode === 'dark' ? theme.palette.common.white : theme.palette.text.primary,
+              borderColor:
+                theme.palette.mode === 'dark'
+                  ? alpha(theme.palette.common.white, 0.28)
+                  : alpha(theme.palette.text.primary, 0.18),
+              bgcolor:
+                theme.palette.mode === 'dark'
+                  ? alpha(theme.palette.common.white, 0.06)
+                  : alpha(theme.palette.background.paper, 0.95),
+              '&:hover': {
+                borderColor: theme.palette.primary.main,
+                bgcolor: alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.18 : 0.08),
+              },
+            }}
           >
             Clear
           </Button>
@@ -121,6 +136,18 @@ const ExperimentSearch: React.FC<ExperimentSearchProps> = ({
           onChange={(_, newLimit) => newLimit !== null && setResultLimit(newLimit)}
           size="small"
           disabled={isLoading}
+          sx={{
+            borderRadius: 0,
+            '& .MuiToggleButtonGroup-grouped': {
+              borderRadius: 0,
+              width: 56,
+              minWidth: 56,
+              height: 36,
+              px: 0,
+              justifyContent: 'center',
+              fontVariantNumeric: 'tabular-nums',
+            },
+          }}
         >
           <ToggleButton value={10}>10</ToggleButton>
           <ToggleButton value={25}>25</ToggleButton>
@@ -128,16 +155,6 @@ const ExperimentSearch: React.FC<ExperimentSearchProps> = ({
           <ToggleButton value={100}>100</ToggleButton>
         </ToggleButtonGroup>
       </Box>
-
-      {isSearchActive && (selectedInstrument || experimentNumber) && (
-        <Box sx={{ mt: 1 }}>
-          <Typography variant="body2" color="text.secondary">
-            Searching for: {selectedInstrument && <strong>Instrument: {selectedInstrument}</strong>}
-            {selectedInstrument && experimentNumber && ' | '}
-            {experimentNumber && <strong>Experiment: {experimentNumber}</strong>}
-          </Typography>
-        </Box>
-      )}
     </Paper>
   );
 };

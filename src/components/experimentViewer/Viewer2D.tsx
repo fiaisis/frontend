@@ -39,7 +39,7 @@ const Viewer2D: React.FC<Viewer2DProps> = ({ filepath }): JSX.Element => {
             Select a file to view 2D data
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Choose a file from the File Tree to visualize HDF5 datasets in 2D
+            Choose a file from the File tree to visualize HDF5 datasets in 2D
           </Typography>
         </Box>
       </Box>

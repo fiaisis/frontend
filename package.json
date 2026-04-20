@@ -74,8 +74,8 @@
     "build": "vite build",
     "build:standalone": "cross-env BUNDLE_REACT=true vite build",
     "preview": "vite preview --port 5001",
-    "test": "react-scripts test --testPathIgnorePatterns=src/h5web/ --env=jsdom --coverage --watchAll=false",
-    "test:watch": "react-scripts test --env=jsdom --watch",
+    "test": "vitest run --coverage",
+    "test:watch": "vitest",
     "serve:build": "yarn build && vite preview --port 5001",
     "serve:backend": "node server/server.js",
     "analyze": "yarn build && source-map-explorer build/main.*",
@@ -100,15 +100,6 @@
     "not ie <= 11",
     "not op_mini all"
   ],
-  "jest": {
-    "collectCoverageFrom": [
-      "src/**/*.{tsx,js,jsx}",
-      "!src/index.tsx",
-      "!src/serviceWorker.ts",
-      "!src/setupTests.js",
-      "!src/testbed/**/*"
-    ]
-  },
   "devDependencies": {
     "@cypress/react": "^7.0.3",
     "@cypress/webpack-dev-server": "^3.11.0",
@@ -116,6 +107,7 @@
     "@typescript-eslint/eslint-plugin": "8.16.0",
     "@typescript-eslint/parser": "8.16.0",
     "@vitejs/plugin-react": "^4.3.4",
+    "@vitest/coverage-v8": "^3.2.4",
     "cross-env": "^7.0.3",
     "cypress": "^13.16.0",
     "cypress-real-events": "^1.13.0",
@@ -129,7 +121,8 @@
     "lint-staged": "15.2.10",
     "prettier": "3.4.1",
     "serve": "14.2.4",
-    "vite": "^6.4.2"
+    "vite": "^6.4.2",
+    "vitest": "^3.2.4"
   },
   "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
 }
