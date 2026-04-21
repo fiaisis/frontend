@@ -1,12 +1,14 @@
-FROM harbor.stfc.ac.uk/datagateway/scigateway@sha256:b80383f50d4cddb9d6412f38eca97adc88c2611afa19753740028fcd9f03c5cd
 ENV AUTH_URL /auth
 ENV AUTH_PROVIDER jwt
+FROM harbor.stfc.ac.uk/datagateway/scigateway:v4.1.0@sha256:a8c2de9c741d811bb2af7c1483120a37af36957f167ceaba82696ea14d41f7d0
 
 WORKDIR /usr/local/apache2/htdocs
 
 USER root
-# Change the title
+
+# Keep the browser title aligned with FIA branding
 RUN sed -i -e 's/<title>SciGateway<\/title>/<title>FIA<\/title>/' index.html
+
 USER www-data
 
 COPY --chown=www-data:www-data settings.json ./settings.json
