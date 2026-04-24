@@ -7,6 +7,7 @@ export interface LogMessage {
   msg: string;
   level: string;
   timestamp: number;
+  valkey_id?: string; // Added to track the stream ID
 }
 
 interface LogSSEState {
@@ -23,6 +24,9 @@ export function useLiveLogsSSE(instrument: string | null, enabled: boolean = tru
   const abortControllerRef = useRef<AbortController | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Track the last received ID across reconnects without triggering re-renders
+  const lastIdRef = useRef<string>('0');
+
   const cleanup = useCallback(() => {
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current);
@@ -34,11 +38,16 @@ export function useLiveLogsSSE(instrument: string | null, enabled: boolean = tru
     }
   }, []);
 
+  // Reset logs and the Last-Event-ID if the instrument changes entirely
+  useEffect(() => {
+    lastIdRef.current = '0';
+    setLogs([]);
+  }, [instrument]);
+
   useEffect(() => {
     if (!instrument || !enabled) {
       cleanup();
       setIsConnected(false);
-      setLogs([]);
       setError(null);
       return;
     }
@@ -50,7 +59,8 @@ export function useLiveLogsSSE(instrument: string | null, enabled: boolean = tru
       const token = !isDev ? localStorage.getItem('scigateway:token') : '';
 
       try {
-        const response = await fetch(`${BASE_URL}/live-data/${instrument}/logs`, {
+        // Append the ?since parameter using the last known ID
+        const response = await fetch(`${BASE_URL}/live-data/${instrument}/logs?since=${lastIdRef.current}`, {
           method: 'GET',
           headers: {
             Authorization: `Bearer ${token}`,
@@ -81,15 +91,40 @@ export function useLiveLogsSSE(instrument: string | null, enabled: boolean = tru
           buffer = parts.pop() || ''; // Keep incomplete chunk in buffer
 
           for (const part of parts) {
-            if (part.startsWith('data: ')) {
-              const dataStr = part.replace(/^data: /, '').trim();
-              if (dataStr) {
-                try {
-                  const parsed = JSON.parse(dataStr);
-                  setLogs((prev) => [...prev, { ...parsed, timestamp: Date.now() + Math.random() }]);
-                } catch {
-                  console.error('[LiveLogsSSE] Failed to parse log JSON:', dataStr);
+            // Parse standard SSE chunks which might contain both 'id:' and 'data:' lines
+            const lines = part.split('\n');
+            let dataStr = '';
+            let eventId = '';
+
+            for (const line of lines) {
+              if (line.startsWith('data:')) {
+                dataStr = line.substring(5).trim();
+              } else if (line.startsWith('id:')) {
+                eventId = line.substring(3).trim();
+              }
+            }
+
+            if (dataStr) {
+              try {
+                const parsed = JSON.parse(dataStr);
+
+                // Use the ID from the SSE event, or fallback to the injected JSON one
+                const currentId = eventId || parsed.valkey_id;
+                if (currentId) {
+                  lastIdRef.current = currentId;
                 }
+
+                setLogs((prev) => [
+                  ...prev,
+                  {
+                    ...parsed,
+                    valkey_id: currentId,
+                    // Prefer the server's timestamp. Removed Math.random() as it breaks React keys/deduplication
+                    timestamp: parsed.timestamp || Date.now(),
+                  },
+                ]);
+              } catch {
+                console.error('[LiveLogsSSE] Failed to parse log JSON:', dataStr);
               }
             }
           }
