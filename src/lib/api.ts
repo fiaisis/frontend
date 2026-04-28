@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const isDev = import.meta.env.DEV || import.meta.env.VITE_DEV_MODE === 'true';
+export const isDev = import.meta.env.DEV || import.meta.env.VITE_DEV_MODE === 'true';
 
 export const fiaApi = axios.create();
 
@@ -27,7 +27,9 @@ export const clearFailedAuthRequestsQueue = (): void => {
 // We need to configure axios via interceptors because if the access token changes without a refresh the previous
 // token will still be used
 fiaApi.interceptors.request.use(async (config) => {
-  config.baseURL = import.meta.env.VITE_FIA_REST_API_URL;
+  // Use the proxy path '/api' in dev, otherwise use the environment variable
+  config.baseURL = isDev ? '/api' : import.meta.env.VITE_FIA_REST_API_URL;
+
   config.headers['Authorization'] = `Bearer ${!isDev ? localStorage.getItem('scigateway:token') : ''}`;
   return config;
 });
@@ -70,11 +72,12 @@ export const h5Api = axios.create({
 });
 
 h5Api.interceptors.request.use(async (config) => {
-  const baseUrl = import.meta.env.VITE_FIA_PLOTTING_API_URL ?? 'http://localhost:4000';
+  // Use the proxy path '/plottingapi' in dev
+  const baseUrl = isDev ? '/plottingapi' : (import.meta.env.VITE_FIA_PLOTTING_API_URL ?? 'http://localhost:4000');
+
   config.baseURL = baseUrl.replace(/\/+$/, '');
   config.headers['Authorization'] = `Bearer ${!isDev ? localStorage.getItem('scigateway:token') : ''}`;
 
-  // Remove trailing slash from URL (h5grove removed trailing slash from routes, but h5web still has them.
   if (config.url) {
     config.url = config.url.replace(/\/+(\?.*)?$/, '$1');
   }

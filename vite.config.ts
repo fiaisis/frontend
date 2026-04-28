@@ -29,6 +29,29 @@ export default defineConfig({
   },
   server: {
     port: 3000,
+    proxy: {
+      // Proxying all your endpoints to the remote dev server
+      '/api': {
+        target: 'https://dev.reduce.isis.cclrc.ac.uk',
+        changeOrigin: true,
+        secure: true, // Set to true if the remote SSL cert is valid/trusted
+      },
+      '/auth': {
+        target: 'https://dev.reduce.isis.cclrc.ac.uk',
+        changeOrigin: true,
+        secure: true,
+      },
+      '/plottingapi': {
+        target: 'https://dev.reduce.isis.cclrc.ac.uk',
+        changeOrigin: true,
+        secure: true,
+      },
+      '/data-viewer': {
+        target: 'https://dev.reduce.isis.cclrc.ac.uk',
+        changeOrigin: true,
+        secure: true,
+      },
+    },
   },
   css: {
     // Ensure CSS is processed

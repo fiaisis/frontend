@@ -11,7 +11,7 @@ import { DimMappingProvider } from '../../h5web/packages/app/src/dim-mapping-sto
 import EntityLoader from '../../h5web/packages/app/src/EntityLoader';
 import Visualizer from '../../h5web/packages/app/src/visualizer/Visualizer';
 import { createAxiosFetcher } from '@h5web/app';
-import { h5Api } from '../../lib/api';
+import { h5Api, isDev } from '../../lib/api';
 
 interface Viewer2DProps {
   filepath: string | null;
@@ -21,6 +21,7 @@ const Viewer2D: React.FC<Viewer2DProps> = ({ filepath }): JSX.Element => {
   const [selectedPath] = useState<string>('/');
 
   const fetcher = createAxiosFetcher(h5Api);
+  const apiBase = isDev ? '/plottingapi' : import.meta.env.VITE_FIA_PLOTTING_API_URL;
 
   // Empty state when no file is selected
   if (!filepath) {
@@ -53,7 +54,9 @@ const Viewer2D: React.FC<Viewer2DProps> = ({ filepath }): JSX.Element => {
         url={''}
         filepath={filepath}
         fetcher={fetcher}
-        getExportURL={() => new URL(`${window.location.origin}${import.meta.env.VITE_FIA_PLOTTING_API_URL}`)}
+        getExportURL={() => {
+          return new URL(apiBase, window.location.origin);
+        }}
       >
         <ErrorBoundary
           FallbackComponent={ErrorFallback}
