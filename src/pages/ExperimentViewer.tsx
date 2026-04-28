@@ -490,7 +490,16 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
   return (
     <>
       <NavArrows />
-      <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100%' }}>
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          height: '100vh',
+          width: '100%',
+          boxSizing: 'border-box',
+          pt: showSearch ? 0 : 2,
+        }}
+      >
         {/* Search bar - only show when not viewing specific job */}
         {showSearch && (
           <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
