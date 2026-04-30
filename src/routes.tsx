@@ -1,5 +1,6 @@
 // Resolve plugin logo at runtime
 const lightLogoUrl = new URL('./images/fia-light-text-logo.png', import.meta.url).href;
+const darkLogoUrl = new URL('./images/fia-dark-text-logo.png', import.meta.url).href;
 
 export function createRoute(
   section: string,
@@ -9,11 +10,6 @@ export function createRoute(
   helpText: string,
   unauthorised: boolean
 ): void {
-  // By default SciGateway will use logoDarkMode even when light mode is on.
-  // Also, switching between light and dark doesn't alter the header bar
-  // colour unless high contrast mode is also on, so for now only using the
-  // light logo
-  const logoUrl = lightLogoUrl;
   const routeAction = {
     type: 'scigateway:api:register_route',
     payload: {
@@ -24,8 +20,8 @@ export function createRoute(
       order: order,
       helpText: helpText,
       unauthorised: unauthorised,
-      logoLightMode: logoUrl,
-      logoDarkMode: logoUrl,
+      logoLightMode: lightLogoUrl,
+      logoDarkMode: darkLogoUrl,
       logoAltText: 'Flexible Interactive Automation',
     },
   };
