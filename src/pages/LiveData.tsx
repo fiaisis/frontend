@@ -23,16 +23,12 @@ import {
 } from '@mui/material';
 import NavArrows from '../components/navigation/NavArrows';
 import Viewer2D from '../components/experimentViewer/Viewer2D';
-import { LiveLogViewer } from '../components/experimentViewer/LiveLogViewer';
 
 const LiveData: React.FC = (): JSX.Element => {
   // Instrument selection
   const [instruments, setInstruments] = useState<string[]>([]);
   const [selectedInstrument, setSelectedInstrument] = useState<string | null>(null);
   const [loadingInstruments, setLoadingInstruments] = useState(true);
-
-  // Log viewer
-  const [showLiveLogViewer, setShowLiveLogViewer] = useState<boolean>(false);
 
   // File list
   const [files, setFiles] = useState<string[]>([]);
@@ -224,16 +220,6 @@ const LiveData: React.FC = (): JSX.Element => {
 
           {/* Loading indicator */}
           {loadingInstruments && <CircularProgress size={20} />}
-
-          {/* View Logs Button */}
-          <Button variant="contained" size="small" onClick={() => setShowLiveLogViewer(true)} sx={{ ml: 'auto' }}>
-            View Logs
-          </Button>
-          <LiveLogViewer
-            open={showLiveLogViewer}
-            onClose={() => setShowLiveLogViewer(false)}
-            instrumentName={selectedInstrument?.toUpperCase() ?? 'null'}
-          />
 
           {/* Edit Script Button */}
           {userRole === 'staff' && selectedInstrument && (
