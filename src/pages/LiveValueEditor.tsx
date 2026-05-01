@@ -3,23 +3,13 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
 // Material UI components
-import {
-  Alert,
-  Box,
-  Button,
-  CircularProgress,
-  Collapse,
-  IconButton,
-  Paper,
-  Snackbar,
-  Typography,
-  useTheme,
-} from '@mui/material';
-import { BugReport, ChevronLeft, ChevronRight, Save } from '@mui/icons-material'; // Monaco components
+import { Alert, Box, Button, CircularProgress, Snackbar, Typography, useTheme } from '@mui/material';
+import { Save } from '@mui/icons-material'; // Monaco components
 import Editor from '@monaco-editor/react';
 import { fiaApi } from '../lib/api';
 
 import NavArrows from '../components/navigation/NavArrows';
+import { LiveLogViewer } from '../components/experimentViewer/LiveLogViewer';
 
 const LiveValueEditor: React.FC = () => {
   const theme = useTheme();
@@ -29,8 +19,7 @@ const LiveValueEditor: React.FC = () => {
   const [saving, setSaving] = useState<boolean>(false);
   const [saveResult, setSaveResult] = useState<{ success: boolean; message: string } | null>(null);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [traceback, setTraceback] = useState<string | null>(null);
-  const [showTraceback, setShowTraceback] = useState(false);
+  const [showLiveLogViewer, setShowLiveLogViewer] = useState(false);
   const userModified = useRef(false);
 
   const fetchScript = useCallback(async (): Promise<void> => {
@@ -52,25 +41,9 @@ const LiveValueEditor: React.FC = () => {
       .finally(() => setLoading(false));
   }, [instrumentName]);
 
-  const fetchTraceback = useCallback(async (): Promise<void> => {
-    if (!instrumentName) return;
-    fiaApi
-      .get(`/live-data/${instrumentName}/traceback`)
-      .then((res) => {
-        setTraceback(res.data);
-        if (res.data) {
-          setShowTraceback(true);
-        }
-      })
-      .catch((err) => {
-        console.error('Error fetching live data traceback:', err);
-      });
-  }, [instrumentName]);
-
   useEffect(() => {
     fetchScript();
-    fetchTraceback();
-  }, [fetchScript, fetchTraceback]);
+  }, [fetchScript]);
 
   const handleSave = async (): Promise<void> => {
     if (!instrumentName) return;
@@ -89,8 +62,6 @@ const LiveValueEditor: React.FC = () => {
       .finally(() => {
         setSaving(false);
         setSnackbarOpen(true);
-        // Clear traceback on save since it might be fixed now
-        setTraceback(null);
       });
   };
 
@@ -112,16 +83,15 @@ const LiveValueEditor: React.FC = () => {
               {instrumentName} Live Data Script
             </Typography>
             <Box sx={{ display: 'flex', gap: 1 }}>
-              {traceback && (
-                <Button
-                  variant="outlined"
-                  color="error"
-                  startIcon={<BugReport />}
-                  onClick={() => setShowTraceback(!showTraceback)}
-                >
-                  {showTraceback ? 'Hide Traceback' : 'Show Traceback'}
-                </Button>
-              )}
+              {/* View Logs Button */}
+              <Button variant="contained" size="small" onClick={() => setShowLiveLogViewer(true)} sx={{ ml: 'auto' }}>
+                View Logs
+              </Button>
+              <LiveLogViewer
+                open={showLiveLogViewer}
+                onClose={() => setShowLiveLogViewer(false)}
+                instrumentName={instrumentName.toUpperCase() ?? 'null'}
+              />
               <Button
                 variant="contained"
                 color="primary"
@@ -185,75 +155,6 @@ const LiveValueEditor: React.FC = () => {
                   }}
                 />
               </Box>
-              {traceback && (
-                <Collapse in={showTraceback} orientation="horizontal">
-                  <Paper
-                    elevation={0}
-                    sx={{
-                      width: 500,
-                      height: '100%',
-                      borderLeft: 1,
-                      borderColor: 'divider',
-                      backgroundColor: theme.palette.mode === 'dark' ? '#1e1e1e' : '#f8f8f8',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      overflow: 'hidden',
-                    }}
-                  >
-                    <Box
-                      sx={{
-                        p: 1.5,
-                        borderBottom: 1,
-                        borderColor: 'divider',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                      }}
-                    >
-                      <Typography
-                        variant="subtitle2"
-                        color="error"
-                        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
-                      >
-                        <BugReport fontSize="small" /> Traceback
-                      </Typography>
-                      <IconButton size="small" onClick={() => setShowTraceback(false)}>
-                        <ChevronRight />
-                      </IconButton>
-                    </Box>
-                    <Box sx={{ p: 2, flex: 1, overflow: 'auto' }}>
-                      <Typography
-                        variant="body2"
-                        component="pre"
-                        sx={{
-                          fontFamily: 'monospace',
-                          whiteSpace: 'pre-wrap',
-                          wordBreak: 'break-all',
-                          color: theme.palette.error.main,
-                        }}
-                      >
-                        {traceback}
-                      </Typography>
-                    </Box>
-                  </Paper>
-                </Collapse>
-              )}
-              {!showTraceback && traceback && (
-                <Box
-                  sx={{
-                    borderLeft: 1,
-                    borderColor: 'divider',
-                    display: 'flex',
-                    alignItems: 'center',
-                    px: 0.5,
-                    backgroundColor: theme.palette.background.paper,
-                  }}
-                >
-                  <IconButton size="small" onClick={() => setShowTraceback(true)} color="error">
-                    <ChevronLeft />
-                  </IconButton>
-                </Box>
-              )}
             </>
           )}
         </Box>

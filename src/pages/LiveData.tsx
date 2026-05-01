@@ -1,5 +1,10 @@
 import '@h5web/lib/styles.css';
 import React, { useCallback, useEffect, useState } from 'react';
+import { useHistory } from 'react-router-dom';
+import { jwtDecode } from 'jwt-decode';
+import { fetchLiveDataFiles, fetchLiveDataInstruments } from '../lib/plottingServiceAPI';
+import { useLiveDataSSE } from '../lib/useLiveDataSSE';
+import { outputFilter } from '../lib/types';
 import {
   Alert,
   Box,
@@ -16,13 +21,8 @@ import {
   Select,
   Typography,
 } from '@mui/material';
-import { useHistory } from 'react-router-dom';
-import { jwtDecode } from 'jwt-decode';
-import Viewer2D from '../components/experimentViewer/Viewer2D';
 import NavArrows from '../components/navigation/NavArrows';
-import { fetchLiveDataFiles, fetchLiveDataInstruments } from '../lib/plottingServiceAPI';
-import { useLiveDataSSE } from '../lib/useLiveDataSSE';
-import { outputFilter } from '../lib/types';
+import Viewer2D from '../components/experimentViewer/Viewer2D';
 
 const LiveData: React.FC = (): JSX.Element => {
   // Instrument selection
