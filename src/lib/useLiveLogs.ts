@@ -119,7 +119,7 @@ export function useLiveLogsSSE(instrument: string | null, enabled: boolean = tru
                   {
                     ...parsed,
                     valkey_id: currentId,
-                    // Prefer the server's timestamp. Removed Math.random() as it breaks React keys/deduplication
+                    // Prefer the server's timestamp. Not using Math.random() as it breaks React keys/deduplication
                     timestamp: parsed.timestamp || Date.now(),
                   },
                 ]);
