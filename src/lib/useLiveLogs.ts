@@ -7,7 +7,7 @@ export interface LogMessage {
   msg: string;
   level: string;
   timestamp: number;
-  valkey_id?: string; // Added to track the stream ID
+  valkey_id?: string;
 }
 
 interface LogSSEState {
