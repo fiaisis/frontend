@@ -8,6 +8,7 @@ import Instruments from './pages/Instruments';
 import Homepage from './pages/Homepage';
 import ValueEditor from './pages/ValueEditor';
 import ExperimentViewer from './pages/ExperimentViewer';
+import MockExperimentViewer from './pages/MockExperimentViewer';
 import LiveData from './pages/LiveData';
 import LiveValueEditor from './pages/LiveValueEditor';
 import GlobalStyles from './GlobalStyles';
@@ -83,7 +84,10 @@ const App: FC = () => {
             <Route path="/reduction-history/:instrumentName/experiment-viewer-:jobId">
               <ExperimentViewer />
             </Route>
-            <Route path="/experiment-viewer">
+            <Route path="/experiment-viewer/mock">
+              <MockExperimentViewer />
+            </Route>
+            <Route exact path="/experiment-viewer">
               <ExperimentViewer />
             </Route>
             <Route path="/live-data/:instrumentName/edit-script">
