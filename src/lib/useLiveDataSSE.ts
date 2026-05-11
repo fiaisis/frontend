@@ -86,12 +86,6 @@ export function useLiveDataSSE(instrument: string | null, enabled: boolean = tru
       eventSource.onerror = () => {
         console.error('[LiveDataSSE] Connection error, attempting reconnect...');
         setIsConnected(false);
-        cleanup();
-
-        // Attempt to reconnect after 5 seconds
-        reconnectTimeoutRef.current = setTimeout(() => {
-          connect();
-        }, 5000);
       };
     };
 
