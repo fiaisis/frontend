@@ -28,7 +28,7 @@ export function useLiveDataSSE(instrument: string | null, enabled: boolean = tru
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const eventSourceRef = useRef<EventSource | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const cleanup = useCallback(() => {
@@ -36,9 +36,9 @@ export function useLiveDataSSE(instrument: string | null, enabled: boolean = tru
       clearTimeout(reconnectTimeoutRef.current);
       reconnectTimeoutRef.current = null;
     }
-    if (eventSourceRef.current) {
-      eventSourceRef.current.close();
-      eventSourceRef.current = null;
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
     }
   }, []);
 
@@ -52,41 +52,89 @@ export function useLiveDataSSE(instrument: string | null, enabled: boolean = tru
       return;
     }
 
-    const connect = () => {
+    const connect = async (): Promise<void> => {
       cleanup();
+      abortControllerRef.current = new AbortController();
 
       const baseUrl = import.meta.env.VITE_FIA_PLOTTING_API_URL;
       const token = !isDev ? localStorage.getItem('scigateway:token') : '';
-      const url = `${baseUrl}/live/live-data/${instrument}${token ? `?token=${token}` : ''}`;
+      const url = `${baseUrl}/live/live-data/${instrument}`;
 
-      const eventSource = new EventSource(url);
-      eventSourceRef.current = eventSource;
+      try {
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: 'text/event-stream',
+          },
+          signal: abortControllerRef.current.signal,
+        });
 
-      eventSource.addEventListener('connected', (event) => {
-        const data = JSON.parse(event.data);
-        setDirectory(data.directory);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
         setIsConnected(true);
         setError(null);
-      });
 
-      eventSource.addEventListener('file_changed', (event) => {
-        const data: FileChangedEvent = JSON.parse(event.data);
-        setChangedFile(data);
-        setLastUpdated(new Date());
-      });
+        const reader = response.body?.getReader();
+        const decoder = new TextDecoder('utf-8');
+        let buffer = '';
 
-      eventSource.addEventListener('error', (event) => {
-        if (event instanceof MessageEvent) {
-          const data = JSON.parse(event.data);
-          console.error('[LiveDataSSE] Server error:', data.error);
-          setError(data.error);
+        if (!reader) throw new Error('Stream reading not supported');
+
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const parts = buffer.split('\n\n');
+          buffer = parts.pop() || ''; // Keep incomplete chunk in buffer
+
+          for (const part of parts) {
+            const lines = part.split('\n');
+            let eventName = '';
+            let dataStr = '';
+
+            for (const line of lines) {
+              if (line.startsWith('event:')) {
+                eventName = line.substring(6).trim();
+              } else if (line.startsWith('data:')) {
+                dataStr = line.substring(5).trim();
+              }
+            }
+
+            if (dataStr) {
+              try {
+                const data = JSON.parse(dataStr);
+                if (eventName === 'connected') {
+                  setDirectory(data.directory);
+                  setIsConnected(true);
+                } else if (eventName === 'file_changed') {
+                  setChangedFile(data);
+                  setLastUpdated(new Date());
+                } else if (eventName === 'error') {
+                  console.error('[LiveDataSSE] Server error:', data.error);
+                  setError(data.error);
+                }
+              } catch (e) {
+                console.error('[LiveDataSSE] Failed to parse event JSON:', dataStr, e);
+              }
+            }
+          }
         }
-      });
+      } catch (err: any) {
+        if (err.name !== 'AbortError') {
+          console.error('[LiveDataSSE] Connection error:', err.message);
+          setIsConnected(false);
+          setError(err.message);
 
-      eventSource.onerror = () => {
-        console.error('[LiveDataSSE] Connection error, attempting reconnect...');
-        setIsConnected(false);
-      };
+          // Reconnect logic matching the log viewer pattern
+          reconnectTimeoutRef.current = setTimeout(() => {
+            connect();
+          }, 5000);
+        }
+      }
     };
 
     connect();

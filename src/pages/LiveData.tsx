@@ -52,6 +52,7 @@ const LiveData: React.FC = (): JSX.Element => {
   // Viewer state
   const [viewerKey, setViewerKey] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const lastProcessedRef = React.useRef<Date | null>(null);
 
   // SSE connection
   const {
@@ -124,9 +125,10 @@ const LiveData: React.FC = (): JSX.Element => {
 
   // Handle file changes from SSE
   useEffect(() => {
-    if (!changedFile) {
+    if (!changedFile || lastUpdated === lastProcessedRef.current) {
       return;
     }
+    lastProcessedRef.current = lastUpdated;
 
     // Ignore files that don't match the output filter
     const isValidFile = outputFilter.some((ext) => changedFile.file.endsWith(ext));
@@ -141,9 +143,13 @@ const LiveData: React.FC = (): JSX.Element => {
 
     // Refresh viewer if the currently selected file was modified
     if (changedFile.file === selectedFile && changedFile.change_type === 'modified') {
-      setViewerKey((prev) => prev + 1);
+      // Debounce the viewer refresh to prevent flickering during active writes
+      const timeoutId = setTimeout(() => {
+        setViewerKey((prev) => prev + 1);
+      }, 1000);
+      return () => clearTimeout(timeoutId);
     }
-  }, [changedFile, selectedFile, loadFiles]);
+  }, [changedFile, selectedFile, loadFiles, lastUpdated]);
 
   // Handle instrument change
   const handleInstrumentChange = (instrument: string): void => {
