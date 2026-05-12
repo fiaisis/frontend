@@ -35,7 +35,7 @@
     "forgotten-your-password": "Forgotten your password?",
     "forgotten-your-password-link": "https://users.facilities.rl.ac.uk/auth/ForgotPassword",
     "need-help-signing-in": "Need help signing in?",
-    "need-help-signing-in-link": "https://www.isis.stfc.ac.uk/Pages/Troubleshoot-Login",
+    "need-help-signing-in-link": "https://www.isis.stfc.ac.uk/Pages/Troubleshoot-Login.aspx",
     "dont-have-an-account-sign-up-now": "Don't have an account? <2>Sign up now</2>",
     "dont-have-an-account-sign-up-now-link": "https://users.facilities.rl.ac.uk/auth/CreateAccount",
     "auto-login-error-msg": "Unable to create anonymous session - please reload the page. If the error persists please contact support"
@@ -128,9 +128,9 @@
   "footer": {
     "links": {
       "text": "<0>ISIS Home</0> | <2>Privacy statement</2> | <4>Data policy</4> | <6>Accessibility statement</6> | <8>Contact</8>",
-      "facility": "https://www.isis.stfc.ac.uk/Pages/home",
+      "facility": "https://www.isis.stfc.ac.uk/Pages/home.aspx",
       "privacy-statement": "/cookies",
-      "data-policy": "https://www.isis.stfc.ac.uk/Pages/Data-Policy",
+      "data-policy": "https://www.isis.stfc.ac.uk/Pages/Data-Policy.aspx",
       "contact": "mailto:fia@stfc.ac.uk?subject=Question%20about%20FIA"
     },
     "website-development-provider": "Built by the <1>Scientific Computing</1> <2>Data and Software Engineering Group</2>"
