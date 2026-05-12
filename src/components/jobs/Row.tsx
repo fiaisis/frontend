@@ -238,10 +238,10 @@ const Row: React.FC<{
   index: number;
   isSelected: boolean;
   toggleSelection: (jobId: number) => void;
-  submitRerun: (job: Job) => Promise<void>;
+  resubmitJob: (job: Job) => Promise<void>;
   refreshJobs: () => void;
   mantidVersions: MantidVersionMap;
-}> = ({ job, showInstrumentColumn, index, submitRerun, refreshJobs, isSelected, toggleSelection, mantidVersions }) => {
+}> = ({ job, showInstrumentColumn, index, resubmitJob, refreshJobs, isSelected, toggleSelection, mantidVersions }) => {
   const [open, setOpen] = useState(false);
   const theme = useTheme();
   const [loading, setLoading] = useState(false);
@@ -348,10 +348,10 @@ const Row: React.FC<{
     }, 20_000);
 
     try {
-      await submitRerun(job);
+      await resubmitJob(job);
       rerunSuccessful.current = true;
     } catch (err) {
-      console.log('Error rerunning job', err);
+      console.log('Error resubmitting job', err);
       rerunSuccessful.current = false;
     } finally {
       if (loadingTimeoutRef.current !== null) {

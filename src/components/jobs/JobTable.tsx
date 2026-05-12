@@ -573,7 +573,7 @@ const JobTable: React.FC<{
                     index={index}
                     job={job}
                     showInstrumentColumn={selectedInstrument === 'ALL'}
-                    submitRerun={submitRerun}
+                    resubmitJob={resubmitJob}
                     refreshJobs={refreshJobs}
                     isSelected={selectedJobIds.includes(job.id)}
                     toggleSelection={toggleJobSelection}
