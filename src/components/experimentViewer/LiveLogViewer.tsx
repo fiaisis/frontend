@@ -1,6 +1,7 @@
 import React, { ReactNode, useEffect, useRef, useState } from 'react';
 import {
   Box,
+  Button,
   CircularProgress,
   Dialog,
   DialogContent,
@@ -14,6 +15,7 @@ import {
   useTheme,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
+import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import Draggable from 'react-draggable';
 import DragHandleIcon from '@mui/icons-material/DragHandle';
 import { useLiveLogsSSE } from '../../lib/useLiveLogs';
@@ -66,17 +68,42 @@ function PaperComponent(props: PaperProps): ReactNode {
 export const LiveLogViewer: React.FC<LiveLogViewerProps> = ({ open, onClose, instrumentName }) => {
   const theme = useTheme();
   const logsEndRef = useRef<HTMLDivElement>(null);
+  const logContainerRef = useRef<HTMLDivElement>(null);
+  const lastScrollTopRef = useRef<number>(0);
   const [showTimestamps, setShowTimestamps] = useState(false);
+  const [isAutoScrollEnabled, setIsAutoScrollEnabled] = useState(true);
 
   const { isConnected, logs, error } = useLiveLogsSSE(instrumentName, open);
   const validLogs = logs.filter((log) => log.msg && log.msg !== '[]' && log.msg.trim() !== '');
 
   // Auto-scroll to bottom
   useEffect(() => {
-    if (logsEndRef.current) {
-      logsEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    if (isAutoScrollEnabled && logsEndRef.current) {
+      logsEndRef.current.scrollIntoView({ behavior: 'auto' });
     }
-  }, [logs]);
+  }, [logs, isAutoScrollEnabled]);
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>): void => {
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+
+    // If the user scrolls UP, disable autoscroll.
+    // We use a small tolerance (2px) to avoid accidental triggers from minor rendering jitters.
+    if (scrollTop < lastScrollTopRef.current - 2) {
+      setIsAutoScrollEnabled(false);
+    }
+
+    // If the user scrolls back to the bottom (or the system scrolls us there), re-enable autoscroll.
+    const isAtBottom = scrollHeight - scrollTop <= clientHeight + 50;
+    if (isAtBottom) {
+      setIsAutoScrollEnabled(true);
+    }
+
+    lastScrollTopRef.current = scrollTop;
+  };
+
+  const resumeAutoScroll = (): void => {
+    setIsAutoScrollEnabled(true);
+  };
 
   const getLogColor = (level: string): string => {
     switch (level?.toUpperCase()) {
@@ -157,9 +184,12 @@ export const LiveLogViewer: React.FC<LiveLogViewerProps> = ({ open, onClose, ins
           flexDirection: 'column',
           flexGrow: 1, // Ensures this space fills when the user resizes the window
           height: '400px', // Initial height
+          position: 'relative',
         }}
       >
         <Box
+          ref={logContainerRef}
+          onScroll={handleScroll}
           sx={{
             flexGrow: 1,
             overflowY: 'auto',
@@ -233,6 +263,31 @@ export const LiveLogViewer: React.FC<LiveLogViewerProps> = ({ open, onClose, ins
           ))}
           <div ref={logsEndRef} />
         </Box>
+        {!isAutoScrollEnabled && (
+          <Button
+            variant="contained"
+            size="small"
+            onClick={resumeAutoScroll}
+            startIcon={<ArrowDownwardIcon />}
+            sx={{
+              position: 'absolute',
+              bottom: 16,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              borderRadius: '20px',
+              textTransform: 'none',
+              bgcolor: theme.palette.primary.main,
+              color: theme.palette.primary.contrastText,
+              '&:hover': {
+                bgcolor: theme.palette.primary.dark,
+              },
+              boxShadow: theme.shadows[4],
+              zIndex: 10,
+            }}
+          >
+            Resume Autoscroll
+          </Button>
+        )}
       </DialogContent>
 
       {/* BOTTOM DRAG HANDLE */}
