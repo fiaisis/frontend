@@ -223,8 +223,8 @@ const JobTable: React.FC<{
     void Promise.resolve(fetchJobs());
     void Promise.resolve(fetchTotalCount);
   };
-  const submitRerun = async (job: Job): Promise<void> => {
-    await fiaApi.post('/job/rerun', { job_id: job.id, runner_image: job.runner_image, script: job.script.value });
+  const resubmitJob = async (job: Job): Promise<void> => {
+    await fiaApi.post(`/job/${job.id}/resubmit`, { job_id: job.id, runner_image: job.runner_image, script: job.script.value });
   };
 
   const toggleJobSelection = (jobId: number): void => {
@@ -237,14 +237,14 @@ const JobTable: React.FC<{
     setIsBulkRerunning(true);
     let allSuccessful = true;
 
-    const jobsToRerun = jobs.filter((job) => selectedJobIds.includes(job.id));
+    const jobsToResubmit = jobs.filter((job) => selectedJobIds.includes(job.id));
 
-    for (const job of jobsToRerun) {
-      console.log(`Rerunning job ${job.id}`);
+    for (const job of jobsToResubmit) {
+      console.log(`Resubmitting job ${job.id}`);
       try {
-        await submitRerun(job);
+        await resubmitJob(job);
       } catch (error) {
-        console.error(`Failed to rerun job ${job.id}`, error);
+        console.error(`Failed to resubmit job ${job.id}`, error);
         allSuccessful = false;
       }
     }
