@@ -245,8 +245,8 @@ const Row: React.FC<{
   const [open, setOpen] = useState(false);
   const theme = useTheme();
   const [loading, setLoading] = useState(false);
-  const rerunJobId = useRef<number | null>(null);
-  const rerunSuccessful = useRef<boolean | null>(null);
+  const resubmitJobId = useRef<number | null>(null);
+  const resubmitSuccessful = useRef<boolean | null>(null);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [downloadErrorOpen, setDownloadErrorOpen] = useState(false);
   const [downloadErrorMessage, setDownloadErrorMessage] = useState('');
@@ -321,7 +321,7 @@ const Row: React.FC<{
   const extractFilename = (path: string): string => path.split('/').pop()?.split('.')[0] ?? '';
 
   const loadingTimeoutRef = useRef<number | null>(null);
-  const rerunFinalizeTimeoutRef = useRef<number | null>(null);
+  const resubmitFinalizeTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     return () => {
@@ -329,36 +329,36 @@ const Row: React.FC<{
         clearTimeout(loadingTimeoutRef.current);
         loadingTimeoutRef.current = null;
       }
-      if (rerunFinalizeTimeoutRef.current !== null) {
-        clearTimeout(rerunFinalizeTimeoutRef.current);
-        rerunFinalizeTimeoutRef.current = null;
+      if (resubmitFinalizeTimeoutRef.current !== null) {
+        clearTimeout(resubmitFinalizeTimeoutRef.current);
+        resubmitFinalizeTimeoutRef.current = null;
       }
     };
   }, []);
 
-  const handleRerun = async (): Promise<void> => {
-    rerunJobId.current = job.id;
+  const handleResubmit = async (): Promise<void> => {
+    resubmitJobId.current = job.id;
     setLoading(true);
 
     // Fallback that clears spinner after 20s if nothing happens
     loadingTimeoutRef.current = window.setTimeout(() => {
       setLoading(false);
-      rerunSuccessful.current = false;
+      resubmitSuccessful.current = false;
       setSnackbarOpen(true);
     }, 20_000);
 
     try {
       await resubmitJob(job);
-      rerunSuccessful.current = true;
+      resubmitSuccessful.current = true;
     } catch (err) {
       console.log('Error resubmitting job', err);
-      rerunSuccessful.current = false;
+      resubmitSuccessful.current = false;
     } finally {
       if (loadingTimeoutRef.current !== null) {
         clearTimeout(loadingTimeoutRef.current);
         loadingTimeoutRef.current = null;
       }
-      rerunFinalizeTimeoutRef.current = window.setTimeout(() => {
+      resubmitFinalizeTimeoutRef.current = window.setTimeout(() => {
         setLoading(false);
         setSnackbarOpen(true);
         refreshJobs();
@@ -475,11 +475,11 @@ const Row: React.FC<{
             borderRadius: '8px',
             fontWeight: 'bold',
           }}
-          severity={rerunSuccessful.current ? 'success' : 'error'}
+          severity={resubmitSuccessful.current ? 'success' : 'error'}
         >
-          {rerunSuccessful.current
-            ? `Rerun started successfully for reduction ${rerunJobId.current}`
-            : `Rerun could not be started for ${rerunJobId.current} — please try again later or contact staff`}
+          {resubmitSuccessful.current
+            ? `Resubmit started successfully for reduction ${resubmitJobId.current}`
+            : `Resubmit could not be started for ${resubmitJobId.current} — please try again later or contact staff`}
         </Alert>
       </Snackbar>
 
@@ -816,9 +816,9 @@ const Row: React.FC<{
                       variant="contained"
                       sx={{ flexShrink: 0, whiteSpace: 'nowrap', width: 60, height: 38 }}
                       disabled={loading}
-                      onClick={handleRerun}
+                      onClick={handleResubmit}
                     >
-                      {loading ? <CircularProgress size={24} color="inherit" /> : 'Rerun'}
+                      {loading ? <CircularProgress size={24} color="inherit" /> : 'Resubmit'}
                     </Button>
                     <Button
                       variant="contained"
