@@ -814,7 +814,7 @@ const Row: React.FC<{
                     )}
                     <Button
                       variant="contained"
-                      sx={{ flexShrink: 0, whiteSpace: 'nowrap', width: 60, height: 38 }}
+                      sx={{ flexShrink: 0, whiteSpace: 'nowrap', width: 90, height: 38, }}
                       disabled={loading}
                       onClick={handleResubmit}
                     >
