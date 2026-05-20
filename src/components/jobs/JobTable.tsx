@@ -224,7 +224,7 @@ const JobTable: React.FC<{
     void Promise.resolve(fetchTotalCount);
   };
   const resubmitJob = async (job: Job): Promise<void> => {
-    await fiaApi.post(`/job/${job.id}/resubmit`, { job_id: job.id, runner_image: job.runner_image, script: job.script.value });
+    await fiaApi.post(`/job/${job.id}/resubmit`);
   };
 
   const toggleJobSelection = (jobId: number): void => {
