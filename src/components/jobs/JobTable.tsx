@@ -76,9 +76,9 @@ const JobTable: React.FC<{
   const countQueryPath = selectedInstrument === 'ALL' ? '/jobs/count' : `/instrument/${selectedInstrument}/jobs/count`;
   const fetchJobs = useFetchJobs(queryPath, query, setJobs);
   const fetchTotalCount = useFetchTotalCount(countQueryPath, countQuery, setTotalRows);
-  const [isBulkRerunning, setIsBulkRerunning] = useState(false);
+  const [isBulkResubmitting, setIsBulkResubmitting] = useState(false);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [bulkRerunSuccessful, setBulkRerunSuccessful] = useState(true);
+  const [bulkResubmitSuccessful, setBulkResubmitSuccessful] = useState(true);
   const [selectedJobIds, setSelectedJobIds] = useState<number[]>([]);
   const totalDownloadableFiles = jobs
     .filter((job) => selectedJobIds.includes(job.id))
@@ -223,8 +223,8 @@ const JobTable: React.FC<{
     void Promise.resolve(fetchJobs());
     void Promise.resolve(fetchTotalCount);
   };
-  const submitRerun = async (job: Job): Promise<void> => {
-    await fiaApi.post('/job/rerun', { job_id: job.id, runner_image: job.runner_image, script: job.script.value });
+  const resubmitJob = async (job: Job): Promise<void> => {
+    await fiaApi.post(`/job/${job.id}/resubmit`);
   };
 
   const toggleJobSelection = (jobId: number): void => {
@@ -233,26 +233,26 @@ const JobTable: React.FC<{
     );
   };
 
-  const handleBulkRerun = async (): Promise<void> => {
-    setIsBulkRerunning(true);
+  const handleBulkResubmit = async (): Promise<void> => {
+    setIsBulkResubmitting(true);
     let allSuccessful = true;
 
-    const jobsToRerun = jobs.filter((job) => selectedJobIds.includes(job.id));
+    const jobsToResubmit = jobs.filter((job) => selectedJobIds.includes(job.id));
 
-    for (const job of jobsToRerun) {
-      console.log(`Rerunning job ${job.id}`);
+    for (const job of jobsToResubmit) {
+      console.log(`Resubmitting job ${job.id}`);
       try {
-        await submitRerun(job);
+        await resubmitJob(job);
       } catch (error) {
-        console.error(`Failed to rerun job ${job.id}`, error);
+        console.error(`Failed to resubmit job ${job.id}`, error);
         allSuccessful = false;
       }
     }
 
-    setBulkRerunSuccessful(allSuccessful);
+    setBulkResubmitSuccessful(allSuccessful);
     setSnackbarOpen(true);
     refreshJobs();
-    setIsBulkRerunning(false);
+    setIsBulkResubmitting(false);
     setSelectedJobIds([]);
   };
 
@@ -375,11 +375,11 @@ const JobTable: React.FC<{
               borderRadius: '8px',
               fontWeight: 'bold',
             }}
-            severity={bulkRerunSuccessful ? 'success' : 'error'}
+            severity={bulkResubmitSuccessful ? 'success' : 'error'}
           >
-            {bulkRerunSuccessful
-              ? `Reruns started successfully for all selected reductions`
-              : `Some reductions could not be rerun — please check the console for details`}
+            {bulkResubmitSuccessful
+              ? `Resubmissions started successfully for all selected reductions`
+              : `Some reductions could not be resubmitted — please check the console for details`}
           </Alert>
         </Snackbar>
 
@@ -411,14 +411,14 @@ const JobTable: React.FC<{
                 <Button
                   variant="contained"
                   color="primary"
-                  disabled={isBulkRerunning}
-                  onClick={handleBulkRerun}
+                  disabled={isBulkResubmitting}
+                  onClick={handleBulkResubmit}
                   sx={{ height: '36px', width: 120 }}
                 >
-                  {isBulkRerunning ? (
+                  {isBulkResubmitting ? (
                     <CircularProgress size={24} color="inherit" />
                   ) : (
-                    `Rerun (${selectedJobIds.length})`
+                    `Resubmit (${selectedJobIds.length})`
                   )}
                 </Button>
                 <Button
@@ -509,8 +509,8 @@ const JobTable: React.FC<{
           handleFiltersChange={onFiltersChange}
           appliedFilters={filters}
           jobs={jobs}
-          handleBulkRerun={handleBulkRerun}
-          isBulkRerunning={isBulkRerunning}
+          handleBulkResubmit={handleBulkResubmit}
+          isBulkResubmitting={isBulkResubmitting}
           resetPageNumber={() => handlePageChange(0)} // Reset page number when filters change
         />
         <TableContainer component={Paper} sx={{ maxHeight: 640, minHeight: 640 }}>
@@ -573,7 +573,7 @@ const JobTable: React.FC<{
                     index={index}
                     job={job}
                     showInstrumentColumn={selectedInstrument === 'ALL'}
-                    submitRerun={submitRerun}
+                    resubmitJob={resubmitJob}
                     refreshJobs={refreshJobs}
                     isSelected={selectedJobIds.includes(job.id)}
                     toggleSelection={toggleJobSelection}

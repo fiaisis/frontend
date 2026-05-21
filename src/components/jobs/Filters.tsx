@@ -123,8 +123,8 @@ const FilterContainer: React.FC<{
   showInstrumentFilter: boolean;
   handleFiltersChange: (filters: JobQueryFilters) => void;
   jobs: Job[];
-  handleBulkRerun: () => void;
-  isBulkRerunning: boolean;
+  handleBulkResubmit: () => void;
+  isBulkResubmitting: boolean;
   resetPageNumber: () => void;
   appliedFilters: JobQueryFilters;
 }> = ({ visible, showInstrumentFilter, handleFiltersChange, resetPageNumber, appliedFilters }): ReactElement => {
