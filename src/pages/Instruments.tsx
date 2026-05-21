@@ -1,16 +1,16 @@
 // React components
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import StarIcon from '@mui/icons-material/Star';
+import StarBorderIcon from '@mui/icons-material/StarBorder';
+import { Box, Button, Collapse, IconButton, Link, List, ListItem, Typography, useTheme } from '@mui/material';
 import * as React from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 
 // Material UI components
-import { Box, Button, Collapse, IconButton, Link, List, ListItem, Typography, useTheme } from '@mui/material';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import StarBorderIcon from '@mui/icons-material/StarBorder';
-import StarIcon from '@mui/icons-material/Star';
 
 // Local data
-import { instruments } from '../lib/instrumentData';
 import NavArrows from '../components/navigation/NavArrows';
+import { instruments } from '../lib/instrumentData';
 
 const Instruments: React.FC = () => {
   const theme = useTheme();

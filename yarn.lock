@@ -10003,6 +10003,7 @@ __metadata:
     eslint-config-prettier: 9.1.0
     eslint-config-react-app: 7.0.0
     eslint-plugin-cypress: 4.1.0
+    eslint-plugin-import: ^2.25.3
     eslint-plugin-prettier: 5.2.1
     express: 4.21.1
     express-ws: 5.0.2

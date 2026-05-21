@@ -1,12 +1,13 @@
 import '@h5web/lib/styles.css';
-import React from 'react';
-import ndarray from 'ndarray';
 import { HeatmapVis, RgbVis } from '@h5web/lib';
-import NavArrows from '../components/navigation/NavArrows';
-import axios from 'axios';
 import { Box, CircularProgress, Paper, Slider, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material';
-import { fiaApi, h5Api } from '../lib/api';
+import axios from 'axios';
+import ndarray from 'ndarray';
+import React from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
+
+import NavArrows from '../components/navigation/NavArrows';
+import { fiaApi, h5Api } from '../lib/api';
 import { Job } from '../lib/types';
 
 type ImatImagePayload = {
@@ -33,6 +34,13 @@ type IMATViewerProps = {
   showNav?: boolean;
 };
 
+type ViewerSize = 'fit' | 'small' | 'medium' | 'large' | 'full';
+
+const VIEWER_SIZES: readonly ViewerSize[] = ['fit', 'small', 'medium', 'large', 'full'];
+
+const isViewerSize = (value: string | null): value is ViewerSize =>
+  value !== null && VIEWER_SIZES.includes(value as ViewerSize);
+
 const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
@@ -47,7 +55,8 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
 
   const history = useHistory();
   const initialImageIndex = parseInt(queryParams.get('imageIndex') || '0', 10);
-  const initialViewerSize = (queryParams.get('viewerSize') as any) || 'fit';
+  const viewerSizeParam = queryParams.get('viewerSize');
+  const initialViewerSize = isViewerSize(viewerSizeParam) ? viewerSizeParam : 'fit';
 
   // Stack Viewer state
   const [stackJobId] = React.useState<string | null>(initialJobId);
@@ -134,9 +143,13 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
           data: typedData,
           shape: payload.shape,
         });
-      } catch (err: any) {
+      } catch (err: unknown) {
         if (!isMounted || (axios.isAxiosError(err) && err.code === 'ERR_CANCELED')) return;
-        setLatestError(err.response?.status === 404 ? 'Latest IMAT image could not be found' : 'Unable to load image');
+        setLatestError(
+          axios.isAxiosError(err) && err.response?.status === 404
+            ? 'Latest IMAT image could not be found'
+            : 'Unable to load image'
+        );
       } finally {
         if (isMounted) setLatestLoading(false);
       }
@@ -153,7 +166,7 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
   React.useEffect(() => {
     if (mode !== 'stack' || !stackJobId || !initialInstrument || !initialExperiment) return;
 
-    const resolvePath = async () => {
+    const resolvePath = async (): Promise<void> => {
       try {
         setStackLoading(true);
         setStackError(null);
@@ -186,7 +199,7 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
             try {
               const outputs = JSON.parse(path);
               path = Array.isArray(outputs) ? outputs[0] : path;
-            } catch (e) {
+            } catch {
               /* ignore */
             }
           }
@@ -202,7 +215,7 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
             setStackError('Failed to resolve output directory');
           }
         }
-      } catch (err) {
+      } catch {
         setStackError('Failed to resolve output directory');
       } finally {
         setStackLoading(false);
@@ -215,7 +228,7 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
   React.useEffect(() => {
     if (mode !== 'stack' || !directoryPath) return;
 
-    const fetchList = async () => {
+    const fetchList = async (): Promise<void> => {
       try {
         const response = await h5Api.get<string[]>('/imat/list-images', {
           params: { path: directoryPath },
@@ -224,7 +237,7 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
           new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' }).compare
         );
         setStackImages(sortedData);
-      } catch (err) {
+      } catch {
         setStackError('Failed to list images in stack');
       }
     };
@@ -233,7 +246,7 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
 
   // Fetch individual stack image
   const fetchStackImage = React.useCallback(
-    async (index: number, downsample: number = 1) => {
+    async (index: number, downsample: number = 1): Promise<void> => {
       if (!directoryPath || !stackImages[index]) return;
       try {
         setStackLoading(true);
@@ -266,7 +279,7 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
           sampledWidth,
           sampledHeight,
         });
-      } catch (err) {
+      } catch {
         setStackError('Failed to load stack image');
       } finally {
         setStackLoading(false);
@@ -289,13 +302,13 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
     return () => clearTimeout(timer);
   }, [mode, stackImages, currentImageIndex, isSliding, fetchStackImage]);
 
-  const handleSliderChange = (_event: React.SyntheticEvent | Event, newValue: number | number[]) => {
+  const handleSliderChange = (_event: React.SyntheticEvent | Event, newValue: number | number[]): void => {
     setIsSliding(true);
     const index = newValue as number;
     setCurrentImageIndex(index);
   };
 
-  const handleSliderChangeCommitted = (_event: React.SyntheticEvent | Event, newValue: number | number[]) => {
+  const handleSliderChangeCommitted = (_event: React.SyntheticEvent | Event, newValue: number | number[]): void => {
     setIsSliding(false);
     const index = newValue as number;
     setCurrentImageIndex(index);

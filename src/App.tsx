@@ -1,22 +1,20 @@
-// React components
-import React, { FC } from 'react';
-import { BrowserRouter as Router, Redirect, Route, Switch } from 'react-router-dom';
-import ReactGA from 'react-ga4';
-
-// Local data
-import Instruments from './pages/Instruments';
-import Homepage from './pages/Homepage';
-import ValueEditor from './pages/ValueEditor';
-import ExperimentViewer from './pages/ExperimentViewer';
-import LiveData from './pages/LiveData';
-import LiveValueEditor from './pages/LiveValueEditor';
-import GlobalStyles from './GlobalStyles';
-import Jobs from './pages/Jobs';
-import DataViewer from './pages/DataViewer';
-import { clearFailedAuthRequestsQueue, retryFailedAuthRequests } from './lib/api';
 import 'dayjs/locale/en-gb';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import React, { FC } from 'react';
+import ReactGA from 'react-ga4';
+import { BrowserRouter as Router, Redirect, Route, Switch } from 'react-router-dom';
+
+import GlobalStyles from './GlobalStyles';
+import { clearFailedAuthRequestsQueue, retryFailedAuthRequests } from './lib/api';
+import DataViewer from './pages/DataViewer';
+import ExperimentViewer from './pages/ExperimentViewer';
+import Homepage from './pages/Homepage';
+import Instruments from './pages/Instruments';
+import Jobs from './pages/Jobs';
+import LiveData from './pages/LiveData';
+import LiveValueEditor from './pages/LiveValueEditor';
+import ValueEditor from './pages/ValueEditor';
 
 // Initialize Google Analytics with the given tracking ID
 ReactGA.initialize('G-7XJBCP6P75');

@@ -1,5 +1,6 @@
 module.exports = {
   parser: '@typescript-eslint/parser',
+  ignorePatterns: ['src/h5web/**'],
   env: {
     browser: true,
     jest: true,
@@ -13,7 +14,7 @@ module.exports = {
     'prettier',
     'plugin:cypress/recommended',
   ],
-  plugins: ['prettier', 'cypress'],
+  plugins: ['prettier', 'cypress', 'import'],
   rules: {
     'react/jsx-filename-extension': 'off',
     'jsx-a11y/click-events-have-key-events': 'off',
@@ -40,6 +41,17 @@ module.exports = {
           {
             allowExpressions: true,
             allowTypedFunctionExpressions: true,
+          },
+        ],
+        'import/order': [
+          'error',
+          {
+            groups: ['builtin', 'external', 'internal', ['parent', 'sibling', 'index'], 'object', 'type'],
+            'newlines-between': 'always',
+            alphabetize: {
+              order: 'asc',
+              caseInsensitive: true,
+            },
           },
         ],
       },

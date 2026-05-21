@@ -1,16 +1,17 @@
 import '@h5web/app/styles.css';
-import React, { Suspense, useState } from 'react';
+import { createAxiosFetcher } from '@h5web/app';
 import { Box, Typography } from '@mui/material';
-import H5GroveProvider from '../../h5web/packages/app/src/providers/h5grove/H5GroveProvider';
+import React, { Suspense, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
-import ErrorFallback from '../../h5web/packages/app/src/ErrorFallback';
 import { ReflexContainer, ReflexElement } from 'react-reflex';
+
 import styles from '../../h5web/packages/app/src/App.module.css';
-import VisConfigProvider from '../../h5web/packages/app/src/VisConfigProvider';
 import { DimMappingProvider } from '../../h5web/packages/app/src/dim-mapping-store';
 import EntityLoader from '../../h5web/packages/app/src/EntityLoader';
+import ErrorFallback from '../../h5web/packages/app/src/ErrorFallback';
+import H5GroveProvider from '../../h5web/packages/app/src/providers/h5grove/H5GroveProvider';
+import VisConfigProvider from '../../h5web/packages/app/src/VisConfigProvider';
 import Visualizer from '../../h5web/packages/app/src/visualizer/Visualizer';
-import { createAxiosFetcher } from '@h5web/app';
 import { h5Api, isDev } from '../../lib/api';
 
 interface Viewer2DProps {

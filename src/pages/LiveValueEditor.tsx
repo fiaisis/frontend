@@ -1,15 +1,15 @@
 // React components
+import Editor from '@monaco-editor/react';
+import { Save } from '@mui/icons-material'; // Monaco components
+import { Alert, Box, Button, CircularProgress, Snackbar, Typography, useTheme } from '@mui/material';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
 // Material UI components
-import { Alert, Box, Button, CircularProgress, Snackbar, Typography, useTheme } from '@mui/material';
-import { Save } from '@mui/icons-material'; // Monaco components
-import Editor from '@monaco-editor/react';
-import { fiaApi } from '../lib/api';
 
-import NavArrows from '../components/navigation/NavArrows';
 import { LiveLogViewer } from '../components/experimentViewer/LiveLogViewer';
+import NavArrows from '../components/navigation/NavArrows';
+import { fiaApi } from '../lib/api';
 
 const LiveValueEditor: React.FC = () => {
   const theme = useTheme();

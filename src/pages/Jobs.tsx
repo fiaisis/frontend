@@ -1,5 +1,4 @@
-import { Link, useHistory, useLocation, useParams } from 'react-router-dom';
-import JobTable from '../components/jobs/JobTable';
+import { ArrowBack, Settings } from '@mui/icons-material';
 import {
   Box,
   Button,
@@ -11,16 +10,18 @@ import {
   Typography,
   useTheme,
 } from '@mui/material';
-import { ArrowBack, Settings } from '@mui/icons-material';
-import React, { ReactElement, useState } from 'react';
-import InstrumentSelector from '../components/jobs/InstrumentSelector';
-import InstrumentConfigDrawer from '../components/configsettings/InstrumentConfigDrawer';
-import { isValidInstrument } from '../lib/instrumentData';
 import { jwtDecode } from 'jwt-decode';
-import { JobQueryFilters } from '../lib/types';
-import { JOB_ROWS_PER_PAGE_OPTIONS, JobRowsPerPage, isJobRowsPerPage } from '../components/jobs/constants';
-import NavArrows from '../components/navigation/NavArrows';
+import React, { ReactElement, useState } from 'react';
+import { Link, useHistory, useLocation, useParams } from 'react-router-dom';
+
 import IMATViewer from './IMATViewer';
+import InstrumentConfigDrawer from '../components/configsettings/InstrumentConfigDrawer';
+import { JOB_ROWS_PER_PAGE_OPTIONS, JobRowsPerPage, isJobRowsPerPage } from '../components/jobs/constants';
+import InstrumentSelector from '../components/jobs/InstrumentSelector';
+import JobTable from '../components/jobs/JobTable';
+import NavArrows from '../components/navigation/NavArrows';
+import { isValidInstrument } from '../lib/instrumentData';
+import { JobQueryFilters } from '../lib/types';
 
 const DEFAULT_ROWS_PER_PAGE: JobRowsPerPage = JOB_ROWS_PER_PAGE_OPTIONS[1];
 
@@ -220,7 +221,7 @@ const Jobs: React.FC = (): ReactElement => {
         history.replace({ pathname: location.pathname, search: searchString });
       }
     },
-    [history, location.pathname, location.search, imatTab]
+    [history, location.pathname, location.search, imatTab, isImat]
   );
 
   React.useEffect(() => {

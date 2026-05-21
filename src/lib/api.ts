@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 
 export const isDev = import.meta.env.DEV || import.meta.env.VITE_DEV_MODE === 'true';
 
@@ -36,10 +36,10 @@ fiaApi.interceptors.request.use(async (config) => {
 
 // This should be called when SciGateway successfully refreshes the access token - it retries
 // all requests that failed due to an invalid token
-const refreshTokenInterceptor = async (error: any): Promise<unknown> => {
+const refreshTokenInterceptor = async (error: AxiosError): Promise<unknown> => {
   const originalRequest = error.config;
   // Check if the response is a 403 error
-  if (error.response?.status === 403) {
+  if (error.response?.status === 403 && originalRequest) {
     // Prevent multiple refresh requests
     if (!isFetchingAccessToken) {
       isFetchingAccessToken = true;

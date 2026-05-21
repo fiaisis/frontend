@@ -1,8 +1,8 @@
-import React from 'react';
+import GridOnIcon from '@mui/icons-material/GridOn';
+import ShowChartIcon from '@mui/icons-material/ShowChart';
 import { Tabs, Tab, Box } from '@mui/material';
 import { alpha, useTheme } from '@mui/material/styles';
-import ShowChartIcon from '@mui/icons-material/ShowChart';
-import GridOnIcon from '@mui/icons-material/GridOn';
+import React from 'react';
 
 interface ViewerTabsProps {
   activeTab: '1d' | '2d';

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import ClearIcon from '@mui/icons-material/Clear';
+import SearchIcon from '@mui/icons-material/Search';
 import {
   Box,
   TextField,
@@ -10,8 +11,8 @@ import {
   ToggleButton,
 } from '@mui/material';
 import { alpha, useTheme } from '@mui/material/styles';
-import SearchIcon from '@mui/icons-material/Search';
-import ClearIcon from '@mui/icons-material/Clear';
+import React, { useState } from 'react';
+
 import { instruments } from '../../lib/instrumentData';
 
 interface ExperimentSearchProps {

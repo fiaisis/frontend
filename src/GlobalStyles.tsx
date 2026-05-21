@@ -1,8 +1,8 @@
 // React components
+import { ThemeProvider, StyledEngineProvider, Theme, createTheme } from '@mui/material/styles';
 import React from 'react';
 
 // Material UI components
-import { ThemeProvider, StyledEngineProvider, Theme, createTheme } from '@mui/material/styles';
 
 // Initialize a default theme
 let theme: Theme = createTheme();

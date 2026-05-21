@@ -1,4 +1,4 @@
-import React from 'react';
+import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import {
   Box,
   Card,
@@ -16,7 +16,8 @@ import {
   ToggleButtonGroup,
   Typography,
 } from '@mui/material';
-import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
+import React from 'react';
+
 import type { FileConfig } from '../../lib/types';
 
 interface FileCardProps {

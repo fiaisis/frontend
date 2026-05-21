@@ -1,6 +1,6 @@
 import { Box, CSSObject, SxProps, TableCell, TableHead, TableRow, TableSortLabel, useTheme } from '@mui/material';
-import React from 'react';
 import { Theme } from '@mui/material/styles';
+import React from 'react';
 
 interface SortableHeaderCellProps {
   headerName: string; // Title of the column
