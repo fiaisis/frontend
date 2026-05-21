@@ -1,3 +1,5 @@
+import '@testing-library/jest-dom/vitest';
+
 // below required as work-around for enzyme/jest environment not implementing window.URL.createObjectURL method
 function noOp() {}
 
