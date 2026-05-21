@@ -1,11 +1,8 @@
-// React components
 import Editor from '@monaco-editor/react';
-import { Save } from '@mui/icons-material'; // Monaco components
+import { Save } from '@mui/icons-material';
 import { Alert, Box, Button, CircularProgress, Snackbar, Typography, useTheme } from '@mui/material';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
-
-// Material UI components
 
 import { LiveLogViewer } from '../components/experimentViewer/LiveLogViewer';
 import NavArrows from '../components/navigation/NavArrows';

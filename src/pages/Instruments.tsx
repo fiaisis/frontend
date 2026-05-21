@@ -1,4 +1,3 @@
-// React components
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import StarIcon from '@mui/icons-material/Star';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
@@ -6,9 +5,6 @@ import { Box, Button, Collapse, IconButton, Link, List, ListItem, Typography, us
 import * as React from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 
-// Material UI components
-
-// Local data
 import NavArrows from '../components/navigation/NavArrows';
 import { instruments } from '../lib/instrumentData';
 

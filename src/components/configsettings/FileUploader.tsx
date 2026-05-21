@@ -1,4 +1,3 @@
-// React components
 import { useState } from 'react';
 
 import { fiaApi } from '../../lib/api';

@@ -1,6 +1,3 @@
-// React imports
-
-// Material UI imports
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { Box, Button, Paper, styled, Typography, useMediaQuery, useTheme } from '@mui/material';
 import Grid from '@mui/material/Grid2';
@@ -8,7 +5,6 @@ import React from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 
-// Local data
 import BackgroundImage from '../images/background.jpg';
 import Decal1Svg from '../images/decal1.svg?raw';
 import Decal2DarkSvg from '../images/decal2-dark.svg?raw';
