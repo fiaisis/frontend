@@ -54,19 +54,12 @@
   "lint-staged": {
     "src/**/*.{ts,tsx,js,jsx,json}": [
       "eslint --fix",
-      "prettier --config .prettierrc --write",
-      "git add"
+      "prettier --config .prettierrc --write"
     ],
     "cypress/**/*.{ts,tsx,js,jsx}": [
       "eslint --fix",
-      "prettier --config .prettierrc --write",
-      "git add"
+      "prettier --config .prettierrc --write"
     ]
-  },
-  "husky": {
-    "hooks": {
-      "pre-commit": "lint-staged"
-    }
   },
   "scripts": {
     "lint:js": "eslint --ext=ts --ext=tsx --ext=js --ext=jsx --fix ./src",
@@ -80,7 +73,7 @@
     "serve:build": "yarn build && vite preview --port 5001",
     "serve:backend": "node server/server.js",
     "analyze": "yarn build && source-map-explorer build/main.*",
-    "postinstall": "husky install",
+    "prepare": "husky",
     "eject": "react-scripts eject",
     "cypress:open": "cypress open",
     "cypress:run": "cypress run",
