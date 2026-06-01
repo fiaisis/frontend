@@ -1,10 +1,11 @@
 import '@h5web/app/styles.css';
 import { App, createBasicFetcher, H5GroveProvider } from '@h5web/app';
+import { CircularProgress, Stack } from '@mui/material';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
-import { CircularProgress, Stack } from '@mui/material';
-import { FileQueryUrl } from './utils/FileQueryUrl';
+
 import { Fallback } from './utils/FallbackPage';
+import { FileQueryUrl } from './utils/FileQueryUrl';
 import { h5Api } from '../../lib/api';
 
 export default function NexusViewer({

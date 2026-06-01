@@ -1,5 +1,3 @@
-import React, { useMemo, useState } from 'react';
-import ndarray from 'ndarray';
 import {
   CurveType,
   DomainWidget,
@@ -15,14 +13,18 @@ import {
   Toolbar,
   useSafeDomain,
 } from '@h5web/lib';
-import type { AxisScaleType, CustomDomain, Domain } from '@h5web/lib';
-import type { LinePlotData } from '../../lib/types';
 import { Box, Paper, Typography } from '@mui/material';
 import { alpha, useTheme } from '@mui/material/styles';
+import ndarray from 'ndarray';
+import React, { useMemo, useState } from 'react';
 import { MdAutoGraph, MdGridOn } from 'react-icons/md';
+
 import ErrorsIcon from '../../h5web/packages/app/src/vis-packs/core/line/ErrorsIcon';
 import resetZoomButtonStyles from '../../h5web/packages/lib/src/toolbar/floating/ResetZoomButton.module.css';
 import tooltipStyles from '../../h5web/packages/lib/src/vis/shared/Tooltip.module.css';
+
+import type { LinePlotData } from '../../lib/types';
+import type { AxisScaleType, CustomDomain, Domain } from '@h5web/lib';
 
 const DEFAULT_DOMAIN: Domain = [0.1, 1];
 const AXIS_SCALE_OPTIONS: AxisScaleType[] = [ScaleType.Linear, ScaleType.Log, ScaleType.SymLog];

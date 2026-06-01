@@ -1,4 +1,19 @@
-import React, { ReactElement, useEffect, useRef, useState } from 'react';
+import {
+  CheckCircleOutline,
+  Download,
+  ErrorOutline,
+  HighlightOff,
+  ImageAspectRatio,
+  KeyboardArrowDown,
+  KeyboardArrowUp,
+  People,
+  Schedule,
+  Schema,
+  StackedBarChart,
+  VpnKey,
+  WarningAmber,
+  WorkOutline,
+} from '@mui/icons-material';
 import {
   Alert,
   Box,
@@ -17,29 +32,15 @@ import {
   Typography,
   useTheme,
 } from '@mui/material';
-import { Job, MantidVersionMap } from '../../lib/types';
-import {
-  CheckCircleOutline,
-  Download,
-  ErrorOutline,
-  HighlightOff,
-  ImageAspectRatio,
-  KeyboardArrowDown,
-  KeyboardArrowUp,
-  People,
-  Schedule,
-  Schema,
-  StackedBarChart,
-  VpnKey,
-  WarningAmber,
-  WorkOutline,
-} from '@mui/icons-material';
+import Grid from '@mui/material/Grid2';
+import React, { ReactElement, useEffect, useRef, useState } from 'react';
 import ReactGA from 'react-ga4';
 import { Link } from 'react-router-dom';
-import Grid from '@mui/material/Grid2';
+
 import { fiaApi } from '../../lib/api';
 import { parseJobOutputs } from '../../lib/hooks';
 import { formatUtcForLocale } from '../../lib/timezone';
+import { Job, MantidVersionMap } from '../../lib/types';
 
 const ellipsisWrap = {
   whiteSpace: 'nowrap',
@@ -47,8 +48,6 @@ const ellipsisWrap = {
   textOverflow: 'ellipsis',
   maxWidth: '200px',
 };
-
-const DATA_VIEWER_URL = import.meta.env.VITE_FIA_DATA_VIEWER_URL;
 
 const openDataViewer = (jobId: number, instrumentName: string, experimentNumber: number, output: string): void => {
   const url = `/fia/data-viewer/view/${instrumentName}/${experimentNumber}/${output}`;
@@ -814,7 +813,7 @@ const Row: React.FC<{
                     )}
                     <Button
                       variant="contained"
-                      sx={{ flexShrink: 0, whiteSpace: 'nowrap', width: 90, height: 38, }}
+                      sx={{ flexShrink: 0, whiteSpace: 'nowrap', width: 90, height: 38 }}
                       disabled={loading}
                       onClick={handleResubmit}
                     >

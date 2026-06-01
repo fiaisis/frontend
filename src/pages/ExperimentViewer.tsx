@@ -1,17 +1,19 @@
 import '@h5web/lib/styles.css';
+import { Alert, Box, CircularProgress, Typography } from '@mui/material';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useHistory, useLocation, useParams } from 'react-router-dom';
-import { Alert, Box, CircularProgress, Typography } from '@mui/material';
+
+import ExperimentSearch from '../components/experimentViewer/ExperimentSearch';
 import FileTree from '../components/experimentViewer/FileTree';
 import PlotViewer from '../components/experimentViewer/Graph';
 import Viewer2D from '../components/experimentViewer/Viewer2D';
 import ViewerTabs from '../components/experimentViewer/ViewerTabs';
-import ExperimentSearch from '../components/experimentViewer/ExperimentSearch';
 import NavArrows from '../components/navigation/NavArrows';
-import { discoverFileStructure, fetchData1D, fetchErrorData, fetchFilePath } from '../lib/plottingServiceAPI';
-import { isValidInstrument } from '../lib/instrumentData';
 import { fiaApi } from '../lib/api';
+import { isValidInstrument } from '../lib/instrumentData';
+import { discoverFileStructure, fetchData1D, fetchErrorData, fetchFilePath } from '../lib/plottingServiceAPI';
 import { DatasetInfo, FileConfig, Job, JobQueryFilters, LinePlotData, outputFilter } from '../lib/types';
+
 import type { NumericType } from '@h5web/app';
 
 interface RouteParams {

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import FolderIcon from '@mui/icons-material/Folder';
 import {
   Box,
   Typography,
@@ -10,9 +11,10 @@ import {
   AccordionDetails,
   Tooltip,
 } from '@mui/material';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import FolderIcon from '@mui/icons-material/Folder';
+import React, { useState } from 'react';
+
 import FileCard from './FileCard';
+
 import type { FileConfig, Job } from '../../lib/types';
 
 interface FileTreeProps {

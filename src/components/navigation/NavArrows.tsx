@@ -1,6 +1,6 @@
+import { Breadcrumbs, Typography, Link as MuiLink, breadcrumbsClasses, Theme } from '@mui/material';
 import React from 'react';
 import { useLocation, Link as RouterLink } from 'react-router-dom';
-import { Breadcrumbs, Typography, Link as MuiLink, breadcrumbsClasses, Theme } from '@mui/material';
 
 const NavArrows: React.FC = () => {
   const url = useLocation();

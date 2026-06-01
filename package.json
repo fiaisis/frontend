@@ -52,24 +52,17 @@
     "@typescript-eslint/parser": "8.16.0"
   },
   "lint-staged": {
-    "src/**/*.{tsx,js,jsx,json}": [
+    "src/**/*.{ts,tsx,js,jsx,json}": [
       "eslint --fix",
-      "prettier --config .prettierrc --write",
-      "git add"
+      "prettier --config .prettierrc --write"
     ],
     "cypress/**/*.{ts,tsx,js,jsx}": [
       "eslint --fix",
-      "prettier --config .prettierrc --write",
-      "git add"
+      "prettier --config .prettierrc --write"
     ]
   },
-  "husky": {
-    "hooks": {
-      "pre-commit": "lint-staged"
-    }
-  },
   "scripts": {
-    "lint:js": "eslint --ext=tsx --ext=js --ext=jsx --fix ./src",
+    "lint:js": "eslint --ext=ts --ext=tsx --ext=js --ext=jsx --fix ./src",
     "start": "vite",
     "dev": "vite",
     "build": "vite build",
@@ -80,7 +73,7 @@
     "serve:build": "yarn build && vite preview --port 5001",
     "serve:backend": "node server/server.js",
     "analyze": "yarn build && source-map-explorer build/main.*",
-    "postinstall": "husky install",
+    "prepare": "husky",
     "eject": "react-scripts eject",
     "cypress:open": "cypress open",
     "cypress:run": "cypress run",
@@ -120,6 +113,7 @@
     "eslint-config-prettier": "9.1.0",
     "eslint-config-react-app": "7.0.0",
     "eslint-plugin-cypress": "4.1.0",
+    "eslint-plugin-import": "^2.25.3",
     "eslint-plugin-prettier": "5.2.1",
     "html-webpack-plugin": "^5.6.3",
     "husky": "9.1.7",

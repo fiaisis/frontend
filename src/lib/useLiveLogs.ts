@@ -129,11 +129,12 @@ export function useLiveLogsSSE(instrument: string | null, enabled: boolean = tru
             }
           }
         }
-      } catch (err: any) {
-        if (err.name !== 'AbortError') {
-          console.error('[LiveLogsSSE] Connection error:', err.message);
+      } catch (err: unknown) {
+        const error = err instanceof Error ? err : new Error(String(err));
+        if (error.name !== 'AbortError') {
+          console.error('[LiveLogsSSE] Connection error:', error.message);
           setIsConnected(false);
-          setError(err.message);
+          setError(error.message);
 
           // Reconnect logic matching your existing pattern
           reconnectTimeoutRef.current = setTimeout(() => {

@@ -52,7 +52,7 @@ export function useLiveDataSSE(instrument: string | null, enabled: boolean = tru
       return;
     }
 
-    const connect = () => {
+    const connect = (): void => {
       cleanup();
 
       const baseUrl = import.meta.env.VITE_FIA_PLOTTING_API_URL;

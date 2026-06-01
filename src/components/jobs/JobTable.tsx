@@ -1,4 +1,12 @@
 import {
+  CheckBox,
+  Download,
+  IndeterminateCheckBox,
+  CheckBoxOutlineBlank,
+  KeyboardArrowDown,
+  KeyboardArrowUp,
+} from '@mui/icons-material';
+import {
   Alert,
   Box,
   Button,
@@ -16,23 +24,16 @@ import {
   LinearProgress,
   Skeleton,
 } from '@mui/material';
-import {
-  CheckBox,
-  Download,
-  IndeterminateCheckBox,
-  CheckBoxOutlineBlank,
-  KeyboardArrowDown,
-  KeyboardArrowUp,
-} from '@mui/icons-material';
 import React, { useEffect, useState, useRef } from 'react';
-import { Job, JobQueryFilters, MantidVersionMap } from '../../lib/types';
-import Row from './Row';
-import JobTableHead from './JobTableHead';
-import { useFetchJobs, useFetchTotalCount } from '../../lib/hooks';
-import { fiaApi } from '../../lib/api';
-import FilterContainer from './Filters';
-import { parseJobOutputs } from '../../lib/hooks';
+
 import { JOB_ROWS_PER_PAGE_OPTIONS, JobRowsPerPage, isJobRowsPerPage } from './constants';
+import FilterContainer from './Filters';
+import JobTableHead from './JobTableHead';
+import Row from './Row';
+import { fiaApi } from '../../lib/api';
+import { useFetchJobs, useFetchTotalCount } from '../../lib/hooks';
+import { parseJobOutputs } from '../../lib/hooks';
+import { Job, JobQueryFilters, MantidVersionMap } from '../../lib/types';
 
 const JobTable: React.FC<{
   selectedInstrument: string;

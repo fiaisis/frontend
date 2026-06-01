@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
-import { ErrorBoundary } from 'react-error-boundary';
 import { CircularProgress } from '@mui/material';
 import { Stack } from '@mui/system';
+import React, { useEffect, useState } from 'react';
+import { ErrorBoundary } from 'react-error-boundary';
+
 import { Fallback } from './utils/FallbackPage';
 import { TextQueryUrl } from './utils/TextQueryUrl';
 import { h5Api } from '../../lib/api';
@@ -41,12 +42,10 @@ export default function TextViewer({
       })
       .catch((error) => {
         console.error(error);
-        if (loading) {
-          setLoading(false);
-          throw new Error('Data could not be loaded');
-        }
+        setLoading(false);
+        throw new Error('Data could not be loaded');
       });
-  }, [apiUrl, instrument, experimentNumber, filename]);
+  }, [apiUrl, instrument, experimentNumber, filename, userNumber]);
 
   return (
     <ErrorBoundary FallbackComponent={Fallback}>

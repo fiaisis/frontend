@@ -1,6 +1,6 @@
 import React, { useCallback } from 'react';
-import { fiaApi } from './api';
 
+import { fiaApi } from './api';
 import { Job } from './types';
 
 export const useFetchJobs = (

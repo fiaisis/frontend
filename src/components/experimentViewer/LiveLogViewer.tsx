@@ -1,4 +1,6 @@
-import React, { ReactNode, useEffect, useRef, useState } from 'react';
+import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
+import CloseIcon from '@mui/icons-material/Close';
+import DragHandleIcon from '@mui/icons-material/DragHandle';
 import {
   Box,
   Button,
@@ -14,10 +16,9 @@ import {
   Typography,
   useTheme,
 } from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
-import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
+import React, { ReactNode, useEffect, useRef, useState } from 'react';
 import Draggable from 'react-draggable';
-import DragHandleIcon from '@mui/icons-material/DragHandle';
+
 import { useLiveLogsSSE } from '../../lib/useLiveLogs';
 
 interface LiveLogViewerProps {

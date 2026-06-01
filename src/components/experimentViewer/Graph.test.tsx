@@ -1,10 +1,11 @@
-import React, { act } from 'react';
-import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
+import React, { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
+import { afterEach, beforeEach, expect, test, vi } from 'vitest';
+
+import PlotViewer from './Graph';
 
 import type { LinePlotData } from '../../lib/types';
-import PlotViewer from './Graph';
 
 type MockLineVisProps = {
   abscissaParams?: {

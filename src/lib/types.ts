@@ -1,8 +1,9 @@
 // ============= H5 Viewer Types =============
 // Types for HDF5 data visualization
 
-import type { DType } from '@h5web/app';
 import { DataArray1D } from './plottingServiceAPI';
+
+import type { DType } from '@h5web/app';
 
 export const reductionStates = ['ERROR', 'UNSUCCESSFUL', 'SUCCESSFUL', 'NOT_STARTED'] as const;
 

@@ -1,7 +1,5 @@
-// React components
 import React from 'react';
 
-// Local components
 import ConfigSettingsGeneral from './ConfigSettingsGeneral';
 import FileUploader from './FileUploader';
 import UploadButton from './UploadButton';

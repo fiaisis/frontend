@@ -1,5 +1,6 @@
-import { fiaApi, h5Api } from './api';
 import { Attribute, DType, Entity, isDataset, isNumericType } from '@h5web/app';
+
+import { fiaApi, h5Api } from './api';
 
 /**
  * HDF5 type class codes mapped to human-readable names
@@ -217,11 +218,7 @@ export async function fetchAttributes(file: string, path: string): Promise<Recor
  * @param processor - Async function to process each item
  * @returns Array of successful results (failures are filtered out)
  */
-async function processBatches<T, R>(
-  items: T[],
-  batchSize: number,
-  processor: (item: T) => Promise<R>
-): Promise<R[]> {
+async function processBatches<T, R>(items: T[], batchSize: number, processor: (item: T) => Promise<R>): Promise<R[]> {
   const results: R[] = [];
 
   for (let i = 0; i < items.length; i += batchSize) {

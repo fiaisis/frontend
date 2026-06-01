@@ -1,10 +1,4 @@
 import '@h5web/lib/styles.css';
-import React, { useCallback, useEffect, useState } from 'react';
-import { useHistory } from 'react-router-dom';
-import { jwtDecode } from 'jwt-decode';
-import { fetchLiveDataFiles, fetchLiveDataInstruments } from '../lib/plottingServiceAPI';
-import { useLiveDataSSE } from '../lib/useLiveDataSSE';
-import { outputFilter } from '../lib/types';
 import {
   Alert,
   Box,
@@ -21,8 +15,15 @@ import {
   Select,
   Typography,
 } from '@mui/material';
-import NavArrows from '../components/navigation/NavArrows';
+import { jwtDecode } from 'jwt-decode';
+import React, { useCallback, useEffect, useState } from 'react';
+import { useHistory } from 'react-router-dom';
+
 import Viewer2D from '../components/experimentViewer/Viewer2D';
+import NavArrows from '../components/navigation/NavArrows';
+import { fetchLiveDataFiles, fetchLiveDataInstruments } from '../lib/plottingServiceAPI';
+import { outputFilter } from '../lib/types';
+import { useLiveDataSSE } from '../lib/useLiveDataSSE';
 
 const LiveData: React.FC = (): JSX.Element => {
   // Instrument selection
@@ -89,38 +90,43 @@ const LiveData: React.FC = (): JSX.Element => {
   }, []);
 
   // Fetch files when instrument changes
-  const loadFiles = useCallback(async (): Promise<void> => {
-    if (!selectedInstrument) {
-      setFiles([]);
-      return;
-    }
-
-    try {
-      setLoadingFiles(true);
-      setError(null);
-      const fileList = await fetchLiveDataFiles(selectedInstrument);
-      // Filter to only show valid H5 files
-      const filteredFiles = fileList.filter((file) => outputFilter.some((ext) => file.endsWith(ext)));
-      setFiles(filteredFiles);
-
-      // Auto-select first file if available and no file is currently selected
-      if (filteredFiles.length > 0 && !selectedFile) {
-        setSelectedFile(filteredFiles[0]);
+  const loadFiles = useCallback(
+    async (resetSelection: boolean = false): Promise<void> => {
+      if (!selectedInstrument) {
+        setFiles([]);
+        setSelectedFile(null);
+        return;
       }
-    } catch (err) {
-      console.error('Failed to load files:', err);
-      setError('Failed to load files from live data directory');
-      setFiles([]);
-    } finally {
-      setLoadingFiles(false);
-    }
-  }, [selectedInstrument, selectedFile]);
+
+      try {
+        setLoadingFiles(true);
+        setError(null);
+        const fileList = await fetchLiveDataFiles(selectedInstrument);
+        // Filter to only show valid H5 files
+        const filteredFiles = fileList.filter((file) => outputFilter.some((ext) => file.endsWith(ext)));
+        setFiles(filteredFiles);
+
+        setSelectedFile((currentFile) => {
+          if (resetSelection) {
+            return filteredFiles[0] ?? null;
+          }
+
+          return currentFile && filteredFiles.includes(currentFile) ? currentFile : (filteredFiles[0] ?? null);
+        });
+      } catch (err) {
+        console.error('Failed to load files:', err);
+        setError('Failed to load files from live data directory');
+        setFiles([]);
+      } finally {
+        setLoadingFiles(false);
+      }
+    },
+    [selectedInstrument]
+  );
 
   useEffect(() => {
-    loadFiles();
-    // Reset selected file when instrument changes
-    setSelectedFile(null);
-  }, [selectedInstrument]);
+    loadFiles(true);
+  }, [loadFiles]);
 
   // Handle file changes from SSE
   useEffect(() => {
