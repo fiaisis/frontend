@@ -7,7 +7,7 @@ import { Alert, Box, Button, CircularProgress, Snackbar, Typography, useTheme } 
 import { Save } from '@mui/icons-material'; // Monaco components
 import Editor, { OnMount } from '@monaco-editor/react';
 import * as monaco from 'monaco-editor';
-import init, { Workspace, Diagnostic } from '@astral-sh/ruff-wasm-web';
+import init, { Workspace, type Diagnostic, PositionEncoding } from '@astral-sh/ruff-wasm-web';
 import { fiaApi } from '../lib/api';
 
 import NavArrows from '../components/navigation/NavArrows';
@@ -33,7 +33,7 @@ const LiveValueEditor: React.FC = () => {
       workspaceRef.current = new Workspace({
         'line-length': 120,
         lint: { select: ['E', 'F', 'W'] },
-      });
+      }, PositionEncoding.Utf16);
       setRuffReady(true);
     }).catch(console.error);
   }, []);
@@ -97,8 +97,8 @@ const LiveValueEditor: React.FC = () => {
         const markers: monaco.editor.IMarkerData[] = diagnostics.map((diag) => {
           const isWarning = diag.code && diag.code.startsWith('W');
           return {
-            startLineNumber: diag.location.row,
-            startColumn: diag.location.column,
+            startLineNumber: diag.start_location.row,
+            startColumn: diag.start_location.column,
             endLineNumber: diag.end_location.row,
             endColumn: diag.end_location.column,
             message: `[${diag.code}] ${diag.message}`,
