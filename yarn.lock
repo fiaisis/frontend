@@ -35,6 +35,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@astral-sh/ruff-wasm-web@npm:^0.15.15":
+  version: 0.15.15
+  resolution: "@astral-sh/ruff-wasm-web@npm:0.15.15"
+  checksum: 4a317b7a977a465b46ba7e791d488190212a812ec72e9c7d608dcc4311b317ba105aba9256af275086f5c77ec1e1070ebf970f3f8a8eea3fb05b847ab9ce65f1
+  languageName: node
+  linkType: hard
+
 "@babel/code-frame@npm:^7.0.0, @babel/code-frame@npm:^7.10.4, @babel/code-frame@npm:^7.12.13, @babel/code-frame@npm:^7.16.0, @babel/code-frame@npm:^7.25.9, @babel/code-frame@npm:^7.26.0, @babel/code-frame@npm:^7.8.3":
   version: 7.26.2
   resolution: "@babel/code-frame@npm:7.26.2"
@@ -9972,6 +9979,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "fia@workspace:."
   dependencies:
+    "@astral-sh/ruff-wasm-web": ^0.15.15
     "@cypress/react": ^7.0.3
     "@cypress/webpack-dev-server": ^3.11.0
     "@emotion/react": 11.10.0

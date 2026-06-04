@@ -5,7 +5,9 @@ import { useParams } from 'react-router-dom';
 // Material UI components
 import { Alert, Box, Button, CircularProgress, Snackbar, Typography, useTheme } from '@mui/material';
 import { Save } from '@mui/icons-material'; // Monaco components
-import Editor from '@monaco-editor/react';
+import Editor, { OnMount } from '@monaco-editor/react';
+import * as monaco from 'monaco-editor';
+import init, { Workspace, Diagnostic } from '@astral-sh/ruff-wasm-web';
 import { fiaApi } from '../lib/api';
 
 import NavArrows from '../components/navigation/NavArrows';
@@ -21,6 +23,20 @@ const LiveValueEditor: React.FC = () => {
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [showLiveLogViewer, setShowLiveLogViewer] = useState(false);
   const userModified = useRef(false);
+  const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
+  const monacoRef = useRef<typeof monaco | null>(null);
+  const workspaceRef = useRef<Workspace | null>(null);
+  const [ruffReady, setRuffReady] = useState(false);
+
+  useEffect(() => {
+    init().then(() => {
+      workspaceRef.current = new Workspace({
+        'line-length': 120,
+        lint: { select: ['E', 'F', 'W'] },
+      });
+      setRuffReady(true);
+    }).catch(console.error);
+  }, []);
 
   const fetchScript = useCallback(async (): Promise<void> => {
     if (!instrumentName) return;
@@ -64,6 +80,43 @@ const LiveValueEditor: React.FC = () => {
         setSnackbarOpen(true);
       });
   };
+
+  const handleEditorMount: OnMount = (editor, monacoInstance) => {
+    editorRef.current = editor;
+    monacoRef.current = monacoInstance;
+  };
+
+  useEffect(() => {
+    if (!ruffReady || !workspaceRef.current || !monacoRef.current || !editorRef.current || !scriptValue) {
+      return;
+    }
+
+    const timeout = setTimeout(() => {
+      try {
+        const diagnostics: Diagnostic[] = workspaceRef.current!.check(scriptValue);
+        const markers: monaco.editor.IMarkerData[] = diagnostics.map((diag) => {
+          const isWarning = diag.code && diag.code.startsWith('W');
+          return {
+            startLineNumber: diag.location.row,
+            startColumn: diag.location.column,
+            endLineNumber: diag.end_location.row,
+            endColumn: diag.end_location.column,
+            message: `[${diag.code}] ${diag.message}`,
+            severity: isWarning ? monacoRef.current!.MarkerSeverity.Warning : monacoRef.current!.MarkerSeverity.Error,
+          };
+        });
+        
+        const model = editorRef.current!.getModel();
+        if (model) {
+          monacoRef.current!.editor.setModelMarkers(model, 'ruff', markers);
+        }
+      } catch (err) {
+        console.error('Ruff validation failed', err);
+      }
+    }, 500);
+
+    return () => clearTimeout(timeout);
+  }, [scriptValue, ruffReady]);
 
   return (
     <>
@@ -138,6 +191,7 @@ const LiveValueEditor: React.FC = () => {
             <>
               <Box sx={{ flex: 1, height: '100%', minWidth: 0 }}>
                 <Editor
+                  onMount={handleEditorMount}
                   onChange={(newValue) => {
                     if (newValue !== null) {
                       setScriptValue(newValue ?? '');

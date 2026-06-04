@@ -6,6 +6,7 @@
     "node": ">=20.19 <21 || >=22.12"
   },
   "dependencies": {
+    "@astral-sh/ruff-wasm-web": "^0.15.15",
     "@emotion/react": "11.10.0",
     "@emotion/styled": "11.13.5",
     "@h5web/app": "16.0.1",
