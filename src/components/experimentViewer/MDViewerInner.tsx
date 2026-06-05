@@ -147,20 +147,28 @@ const MDViewerInner: React.FC<MDViewerInnerProps> = ({ filepath, datasets, initi
         </style>
         
         <Suspense fallback={<Typography>Loading slice...</Typography>}>
-          <SliceRenderer
-            dataset={entity}
-            dims={dims}
-            dimMapping={dimMapping}
-            colorMap={colorMap}
-            invertColorMap={invertColorMap}
-            scaleType={scaleType}
-            customMin={customMin}
-            customMax={customMax}
-            onDomainChange={(domain) => {
-              setCustomMin(domain[0].toString());
-              setCustomMax(domain[1].toString());
-            }}
-          />
+          {dims.length >= 2 && dimMapping.length === dims.length ? (
+            <SliceRenderer
+              dataset={entity}
+              dims={dims}
+              dimMapping={dimMapping}
+              colorMap={colorMap}
+              invertColorMap={invertColorMap}
+              scaleType={scaleType}
+              customMin={customMin}
+              customMax={customMax}
+              onDomainChange={(domain: any) => {
+                setCustomMin(domain[0].toString());
+                setCustomMax(domain[1].toString());
+              }}
+            />
+          ) : (
+            <Box sx={{ p: 4, textAlign: 'center', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Typography color="text.secondary">
+                {dims.length < 2 ? '1D and Scalar datasets are not supported by the N-D viewer.' : 'Initializing dimensions...'}
+              </Typography>
+            </Box>
+          )}
         </Suspense>
       </Box>
 
@@ -183,7 +191,7 @@ const MDViewerInner: React.FC<MDViewerInnerProps> = ({ filepath, datasets, initi
           <Divider sx={{ my: 2 }} />
           <Typography variant="subtitle1" gutterBottom>Dimension Mapping</Typography>
           
-          {dims.length >= 2 ? (
+          {dims.length >= 2 && dimMapping.length === dims.length ? (
              <Box sx={{ bgcolor: 'background.default', p: 1, borderRadius: 1, border: 1, borderColor: 'divider' }}>
                <DimensionMapper
                  dims={dims}
@@ -198,7 +206,9 @@ const MDViewerInner: React.FC<MDViewerInnerProps> = ({ filepath, datasets, initi
                />
              </Box>
           ) : (
-            <Typography variant="body2" color="text.secondary">1D Datasets are not supported by this 2D/N-D viewer.</Typography>
+            <Typography variant="body2" color="text.secondary">
+              {dims.length < 2 ? '1D Datasets are not supported by this 2D/N-D viewer.' : 'Initializing...'}
+            </Typography>
           )}
 
           <Divider sx={{ my: 2 }} />
