@@ -22,7 +22,8 @@ import {
   Typography,
 } from '@mui/material';
 import NavArrows from '../components/navigation/NavArrows';
-import Viewer2D from '../components/experimentViewer/Viewer2D';
+import MDViewer from '../components/experimentViewer/MDViewer';
+// import Viewer2D from '../components/experimentViewer/Viewer2D';
 
 const LiveData: React.FC = (): JSX.Element => {
   // Instrument selection
@@ -310,7 +311,7 @@ const LiveData: React.FC = (): JSX.Element => {
             )}
 
             {/* Viewer */}
-            <Viewer2D key={viewerKey} filepath={selectedFilePath} />
+            <MDViewer key={viewerKey} filepath={selectedFilePath} datasets={[]} />
           </Box>
         </Box>
       </Box>
