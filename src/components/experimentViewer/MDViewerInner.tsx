@@ -66,7 +66,17 @@ const MDViewerInner: React.FC<MDViewerInnerProps> = ({ filepath, datasets, initi
   const selectedDatasetInfo = useMemo(() => datasets.find(d => d.path === selectedPath), [datasets, selectedPath]);
 
   // Read dataset from h5web context
-  const entity = entitiesStore.get(selectedPath);
+  const entity = selectedPath ? entitiesStore.get(selectedPath) : undefined;
+
+  // If there's no dataset selected (e.g. file is empty or only 1D), return early
+  if (!selectedPath) {
+    return (
+      <Box sx={{ p: 4, textAlign: 'center' }}>
+        <Typography variant="h6" color="text.secondary">No valid datasets available</Typography>
+        <Typography variant="body2" color="text.secondary">This file might not contain any multi-dimensional datasets supported by this viewer.</Typography>
+      </Box>
+    );
+  }
 
   // Initialize dimension mapping when dataset changes
   useEffect(() => {

@@ -1,5 +1,5 @@
 import '@h5web/app/styles.css';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { Box, Typography, CircularProgress } from '@mui/material';
 import H5GroveProvider from '../../h5web/packages/app/src/providers/h5grove/H5GroveProvider';
 import { ErrorBoundary } from 'react-error-boundary';
@@ -18,27 +18,41 @@ const MDViewer: React.FC<MDViewerProps> = ({ filepath }): JSX.Element => {
   const apiBase = isDev ? '/plottingapi' : import.meta.env.VITE_FIA_PLOTTING_API_URL;
 
   const [datasets, setDatasets] = useState<DiscoveredDataset[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true); // Fix: start loading initially to block render
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!filepath) return;
+    if (!filepath) {
+      setLoading(false);
+      return;
+    }
     
+    let isMounted = true;
     const fetchStructure = async () => {
       setLoading(true);
       setError(null);
       try {
         const filename = filepath.split('/').pop() || filepath;
         const structure = await discoverFileStructure(filename, filepath);
-        setDatasets(structure.datasets);
+        if (isMounted) {
+          setDatasets(structure.datasets);
+        }
       } catch (e: any) {
-        setError(e.message || 'Failed to fetch file structure');
+        if (isMounted) {
+          setError(e.message || 'Failed to fetch file structure');
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
     
     fetchStructure();
+
+    return () => {
+      isMounted = false;
+    };
   }, [filepath]);
 
   // Empty state when no file is selected
@@ -95,7 +109,13 @@ const MDViewer: React.FC<MDViewerProps> = ({ filepath }): JSX.Element => {
         }}
       >
         <ErrorBoundary FallbackComponent={ErrorFallback}>
-          <MDViewerInner filepath={filepath} datasets={datasets} initialDataset={initialDataset} />
+          <Suspense fallback={
+            <Box sx={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <CircularProgress />
+            </Box>
+          }>
+            <MDViewerInner filepath={filepath} datasets={datasets} initialDataset={initialDataset} />
+          </Suspense>
         </ErrorBoundary>
       </H5GroveProvider>
     </Box>
