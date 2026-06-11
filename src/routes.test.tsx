@@ -28,8 +28,8 @@ describe('createRoute', () => {
         logoAltText: 'Flexible Interactive Automation',
       },
     });
-    expect(event.detail.payload.logoLightMode).toContain('fia-light-text-logo');
-    expect(event.detail.payload.logoDarkMode).toBe(event.detail.payload.logoLightMode);
+    expect(event.detail.payload.logoLightMode).toContain('fia-dark-text-logo');
+    expect(event.detail.payload.logoDarkMode).toContain('fia-light-text-logo');
 
     document.removeEventListener('scigateway', listener);
   });
