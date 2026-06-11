@@ -1,4 +1,4 @@
-FROM harbor.stfc.ac.uk/datagateway/scigateway:v4.1.0@sha256:a8c2de9c741d811bb2af7c1483120a37af36957f167ceaba82696ea14d41f7d0
+FROM harbor.stfc.ac.uk/datagateway/scigateway:v4.1.1@sha256:f8072c9ea738a2e97d998d7b629d6998de949c15f18ccca0950f1388b2e7c71f
 
 WORKDIR /usr/local/apache2/htdocs
 
