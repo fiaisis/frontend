@@ -19,12 +19,12 @@ jobs:
 
     steps:
       - name: Check out code
-        uses: actions/checkout@v6.0.2
+        uses: actions/checkout@v6.0.3
         with:
           submodules: 'recursive'
 
       - name: Check for scigateway changes
-        uses: dorny/paths-filter@v3
+        uses: dorny/paths-filter@v4
         id: filter
         with:
           filters: |
@@ -62,19 +62,19 @@ jobs:
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/scigateway:${{ github.sha }}
 
       - name: Checkout the Gitops repository
-        uses: actions/checkout@v6.0.2
+        uses: actions/checkout@v6.0.3
         with:
           repository: fiaisis/gitops
           token: ${{ secrets.GITOPS_STAGING_EDIT_TOKEN }}
 
       - name: Edit the YAML frontend file for staging
-        uses: mikefarah/yq@v4.53.2
+        uses: mikefarah/yq@v4.53.3
         with:
           cmd: yq e -i '.spec.template.spec.containers[] |= select(.name == "frontend").image = "ghcr.io/fiaisis/frontend@${{ steps.frontend_build.outputs.digest }}"' './components/frontend/envs/staging/frontend.yml'
 
       - name: Edit the YAML scigateway file for staging
         if: steps.filter.outputs.scigateway == 'true'
-        uses: mikefarah/yq@v4.53.2
+        uses: mikefarah/yq@v4.53.3
         with:
           cmd: yq e -i '.spec.template.spec.containers[] |= select(.name == "scigateway").image = "ghcr.io/fiaisis/scigateway@${{ steps.scigateway_build.outputs.digest }}"' './components/scigateway/envs/staging/scigateway.yml'
 
