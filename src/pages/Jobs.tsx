@@ -1,4 +1,4 @@
-import { ArrowBack, Settings } from '@mui/icons-material';
+import { Settings } from '@mui/icons-material';
 import {
   Box,
   Button,
@@ -12,7 +12,7 @@ import {
 } from '@mui/material';
 import { jwtDecode } from 'jwt-decode';
 import React, { ReactElement, useState } from 'react';
-import { Link, useHistory, useLocation, useParams } from 'react-router-dom';
+import { useHistory, useLocation, useParams } from 'react-router-dom';
 
 import IMATViewer from './IMATViewer';
 import InstrumentConfigDrawer from '../components/configsettings/InstrumentConfigDrawer';
@@ -379,26 +379,6 @@ const Jobs: React.FC = (): ReactElement => {
           <Typography variant="h3" component="h1" style={{ color: theme.palette.text.primary }}>
             {selectedInstrument} reductions
           </Typography>
-          <Box sx={{ height: '24px' }}>
-            {selectedInstrument !== 'ALL' && (
-              <Typography
-                variant="body1"
-                component={Link}
-                to="/reduction-history"
-                sx={{
-                  color: theme.palette.mode === 'dark' ? '#86b4ff' : theme.palette.primary.main,
-                  display: 'flex',
-                  textDecoration: 'none',
-                  '&:hover': {
-                    textDecoration: 'underline',
-                  },
-                }}
-              >
-                <ArrowBack style={{ marginRight: '4px' }} />
-                View reductions for all instruments
-              </Typography>
-            )}
-          </Box>
         </Box>
         <Box className="tour-view-as-user" display="flex" alignItems="center">
           {userRole === 'staff' && (
