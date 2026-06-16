@@ -1,5 +1,5 @@
 import '@h5web/lib/styles.css';
-import { HeatmapVis, RgbVis } from '@h5web/lib';
+import { DomainWidget, HeatmapVis, RgbVis, ScaleType, Toolbar, useSafeDomain } from '@h5web/lib';
 import { Box, CircularProgress, Paper, Slider, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material';
 import axios from 'axios';
 import ndarray from 'ndarray';
@@ -9,6 +9,8 @@ import { useHistory, useLocation } from 'react-router-dom';
 import NavArrows from '../components/navigation/NavArrows';
 import { fiaApi, h5Api } from '../lib/api';
 import { Job } from '../lib/types';
+
+import type { CustomDomain, Domain } from '@h5web/lib';
 
 type ImatImagePayload = {
   data: number[];
@@ -37,6 +39,7 @@ type IMATViewerProps = {
 type ViewerSize = 'fit' | 'small' | 'medium' | 'large' | 'full';
 
 const VIEWER_SIZES: readonly ViewerSize[] = ['fit', 'small', 'medium', 'large', 'full'];
+const STACK_INTENSITY_DOMAIN: Domain = [0, 65535];
 
 const isViewerSize = (value: string | null): value is ViewerSize =>
   value !== null && VIEWER_SIZES.includes(value as ViewerSize);
@@ -68,6 +71,16 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
   const [directoryPath, setDirectoryPath] = React.useState<string | null>(null);
   const [isSliding, setIsSliding] = React.useState(false);
   const [viewerSize, setViewerSize] = React.useState<'fit' | 'small' | 'medium' | 'large' | 'full'>(initialViewerSize);
+  const [stackCustomIntensityDomain, setStackCustomIntensityDomain] = React.useState<CustomDomain>([null, null]);
+
+  const stackIntensityDomain = React.useMemo<Domain>(
+    () => [
+      stackCustomIntensityDomain[0] ?? STACK_INTENSITY_DOMAIN[0],
+      stackCustomIntensityDomain[1] ?? STACK_INTENSITY_DOMAIN[1],
+    ],
+    [stackCustomIntensityDomain]
+  );
+  const [safeStackIntensityDomain] = useSafeDomain(stackIntensityDomain, STACK_INTENSITY_DOMAIN, ScaleType.Linear);
 
   // Sync state to URL
   React.useEffect(() => {
@@ -119,10 +132,13 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
     return latestImageWidth / latestImageHeight;
   }, [latestImageHeight, latestImageWidth]);
 
+  const stackDisplayWidth = stackDataset?.originalWidth || stackDataset?.sampledWidth || 0;
+  const stackDisplayHeight = stackDataset?.originalHeight || stackDataset?.sampledHeight || 0;
+
   const stackAspectRatio = React.useMemo(() => {
-    if (!stackDataset || stackDataset.sampledHeight === 0) return 1;
-    return stackDataset.sampledWidth / stackDataset.sampledHeight;
-  }, [stackDataset]);
+    if (stackDisplayHeight === 0) return 1;
+    return stackDisplayWidth / stackDisplayHeight;
+  }, [stackDisplayHeight, stackDisplayWidth]);
 
   // Fetch Latest Image
   React.useEffect(() => {
@@ -384,6 +400,43 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
                     valueLabelDisplay="auto"
                     valueLabelFormat={(v: number) => `Index: ${v}`}
                   />
+
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 2,
+                      mt: 2,
+                      flexWrap: 'wrap',
+                    }}
+                  >
+                    <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                      Colourbar intensity
+                    </Typography>
+                    <Box
+                      sx={{
+                        flex: '1 1 300px',
+                        minWidth: 260,
+                        maxWidth: 520,
+                        display: 'flex',
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        borderRadius: 1,
+                        overflow: 'visible',
+                      }}
+                    >
+                      <Toolbar>
+                        <DomainWidget
+                          dataDomain={STACK_INTENSITY_DOMAIN}
+                          customDomain={stackCustomIntensityDomain}
+                          scaleType={ScaleType.Linear}
+                          disabled={!stackDataset}
+                          onCustomDomainChange={setStackCustomIntensityDomain}
+                        />
+                      </Toolbar>
+                    </Box>
+                  </Box>
+
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
                     <Typography variant="body2">
                       Image {currentImageIndex + 1} of {stackImages.length}
@@ -395,6 +448,12 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
                       onChange={(_e, val) => val && setViewerSize(val)}
                       size="small"
                       aria-label="viewer size"
+                      sx={{
+                        '& .MuiToggleButton-root': {
+                          width: 76,
+                          px: 0,
+                        },
+                      }}
                     >
                       <ToggleButton value="fit" aria-label="fit">
                         Fit
@@ -434,12 +493,18 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
                         viewerSize === 'fit'
                           ? '100%'
                           : viewerSize === 'small'
-                            ? (stackDataset?.sampledWidth ?? 0) * 0.25
+                            ? stackDisplayWidth > 0
+                              ? stackDisplayWidth * 0.25
+                              : '100%'
                             : viewerSize === 'medium'
-                              ? (stackDataset?.sampledWidth ?? 0) * 0.5
+                              ? stackDisplayWidth > 0
+                                ? stackDisplayWidth * 0.5
+                                : '100%'
                               : viewerSize === 'large'
-                                ? (stackDataset?.sampledWidth ?? 0) * 0.75
-                                : stackDataset?.sampledWidth || '100%',
+                                ? stackDisplayWidth > 0
+                                  ? stackDisplayWidth * 0.75
+                                  : '100%'
+                                : stackDisplayWidth || '100%',
                       aspectRatio: stackAspectRatio,
                       maxHeight: viewerSize === 'fit' ? 'calc(100vh - 350px)' : 'none',
                       position: 'relative',
@@ -447,6 +512,10 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
                       borderRadius: 1,
                       overflow: 'hidden',
                       backgroundColor: 'black',
+                      color: 'rgba(255, 255, 255, 0.92)',
+                      '--h5w-colorBar-bounds--color': 'rgba(255, 255, 255, 0.92)',
+                      '--h5w-colorBar-tickLabels--color': 'rgba(255, 255, 255, 0.86)',
+                      '--h5w-colorBar-ticks--color': 'rgba(255, 255, 255, 0.72)',
                       mx: 'auto',
                       flexShrink: 0,
                     }}
@@ -457,7 +526,7 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
                         aspect="equal"
                         flipYAxis
                         style={{ height: '100%', width: '100%' }}
-                        domain={[0, 65535]}
+                        domain={safeStackIntensityDomain}
                       />
                     ) : stackLoading ? (
                       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
