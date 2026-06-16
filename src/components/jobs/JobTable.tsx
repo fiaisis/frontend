@@ -515,7 +515,17 @@ const JobTable: React.FC<{
           resetPageNumber={() => handlePageChange(0)} // Reset page number when filters change
         />
         <TableContainer component={Paper} sx={{ maxHeight: 640, minHeight: 640 }}>
-          <Table stickyHeader sx={{ tableLayout: 'fixed', width: '100%' }}>
+          <Table
+            stickyHeader
+            sx={{
+              tableLayout: 'fixed',
+              width: '100%',
+              '& > .MuiTableBody-root > .MuiTableRow-root > .MuiTableCell-root:not(:last-child)': {
+                borderRight: '1px solid',
+                borderRightColor: 'divider',
+              },
+            }}
+          >
             <JobTableHead
               selectedInstrument={selectedInstrument}
               orderBy={orderBy}
@@ -547,7 +557,7 @@ const JobTable: React.FC<{
 
                   return (
                     <TableRow key={index} sx={{ backgroundColor, height: 74 }}>
-                      {(selectedInstrument === 'ALL' ? [...Array(10)] : [...Array(9)]).map((_, cellIndex) => (
+                      {[...Array(8)].map((_, cellIndex) => (
                         <TableCell key={cellIndex} sx={{ overflow: 'hidden' }}>
                           <Skeleton variant="text" height={28} />
                         </TableCell>
@@ -557,7 +567,7 @@ const JobTable: React.FC<{
                 })
               ) : jobs.length === 0 ? (
                 <TableCell
-                  colSpan={selectedInstrument === 'ALL' ? 10 : 9}
+                  colSpan={8}
                   sx={{
                     borderBottom: 'none',
                     textAlign: 'center',

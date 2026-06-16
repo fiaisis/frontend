@@ -249,6 +249,7 @@ const Row: React.FC<{
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [downloadErrorOpen, setDownloadErrorOpen] = useState(false);
   const [downloadErrorMessage, setDownloadErrorMessage] = useState('');
+  const [isStatusHovered, setIsStatusHovered] = useState(false);
 
   const jobOutputs = parseJobOutputs(job.outputs);
   const [downloadingAll, setDownloadingAll] = useState(false);
@@ -519,42 +520,48 @@ const Row: React.FC<{
         }}
         onClick={() => setOpen(!open)}
       >
-        <TableCell
-          sx={{
-            py: 0,
-            px: 1,
-            width: '80px',
-            minWidth: '80px',
-            maxWidth: '80px',
-          }}
-        >
-          <Box display="flex" alignItems="center" gap={0.5}>
-            <Checkbox
-              color="primary"
-              checked={isSelected}
-              onChange={() => toggleSelection(job.id)}
-              onClick={(e) => e.stopPropagation()}
-              sx={{ p: 0.5 }}
-            />
-            <JobStatusIcon state={job.state} />
-          </Box>
-        </TableCell>
-
         <TableCell sx={{ width: '18%', px: 1 }}>
-          <Tooltip title={String(job.run?.experiment_number || 'N/A')}>
-            <Typography
-              variant="body2"
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
+            <Box
+              onMouseEnter={() => setIsStatusHovered(true)}
+              onMouseLeave={() => setIsStatusHovered(false)}
+              onClick={(e) => e.stopPropagation()}
               sx={{
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-                minWidth: 0,
-                flexGrow: 1,
+                width: 32,
+                height: 32,
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
               }}
             >
-              {job.run?.experiment_number || 'N/A'}
-            </Typography>
-          </Tooltip>
+              {isStatusHovered || isSelected ? (
+                <Checkbox
+                  color="primary"
+                  checked={isSelected}
+                  onChange={() => toggleSelection(job.id)}
+                  sx={{ p: 0.5 }}
+                  inputProps={{ 'aria-label': `${isSelected ? 'Deselect' : 'Select'} reduction ${job.id}` }}
+                />
+              ) : (
+                <JobStatusIcon state={job.state} />
+              )}
+            </Box>
+            <Tooltip title={String(job.run?.experiment_number || 'N/A')}>
+              <Typography
+                variant="body2"
+                sx={{
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  minWidth: 0,
+                  flexGrow: 1,
+                }}
+              >
+                {job.run?.experiment_number || 'N/A'}
+              </Typography>
+            </Tooltip>
+          </Box>
         </TableCell>
         <TableCell sx={{ ...ellipsisWrap }}>
           <Tooltip title={extractFilename(job.run?.filename || 'N/A')}>
@@ -685,10 +692,7 @@ const Row: React.FC<{
         )}
       </TableRow>
       <TableRow>
-        <TableCell
-          colSpan={showInstrumentColumn ? 10 : 9}
-          style={{ paddingBottom: 0, paddingTop: 0, backgroundColor: bandedRows.backgroundColor }}
-        >
+        <TableCell colSpan={8} style={{ paddingBottom: 0, paddingTop: 0, backgroundColor: bandedRows.backgroundColor }}>
           <Collapse in={open} timeout="auto" unmountOnExit>
             <Box margin={2}>
               <Typography variant="h6" gutterBottom>

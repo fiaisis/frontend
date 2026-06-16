@@ -79,22 +79,13 @@ const JobTableHead: React.FC<JobTableHeadProps> = ({ selectedInstrument, handleS
   return (
     <TableHead sx={{ '& th': { py: 0.5 }, height: '54px' }}>
       <TableRow>
-        <TableCell
-          sx={{
-            width: '80px',
-            minWidth: '80px',
-            maxWidth: '80px',
-            ...headerStyles(theme),
-          }}
-          align="left"
-        ></TableCell>
         <SortableHeaderCell
           headerName="Experiment number"
           sortKey="experiment_number"
           orderBy={orderBy}
           orderDirection={orderDirection}
           onSort={handleSort}
-          sx={{ width: '14%', ...headerStyles(theme), '&:hover': highlightHover(theme) }}
+          sx={{ width: '18%', ...headerStyles(theme), '&:hover': highlightHover(theme) }}
         />
         <SortableHeaderCell
           headerName="Filename"
