@@ -1,15 +1,6 @@
-import { Settings } from '@mui/icons-material';
-import {
-  Box,
-  Button,
-  FormControlLabel,
-  SelectChangeEvent,
-  Switch,
-  Tab,
-  Tabs,
-  Typography,
-  useTheme,
-} from '@mui/material';
+import FilterList from '@mui/icons-material/FilterList';
+import Settings from '@mui/icons-material/Settings';
+import { Box, Button, FormControlLabel, Paper, Switch, Tab, Tabs, Typography, useTheme } from '@mui/material';
 import { jwtDecode } from 'jwt-decode';
 import React, { ReactElement, useState } from 'react';
 import { useHistory, useLocation, useParams } from 'react-router-dom';
@@ -17,6 +8,7 @@ import { useHistory, useLocation, useParams } from 'react-router-dom';
 import IMATViewer from './IMATViewer';
 import InstrumentConfigDrawer from '../components/configsettings/InstrumentConfigDrawer';
 import { JOB_ROWS_PER_PAGE_OPTIONS, JobRowsPerPage, isJobRowsPerPage } from '../components/jobs/constants';
+import FilterContainer from '../components/jobs/Filters';
 import InstrumentSelector from '../components/jobs/InstrumentSelector';
 import JobTable from '../components/jobs/JobTable';
 import NavArrows from '../components/navigation/NavArrows';
@@ -82,6 +74,7 @@ const Jobs: React.FC = (): ReactElement => {
     instrumentName?.toUpperCase() || ''
   );
   const [selectedInstrument, setSelectedInstrument] = React.useState<string>(instrumentName || 'ALL');
+  const reductionsHeading = selectedInstrument === 'ALL' ? 'View all reductions' : `${selectedInstrument} reductions`;
   const [imatTab, setImatTab] = React.useState<number>(() => {
     const params = new URLSearchParams(location.search);
     const tabParam = params.get('tab');
@@ -103,6 +96,7 @@ const Jobs: React.FC = (): ReactElement => {
   const [currentPage, setCurrentPage] = React.useState<number>(0);
   const [rowsPerPage, setRowsPerPage] = React.useState<JobRowsPerPage>(getStoredRowsPerPage);
   const [currentFilters, setCurrentFilters] = React.useState<JobQueryFilters>({});
+  const currentFiltersStringRef = React.useRef<string>(JSON.stringify(currentFilters));
   const [asUser, setAsUser] = useState<boolean>(() => {
     const storedValue = localStorage.getItem('asUser');
     return storedValue ? JSON.parse(storedValue) : false;
@@ -110,6 +104,7 @@ const Jobs: React.FC = (): ReactElement => {
   const [userRole, setUserRole] = useState<'staff' | 'user' | null>(null);
   const [orderDirection, setOrderDirection] = useState<'asc' | 'desc'>('desc');
   const [orderBy, setOrderBy] = useState<string>('run_start');
+  const [filtersOpen, setFiltersOpen] = React.useState<boolean>(false);
 
   const getUserRole = (): 'staff' | 'user' | null => {
     const token = localStorage.getItem('scigateway:token');
@@ -228,8 +223,7 @@ const Jobs: React.FC = (): ReactElement => {
     updateQueryParams({ orderBy, orderDirection });
   }, [orderBy, orderDirection, updateQueryParams]);
 
-  const handleInstrumentChange = (event: SelectChangeEvent<string>): void => {
-    const newInstrument = event.target.value;
+  const handleInstrumentChange = (newInstrument: string): void => {
     setSelectedInstrument(newInstrument);
     const params = new URLSearchParams(location.search);
     params.delete('page');
@@ -276,6 +270,12 @@ const Jobs: React.FC = (): ReactElement => {
 
   const handleFiltersChange = React.useCallback(
     (newFilters: JobQueryFilters) => {
+      const nextFiltersString = JSON.stringify(newFilters);
+      if (currentFiltersStringRef.current === nextFiltersString) {
+        return;
+      }
+
+      currentFiltersStringRef.current = nextFiltersString;
       setCurrentFilters(newFilters);
       setCurrentPage(0);
       updateQueryParams({ filters: newFilters, page: 0 });
@@ -306,12 +306,27 @@ const Jobs: React.FC = (): ReactElement => {
     if (filtersParam) {
       try {
         const parsedFilters = JSON.parse(filtersParam) as JobQueryFilters;
-        setCurrentFilters((prev) => (JSON.stringify(prev) !== JSON.stringify(parsedFilters) ? parsedFilters : prev));
+        setCurrentFilters((prev) => {
+          const parsedFiltersString = JSON.stringify(parsedFilters);
+          if (JSON.stringify(prev) === parsedFiltersString) {
+            return prev;
+          }
+
+          currentFiltersStringRef.current = parsedFiltersString;
+          return parsedFilters;
+        });
       } catch (error) {
         console.error('Failed to parse filters from query string', error);
       }
     } else {
-      setCurrentFilters((prev) => (Object.keys(prev).length > 0 ? {} : prev));
+      setCurrentFilters((prev) => {
+        if (Object.keys(prev).length === 0) {
+          return prev;
+        }
+
+        currentFiltersStringRef.current = JSON.stringify({});
+        return {};
+      });
     }
     const tabParam = params.get('tab');
     if (tabParam !== null) {
@@ -373,37 +388,68 @@ const Jobs: React.FC = (): ReactElement => {
 
   return (
     <>
-      <NavArrows />
-      <Box display="flex" alignItems="center" justifyContent="space-between" sx={{ padding: '20px', height: '100%' }}>
-        <Box display="flex" flexDirection="column">
-          <Typography variant="h3" component="h1" style={{ color: theme.palette.text.primary }}>
-            {selectedInstrument} reductions
+      <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 2, pr: 2 }}>
+        <NavArrows />
+        <Paper
+          variant="outlined"
+          sx={{
+            mt: 2,
+            p: 2,
+            minWidth: 320,
+            maxWidth: 760,
+            flexShrink: 0,
+          }}
+        >
+          <Typography variant="subtitle2" component="h2" sx={{ mb: 1, fontWeight: 700 }}>
+            Reduction controls
           </Typography>
-        </Box>
-        <Box className="tour-view-as-user" display="flex" alignItems="center">
-          {userRole === 'staff' && (
-            <FormControlLabel
-              control={<Switch checked={asUser} onChange={() => setAsUser(!asUser)} color="secondary" />}
-              label={
-                <Typography variant="body1" color={theme.palette.text.primary}>
-                  View as user
-                </Typography>
-              }
-              sx={{ marginRight: '16px' }}
+          <Box className="tour-view-as-user" sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
+            {userRole === 'staff' && (
+              <FormControlLabel
+                control={<Switch checked={asUser} onChange={() => setAsUser(!asUser)} color="secondary" />}
+                label={
+                  <Typography variant="body1" color={theme.palette.text.primary}>
+                    View as user
+                  </Typography>
+                }
+                sx={{ mr: 0 }}
+              />
+            )}
+            <Button
+              variant="contained"
+              startIcon={<Settings />}
+              onClick={() => setConfigDrawerOpen(true)}
+              disabled={!showConfigButton}
+            >
+              Config
+            </Button>
+            <InstrumentSelector
+              selectedInstrument={selectedInstrument}
+              handleInstrumentChange={handleInstrumentChange}
             />
-          )}
-          <Button
-            variant="contained"
-            startIcon={<Settings />}
-            onClick={() => setConfigDrawerOpen(true)}
-            disabled={!showConfigButton}
-            sx={{ marginRight: '20px' }}
-          >
-            Config
-          </Button>
-          <InstrumentSelector selectedInstrument={selectedInstrument} handleInstrumentChange={handleInstrumentChange} />
-        </Box>
+            <Button
+              variant={hasFilters(currentFilters) ? 'contained' : 'outlined'}
+              startIcon={<FilterList />}
+              onClick={() => setFiltersOpen(true)}
+            >
+              Filter
+            </Button>
+          </Box>
+        </Paper>
       </Box>
+      <Box sx={{ px: '20px', pt: 2, pb: 1 }}>
+        <Typography variant="h3" component="h1" style={{ color: theme.palette.text.primary }}>
+          {reductionsHeading}
+        </Typography>
+      </Box>
+      <FilterContainer
+        showInstrumentFilter={selectedInstrument === 'ALL'}
+        visible={filtersOpen}
+        handleFiltersClose={() => setFiltersOpen(false)}
+        handleFiltersChange={handleFiltersChange}
+        appliedFilters={currentFilters}
+        resetPageNumber={() => handlePageChange(0)}
+      />
       <InstrumentConfigDrawer
         drawerOpen={configDrawerOpen}
         setDrawerOpen={setConfigDrawerOpen}
@@ -441,7 +487,6 @@ const Jobs: React.FC = (): ReactElement => {
                 rowsPerPage={rowsPerPage}
                 handleRowsPerPageChange={handleRowsPerPageChange}
                 filters={currentFilters}
-                handleFiltersChange={handleFiltersChange}
                 orderBy={orderBy}
                 orderDirection={orderDirection}
                 handleSort={handleSort}
@@ -465,7 +510,6 @@ const Jobs: React.FC = (): ReactElement => {
             rowsPerPage={rowsPerPage}
             handleRowsPerPageChange={handleRowsPerPageChange}
             filters={currentFilters}
-            handleFiltersChange={handleFiltersChange}
             orderBy={orderBy}
             orderDirection={orderDirection}
             handleSort={handleSort}

@@ -1,11 +1,4 @@
-import {
-  CheckBox,
-  Download,
-  IndeterminateCheckBox,
-  CheckBoxOutlineBlank,
-  KeyboardArrowDown,
-  KeyboardArrowUp,
-} from '@mui/icons-material';
+import { CheckBox, Download, IndeterminateCheckBox, CheckBoxOutlineBlank } from '@mui/icons-material';
 import {
   Alert,
   Box,
@@ -27,7 +20,6 @@ import {
 import React, { useEffect, useState, useRef } from 'react';
 
 import { JOB_ROWS_PER_PAGE_OPTIONS, JobRowsPerPage, isJobRowsPerPage } from './constants';
-import FilterContainer from './Filters';
 import JobTableHead from './JobTableHead';
 import Row from './Row';
 import { fiaApi } from '../../lib/api';
@@ -43,7 +35,6 @@ const JobTable: React.FC<{
   rowsPerPage: JobRowsPerPage;
   handleRowsPerPageChange: (rowsPerPage: JobRowsPerPage, newPage: number) => void;
   filters: JobQueryFilters;
-  handleFiltersChange: (filters: JobQueryFilters) => void;
   handleSort: (sortKey: string) => void;
   orderBy: string;
   orderDirection: 'desc' | 'asc';
@@ -55,14 +46,12 @@ const JobTable: React.FC<{
   rowsPerPage,
   handleRowsPerPageChange,
   filters,
-  handleFiltersChange,
   orderBy,
   orderDirection,
   handleSort,
 }) => {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [totalRows, setTotalRows] = useState<number>(0);
-  const [filtersOpen, setFiltersOpen] = useState<boolean>(false);
   const previousRowsPerPage = useRef<JobRowsPerPage>(rowsPerPage);
 
   // Cache the last filter JSON so we only reset selection when the filter set
@@ -160,17 +149,6 @@ const JobTable: React.FC<{
       setSelectedJobIds([]);
     }
   }, [filters]);
-
-  // Forward changes upstream only when the payload differs so URL sync stays
-  // stable
-  const onFiltersChange = (newFilters: JobQueryFilters): void => {
-    const nextFiltersString = JSON.stringify(newFilters);
-    if (filtersStringRef.current !== nextFiltersString) {
-      filtersStringRef.current = nextFiltersString;
-      setSelectedJobIds([]);
-      handleFiltersChange(newFilters);
-    }
-  };
 
   useEffect(() => {
     if (!Number.isInteger(currentPage) || currentPage < 0) {
@@ -441,18 +419,6 @@ const JobTable: React.FC<{
           </Box>
 
           <Box className="tour-job-table-adv-filters" sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Typography
-              display={'flex'}
-              alignItems={'center'}
-              onClick={() => setFiltersOpen(!filtersOpen)}
-              sx={{
-                cursor: 'pointer',
-                color: theme.palette.mode === 'dark' ? '#86b4ff' : theme.palette.primary.main,
-              }}
-            >
-              Advanced filters {filtersOpen ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
-            </Typography>
-
             <TablePagination
               component="div"
               count={totalRows}
@@ -503,17 +469,6 @@ const JobTable: React.FC<{
           </Box>
         </Box>
 
-        <FilterContainer
-          showInstrumentFilter={selectedInstrument === 'ALL'}
-          visible={filtersOpen}
-          handleFiltersClose={() => setFiltersOpen(false)}
-          handleFiltersChange={onFiltersChange}
-          appliedFilters={filters}
-          jobs={jobs}
-          handleBulkResubmit={handleBulkResubmit}
-          isBulkResubmitting={isBulkResubmitting}
-          resetPageNumber={() => handlePageChange(0)} // Reset page number when filters change
-        />
         <TableContainer component={Paper} sx={{ maxHeight: 640, minHeight: 640 }}>
           <Table
             stickyHeader

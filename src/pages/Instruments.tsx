@@ -1,38 +1,103 @@
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import HistoryIcon from '@mui/icons-material/History';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import SearchIcon from '@mui/icons-material/Search';
 import StarIcon from '@mui/icons-material/Star';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
-import { Box, Button, Collapse, IconButton, Link, List, ListItem, Typography, useTheme } from '@mui/material';
+import {
+  Box,
+  Button,
+  Chip,
+  Collapse,
+  Divider,
+  IconButton,
+  InputAdornment,
+  Paper,
+  Stack,
+  TextField,
+  Typography,
+  useTheme,
+} from '@mui/material';
 import * as React from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 
 import NavArrows from '../components/navigation/NavArrows';
 import { instruments } from '../lib/instrumentData';
 
+const ALL_TYPES = 'All';
+
+const getStoredFavoriteIds = (): number[] => {
+  if (typeof window === 'undefined') {
+    return [];
+  }
+
+  const storedFavorites = localStorage.getItem('favoriteInstruments');
+  if (!storedFavorites) {
+    return [];
+  }
+
+  try {
+    const parsedFavorites: unknown = JSON.parse(storedFavorites);
+    return Array.isArray(parsedFavorites)
+      ? parsedFavorites.filter((favoriteId): favoriteId is number => Number.isInteger(favoriteId))
+      : [];
+  } catch {
+    return [];
+  }
+};
+
 const Instruments: React.FC = () => {
   const theme = useTheme();
-  // State for tracking expanded instruments
   const [expandedIds, setExpandedIds] = React.useState<number[]>([]);
-  // State for tracking favorite instruments
-  const [favoriteIds, setFavoriteIds] = React.useState<number[]>([]);
+  const [favoriteIds, setFavoriteIds] = React.useState<number[]>(getStoredFavoriteIds);
+  const [searchTerm, setSearchTerm] = React.useState('');
+  const [selectedType, setSelectedType] = React.useState(ALL_TYPES);
+  const [showFavoritesOnly, setShowFavoritesOnly] = React.useState(false);
 
-  // Load favorites from local storage
-  React.useEffect(() => {
-    const storedFavorites = localStorage.getItem('favoriteInstruments');
-    if (storedFavorites) {
-      setFavoriteIds(JSON.parse(storedFavorites));
-    }
-  }, []);
-
-  // Save favorites to local storage whenever they change
   React.useEffect(() => {
     localStorage.setItem('favoriteInstruments', JSON.stringify(favoriteIds));
   }, [favoriteIds]);
 
-  // Toggle expansion state of an instrument
-  const handleToggleExpand = (id: number, event?: React.MouseEvent): void => {
-    if (event) {
-      event.stopPropagation();
-    }
+  const instrumentTypes = React.useMemo(
+    () =>
+      Array.from(new Set(instruments.map((instrument) => instrument.type))).sort((typeA, typeB) =>
+        typeA.localeCompare(typeB)
+      ),
+    []
+  );
+
+  const instrumentCountByType = React.useMemo(
+    () =>
+      instruments.reduce<Map<string, number>>((countByType, instrument) => {
+        countByType.set(instrument.type, (countByType.get(instrument.type) ?? 0) + 1);
+        return countByType;
+      }, new Map<string, number>()),
+    []
+  );
+
+  const favoriteIdSet = React.useMemo(() => new Set(favoriteIds), [favoriteIds]);
+
+  const filteredInstruments = React.useMemo(() => {
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+
+    return instruments
+      .filter((instrument) => {
+        const searchableValues = [instrument.name, instrument.type, instrument.description, ...instrument.scientists];
+        const matchesSearch =
+          normalizedSearch.length === 0 ||
+          searchableValues.some((searchableValue) => searchableValue.toLowerCase().includes(normalizedSearch));
+        const matchesType = selectedType === ALL_TYPES || instrument.type === selectedType;
+        const matchesFavorite = !showFavoritesOnly || favoriteIdSet.has(instrument.id);
+
+        return matchesSearch && matchesType && matchesFavorite;
+      })
+      .sort((instrumentA, instrumentB) => {
+        const favoriteSort = Number(favoriteIdSet.has(instrumentB.id)) - Number(favoriteIdSet.has(instrumentA.id));
+        return favoriteSort || instrumentA.name.localeCompare(instrumentB.name);
+      });
+  }, [favoriteIdSet, searchTerm, selectedType, showFavoritesOnly]);
+
+  const handleToggleExpand = (id: number): void => {
     setExpandedIds((prevExpandedIds) =>
       prevExpandedIds.includes(id)
         ? prevExpandedIds.filter((expandedId) => expandedId !== id)
@@ -40,9 +105,7 @@ const Instruments: React.FC = () => {
     );
   };
 
-  // Toggle favorite state of an instrument
-  const handleToggleFavorite = (id: number, event: React.MouseEvent): void => {
-    event.stopPropagation();
+  const handleToggleFavorite = (id: number): void => {
     setFavoriteIds((prevFavoriteIds) =>
       prevFavoriteIds.includes(id)
         ? prevFavoriteIds.filter((favoriteId) => favoriteId !== id)
@@ -50,128 +113,243 @@ const Instruments: React.FC = () => {
     );
   };
 
-  // Sort instruments based on favorite status
-  const sortedInstruments = [...instruments].sort((a, b) => {
-    if (favoriteIds.includes(a.id) && !favoriteIds.includes(b.id)) {
-      return -1;
-    }
-    if (!favoriteIds.includes(a.id) && favoriteIds.includes(b.id)) {
-      return 1;
-    }
-    return 0;
-  });
+  const handleClearFilters = (): void => {
+    setSearchTerm('');
+    setSelectedType(ALL_TYPES);
+    setShowFavoritesOnly(false);
+  };
+
+  const resultLabel = `${filteredInstruments.length} instrument${filteredInstruments.length === 1 ? '' : 's'}`;
 
   return (
     <>
       <NavArrows />
-      {/* Page title */}
-      <Typography variant="h3" component="h1" style={{ color: theme.palette.text.primary, padding: '20px' }}>
-        ISIS instruments
-      </Typography>
-      <Box className="tour-instruments" sx={{ paddingBottom: '2rem' }}>
-        {sortedInstruments.map((instrument) => (
-          <Box
-            key={instrument.id}
-            sx={{ marginBottom: 1, marginLeft: 2, marginRight: 2 }}
-            onClick={() => handleToggleExpand(instrument.id)}
-          >
-            <Box
-              sx={{
-                padding: '12px 16px',
-                border: `1px solid ${theme.palette.divider}`,
-                borderRadius: '4px',
-                backgroundColor: expandedIds.includes(instrument.id)
-                  ? theme.palette.action.hover
-                  : theme.palette.background.paper,
+      <Box className="tour-instruments" sx={{ px: { xs: 2, md: 3 }, py: 2, pb: 4 }}>
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: { xs: 'column', md: 'row' },
+            alignItems: { xs: 'flex-start', md: 'flex-end' },
+            justifyContent: 'space-between',
+            gap: 1,
+            mb: 2,
+          }}
+        >
+          <Box>
+            <Typography variant="h3" component="h1" sx={{ color: 'text.primary' }}>
+              ISIS instruments
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              {instruments.length} instruments across {instrumentTypes.length} techniques
+            </Typography>
+          </Box>
+          <Typography variant="body2" color="text.secondary">
+            {resultLabel}
+          </Typography>
+        </Box>
+
+        <Paper variant="outlined" sx={{ p: 2, mb: 2, borderRadius: 1, backgroundColor: 'background.paper' }}>
+          <Stack spacing={1.5}>
+            <TextField
+              fullWidth
+              size="small"
+              label="Search"
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              placeholder="Instrument, technique or scientist"
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon fontSize="small" />
+                  </InputAdornment>
+                ),
               }}
-            >
-              <Box display="flex" alignItems="center" justifyContent="space-between">
-                <Box display="flex" alignItems="center">
-                  {/* Expand button */}
-                  <IconButton
-                    aria-expanded={expandedIds.includes(instrument.id)}
-                    aria-label="show more"
-                    onClick={(event) => handleToggleExpand(instrument.id, event)}
-                  >
-                    <ExpandMoreIcon
-                      style={{ transform: expandedIds.includes(instrument.id) ? 'rotate(180deg)' : 'none' }}
-                    />
-                  </IconButton>
-                  <Box sx={{ marginLeft: 2 }}>
-                    {/* Instrument name and type */}
-                    <Typography
-                      variant="h6"
-                      component="h1"
-                      style={{
-                        fontSize: '1.2rem',
-                        fontWeight: 'bold',
-                        textTransform: 'uppercase',
-                        color: theme.palette.mode === 'dark' ? '#86b4ff' : theme.palette.primary.main,
-                      }}
-                    >
-                      {instrument.name}
-                    </Typography>
-                    <Typography sx={{ color: theme.palette.text.primary }} variant="body1">
-                      {instrument.type}
-                    </Typography>
-                  </Box>
-                </Box>
-                {/* Favorite button */}
-                <IconButton
-                  aria-label="add to favorites"
-                  onClick={(event) => handleToggleFavorite(instrument.id, event)}
+            />
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+              <Chip
+                label={`All (${instruments.length})`}
+                clickable
+                color={selectedType === ALL_TYPES && !showFavoritesOnly ? 'primary' : 'default'}
+                variant={selectedType === ALL_TYPES && !showFavoritesOnly ? 'filled' : 'outlined'}
+                onClick={() => {
+                  setSelectedType(ALL_TYPES);
+                  setShowFavoritesOnly(false);
+                }}
+              />
+              <Chip
+                label={`Favourites (${favoriteIds.length})`}
+                clickable
+                color={showFavoritesOnly ? 'primary' : 'default'}
+                variant={showFavoritesOnly ? 'filled' : 'outlined'}
+                onClick={() => setShowFavoritesOnly((currentValue) => !currentValue)}
+              />
+              {instrumentTypes.map((instrumentType) => (
+                <Chip
+                  key={instrumentType}
+                  label={`${instrumentType} (${instrumentCountByType.get(instrumentType) ?? 0})`}
+                  clickable
+                  color={selectedType === instrumentType ? 'primary' : 'default'}
+                  variant={selectedType === instrumentType ? 'filled' : 'outlined'}
+                  onClick={() => setSelectedType(instrumentType)}
+                />
+              ))}
+            </Box>
+          </Stack>
+        </Paper>
+
+        {filteredInstruments.length === 0 ? (
+          <Paper variant="outlined" sx={{ p: 4, borderRadius: 1, textAlign: 'center' }}>
+            <Typography variant="h6" component="h2" sx={{ mb: 1 }}>
+              No instruments found
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Try another search term or filter.
+            </Typography>
+            <Button variant="outlined" onClick={handleClearFilters}>
+              Clear filters
+            </Button>
+          </Paper>
+        ) : (
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: {
+                xs: '1fr',
+                md: 'repeat(2, minmax(0, 1fr))',
+                xl: 'repeat(3, minmax(0, 1fr))',
+              },
+              gap: 2,
+            }}
+          >
+            {filteredInstruments.map((instrument) => {
+              const expanded = expandedIds.includes(instrument.id);
+              const favourite = favoriteIdSet.has(instrument.id);
+
+              return (
+                <Paper
+                  key={instrument.id}
+                  variant="outlined"
+                  sx={{
+                    p: 2,
+                    borderRadius: 1,
+                    minWidth: 0,
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    borderColor: expanded ? 'primary.main' : 'divider',
+                    backgroundColor: favourite ? theme.palette.action.hover : 'background.paper',
+                  }}
                 >
-                  {favoriteIds.includes(instrument.id) ? (
-                    <StarIcon style={{ color: theme.palette.warning.main }} />
-                  ) : (
-                    <StarBorderIcon />
-                  )}
-                </IconButton>
-              </Box>
-              <Collapse in={expandedIds.includes(instrument.id)} timeout="auto" unmountOnExit>
-                <Box marginTop={2}>
-                  <Box display="flex" justifyContent="space-between" alignItems="flex-start">
-                    {/* Instrument description */}
-                    <Typography
-                      variant="body2"
-                      component={'p'}
-                      sx={{ flex: 2, marginRight: 2, color: theme.palette.text.primary, textAlign: 'justify' }}
-                    >
-                      {instrument.description}
-                    </Typography>
-                    <Box sx={{ flex: 1, marginLeft: 4 }}>
-                      {/* List of associated scientists */}
-                      <Typography variant="body2" sx={{ fontWeight: 'bold', color: theme.palette.text.primary }}>
-                        Scientists:
+                  <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 1 }}>
+                    <Box sx={{ minWidth: 0 }}>
+                      <Typography
+                        variant="h6"
+                        component="h2"
+                        sx={{ color: 'primary.main', fontWeight: 700, lineHeight: 1.2 }}
+                      >
+                        {instrument.name}
                       </Typography>
-                      <List>
-                        {instrument.scientists.map((scientist) => (
-                          <ListItem key={scientist} style={{ padding: '0', color: theme.palette.text.primary }}>
-                            <Typography variant="body2">Dr. {scientist}</Typography>
-                          </ListItem>
-                        ))}
-                      </List>
+                      <Chip
+                        size="small"
+                        label={instrument.type}
+                        sx={{
+                          mt: 1,
+                          maxWidth: '100%',
+                          '& .MuiChip-label': { overflow: 'hidden', textOverflow: 'ellipsis' },
+                        }}
+                      />
                     </Box>
-                  </Box>
-                  {/* Link to more information */}
-                  <Link href={instrument.infoPage} target="_blank" rel="noopener" underline="always">
-                    {instrument.infoPage}
-                  </Link>
-                  <Box marginTop={2}>
-                    {/* Button to view reduction history */}
-                    <Button
-                      variant="contained"
-                      component={RouterLink}
-                      to={`/reduction-history/${instrument.name.toUpperCase()}`}
+                    <IconButton
+                      aria-label={`${favourite ? 'Remove' : 'Add'} ${instrument.name} ${
+                        favourite ? 'from favourites' : 'to favourites'
+                      }`}
+                      onClick={() => handleToggleFavorite(instrument.id)}
+                      sx={{ color: favourite ? 'warning.main' : 'action.active' }}
                     >
-                      Reduction history
+                      {favourite ? <StarIcon /> : <StarBorderIcon />}
+                    </IconButton>
+                  </Box>
+
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{
+                      mt: 1.5,
+                      flexGrow: 1,
+                      ...(expanded
+                        ? {}
+                        : {
+                            display: '-webkit-box',
+                            WebkitLineClamp: 3,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden',
+                          }),
+                    }}
+                  >
+                    {instrument.description}
+                  </Typography>
+
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2 }}>
+                    <Button
+                      size="small"
+                      onClick={() => handleToggleExpand(instrument.id)}
+                      aria-expanded={expanded}
+                      endIcon={
+                        <ExpandMoreIcon
+                          sx={{
+                            transform: expanded ? 'rotate(180deg)' : 'none',
+                            transition: theme.transitions.create('transform', {
+                              duration: theme.transitions.duration.shortest,
+                            }),
+                          }}
+                        />
+                      }
+                    >
+                      {expanded ? 'Hide details' : 'Details'}
                     </Button>
                   </Box>
-                </Box>
-              </Collapse>
-            </Box>
+
+                  <Collapse in={expanded} timeout="auto" unmountOnExit>
+                    <Divider sx={{ my: 2 }} />
+                    <Typography variant="subtitle2" component="h3" sx={{ mb: 1 }}>
+                      Scientists
+                    </Typography>
+                    {instrument.scientists.length > 0 ? (
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                        {instrument.scientists.map((scientist) => (
+                          <Chip key={scientist} size="small" label={scientist} />
+                        ))}
+                      </Box>
+                    ) : (
+                      <Typography variant="body2" color="text.secondary">
+                        No scientists listed by ISIS.
+                      </Typography>
+                    )}
+                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ mt: 2 }}>
+                      <Button
+                        variant="contained"
+                        component={RouterLink}
+                        to={`/reduction-history/${instrument.name.toUpperCase()}`}
+                        startIcon={<HistoryIcon />}
+                      >
+                        Reduction history
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        href={instrument.infoPage}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        startIcon={<OpenInNewIcon />}
+                      >
+                        ISIS page
+                      </Button>
+                    </Stack>
+                  </Collapse>
+                </Paper>
+              );
+            })}
           </Box>
-        ))}
+        )}
       </Box>
     </>
   );

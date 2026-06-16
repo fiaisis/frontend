@@ -1,30 +1,35 @@
-import React from 'react';
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import React from 'react';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 
-import { instruments } from '../../lib/instrumentData';
 import InstrumentSelector from './InstrumentSelector';
+import { instruments } from '../../lib/instrumentData';
 
 describe('InstrumentSelector', () => {
   afterEach(() => {
     cleanup();
   });
 
-  test('renders ALL plus every configured instrument as options', async () => {
+  test('renders view all reductions plus clickable instrument type headings', async () => {
     const user = userEvent.setup();
+    const instrumentTypes = Array.from(new Set(instruments.map((instrument) => instrument.type)));
 
     render(<InstrumentSelector selectedInstrument="ALL" handleInstrumentChange={vi.fn()} />);
 
-    expect(screen.getByRole('combobox', { name: 'Instrument' })).toHaveTextContent('ALL');
+    expect(screen.getByRole('button', { name: /Instrument\s+View all reductions/ })).toBeInTheDocument();
 
-    await user.click(screen.getByRole('combobox', { name: 'Instrument' }));
+    await user.click(screen.getByRole('button', { name: /Instrument\s+View all reductions/ }));
 
-    const options = await screen.findAllByRole('option');
-    expect(options).toHaveLength(instruments.length + 1);
-    expect(screen.getByRole('option', { name: 'ALL' })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: 'LOQ' })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: 'IMAT' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'View all reductions' })).toBeInTheDocument();
+    instrumentTypes.forEach((instrumentType) => {
+      expect(screen.getByRole('menuitem', { name: instrumentType })).toBeInTheDocument();
+    });
+    expect(screen.queryByRole('menuitem', { name: 'ALF' })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('menuitem', { name: 'Neutron diffraction' }));
+
+    expect(screen.getByRole('menuitem', { name: 'ALF' })).toBeInTheDocument();
   });
 
   test('passes the selected instrument value to the change handler', async () => {
@@ -33,10 +38,11 @@ describe('InstrumentSelector', () => {
 
     render(<InstrumentSelector selectedInstrument="ALL" handleInstrumentChange={handleInstrumentChange} />);
 
-    await user.click(screen.getByRole('combobox', { name: 'Instrument' }));
-    await user.click(screen.getByRole('option', { name: 'LOQ' }));
+    await user.click(screen.getByRole('button', { name: /Instrument\s+View all reductions/ }));
+    await user.click(screen.getByRole('menuitem', { name: 'Small-angle neutron scattering' }));
+    await user.click(screen.getByRole('menuitem', { name: 'LOQ' }));
 
     expect(handleInstrumentChange).toHaveBeenCalledTimes(1);
-    expect(handleInstrumentChange.mock.calls[0][0].target.value).toBe('LOQ');
+    expect(handleInstrumentChange).toHaveBeenCalledWith('LOQ');
   });
 });
