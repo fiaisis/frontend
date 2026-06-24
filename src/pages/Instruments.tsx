@@ -3,6 +3,7 @@ import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import SearchIcon from '@mui/icons-material/Search';
 import StarIcon from '@mui/icons-material/Star';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 import {
   Box,
   Button,
@@ -293,6 +294,14 @@ const Instruments: React.FC = () => {
                       startIcon={<HistoryIcon />}
                     >
                       Reduction history
+                    </Button>
+                    <Button
+                      variant="contained"
+                      component={RouterLink}
+                      to={`/experiment-viewer/${instrument.name.toUpperCase()}`}
+                      startIcon={<VisibilityIcon />}
+                    >
+                      Experiment viewer
                     </Button>
                     <Button
                       variant="outlined"

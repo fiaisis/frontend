@@ -50,7 +50,7 @@ const Viewer2D: React.FC<Viewer2DProps> = ({ filepath }): JSX.Element => {
 
   // Render h5web App with H5GroveProvider
   return (
-    <Box sx={{ height: '100%', width: '100%' }}>
+    <Box sx={{ height: '100%', minHeight: 0, width: '100%', overflow: 'hidden' }}>
       <H5GroveProvider
         url={''}
         filepath={filepath}

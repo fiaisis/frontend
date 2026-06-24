@@ -5,9 +5,10 @@ import { useLocation, Link as RouterLink } from 'react-router-dom';
 interface NavArrowsProps {
   trailingCrumb?: React.ReactNode;
   replaceLastCrumb?: boolean;
+  replaceLastCrumbCount?: number;
 }
 
-const NavArrows: React.FC<NavArrowsProps> = ({ trailingCrumb, replaceLastCrumb = false }) => {
+const NavArrows: React.FC<NavArrowsProps> = ({ trailingCrumb, replaceLastCrumb = false, replaceLastCrumbCount }) => {
   const url = useLocation();
   const path = url.pathname;
 
@@ -15,7 +16,8 @@ const NavArrows: React.FC<NavArrowsProps> = ({ trailingCrumb, replaceLastCrumb =
 
   const pathSegments = path.split('/').filter(Boolean);
   const pathsList = ['FIA', ...pathSegments.map((s) => decodeURIComponent(s))];
-  const displayPathsList = trailingCrumb && replaceLastCrumb ? pathsList.slice(0, -1) : pathsList;
+  const crumbsToReplace = trailingCrumb ? (replaceLastCrumbCount ?? (replaceLastCrumb ? 1 : 0)) : 0;
+  const displayPathsList = crumbsToReplace > 0 ? pathsList.slice(0, -crumbsToReplace) : pathsList;
 
   return (
     <>

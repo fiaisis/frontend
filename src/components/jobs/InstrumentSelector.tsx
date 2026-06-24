@@ -17,15 +17,21 @@ import {
 import { alpha, type SxProps, type Theme } from '@mui/material/styles';
 import React from 'react';
 
-import { instruments } from '../../lib/instrumentData';
+import { instruments as allInstruments, type InstrumentData } from '../../lib/instrumentData';
 import { getStoredFavoriteInstrumentIds, setStoredFavoriteInstrumentIds } from '../../lib/instrumentFavorites';
 
-const getInstrumentSelectorLabel = (instrument: string): string =>
-  instrument === 'ALL' ? 'View all reductions' : instrument;
+const ALL_INSTRUMENTS_VALUE = 'ALL';
+
+const getInstrumentSelectorLabel = (
+  instrument: string,
+  allInstrumentsValue: string,
+  allInstrumentsLabel: string
+): string => (instrument === allInstrumentsValue ? allInstrumentsLabel : instrument);
 
 const ALL_FILTER = 'All';
 const FAVORITES_FILTER = 'Favourites';
 const SELECTOR_MENU_WIDTH = 540;
+
 const getFilterButtonSx =
   (active: boolean): SxProps<Theme> =>
   (theme) => {
@@ -41,7 +47,7 @@ const getFilterButtonSx =
 
     return {
       minWidth: 0,
-      height: 54,
+      height: 62,
       justifyContent: 'flex-start',
       alignItems: 'center',
       borderRadius: 1,
@@ -63,42 +69,117 @@ const getFilterButtonSx =
     };
   };
 
-const instrumentsByType = Array.from(new Set(instruments.map((instrument) => instrument.type)))
-  .sort((typeA, typeB) => typeA.localeCompare(typeB))
-  .map((type) => ({
-    type,
-    instruments: instruments
-      .filter((instrument) => instrument.type === type)
-      .sort((instrumentA, instrumentB) => instrumentA.name.localeCompare(instrumentB.name)),
-  }));
+const TechniqueFilterButton: React.FC<{
+  label: string;
+  count: number;
+  active: boolean;
+  onClick: () => void;
+}> = ({ label, count, active, onClick }) => (
+  <Button
+    color="primary"
+    variant="outlined"
+    aria-label={`${label} (${count})`}
+    onClick={onClick}
+    sx={getFilterButtonSx(active)}
+  >
+    <Box
+      component="span"
+      sx={{
+        display: 'grid',
+        gridTemplateColumns: 'minmax(0, 1fr) 2.5rem',
+        alignItems: 'center',
+        columnGap: 1,
+        width: '100%',
+      }}
+    >
+      <Typography
+        component="span"
+        variant="body2"
+        sx={{
+          minWidth: 0,
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'normal',
+          lineHeight: 1.15,
+          fontWeight: 'inherit',
+        }}
+      >
+        {label}
+      </Typography>
+      <Typography
+        component="span"
+        variant="body2"
+        sx={{
+          justifySelf: 'end',
+          minWidth: 0,
+          fontVariantNumeric: 'tabular-nums',
+          fontWeight: 700,
+          lineHeight: 1,
+        }}
+      >
+        {count}
+      </Typography>
+    </Box>
+  </Button>
+);
 
 const InstrumentSelector: React.FC<{
   selectedInstrument: string;
   handleInstrumentChange: (instrument: string) => void;
   variant?: 'default' | 'breadcrumb';
-}> = ({ selectedInstrument, handleInstrumentChange, variant = 'default' }) => {
+  instrumentOptions?: InstrumentData[];
+  allInstrumentsValue?: string;
+  allInstrumentsLabel?: string;
+  breadcrumbAllInstrumentsLabel?: string;
+  showAllInstrumentsOption?: boolean;
+  disabled?: boolean;
+}> = ({
+  selectedInstrument,
+  handleInstrumentChange,
+  variant = 'default',
+  instrumentOptions = allInstruments,
+  allInstrumentsValue = ALL_INSTRUMENTS_VALUE,
+  allInstrumentsLabel = 'View all reductions',
+  breadcrumbAllInstrumentsLabel = 'Select an instrument',
+  showAllInstrumentsOption = true,
+  disabled = false,
+}) => {
   const [typeMenuAnchorEl, setTypeMenuAnchorEl] = React.useState<HTMLElement | null>(null);
   const [activeFilter, setActiveFilter] = React.useState<string>(ALL_FILTER);
   const [searchTerm, setSearchTerm] = React.useState('');
   const [favoriteIds, setFavoriteIds] = React.useState<number[]>(getStoredFavoriteInstrumentIds);
   const isBreadcrumbVariant = variant === 'breadcrumb';
-  const selectorLabel = getInstrumentSelectorLabel(selectedInstrument);
-  const buttonLabel = isBreadcrumbVariant && selectedInstrument === 'ALL' ? 'Select an instrument' : selectorLabel;
-  const showViewAllReductionsOption = !isBreadcrumbVariant || selectedInstrument !== 'ALL';
-  const showViewAllReductionsHeaderAction = selectedInstrument !== 'ALL';
-  const showViewAllReductionsListOption = showViewAllReductionsOption && !showViewAllReductionsHeaderAction;
+  const selectorLabel = getInstrumentSelectorLabel(selectedInstrument, allInstrumentsValue, allInstrumentsLabel);
+  const buttonLabel =
+    isBreadcrumbVariant && selectedInstrument === allInstrumentsValue ? breadcrumbAllInstrumentsLabel : selectorLabel;
+  const showAllInstrumentsSelection =
+    showAllInstrumentsOption && (!isBreadcrumbVariant || selectedInstrument !== allInstrumentsValue);
+  const showAllInstrumentsHeaderAction = showAllInstrumentsOption && selectedInstrument !== allInstrumentsValue;
+  const showAllInstrumentsListOption = showAllInstrumentsSelection && !showAllInstrumentsHeaderAction;
 
   const typeMenuOpen = Boolean(typeMenuAnchorEl);
   const favoriteIdSet = React.useMemo(() => new Set(favoriteIds), [favoriteIds]);
+  const instrumentsByType = React.useMemo(
+    () =>
+      Array.from(new Set(instrumentOptions.map((instrument) => instrument.type)))
+        .sort((typeA, typeB) => typeA.localeCompare(typeB))
+        .map((type) => ({
+          type,
+          instruments: instrumentOptions
+            .filter((instrument) => instrument.type === type)
+            .sort((instrumentA, instrumentB) => instrumentA.name.localeCompare(instrumentB.name)),
+        })),
+    [instrumentOptions]
+  );
   const favoriteInstruments = React.useMemo(() => {
-    return instruments
+    return instrumentOptions
       .filter((instrument) => favoriteIdSet.has(instrument.id))
       .sort((instrumentA, instrumentB) => instrumentA.name.localeCompare(instrumentB.name));
-  }, [favoriteIdSet]);
+  }, [favoriteIdSet, instrumentOptions]);
   const filteredInstruments = React.useMemo(() => {
     const normalizedSearchTerm = searchTerm.trim().toLowerCase();
 
-    return instruments
+    return instrumentOptions
       .filter((instrument) => {
         const matchesFilter =
           activeFilter === ALL_FILTER ||
@@ -110,19 +191,16 @@ const InstrumentSelector: React.FC<{
 
         return matchesFilter && matchesSearch;
       })
-      .sort((instrumentA, instrumentB) => {
-        const favoriteSort = Number(favoriteIdSet.has(instrumentB.id)) - Number(favoriteIdSet.has(instrumentA.id));
-        return favoriteSort || instrumentA.name.localeCompare(instrumentB.name);
-      });
-  }, [activeFilter, favoriteIdSet, searchTerm]);
+      .sort((instrumentA, instrumentB) => instrumentA.name.localeCompare(instrumentB.name));
+  }, [activeFilter, favoriteIdSet, instrumentOptions, searchTerm]);
 
   const openTypeMenu = (anchorElement: HTMLElement): void => {
     setFavoriteIds(getStoredFavoriteInstrumentIds());
     setSearchTerm('');
     setActiveFilter(
-      selectedInstrument === 'ALL'
+      selectedInstrument === allInstrumentsValue
         ? ALL_FILTER
-        : (instruments.find((instrument) => instrument.name === selectedInstrument)?.type ?? ALL_FILTER)
+        : (instrumentOptions.find((instrument) => instrument.name === selectedInstrument)?.type ?? ALL_FILTER)
     );
     setTypeMenuAnchorEl(anchorElement);
   };
@@ -165,6 +243,7 @@ const InstrumentSelector: React.FC<{
         aria-controls={typeMenuOpen ? 'instrument-type-menu' : undefined}
         aria-expanded={typeMenuOpen ? 'true' : undefined}
         aria-label={isBreadcrumbVariant ? `Instrument: ${buttonLabel}` : undefined}
+        disabled={disabled}
         endIcon={<ArrowDropDown />}
         onClick={(event: React.MouseEvent<HTMLButtonElement>) => openTypeMenu(event.currentTarget)}
         sx={
@@ -249,60 +328,52 @@ const InstrumentSelector: React.FC<{
                   ),
                 }}
               />
-              {showViewAllReductionsHeaderAction && (
+              {showAllInstrumentsHeaderAction && (
                 <Button
                   variant="contained"
                   size="medium"
-                  onClick={() => selectInstrument('ALL')}
+                  onClick={() => selectInstrument(allInstrumentsValue)}
                   sx={{ flex: '0 0 auto', height: 40, whiteSpace: 'nowrap', textTransform: 'none' }}
                 >
-                  View all reductions
+                  {allInstrumentsLabel}
                 </Button>
               )}
             </Box>
             <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 0.75, mt: 1 }}>
-              <Button
-                color="primary"
-                variant="outlined"
+              <TechniqueFilterButton
+                label={ALL_FILTER}
+                count={instrumentOptions.length}
+                active={activeFilter === ALL_FILTER}
                 onClick={() => handleFilterChange(ALL_FILTER)}
-                sx={getFilterButtonSx(activeFilter === ALL_FILTER)}
-              >
-                {`All (${instruments.length})`}
-              </Button>
-              {favoriteInstruments.length > 0 && (
-                <Button
-                  color="primary"
-                  variant="outlined"
-                  onClick={() => handleFilterChange(FAVORITES_FILTER)}
-                  sx={getFilterButtonSx(activeFilter === FAVORITES_FILTER)}
-                >
-                  {`Favourites (${favoriteInstruments.length})`}
-                </Button>
-              )}
+              />
+              <TechniqueFilterButton
+                label={FAVORITES_FILTER}
+                count={favoriteInstruments.length}
+                active={activeFilter === FAVORITES_FILTER}
+                onClick={() => handleFilterChange(FAVORITES_FILTER)}
+              />
               {instrumentsByType.map((instrumentGroup) => (
-                <Button
+                <TechniqueFilterButton
                   key={instrumentGroup.type}
-                  color="primary"
-                  variant="outlined"
+                  label={instrumentGroup.type}
+                  count={instrumentGroup.instruments.length}
+                  active={activeFilter === instrumentGroup.type}
                   onClick={() => handleFilterChange(instrumentGroup.type)}
-                  sx={getFilterButtonSx(activeFilter === instrumentGroup.type)}
-                >
-                  {`${instrumentGroup.type} (${instrumentGroup.instruments.length})`}
-                </Button>
+                />
               ))}
             </Box>
           </Box>
           <Divider />
           <Box role="menu" aria-labelledby="instrument-selector-button" sx={{ overflowY: 'auto', py: 0.5 }}>
-            {showViewAllReductionsListOption && searchTerm.trim().length === 0 && (
+            {showAllInstrumentsListOption && searchTerm.trim().length === 0 && (
               <>
                 <MenuItem
                   component="div"
                   role="menuitem"
-                  selected={selectedInstrument === 'ALL'}
-                  onClick={() => selectInstrument('ALL')}
+                  selected={selectedInstrument === allInstrumentsValue}
+                  onClick={() => selectInstrument(allInstrumentsValue)}
                 >
-                  <ListItemText primary="View all reductions" />
+                  <ListItemText primary={allInstrumentsLabel} />
                 </MenuItem>
                 <Divider component="div" />
               </>
@@ -330,7 +401,9 @@ const InstrumentSelector: React.FC<{
                         favourite ? 'from favourites' : 'to favourites'
                       }`}
                       size="small"
-                      onClick={(event) => handleToggleFavorite(event, instrument.id)}
+                      onClick={(event: React.MouseEvent<HTMLButtonElement>) =>
+                        handleToggleFavorite(event, instrument.id)
+                      }
                       sx={{ flex: '0 0 auto', color: favourite ? 'warning.main' : 'action.active' }}
                     >
                       {favourite ? <StarIcon fontSize="small" /> : <StarBorderIcon fontSize="small" />}

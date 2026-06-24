@@ -1,5 +1,5 @@
 import ArrowDropDown from '@mui/icons-material/ArrowDropDown';
-import { Box, Button, FormControlLabel, Menu, MenuItem, Paper, Switch, Typography, useTheme } from '@mui/material';
+import { Box, Button, Menu, MenuItem, Typography, useTheme } from '@mui/material';
 import { jwtDecode } from 'jwt-decode';
 import React, { ReactElement, useState } from 'react';
 import { useHistory, useLocation, useParams } from 'react-router-dom';
@@ -36,21 +36,38 @@ const hasFilters = (filters: JobQueryFilters): boolean =>
   });
 
 const IMAT_VIEW_OPTIONS = [
-  { value: 0, label: 'Reduction history' },
-  { value: 1, label: 'Latest image' },
-  { value: 2, label: 'Stack viewer' },
+  { value: 0, label: 'Reduction history', path: '/reduction-history/IMAT' },
+  { value: 1, label: 'Latest image', path: '/reduction-history/IMAT/latest-image' },
+  { value: 2, label: 'Stack viewer', path: '/reduction-history/IMAT/stack-viewer' },
 ] as const;
 
 type ImatViewValue = (typeof IMAT_VIEW_OPTIONS)[number]['value'];
 
+const IMAT_STACK_QUERY_PARAMS = ['jobId', 'experiment', 'instrument', 'imageIndex', 'viewerSize'] as const;
+const JOB_TABLE_QUERY_PARAMS = ['page', 'rowsPerPage', 'filters', 'orderBy', 'orderDir'] as const;
+
 const getImatViewLabel = (value: number): string =>
   IMAT_VIEW_OPTIONS.find((option) => option.value === value)?.label ?? IMAT_VIEW_OPTIONS[0].label;
+
+const getImatViewPath = (value: ImatViewValue): string =>
+  IMAT_VIEW_OPTIONS.find((option) => option.value === value)?.path ?? IMAT_VIEW_OPTIONS[0].path;
 
 const getImatBreadcrumbViewLabel = (value: number): string =>
   value === 0 ? 'Select to view images' : getImatViewLabel(value);
 
-const isImatViewValue = (value: number): value is ImatViewValue =>
-  IMAT_VIEW_OPTIONS.some((option) => option.value === value);
+const getImatViewFromPath = (pathname: string): ImatViewValue => {
+  if (pathname.endsWith('/latest-image')) return 1;
+  if (pathname.endsWith('/stack-viewer')) return 2;
+  return 0;
+};
+
+const clearImatStackQueryParams = (params: URLSearchParams): void => {
+  IMAT_STACK_QUERY_PARAMS.forEach((param) => params.delete(param));
+};
+
+const clearJobTableQueryParams = (params: URLSearchParams): void => {
+  JOB_TABLE_QUERY_PARAMS.forEach((param) => params.delete(param));
+};
 
 const ImatViewSelector: React.FC<{
   value: number;
@@ -115,30 +132,26 @@ const Jobs: React.FC = (): ReactElement => {
   const history = useHistory();
   const location = useLocation();
   const isImat = (instrumentName || '').toUpperCase() === 'IMAT';
+  const isImatViewPath = location.pathname.endsWith('/latest-image') || location.pathname.endsWith('/stack-viewer');
+  const imatView = React.useMemo(
+    () => (isImat ? getImatViewFromPath(location.pathname) : 0),
+    [isImat, location.pathname]
+  );
   const [selectedInstrument, setSelectedInstrument] = React.useState<string>(instrumentName || 'ALL');
   const configAvailable = ['LOQ', 'MARI', 'SANS2D', 'VESUVIO', 'OSIRIS', 'IRIS', 'ENGINX'].includes(
     selectedInstrument.toUpperCase()
   );
-  const reductionHistoryHeading =
-    selectedInstrument === 'ALL' ? 'Reduction history' : `${selectedInstrument} reduction history`;
-  const [imatTab, setImatTab] = React.useState<number>(() => {
-    const params = new URLSearchParams(location.search);
-    const tabParam = params.get('tab');
-    if (tabParam !== null) {
-      const parsedTab = parseInt(tabParam, 10);
-      return isImatViewValue(parsedTab) ? parsedTab : 0;
-    }
-    if (params.has('jobId')) {
-      return 2; // Default to stack viewer if jobId is present
-    }
-    return 0;
-  });
+  const reductionHistoryHeading = React.useMemo(() => {
+    if (isImat && imatView === 1) return 'IMAT latest image';
+    if (isImat && imatView === 2) return 'IMAT stack viewer';
+    return selectedInstrument === 'ALL' ? 'Reduction history' : `${selectedInstrument} reduction history`;
+  }, [imatView, isImat, selectedInstrument]);
   // Redirect if an instrument is specified in the URL but it's not a valid instrument name
   React.useEffect(() => {
-    if (instrumentName && !isValidInstrument(instrumentName)) {
+    if ((instrumentName && !isValidInstrument(instrumentName)) || (isImatViewPath && !isImat)) {
       window.location.replace('/404/');
     }
-  }, [instrumentName, history]);
+  }, [history, instrumentName, isImat, isImatViewPath]);
   const theme = useTheme();
   const [currentPage, setCurrentPage] = React.useState<number>(0);
   const [rowsPerPage, setRowsPerPage] = React.useState<JobRowsPerPage>(getStoredRowsPerPage);
@@ -173,7 +186,6 @@ const Jobs: React.FC = (): ReactElement => {
       filters?: JobQueryFilters;
       orderBy?: string;
       orderDirection?: 'desc' | 'asc';
-      imatTab?: number;
     }) => {
       const params = new URLSearchParams(location.search);
 
@@ -218,44 +230,12 @@ const Jobs: React.FC = (): ReactElement => {
         }
       }
 
-      let targetTab = next.imatTab;
-      if (targetTab === undefined) {
-        const tabParam = params.get('tab');
-        if (tabParam !== null) {
-          targetTab = parseInt(tabParam, 10);
-        } else if (params.has('jobId')) {
-          targetTab = 2; // Assume stack viewer if jobId is present
-        } else {
-          targetTab = imatTab;
-        }
-      }
-      targetTab = isImatViewValue(targetTab) ? targetTab : 0;
-
       if (isImat) {
-        if (targetTab === 2) {
-          params.set('tab', '2');
-        } else if (targetTab === 1) {
-          params.set('tab', '1');
-        } else {
-          params.delete('tab');
-        }
-
-        if (targetTab !== 2) {
-          // Clear stack params if on IMAT but not on the stack viewer.
-          params.delete('jobId');
-          params.delete('experiment');
-          params.delete('instrument');
-          params.delete('imageIndex');
-          params.delete('viewerSize');
-        }
-      } else {
-        // Clear everything if NOT on IMAT
         params.delete('tab');
-        params.delete('jobId');
-        params.delete('experiment');
-        params.delete('instrument');
-        params.delete('imageIndex');
-        params.delete('viewerSize');
+        if (imatView !== 2) clearImatStackQueryParams(params);
+      } else {
+        params.delete('tab');
+        clearImatStackQueryParams(params);
       }
 
       const newSearch = params.toString();
@@ -264,17 +244,22 @@ const Jobs: React.FC = (): ReactElement => {
         history.replace({ pathname: location.pathname, search: searchString });
       }
     },
-    [history, location.pathname, location.search, imatTab, isImat]
+    [history, imatView, isImat, location.pathname, location.search]
   );
 
   React.useEffect(() => {
+    if (isImat && imatView !== 0) return;
     updateQueryParams({ orderBy, orderDirection });
-  }, [orderBy, orderDirection, updateQueryParams]);
+  }, [imatView, isImat, orderBy, orderDirection, updateQueryParams]);
 
   const handleInstrumentChange = (newInstrument: string): void => {
     setSelectedInstrument(newInstrument);
     const params = new URLSearchParams(location.search);
     params.delete('page');
+    params.delete('tab');
+    if (newInstrument.toUpperCase() !== 'IMAT') {
+      clearImatStackQueryParams(params);
+    }
     const search = params.toString();
     history.push({
       pathname: newInstrument === 'ALL' ? `/reduction-history` : `/reduction-history/${newInstrument}`,
@@ -376,19 +361,10 @@ const Jobs: React.FC = (): ReactElement => {
         return {};
       });
     }
-    const tabParam = params.get('tab');
-    if (tabParam !== null) {
-      const parsedTab = parseInt(tabParam, 10);
-      if (isImatViewValue(parsedTab) && parsedTab !== imatTab) {
-        setImatTab(parsedTab);
-      } else if (!isImatViewValue(parsedTab)) {
-        updateQueryParams({ imatTab: 0 });
-      }
-    } else if (isImat && imatTab !== 0 && !params.has('jobId')) {
-      // If the view is missing from the URL, reset IMAT back to the reduction history view.
-      setImatTab(0);
+    if (params.has('tab')) {
+      updateQueryParams({});
     }
-  }, [location.search, rowsPerPage, updateQueryParams, imatTab, isImat]);
+  }, [location.search, rowsPerPage, updateQueryParams]);
 
   React.useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -397,8 +373,9 @@ const Jobs: React.FC = (): ReactElement => {
   }, [rowsPerPage]);
 
   React.useEffect(() => {
+    if (isImat && imatView !== 0) return;
     updateQueryParams({ rowsPerPage });
-  }, [rowsPerPage, updateQueryParams]);
+  }, [imatView, isImat, rowsPerPage, updateQueryParams]);
 
   React.useEffect(() => {
     setSelectedInstrument(instrumentName || 'ALL');
@@ -420,19 +397,17 @@ const Jobs: React.FC = (): ReactElement => {
 
   const [configDrawerOpen, setConfigDrawerOpen] = React.useState<boolean>(false);
 
-  React.useEffect(() => {
-    if (isImat) {
-      const params = new URLSearchParams(location.search);
-      if (!params.has('tab') && params.has('jobId')) {
-        setImatTab(2); // Stack viewer
-        updateQueryParams({ imatTab: 2 });
-      }
-    }
-  }, [isImat, location.search, updateQueryParams]);
-
   const handleImatViewChange = (newValue: ImatViewValue): void => {
-    setImatTab(newValue);
-    updateQueryParams({ imatTab: newValue });
+    const params = new URLSearchParams(location.search);
+    params.delete('tab');
+    if (newValue !== 0) clearJobTableQueryParams(params);
+    if (newValue !== 2) clearImatStackQueryParams(params);
+
+    const search = params.toString();
+    history.push({
+      pathname: getImatViewPath(newValue),
+      search: search ? `?${search}` : '',
+    });
   };
 
   const breadcrumbTrailingCrumbs = [
@@ -442,7 +417,7 @@ const Jobs: React.FC = (): ReactElement => {
       handleInstrumentChange={handleInstrumentChange}
       variant="breadcrumb"
     />,
-    ...(isImat ? [<ImatViewSelector key="imat-view" value={imatTab} onChange={handleImatViewChange} />] : []),
+    ...(isImat ? [<ImatViewSelector key="imat-view" value={imatView} onChange={handleImatViewChange} />] : []),
   ];
 
   return (
@@ -464,38 +439,15 @@ const Jobs: React.FC = (): ReactElement => {
             minWidth: 0,
           }}
         >
-          <NavArrows trailingCrumb={breadcrumbTrailingCrumbs} replaceLastCrumb={selectedInstrument !== 'ALL'} />
+          <NavArrows
+            trailingCrumb={breadcrumbTrailingCrumbs}
+            replaceLastCrumb={selectedInstrument !== 'ALL'}
+            replaceLastCrumbCount={isImat && imatView !== 0 ? 2 : undefined}
+          />
           <Typography variant="h3" component="h1" sx={{ color: theme.palette.text.primary, px: '20px', pt: 2, pb: 1 }}>
             {reductionHistoryHeading}
           </Typography>
         </Box>
-        {userRole === 'staff' && (
-          <Paper
-            variant="outlined"
-            sx={{
-              mt: 2,
-              p: 2,
-              minWidth: 320,
-              maxWidth: 760,
-              flexShrink: 0,
-            }}
-          >
-            <Typography variant="subtitle2" component="h2" sx={{ mb: 1, fontWeight: 700 }}>
-              Instrument controls
-            </Typography>
-            <Box className="tour-view-as-user" sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
-              <FormControlLabel
-                control={<Switch checked={asUser} onChange={() => setAsUser(!asUser)} color="secondary" />}
-                label={
-                  <Typography variant="body1" color={theme.palette.text.primary}>
-                    View as user
-                  </Typography>
-                }
-                sx={{ mr: 0 }}
-              />
-            </Box>
-          </Paper>
-        )}
       </Box>
       <FilterContainer
         showInstrumentFilter={selectedInstrument === 'ALL'}
@@ -513,32 +465,32 @@ const Jobs: React.FC = (): ReactElement => {
       />
       {isImat ? (
         <>
-          {imatTab === 0 && (
-            <Box sx={{ pt: 2 }}>
-              <Box className="tour-red-his-tablehead" sx={{ padding: '0 20px 20px' }}>
-                <JobTable
-                  selectedInstrument={selectedInstrument}
-                  currentPage={currentPage}
-                  handlePageChange={handlePageChange}
-                  asUser={asUser}
-                  rowsPerPage={rowsPerPage}
-                  handleRowsPerPageChange={handleRowsPerPageChange}
-                  filters={currentFilters}
-                  orderBy={orderBy}
-                  orderDirection={orderDirection}
-                  handleSort={handleSort}
-                  filtersApplied={hasFilters(currentFilters)}
-                  openFilters={() => setFiltersOpen(true)}
-                />
-              </Box>
+          {imatView === 0 && (
+            <Box className="tour-red-his-tablehead" sx={{ padding: '0 20px 20px' }}>
+              <JobTable
+                selectedInstrument={selectedInstrument}
+                currentPage={currentPage}
+                handlePageChange={handlePageChange}
+                asUser={asUser}
+                rowsPerPage={rowsPerPage}
+                handleRowsPerPageChange={handleRowsPerPageChange}
+                setAsUser={setAsUser}
+                showAsUserControl={userRole === 'staff'}
+                filters={currentFilters}
+                orderBy={orderBy}
+                orderDirection={orderDirection}
+                handleSort={handleSort}
+                filtersApplied={hasFilters(currentFilters)}
+                openFilters={() => setFiltersOpen(true)}
+              />
             </Box>
           )}
-          {imatTab === 1 && (
+          {imatView === 1 && (
             <Box sx={{ pt: 2 }}>
               <IMATViewer mode="latest" showNav={false} />
             </Box>
           )}
-          {imatTab === 2 && (
+          {imatView === 2 && (
             <Box sx={{ pt: 2 }}>
               <IMATViewer mode="stack" showNav={false} />
             </Box>
@@ -553,6 +505,8 @@ const Jobs: React.FC = (): ReactElement => {
             asUser={asUser}
             rowsPerPage={rowsPerPage}
             handleRowsPerPageChange={handleRowsPerPageChange}
+            setAsUser={setAsUser}
+            showAsUserControl={userRole === 'staff'}
             filters={currentFilters}
             orderBy={orderBy}
             orderDirection={orderDirection}

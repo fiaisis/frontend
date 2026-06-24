@@ -55,7 +55,7 @@ const FileCard: React.FC<FileCardProps> = ({
         borderColor: file.enabled ? 'primary.main' : 'divider',
       }}
     >
-      <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+      <CardContent sx={{ p: 1.25, '&:last-child': { pb: 1.25 } }}>
         {/* File selection - checkbox in 1D mode, radio in 2D mode */}
         <FormControlLabel
           control={
@@ -84,7 +84,7 @@ const FileCard: React.FC<FileCardProps> = ({
 
         {/* File controls - only show in 1D mode if enabled */}
         {activeViewerTab === '1d' && file.enabled && (
-          <Box sx={{ mt: 2, ml: 4, display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <Box sx={{ mt: 1.25, ml: 3.5, display: 'flex', flexDirection: 'column', gap: 1.25 }}>
             {/* Dataset selector - dropdown for discovered datasets */}
             <Box>
               {file.isDiscovered && file.discoveredDatasets && file.discoveredDatasets.length > 0 ? (
@@ -120,7 +120,7 @@ const FileCard: React.FC<FileCardProps> = ({
                           display: 'flex',
                           flexDirection: 'column',
                           alignItems: 'flex-start',
-                          py: 1.5,
+                          py: 1,
                         }}
                       >
                         <Typography

@@ -86,14 +86,21 @@ createRoute(
 );
 createRoute(
   'Viewers',
-  'Expriment viewer',
+  'Experiment viewer',
   '/fia/experiment-viewer',
   4,
   'View and visualize HDF5 data files from reduction jobs.',
   false
 );
-createRoute('Viewers', 'Live Data', '/fia/live-data', 5, 'View live data from instruments in real-time.', false);
-createRoute('Viewers', 'IMAT viewer', '/fia/reduction-history/IMAT', 6, 'Latest IMAT image', false);
+createRoute('Viewers', 'Live data', '/fia/live-data', 5, 'View live data from instruments in real-time.', false);
+createRoute(
+  'Viewers',
+  'IMAT stack viewer',
+  '/fia/reduction-history/IMAT/stack-viewer',
+  6,
+  'View IMAT image stacks',
+  false
+);
 
 // Single-SPA bootstrap methods have no idea what type of inputs may be
 // pushed down from the parent app

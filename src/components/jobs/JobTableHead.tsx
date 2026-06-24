@@ -20,9 +20,6 @@ const headerStyles = (theme: Theme): CSSObject => ({
   fontWeight: 'bold',
   whiteSpace: 'nowrap',
   borderRight: `2px solid ${JOB_TABLE_HEADER_BORDER_COLOR}`,
-  '&:last-child': {
-    borderRight: 'none',
-  },
 });
 
 const SortableHeaderCell: React.FC<SortableHeaderCellProps> = ({
@@ -79,7 +76,19 @@ interface JobTableHeadProps {
 const JobTableHead: React.FC<JobTableHeadProps> = ({ handleSort, orderBy, orderDirection }) => {
   const theme = useTheme();
   return (
-    <TableHead sx={{ '& th': { py: 0.5 }, height: '54px' }}>
+    <TableHead
+      sx={{
+        '& th': {
+          py: 0.5,
+          borderTop: `2px solid ${JOB_TABLE_HEADER_BORDER_COLOR}`,
+          borderBottom: `2px solid ${JOB_TABLE_HEADER_BORDER_COLOR}`,
+        },
+        '& th:first-of-type': {
+          borderLeft: `2px solid ${JOB_TABLE_HEADER_BORDER_COLOR}`,
+        },
+        height: '54px',
+      }}
+    >
       <TableRow>
         <SortableHeaderCell
           headerName="Experiment number"

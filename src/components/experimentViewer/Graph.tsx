@@ -242,7 +242,9 @@ const PlotViewer: React.FC<PlotViewerProps> = ({ linePlotData, showErrors, onSho
   };
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
+    <Box
+      sx={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, width: '100%', overflow: 'hidden' }}
+    >
       <Paper elevation={1} sx={toolbarThemeTokens}>
         <Box sx={{ display: 'flex' }} className={'toolbar'}>
           <Toolbar>
@@ -305,7 +307,7 @@ const PlotViewer: React.FC<PlotViewerProps> = ({ linePlotData, showErrors, onSho
           </Toolbar>
         </Box>
       </Paper>
-      <Box sx={{ flex: 1, minHeight: 0, display: 'flex', ...lineVisStyles }}>
+      <Box sx={{ flex: 1, minHeight: 0, display: 'flex', overflow: 'hidden', ...lineVisStyles }}>
         <LineVis
           dataArray={primaryArray}
           domain={safeYDomain}

@@ -7,6 +7,9 @@ import InstrumentSelector from './InstrumentSelector';
 import { instruments } from '../../lib/instrumentData';
 import { FAVORITE_INSTRUMENTS_STORAGE_KEY } from '../../lib/instrumentFavorites';
 
+const getMenuItemIndex = (name: string): number =>
+  screen.getAllByRole('menuitem').findIndex((menuItem) => menuItem.textContent?.includes(name));
+
 describe('InstrumentSelector', () => {
   afterEach(() => {
     cleanup();
@@ -24,6 +27,7 @@ describe('InstrumentSelector', () => {
     await user.click(screen.getByRole('button', { name: /Instrument\s+View all reductions/ }));
 
     expect(screen.getByRole('menuitem', { name: 'View all reductions' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Favourites\s+\(0\)/ })).toBeInTheDocument();
     instrumentTypes.forEach((instrumentType) => {
       expect(screen.getByRole('button', { name: new RegExp(instrumentType) })).toBeInTheDocument();
     });
@@ -34,6 +38,10 @@ describe('InstrumentSelector', () => {
 
     expect(screen.getByRole('menuitem', { name: /LOQ\s+Small-angle neutron scattering/ })).toBeInTheDocument();
     expect(screen.queryByRole('menuitem', { name: 'ALF' })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /Favourites\s+\(0\)/ }));
+
+    expect(screen.getByText('No instruments found')).toBeInTheDocument();
   });
 
   test('passes the selected instrument value to the change handler', async () => {
@@ -100,7 +108,7 @@ describe('InstrumentSelector', () => {
     expect(handleInstrumentChange).toHaveBeenCalledWith('ALL');
   });
 
-  test('breadcrumb variant shows favourited instruments above the technique list', async () => {
+  test('breadcrumb variant shows favourited instruments in the favourites filter', async () => {
     const user = userEvent.setup();
     const handleInstrumentChange = vi.fn();
 
@@ -131,6 +139,31 @@ describe('InstrumentSelector', () => {
 
     expect(handleInstrumentChange).toHaveBeenCalledTimes(1);
     expect(handleInstrumentChange).toHaveBeenCalledWith('LOQ');
+  });
+
+  test('breadcrumb variant does not promote favourited instruments in all or technique filters', async () => {
+    const user = userEvent.setup();
+    const handleInstrumentChange = vi.fn();
+
+    localStorage.setItem(FAVORITE_INSTRUMENTS_STORAGE_KEY, JSON.stringify([29]));
+
+    render(
+      <InstrumentSelector
+        selectedInstrument="ALL"
+        handleInstrumentChange={handleInstrumentChange}
+        variant="breadcrumb"
+      />
+    );
+
+    await user.click(screen.getByRole('button', { name: /Instrument:\s+Select an instrument/ }));
+
+    expect(getMenuItemIndex('ALF')).toBe(0);
+    expect(getMenuItemIndex('ALF')).toBeLessThan(getMenuItemIndex('SANS2D'));
+
+    await user.click(screen.getByRole('button', { name: /Small-angle neutron scattering\s+\(4\)/ }));
+
+    expect(getMenuItemIndex('LARMOR')).toBe(0);
+    expect(getMenuItemIndex('LARMOR')).toBeLessThan(getMenuItemIndex('SANS2D'));
   });
 
   test('lets users favourite instruments from the selector without selecting the row', async () => {

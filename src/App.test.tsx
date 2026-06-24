@@ -81,6 +81,16 @@ describe('App', () => {
     expect(screen.getByRole('heading', { name: 'ISIS instruments' })).toBeInTheDocument();
   });
 
+  test('routes to IMAT image views under reduction history', () => {
+    renderAt('/fia/reduction-history/IMAT/latest-image');
+    expect(screen.getByRole('heading', { name: 'Jobs' })).toBeInTheDocument();
+
+    cleanup();
+
+    renderAt('/fia/reduction-history/IMAT/stack-viewer');
+    expect(screen.getByRole('heading', { name: 'Jobs' })).toBeInTheDocument();
+  });
+
   test('redirects the old instruments route to the renamed route', async () => {
     renderAt('/fia/instruments');
 

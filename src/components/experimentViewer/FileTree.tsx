@@ -9,7 +9,8 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
-  Tooltip,
+  ToggleButton,
+  ToggleButtonGroup,
 } from '@mui/material';
 import React, { useState } from 'react';
 
@@ -20,6 +21,9 @@ import type { FileConfig, Job } from '../../lib/types';
 interface FileTreeProps {
   jobs: Job[];
   files: FileConfig[];
+  resultLimit?: number;
+  onResultLimitChange?: (limit: number) => void;
+  isResultLimitDisabled?: boolean;
   onFileToggle: (index: number) => void;
   onDatasetChange: (index: number, datasetPath: string) => void;
   onSelectionChange: (index: number, selections: number[]) => void;
@@ -33,6 +37,9 @@ interface FileTreeProps {
 const FileTree: React.FC<FileTreeProps> = ({
   jobs,
   files,
+  resultLimit,
+  onResultLimitChange,
+  isResultLimitDisabled = false,
   onFileToggle,
   onDatasetChange,
   onSelectionChange,
@@ -91,19 +98,61 @@ const FileTree: React.FC<FileTreeProps> = ({
 
   const filteredJobs = showEmptyJobs ? jobsWithOutputs : jobsWithOutputs.filter((job) => job.outputsArray.length > 0);
   const emptyJobsCount = jobsWithOutputs.filter((job) => job.outputsArray.length === 0).length;
+  const showResultLimit = resultLimit !== undefined && onResultLimitChange !== undefined;
 
   return (
     <Box
       sx={{
-        height: '100%',
-        p: 2,
+        flex: '1 1 auto',
+        minHeight: 0,
+        boxSizing: 'border-box',
+        p: 1.5,
         overflowY: 'auto',
       }}
     >
-      <Box sx={{ mb: 2 }}>
-        <Typography variant="h5" fontWeight="bold" sx={{ mb: 1 }}>
+      <Box sx={{ mb: 1.5 }}>
+        <Typography variant="h6" fontWeight="bold" sx={{ mb: 0.5 }}>
           File tree
         </Typography>
+
+        {showResultLimit && (
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, mb: 1 }}>
+            <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>
+              Limit
+            </Typography>
+            <ToggleButtonGroup
+              value={resultLimit}
+              exclusive
+              onChange={(_event: React.MouseEvent<HTMLElement>, nextLimit: number | null) => {
+                if (nextLimit !== null && nextLimit !== resultLimit) {
+                  onResultLimitChange(nextLimit);
+                }
+              }}
+              size="small"
+              disabled={isResultLimitDisabled}
+              aria-label="Job result limit"
+              sx={{
+                borderRadius: 0,
+                '& .MuiToggleButtonGroup-grouped': {
+                  borderRadius: 0,
+                  width: 48,
+                  minWidth: 48,
+                  height: 30,
+                  px: 0,
+                  justifyContent: 'center',
+                  fontSize: '0.75rem',
+                  fontVariantNumeric: 'tabular-nums',
+                },
+              }}
+            >
+              {[10, 25, 50, 100].map((limit) => (
+                <ToggleButton key={limit} value={limit} aria-label={`${limit} jobs`}>
+                  {limit}
+                </ToggleButton>
+              ))}
+            </ToggleButtonGroup>
+          </Box>
+        )}
 
         {/* Settings */}
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
@@ -133,11 +182,9 @@ const FileTree: React.FC<FileTreeProps> = ({
                 />
               }
               label={
-                <Tooltip title="Automatically select datasets marked as primary (with 'signal' attribute)" arrow>
-                  <Typography variant="caption" sx={{ fontSize: '0.75rem', cursor: 'help' }}>
-                    Auto-select primary datasets
-                  </Typography>
-                </Tooltip>
+                <Typography variant="caption" sx={{ fontSize: '0.75rem' }}>
+                  Auto-select primary datasets
+                </Typography>
               }
               sx={{ m: 0 }}
             />
@@ -156,51 +203,76 @@ const FileTree: React.FC<FileTreeProps> = ({
           key={job.id}
           expanded={expandedJobs.has(job.id)}
           onChange={handleAccordionChange(job.id)}
-          sx={{ mb: 1, boxShadow: 2 }}
+          sx={{
+            mb: 0.75,
+            boxShadow: 1,
+            '&:before': { display: 'none' },
+            '&.Mui-expanded': {
+              my: 0,
+              mb: 0.75,
+            },
+          }}
         >
-          <AccordionSummary expandIcon={<ExpandMoreIcon />} slotProps={{ content: { sx: { maxWidth: '100%' } } }}>
+          <AccordionSummary
+            expandIcon={<ExpandMoreIcon fontSize="small" />}
+            sx={{
+              minHeight: 42,
+              pl: 1.5,
+              pr: 1.25,
+              py: 0.25,
+              '&.Mui-expanded': {
+                minHeight: 42,
+              },
+              '& .MuiAccordionSummary-content': {
+                minWidth: 0,
+                my: 0.5,
+              },
+              '& .MuiAccordionSummary-content.Mui-expanded': {
+                my: 0.5,
+              },
+              '& .MuiAccordionSummary-expandIconWrapper': {
+                ml: 1,
+              },
+            }}
+            slotProps={{ content: { sx: { maxWidth: '100%' } } }}
+          >
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, flex: 1, minWidth: 0, overflow: 'hidden' }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%', minWidth: 0 }}>
                 <FolderIcon color="primary" fontSize="small" sx={{ flexShrink: 0 }} />
-                <Tooltip title={job.run.filename} arrow placement="top">
-                  <Typography
-                    variant="body2"
-                    fontWeight="600"
-                    noWrap
-                    sx={{
-                      flex: 1,
-                      minWidth: 0,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                    }}
-                  >
-                    {job.run.filename}
-                  </Typography>
-                </Tooltip>
+                <Typography
+                  variant="body2"
+                  fontWeight="600"
+                  noWrap
+                  sx={{
+                    flex: 1,
+                    minWidth: 0,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}
+                >
+                  {job.run.filename}
+                </Typography>
                 <Chip
                   label={`${job.outputsArray.length} files`}
                   size="small"
-                  sx={{ height: 20, fontSize: '0.7rem', flexShrink: 0 }}
+                  sx={{ height: 18, fontSize: '0.65rem', flexShrink: 0 }}
                 />
               </Box>
-              <Tooltip title={job.run.title} arrow>
-                <Typography
-                  variant="caption"
-                  noWrap
-                  sx={{
-                    fontStyle: 'italic',
-                    fontSize: '0.7rem',
-                    cursor: 'default',
-                    display: 'block',
-                  }}
-                >
-                  {job.run.title}
-                </Typography>
-              </Tooltip>
+              <Typography
+                variant="caption"
+                noWrap
+                sx={{
+                  fontStyle: 'italic',
+                  fontSize: '0.68rem',
+                  display: 'block',
+                }}
+              >
+                {job.run.title}
+              </Typography>
             </Box>
           </AccordionSummary>
-          <AccordionDetails sx={{ p: 1 }}>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+          <AccordionDetails sx={{ p: 0.75 }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
               {job.outputsArray.map((output, outputIndex) => {
                 const fileIndex = getFileIndex(output);
                 const file = getFileConfig(output);

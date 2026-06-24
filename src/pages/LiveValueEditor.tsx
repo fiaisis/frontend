@@ -77,7 +77,7 @@ const LiveValueEditor: React.FC = () => {
         <Box sx={{ p: 2, backgroundColor: theme.palette.background.default }}>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
             <Typography variant="h3" component="h1" style={{ color: theme.palette.text.primary }}>
-              {instrumentName} Live Data Script
+              {instrumentName} Live data script
             </Typography>
             <Box sx={{ display: 'flex', gap: 1 }}>
               {/* View Logs Button */}

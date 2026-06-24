@@ -1,13 +1,15 @@
 import '@h5web/lib/styles.css';
-import { Alert, Box, CircularProgress, Typography } from '@mui/material';
-import React, { useCallback, useEffect, useState } from 'react';
-import { useHistory, useLocation, useParams } from 'react-router-dom';
+import ArrowDropDown from '@mui/icons-material/ArrowDropDown';
+import SearchIcon from '@mui/icons-material/Search';
+import { Alert, Box, Button, CircularProgress, Link as MuiLink, Popover, TextField, Typography } from '@mui/material';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Link as RouterLink, useHistory, useParams } from 'react-router-dom';
 
-import ExperimentSearch from '../components/experimentViewer/ExperimentSearch';
 import FileTree from '../components/experimentViewer/FileTree';
 import PlotViewer from '../components/experimentViewer/Graph';
 import Viewer2D from '../components/experimentViewer/Viewer2D';
 import ViewerTabs from '../components/experimentViewer/ViewerTabs';
+import InstrumentSelector from '../components/jobs/InstrumentSelector';
 import NavArrows from '../components/navigation/NavArrows';
 import { fiaApi } from '../lib/api';
 import { isValidInstrument } from '../lib/instrumentData';
@@ -17,26 +19,160 @@ import { DatasetInfo, FileConfig, Job, JobQueryFilters, LinePlotData, outputFilt
 import type { NumericType } from '@h5web/app';
 
 interface RouteParams {
-  instrumentName: string;
-  jobId: string;
+  instrumentName?: string;
+  experimentNumber?: string;
+  jobId?: string;
 }
 
+const VIEWER_HEIGHT_BOTTOM_BUFFER_PX = 32;
+
+const parseExperimentNumber = (experimentNumber: string | undefined): number | null => {
+  if (!experimentNumber) {
+    return null;
+  }
+
+  const parsedExperimentNumber = Number(experimentNumber);
+  return Number.isInteger(parsedExperimentNumber) && parsedExperimentNumber >= 0 ? parsedExperimentNumber : null;
+};
+
+const getExperimentViewerPath = (instrument: string | null, experimentNumber: number | null = null): string => {
+  if (!instrument) {
+    return '/experiment-viewer';
+  }
+
+  const instrumentPath = `/experiment-viewer/${encodeURIComponent(instrument)}`;
+  return experimentNumber === null ? instrumentPath : `${instrumentPath}/${experimentNumber}`;
+};
+
+const ExperimentNumberBreadcrumb: React.FC<{
+  experimentNumber: number | null;
+  onExperimentNumberChange: (experimentNumber: number | null) => void;
+}> = ({ experimentNumber, onExperimentNumberChange }): JSX.Element => {
+  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+  const [draftExperimentNumber, setDraftExperimentNumber] = useState('');
+  const open = Boolean(anchorEl);
+
+  useEffect(() => {
+    setDraftExperimentNumber(experimentNumber?.toString() ?? '');
+  }, [experimentNumber]);
+
+  const closeEditor = (): void => {
+    setAnchorEl(null);
+    setDraftExperimentNumber(experimentNumber?.toString() ?? '');
+  };
+
+  const applyExperimentNumber = (): void => {
+    const trimmedExperimentNumber = draftExperimentNumber.trim();
+
+    if (trimmedExperimentNumber.length === 0) {
+      onExperimentNumberChange(null);
+      setAnchorEl(null);
+      return;
+    }
+
+    const parsedExperimentNumber = Number(trimmedExperimentNumber);
+
+    if (!Number.isInteger(parsedExperimentNumber) || parsedExperimentNumber < 0) {
+      return;
+    }
+
+    onExperimentNumberChange(parsedExperimentNumber);
+    setAnchorEl(null);
+  };
+
+  return (
+    <>
+      <Button
+        className="breadcrumb-control"
+        variant="text"
+        aria-haspopup="dialog"
+        aria-controls={open ? 'experiment-number-breadcrumb-editor' : undefined}
+        aria-expanded={open ? 'true' : undefined}
+        aria-label={
+          experimentNumber === null ? 'Search experiment number' : `Experiment number: ${experimentNumber.toString()}`
+        }
+        endIcon={<ArrowDropDown />}
+        onClick={(event: React.MouseEvent<HTMLButtonElement>) => setAnchorEl(event.currentTarget)}
+        sx={{
+          minWidth: 0,
+          border: 0,
+          borderRadius: 0,
+          boxShadow: 'none',
+          font: 'inherit',
+          textTransform: 'none',
+          '& .MuiButton-endIcon': { ml: 0.75, mr: 0, color: 'inherit' },
+        }}
+      >
+        <Box component="span">
+          {experimentNumber === null ? 'Search experiment number' : `Experiment ${experimentNumber}`}
+        </Box>
+      </Button>
+      <Popover
+        id="experiment-number-breadcrumb-editor"
+        anchorEl={anchorEl}
+        open={open}
+        onClose={closeEditor}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+        slotProps={{
+          paper: {
+            sx: { width: 280, maxWidth: 'calc(100vw - 32px)' },
+          },
+        }}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, p: 1.5 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <TextField
+              autoFocus
+              autoComplete="off"
+              size="small"
+              type="number"
+              value={draftExperimentNumber}
+              onChange={(event) => setDraftExperimentNumber(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  applyExperimentNumber();
+                }
+              }}
+              inputProps={{ min: 0, step: 1, autoComplete: 'off' }}
+              sx={{ flex: '1 1 auto', minWidth: 0 }}
+            />
+            <Button
+              size="small"
+              variant="contained"
+              startIcon={<SearchIcon fontSize="small" />}
+              onClick={applyExperimentNumber}
+              sx={{
+                flex: '0 0 auto',
+                height: 40,
+                textTransform: 'none',
+                '& .MuiButton-startIcon': { mr: 0.5 },
+              }}
+            >
+              Search
+            </Button>
+          </Box>
+        </Box>
+      </Popover>
+    </>
+  );
+};
+
 const ExperimentViewer: React.FC = (): JSX.Element => {
-  const { instrumentName, jobId } = useParams<RouteParams>();
-  const location = useLocation();
+  const { instrumentName, experimentNumber, jobId } = useParams<RouteParams>();
   const history = useHistory();
+  const viewerRootRef = useRef<HTMLDivElement | null>(null);
+  const routeExperimentNumber = parseExperimentNumber(experimentNumber);
 
   // Redirect if an instrument is specified in the URL but it's not a valid instrument name
   useEffect(() => {
-    const queryInstrument = new URLSearchParams(location.search).get('instrument');
-    const instrumentToValidate = instrumentName || queryInstrument;
-
-    if (instrumentToValidate && !isValidInstrument(instrumentToValidate)) {
+    if (
+      (instrumentName && !isValidInstrument(instrumentName)) ||
+      (experimentNumber !== undefined && routeExperimentNumber === null)
+    ) {
       window.location.replace('/404/');
     }
-  }, [instrumentName, location.search]);
-
-  const searchParams = new URLSearchParams(location.search);
+  }, [experimentNumber, instrumentName, routeExperimentNumber]);
 
   const [jobs, setJobs] = useState<Job[]>([]);
   const [files, setFiles] = useState<FileConfig[]>([]);
@@ -50,17 +186,38 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
   const [selected2DFilePath, setSelected2DFilePath] = useState<string | null>(null);
   const [loading2DPath, setLoading2DPath] = useState(false);
   const [viewer2DError, setViewer2DError] = useState<string | null>(null);
+  const [viewerHeight, setViewerHeight] = useState('100vh');
 
-  // Search state - initialize from URL params
-  const [searchInstrument, setSearchInstrument] = useState<string | null>(() => searchParams.get('instrument'));
-  const [searchExperimentNumber, setSearchExperimentNumber] = useState<number | null>(() => {
-    const exp = searchParams.get('experiment');
-    return exp ? parseInt(exp, 10) : null;
-  });
+  // Search state - initialize from route params
+  const [searchInstrument, setSearchInstrument] = useState<string | null>(() => instrumentName ?? null);
+  const [searchExperimentNumber, setSearchExperimentNumber] = useState<number | null>(() => routeExperimentNumber);
   const [searchLimit, setSearchLimit] = useState<number>(10);
   const [isSearchActive, setIsSearchActive] = useState<boolean>(() => {
-    return Boolean(searchParams.get('instrument') || searchParams.get('experiment'));
+    return Boolean(instrumentName || routeExperimentNumber !== null);
   });
+
+  useEffect(() => {
+    setSearchInstrument(instrumentName ?? null);
+    setSearchExperimentNumber(routeExperimentNumber);
+    setIsSearchActive(Boolean(instrumentName || routeExperimentNumber !== null));
+  }, [instrumentName, routeExperimentNumber]);
+
+  const updateViewerHeight = useCallback((): void => {
+    const topOffset = viewerRootRef.current?.getBoundingClientRect().top ?? 0;
+    const unavailableHeight = Math.max(0, Math.ceil(topOffset)) + VIEWER_HEIGHT_BOTTOM_BUFFER_PX;
+    const nextHeight = `calc(100vh - ${unavailableHeight}px)`;
+
+    setViewerHeight((currentHeight) => (currentHeight === nextHeight ? currentHeight : nextHeight));
+  }, []);
+
+  useEffect(() => {
+    updateViewerHeight();
+    window.addEventListener('resize', updateViewerHeight);
+
+    return () => {
+      window.removeEventListener('resize', updateViewerHeight);
+    };
+  }, [updateViewerHeight]);
 
   // Fetch jobs based on URL params or search
   useEffect(() => {
@@ -73,19 +230,6 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
           // Fetch specific job by ID (from URL)
           const response = await fiaApi.get<Job>(`/job/${jobId}`);
           jobsData = [response.data];
-        } else if (instrumentName) {
-          // Fetch jobs for instrument (from URL)
-          const filters = {
-            instrument_in: [instrumentName],
-            job_state_in: ['SUCCESSFUL'],
-          };
-          const response = await fiaApi.get<Job[]>('/jobs', {
-            params: {
-              filters: JSON.stringify(filters),
-              include_run: 'true',
-            },
-          });
-          jobsData = response.data;
         } else if (isSearchActive) {
           // Fetch jobs based on search criteria
           const filters: JobQueryFilters = {
@@ -96,7 +240,7 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
             filters.instrument_in = [searchInstrument];
           }
 
-          if (searchExperimentNumber) {
+          if (searchExperimentNumber !== null) {
             filters.experiment_number_in = [searchExperimentNumber];
           }
 
@@ -215,36 +359,38 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
     loadJobs();
   }, [jobId, instrumentName, isSearchActive, searchInstrument, searchExperimentNumber, searchLimit]);
 
-  // Search handlers
-  const handleSearch = (instrument: string | null, experimentNumber: number | null, limit: number): void => {
-    setSearchInstrument(instrument);
-    setSearchExperimentNumber(experimentNumber);
-    setSearchLimit(limit);
-    setIsSearchActive(true);
+  const handleBreadcrumbInstrumentChange = (instrument: string): void => {
+    const nextInstrument = instrument === 'ALL' ? null : instrument;
+    const nextExperimentNumber = nextInstrument ? searchExperimentNumber : null;
+    const nextSearchActive = Boolean(nextInstrument || nextExperimentNumber);
+
+    setSearchInstrument(nextInstrument);
+    setSearchExperimentNumber(nextExperimentNumber);
+    setIsSearchActive(nextSearchActive);
     setError(null);
 
-    // Update URL search params
-    const params = new URLSearchParams();
-    if (instrument) {
-      params.set('instrument', instrument);
+    if (!nextSearchActive) {
+      setJobs([]);
+      setFiles([]);
+      setLinePlotData([]);
     }
-    if (experimentNumber !== null) {
-      params.set('experiment', experimentNumber.toString());
-    }
-    history.push({ search: params.toString() });
+
+    history.push(getExperimentViewerPath(nextInstrument, nextExperimentNumber));
   };
 
-  const handleClearSearch = (): void => {
-    setSearchInstrument(null);
-    setSearchExperimentNumber(null);
-    setIsSearchActive(false);
-    setJobs([]);
-    setFiles([]);
-    setLinePlotData([]);
+  const handleBreadcrumbExperimentNumberChange = (experimentNumber: number | null): void => {
+    if (!searchInstrument) {
+      return;
+    }
+
+    const nextSearchActive = true;
+
+    setSearchInstrument(searchInstrument);
+    setSearchExperimentNumber(experimentNumber);
+    setIsSearchActive(nextSearchActive);
     setError(null);
 
-    // Clear URL search params
-    history.push({ search: '' });
+    history.push(getExperimentViewerPath(searchInstrument, experimentNumber));
   };
 
   // Discover datasets in a file
@@ -486,40 +632,76 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
     fetchPath();
   }, [activeViewerTab, selected2DFile, files, jobs]);
 
-  // Determine if we should show search (not viewing specific job from URL)
-  const showSearch = !jobId;
+  const showBreadcrumbFilters = !jobId;
+  const breadcrumbRouteCrumbCount = searchInstrument ? (searchExperimentNumber === null ? 1 : 2) : 0;
+  const breadcrumbTrailingCrumb = showBreadcrumbFilters
+    ? [
+        <InstrumentSelector
+          key="instrument-selector"
+          selectedInstrument={searchInstrument || 'ALL'}
+          handleInstrumentChange={handleBreadcrumbInstrumentChange}
+          variant="breadcrumb"
+          allInstrumentsLabel="All instruments"
+          showAllInstrumentsOption={false}
+        />,
+        searchInstrument ? (
+          <ExperimentNumberBreadcrumb
+            key="experiment-number"
+            experimentNumber={searchExperimentNumber}
+            onExperimentNumberChange={handleBreadcrumbExperimentNumberChange}
+          />
+        ) : null,
+      ]
+    : undefined;
+  const showInitialEmptyState = !jobId && !instrumentName && !isSearchActive;
+  const showNoJobsState = !jobId && isSearchActive && jobs.length === 0 && !loading;
+  const showResultsLayout = Boolean(jobId || (isSearchActive && jobs.length > 0));
 
   return (
-    <>
-      <NavArrows />
+    <Box
+      ref={viewerRootRef}
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: viewerHeight,
+        maxHeight: viewerHeight,
+        minHeight: 0,
+        width: '100%',
+        overflow: 'hidden',
+      }}
+    >
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          justifyContent: 'space-between',
+          gap: 2,
+          flexWrap: { xs: 'wrap', lg: 'nowrap' },
+          pr: { xs: 2, sm: 8 },
+        }}
+      >
+        <Box sx={{ flex: '1 1 auto', minWidth: 0 }}>
+          <NavArrows trailingCrumb={breadcrumbTrailingCrumb} replaceLastCrumbCount={breadcrumbRouteCrumbCount} />
+          <Typography variant="h3" component="h1" sx={{ color: 'text.primary', px: '20px', pt: 2, pb: 1 }}>
+            Experiment viewer
+          </Typography>
+        </Box>
+      </Box>
       <Box
         sx={{
           display: 'flex',
           flexDirection: 'column',
-          height: '100vh',
+          flex: '1 1 auto',
+          minHeight: 0,
           width: '100%',
           boxSizing: 'border-box',
-          pt: showSearch ? 0 : 2,
+          pt: showBreadcrumbFilters ? 0 : 2,
         }}
       >
-        {/* Search bar - only show when not viewing specific job */}
-        {showSearch && (
-          <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
-            <ExperimentSearch
-              onSearch={handleSearch}
-              onClear={handleClearSearch}
-              initialInstrument={searchInstrument || undefined}
-              initialExperimentNumber={searchExperimentNumber || undefined}
-              isLoading={loading}
-              isSearchActive={isSearchActive}
-            />
-          </Box>
-        )}
-
         {/* Main content area */}
-        <Box sx={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+        <Box sx={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'hidden' }}>
           {/* Empty state - no search active and no URL params */}
-          {!jobId && !instrumentName && !isSearchActive && (
+          {showInitialEmptyState && (
             <Box
               sx={{
                 flex: 1,
@@ -534,14 +716,14 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
                   Search for HDF5 data
                 </Typography>
                 <Typography variant="body1" color="text.secondary">
-                  Enter an instrument and/or experiment number above to search for jobs with HDF5 output files.
+                  Select an instrument in the breadcrumbs to search for jobs with HDF5 output files.
                 </Typography>
               </Box>
             </Box>
           )}
 
           {/* No results state */}
-          {isSearchActive && jobs.length === 0 && !loading && (
+          {showNoJobsState && (
             <Box
               sx={{
                 flex: 1,
@@ -559,15 +741,25 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
                   {searchInstrument && searchExperimentNumber && ' | '}
                   {searchExperimentNumber && `Experiment: ${searchExperimentNumber}`}
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Try adjusting your search criteria or clearing the search to start over.
-                </Typography>
+                {searchInstrument && searchExperimentNumber !== null ? (
+                  <Typography variant="body2" color="text.secondary">
+                    Go back to{' '}
+                    <MuiLink component={RouterLink} to={getExperimentViewerPath(searchInstrument)} underline="hover">
+                      {searchInstrument} experiments
+                    </MuiLink>
+                    .
+                  </Typography>
+                ) : (
+                  <Typography variant="body2" color="text.secondary">
+                    Try adjusting your search criteria.
+                  </Typography>
+                )}
               </Box>
             </Box>
           )}
 
           {/* Results - show FileTree and Graph when we have jobs */}
-          {(jobId || instrumentName || (isSearchActive && jobs.length > 0)) && (
+          {showResultsLayout && (
             <>
               {/* Left panel - File tree */}
               <Box
@@ -577,6 +769,7 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
                   borderColor: 'divider',
                   display: 'flex',
                   flexDirection: 'column',
+                  minHeight: 0,
                   overflow: 'hidden',
                 }}
               >
@@ -584,6 +777,9 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
                 <FileTree
                   jobs={jobs}
                   files={files}
+                  resultLimit={showBreadcrumbFilters ? searchLimit : undefined}
+                  onResultLimitChange={showBreadcrumbFilters ? setSearchLimit : undefined}
+                  isResultLimitDisabled={loading}
                   onFileToggle={handleFileToggle}
                   onDatasetChange={handleDatasetChange}
                   onSelectionChange={handleSelectionChange}
@@ -596,7 +792,17 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
               </Box>
 
               {/* Right panel - Plot or 2D Viewer */}
-              <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative' }}>
+              <Box
+                sx={{
+                  flex: 1,
+                  minWidth: 0,
+                  minHeight: 0,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  position: 'relative',
+                  overflow: 'hidden',
+                }}
+              >
                 {/* Loading indicator */}
                 {(loading || loading2DPath) && (
                   <Box
@@ -648,7 +854,7 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
           )}
         </Box>
       </Box>
-    </>
+    </Box>
   );
 };
 

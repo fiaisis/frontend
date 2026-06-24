@@ -10,7 +10,9 @@ import {
   Alert,
   Box,
   Button,
+  Checkbox,
   CircularProgress,
+  FormControlLabel,
   Paper,
   Snackbar,
   Table,
@@ -42,11 +44,18 @@ import { useFetchJobs, useFetchTotalCount } from '../../lib/hooks';
 import { parseJobOutputs } from '../../lib/hooks';
 import { Job, JobQueryFilters, MantidVersionMap } from '../../lib/types';
 
+const formatDisplayedRows = ({ from, to, count }: { from: number; to: number; count: number }): string => {
+  const total = count === -1 ? `more than ${to}` : count.toString();
+  return `Showing ${from}-${to} of ${total} reductions`;
+};
+
 const JobTable: React.FC<{
   selectedInstrument: string;
   currentPage: number;
   handlePageChange: (currentPage: number) => void;
   asUser: boolean;
+  setAsUser: (asUser: boolean) => void;
+  showAsUserControl?: boolean;
   rowsPerPage: JobRowsPerPage;
   handleRowsPerPageChange: (rowsPerPage: JobRowsPerPage, newPage: number) => void;
   filters: JobQueryFilters;
@@ -60,6 +69,8 @@ const JobTable: React.FC<{
   currentPage,
   handlePageChange,
   asUser,
+  setAsUser,
+  showAsUserControl = false,
   rowsPerPage,
   handleRowsPerPageChange,
   filters,
@@ -436,10 +447,12 @@ const JobTable: React.FC<{
                 flexWrap: 'nowrap',
                 minWidth: JOB_TABLE_MIN_WIDTH,
                 width: '100%',
+                boxSizing: 'border-box',
                 p: 1,
                 backgroundColor: theme.palette.primary.main,
                 color: toolbarContrastColor,
-                borderBottom: `2px solid ${JOB_TABLE_HEADER_BORDER_COLOR}`,
+                border: `2px solid ${JOB_TABLE_HEADER_BORDER_COLOR}`,
+                borderBottom: 0,
               }}
             >
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'nowrap', whiteSpace: 'nowrap' }}>
@@ -508,6 +521,30 @@ const JobTable: React.FC<{
                   whiteSpace: 'nowrap',
                 }}
               >
+                {showAsUserControl && (
+                  <FormControlLabel
+                    className="tour-view-as-user"
+                    control={
+                      <Checkbox
+                        checked={asUser}
+                        onChange={(event: React.ChangeEvent<HTMLInputElement>) => setAsUser(event.target.checked)}
+                        size="small"
+                        sx={{
+                          color: toolbarContrastColor,
+                          '&.Mui-checked': {
+                            color: toolbarContrastColor,
+                          },
+                        }}
+                      />
+                    }
+                    label={
+                      <Typography component="span" variant="body2" sx={{ color: toolbarContrastColor }}>
+                        View as user
+                      </Typography>
+                    }
+                    sx={{ m: 0 }}
+                  />
+                )}
                 <Button
                   variant={filtersApplied ? 'contained' : 'outlined'}
                   size="small"
@@ -583,6 +620,7 @@ const JobTable: React.FC<{
                   }}
                   rowsPerPage={rowsPerPage}
                   rowsPerPageOptions={[]}
+                  labelDisplayedRows={formatDisplayedRows}
                   slotProps={{
                     actions: {
                       previousButton: { disabled: isLoading || currentPage === 0 },

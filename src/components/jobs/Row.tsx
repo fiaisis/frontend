@@ -647,8 +647,8 @@ const Row: React.FC<{
               <Tooltip title="View image stack">
                 <IconButton
                   component={Link}
-                  to={`/reduction-history/IMAT?jobId=${job.id}&experiment=${job.run?.experiment_number}&instrument=${job.run?.instrument_name}&tab=2`}
-                  onClick={(e) => e.stopPropagation()}
+                  to={`/reduction-history/IMAT/stack-viewer?jobId=${job.id}&experiment=${job.run?.experiment_number}&instrument=${job.run?.instrument_name}`}
+                  onClick={(e: React.MouseEvent) => e.stopPropagation()}
                   sx={{ ml: 1 }}
                 >
                   <StackedBarChart />
@@ -756,7 +756,7 @@ const Row: React.FC<{
                     </Link>
                     {job.run?.instrument_name === 'IMAT' && job.state === 'SUCCESSFUL' && (
                       <Link
-                        to={`/reduction-history/IMAT?jobId=${job.id}&experiment=${job.run?.experiment_number}&instrument=${job.run?.instrument_name}&tab=2`}
+                        to={`/reduction-history/IMAT/stack-viewer?jobId=${job.id}&experiment=${job.run?.experiment_number}&instrument=${job.run?.instrument_name}`}
                         style={{ textDecoration: 'none' }}
                       >
                         <Button variant="contained" sx={{ flexShrink: 0, whiteSpace: 'nowrap' }}>
@@ -766,7 +766,7 @@ const Row: React.FC<{
                     )}
                     {job.run?.instrument_name !== 'IMAT' && (
                       <Link
-                        to={`/experiment-viewer?instrument=${job.run.instrument_name}&experiment=${job.run.experiment_number}`}
+                        to={`/experiment-viewer/${job.run.instrument_name}/${job.run.experiment_number}`}
                         onClick={() =>
                           ReactGA.event({
                             category: 'Button',
