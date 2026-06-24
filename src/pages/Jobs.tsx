@@ -1,4 +1,3 @@
-import FilterList from '@mui/icons-material/FilterList';
 import Settings from '@mui/icons-material/Settings';
 import { Box, Button, FormControlLabel, Paper, Switch, Tab, Tabs, Typography, useTheme } from '@mui/material';
 import { jwtDecode } from 'jwt-decode';
@@ -388,8 +387,28 @@ const Jobs: React.FC = (): ReactElement => {
 
   return (
     <>
-      <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 2, pr: 2 }}>
-        <NavArrows />
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          justifyContent: 'space-between',
+          gap: 2,
+          flexWrap: { xs: 'wrap', md: 'nowrap' },
+          mb: 2,
+          pr: 2,
+        }}
+      >
+        <Box
+          sx={{
+            flex: '1 1 auto',
+            minWidth: 0,
+          }}
+        >
+          <NavArrows />
+          <Typography variant="h3" component="h1" sx={{ color: theme.palette.text.primary, px: '20px', pt: 2, pb: 1 }}>
+            {reductionsHeading}
+          </Typography>
+        </Box>
         <Paper
           variant="outlined"
           sx={{
@@ -427,20 +446,8 @@ const Jobs: React.FC = (): ReactElement => {
               selectedInstrument={selectedInstrument}
               handleInstrumentChange={handleInstrumentChange}
             />
-            <Button
-              variant={hasFilters(currentFilters) ? 'contained' : 'outlined'}
-              startIcon={<FilterList />}
-              onClick={() => setFiltersOpen(true)}
-            >
-              Filter
-            </Button>
           </Box>
         </Paper>
-      </Box>
-      <Box sx={{ px: '20px', pt: 2, pb: 1 }}>
-        <Typography variant="h3" component="h1" style={{ color: theme.palette.text.primary }}>
-          {reductionsHeading}
-        </Typography>
       </Box>
       <FilterContainer
         showInstrumentFilter={selectedInstrument === 'ALL'}
@@ -490,6 +497,8 @@ const Jobs: React.FC = (): ReactElement => {
                 orderBy={orderBy}
                 orderDirection={orderDirection}
                 handleSort={handleSort}
+                filtersApplied={hasFilters(currentFilters)}
+                openFilters={() => setFiltersOpen(true)}
               />
             </Box>
           </TabPanel>
@@ -513,6 +522,8 @@ const Jobs: React.FC = (): ReactElement => {
             orderBy={orderBy}
             orderDirection={orderDirection}
             handleSort={handleSort}
+            filtersApplied={hasFilters(currentFilters)}
+            openFilters={() => setFiltersOpen(true)}
           />
         </Box>
       )}

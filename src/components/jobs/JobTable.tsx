@@ -1,4 +1,11 @@
-import { CheckBox, Download, IndeterminateCheckBox, CheckBoxOutlineBlank } from '@mui/icons-material';
+import {
+  CheckBox,
+  Download,
+  FilterList,
+  IndeterminateCheckBox,
+  CheckBoxOutlineBlank,
+  Replay,
+} from '@mui/icons-material';
 import {
   Alert,
   Box,
@@ -17,9 +24,15 @@ import {
   LinearProgress,
   Skeleton,
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import React, { useEffect, useState, useRef } from 'react';
 
-import { JOB_ROWS_PER_PAGE_OPTIONS, JobRowsPerPage, isJobRowsPerPage } from './constants';
+import {
+  JOB_ROWS_PER_PAGE_OPTIONS,
+  JOB_TABLE_HEADER_BORDER_COLOR,
+  JobRowsPerPage,
+  isJobRowsPerPage,
+} from './constants';
 import JobTableHead from './JobTableHead';
 import Row from './Row';
 import { fiaApi } from '../../lib/api';
@@ -38,6 +51,8 @@ const JobTable: React.FC<{
   handleSort: (sortKey: string) => void;
   orderBy: string;
   orderDirection: 'desc' | 'asc';
+  filtersApplied: boolean;
+  openFilters: () => void;
 }> = ({
   selectedInstrument,
   currentPage,
@@ -49,6 +64,8 @@ const JobTable: React.FC<{
   orderBy,
   orderDirection,
   handleSort,
+  filtersApplied,
+  openFilters,
 }) => {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [totalRows, setTotalRows] = useState<number>(0);
@@ -287,6 +304,37 @@ const JobTable: React.FC<{
   };
 
   const theme = useTheme();
+  const toolbarContrastColor = theme.palette.primary.contrastText;
+  const toolbarButtonSx = {
+    height: '36px',
+    borderColor: JOB_TABLE_HEADER_BORDER_COLOR,
+    color: toolbarContrastColor,
+    '&:hover': {
+      borderColor: JOB_TABLE_HEADER_BORDER_COLOR,
+      backgroundColor: alpha(toolbarContrastColor, 0.12),
+    },
+    '&.Mui-disabled': {
+      borderColor: alpha(JOB_TABLE_HEADER_BORDER_COLOR, 0.4),
+      color: alpha(toolbarContrastColor, 0.42),
+    },
+  };
+  const toolbarContainedButtonSx = {
+    height: '36px',
+    border: `1px solid ${JOB_TABLE_HEADER_BORDER_COLOR}`,
+    backgroundColor: toolbarContrastColor,
+    color: theme.palette.primary.main,
+    '&:hover': {
+      borderColor: JOB_TABLE_HEADER_BORDER_COLOR,
+      backgroundColor: alpha(toolbarContrastColor, 0.88),
+    },
+    '&.Mui-disabled': {
+      borderColor: alpha(JOB_TABLE_HEADER_BORDER_COLOR, 0.4),
+      backgroundColor: alpha(toolbarContrastColor, 0.24),
+      color: alpha(toolbarContrastColor, 0.42),
+    },
+  };
+  const allCurrentJobsSelected = jobs.length > 0 && selectedJobIds.length === jobs.length;
+  const someCurrentJobsSelected = selectedJobIds.length > 0 && selectedJobIds.length < jobs.length;
 
   return (
     <>
@@ -362,194 +410,256 @@ const JobTable: React.FC<{
           </Alert>
         </Snackbar>
 
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Button
-              className="tour-red-his-select-all"
-              variant="contained"
-              color="primary"
-              size="small"
-              onClick={toggleSelectAll}
-              disabled={jobs.length === 0}
-              sx={{ height: '36px', width: 140 }}
-              startIcon={
-                selectedJobIds.length === jobs.length ? (
-                  <CheckBox />
-                ) : selectedJobIds.length > 0 ? (
-                  <IndeterminateCheckBox />
-                ) : (
-                  <CheckBoxOutlineBlank />
-                )
-              }
-            >
-              {selectedJobIds.length === jobs.length ? 'Deselect all' : 'Select all'}
-            </Button>
-
-            {selectedJobIds.length > 0 && (
-              <>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  disabled={isBulkResubmitting}
-                  onClick={handleBulkResubmit}
-                  sx={{ height: '36px', width: 120 }}
-                >
-                  {isBulkResubmitting ? (
-                    <CircularProgress size={24} color="inherit" />
-                  ) : (
-                    `Resubmit (${selectedJobIds.length})`
-                  )}
-                </Button>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  onClick={handleBulkDownload}
-                  sx={{ height: '36px', width: 200 }}
-                  startIcon={!downloadingBulk && <Download />}
-                  disabled={totalDownloadableFiles === 0 || downloadingBulk}
-                >
-                  {downloadingBulk ? (
-                    <CircularProgress size={24} color="inherit" />
-                  ) : (
-                    `Download all (${totalDownloadableFiles})`
-                  )}
-                </Button>
-              </>
-            )}
-          </Box>
-
-          <Box className="tour-job-table-adv-filters" sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <TablePagination
-              component="div"
-              count={totalRows}
-              page={currentPage}
-              onPageChange={(_, newPage) => {
-                if (!Number.isInteger(newPage) || newPage < 0) {
-                  return;
-                }
-
-                if (totalRows > 0 && newPage > maxPageIndex) {
-                  handlePageChange(maxPageIndex);
-                  return;
-                }
-
-                handlePageChange(newPage);
-              }}
-              rowsPerPage={rowsPerPage}
-              rowsPerPageOptions={JOB_ROWS_PER_PAGE_OPTIONS}
-              slotProps={{
-                actions: {
-                  previousButton: { disabled: isLoading || currentPage === 0 },
-                  nextButton: {
-                    disabled: isLoading || currentPage >= Math.ceil(totalRows / rowsPerPage) - 1,
-                  },
-                },
-              }}
-              labelRowsPerPage="Rows per page"
-              onRowsPerPageChange={(e) => {
-                const newRowsPerPage = Number(e.target.value);
-
-                if (!isJobRowsPerPage(newRowsPerPage)) {
-                  return;
-                }
-
-                // Clear job selections if reducing the rows per page value.
-                // Avoids scenarios where selected jobs are not visible
-                // anymore because they're on a later page
-                if (newRowsPerPage < previousRowsPerPage.current) {
-                  setSelectedJobIds([]);
-                }
-
-                // Calculate what page to show: prevents the scenario where the
-                // offset isbeyond the actual number of jobs
-                const newPage = Math.floor((currentPage * rowsPerPage) / newRowsPerPage);
-                handleRowsPerPageChange(newRowsPerPage, newPage);
-              }}
-            />
-          </Box>
-        </Box>
-
-        <TableContainer component={Paper} sx={{ maxHeight: 640, minHeight: 640 }}>
-          <Table
-            stickyHeader
+        <Paper sx={{ overflow: 'hidden' }}>
+          <Box
             sx={{
-              tableLayout: 'fixed',
-              width: '100%',
-              '& > .MuiTableBody-root > .MuiTableRow-root > .MuiTableCell-root:not(:last-child)': {
-                borderRight: '1px solid',
-                borderRightColor: 'divider',
-              },
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              gap: 2,
+              flexWrap: 'wrap',
+              p: 1,
+              backgroundColor: theme.palette.primary.main,
+              color: toolbarContrastColor,
+              borderBottom: `2px solid ${JOB_TABLE_HEADER_BORDER_COLOR}`,
             }}
           >
-            <JobTableHead
-              selectedInstrument={selectedInstrument}
-              orderBy={orderBy}
-              orderDirection={orderDirection}
-              handleSort={handleSort}
-              allSelected={jobs.length > 0 && selectedJobIds.length === jobs.length}
-              someSelected={selectedJobIds.length > 0 && selectedJobIds.length < jobs.length}
-              toggleSelectAll={() => {
-                if (selectedJobIds.length === jobs.length) {
-                  setSelectedJobIds([]);
-                } else {
-                  setSelectedJobIds(jobs.map((job) => job.id));
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+              <Button
+                className="tour-red-his-select-all"
+                variant={allCurrentJobsSelected ? 'contained' : 'outlined'}
+                size="small"
+                onClick={toggleSelectAll}
+                disabled={jobs.length === 0}
+                sx={{ width: 140, ...(allCurrentJobsSelected ? toolbarContainedButtonSx : toolbarButtonSx) }}
+                startIcon={
+                  allCurrentJobsSelected ? (
+                    <CheckBox />
+                  ) : someCurrentJobsSelected ? (
+                    <IndeterminateCheckBox />
+                  ) : (
+                    <CheckBoxOutlineBlank />
+                  )
                 }
-              }}
-            />
+              >
+                {allCurrentJobsSelected ? 'Deselect all' : 'Select all'}
+              </Button>
 
-            <TableBody>
-              {isLoading || (!delayPassed && jobs.length === 0) ? (
-                [...Array(rowsPerPage)].map((_, index) => {
-                  const isEven = index % 2 === 0;
-                  const backgroundColor =
-                    theme.palette.mode === 'light'
-                      ? isEven
-                        ? '#f0f0f0'
-                        : theme.palette.background.default
-                      : isEven
-                        ? '#2d2d2d'
-                        : theme.palette.background.default;
-
-                  return (
-                    <TableRow key={index} sx={{ backgroundColor, height: 74 }}>
-                      {[...Array(8)].map((_, cellIndex) => (
-                        <TableCell key={cellIndex} sx={{ overflow: 'hidden' }}>
-                          <Skeleton variant="text" height={28} />
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  );
-                })
-              ) : jobs.length === 0 ? (
-                <TableCell
-                  colSpan={8}
-                  sx={{
-                    borderBottom: 'none',
-                    textAlign: 'center',
-                  }}
-                >
-                  <Typography variant="h6" mt={2} color={theme.palette.text.primary}>
-                    No reductions found
-                  </Typography>
-                </TableCell>
-              ) : (
-                jobs.map((job, index) => (
-                  <Row
-                    key={index}
-                    index={index}
-                    job={job}
-                    showInstrumentColumn={selectedInstrument === 'ALL'}
-                    resubmitJob={resubmitJob}
-                    refreshJobs={refreshJobs}
-                    isSelected={selectedJobIds.includes(job.id)}
-                    toggleSelection={toggleJobSelection}
-                    mantidVersions={mantidVersions}
-                  />
-                ))
+              {selectedJobIds.length > 0 && (
+                <>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    disabled={isBulkResubmitting}
+                    onClick={handleBulkResubmit}
+                    startIcon={!isBulkResubmitting && <Replay />}
+                    sx={{ minWidth: 154, whiteSpace: 'nowrap', ...toolbarContainedButtonSx }}
+                  >
+                    {isBulkResubmitting ? (
+                      <CircularProgress size={24} color="inherit" />
+                    ) : (
+                      `Resubmit (${selectedJobIds.length})`
+                    )}
+                  </Button>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={handleBulkDownload}
+                    sx={{ width: 200, ...toolbarContainedButtonSx }}
+                    startIcon={!downloadingBulk && <Download />}
+                    disabled={totalDownloadableFiles === 0 || downloadingBulk}
+                  >
+                    {downloadingBulk ? (
+                      <CircularProgress size={24} color="inherit" />
+                    ) : (
+                      `Download all (${totalDownloadableFiles})`
+                    )}
+                  </Button>
+                </>
               )}
-            </TableBody>
-          </Table>
-        </TableContainer>
+            </Box>
+
+            <Box
+              className="tour-job-table-adv-filters"
+              sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', justifyContent: 'flex-end' }}
+            >
+              <Button
+                variant={filtersApplied ? 'contained' : 'outlined'}
+                size="small"
+                startIcon={<FilterList />}
+                onClick={openFilters}
+                sx={filtersApplied ? toolbarContainedButtonSx : toolbarButtonSx}
+              >
+                Filter
+              </Button>
+              <TablePagination
+                component="div"
+                count={totalRows}
+                page={currentPage}
+                onPageChange={(_event: React.MouseEvent<HTMLButtonElement> | null, newPage: number) => {
+                  if (!Number.isInteger(newPage) || newPage < 0) {
+                    return;
+                  }
+
+                  if (totalRows > 0 && newPage > maxPageIndex) {
+                    handlePageChange(maxPageIndex);
+                    return;
+                  }
+
+                  handlePageChange(newPage);
+                }}
+                rowsPerPage={rowsPerPage}
+                rowsPerPageOptions={JOB_ROWS_PER_PAGE_OPTIONS}
+                slotProps={{
+                  actions: {
+                    previousButton: { disabled: isLoading || currentPage === 0 },
+                    nextButton: {
+                      disabled: isLoading || currentPage >= Math.ceil(totalRows / rowsPerPage) - 1,
+                    },
+                  },
+                }}
+                labelRowsPerPage="Rows per page"
+                sx={{
+                  color: toolbarContrastColor,
+                  overflow: 'visible',
+                  '& .MuiTablePagination-toolbar': {
+                    minHeight: '36px',
+                    p: 0,
+                    pl: 0,
+                    gap: 1,
+                    flexWrap: 'wrap',
+                  },
+                  '& .MuiTablePagination-spacer': {
+                    display: 'none',
+                  },
+                  '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
+                    m: 0,
+                  },
+                  '& .MuiTablePagination-select': {
+                    color: toolbarContrastColor,
+                    border: `1px solid ${JOB_TABLE_HEADER_BORDER_COLOR}`,
+                    borderRadius: 1,
+                  },
+                  '& .MuiTablePagination-selectIcon': {
+                    color: toolbarContrastColor,
+                  },
+                  '& .MuiIconButton-root': {
+                    width: 36,
+                    height: 36,
+                    color: toolbarContrastColor,
+                    border: `1px solid ${JOB_TABLE_HEADER_BORDER_COLOR}`,
+                    borderRadius: 1,
+                  },
+                  '& .Mui-disabled': {
+                    color: alpha(toolbarContrastColor, 0.42),
+                    borderColor: alpha(JOB_TABLE_HEADER_BORDER_COLOR, 0.4),
+                  },
+                }}
+                onRowsPerPageChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+                  const newRowsPerPage = Number(e.target.value);
+
+                  if (!isJobRowsPerPage(newRowsPerPage)) {
+                    return;
+                  }
+
+                  // Clear job selections if reducing the rows per page value.
+                  // Avoids scenarios where selected jobs are not visible
+                  // anymore because they're on a later page
+                  if (newRowsPerPage < previousRowsPerPage.current) {
+                    setSelectedJobIds([]);
+                  }
+
+                  // Calculate what page to show: prevents the scenario where the
+                  // offset isbeyond the actual number of jobs
+                  const newPage = Math.floor((currentPage * rowsPerPage) / newRowsPerPage);
+                  handleRowsPerPageChange(newRowsPerPage, newPage);
+                }}
+              />
+            </Box>
+          </Box>
+
+          <TableContainer sx={{ minHeight: 640, overflowY: 'visible' }}>
+            <Table
+              stickyHeader
+              sx={{
+                tableLayout: 'fixed',
+                width: '100%',
+                '& > .MuiTableBody-root > .MuiTableRow-root > .MuiTableCell-root:not(:last-child)': {
+                  borderRight: '1px solid',
+                  borderRightColor: 'divider',
+                },
+              }}
+            >
+              <JobTableHead
+                selectedInstrument={selectedInstrument}
+                orderBy={orderBy}
+                orderDirection={orderDirection}
+                handleSort={handleSort}
+                allSelected={jobs.length > 0 && selectedJobIds.length === jobs.length}
+                someSelected={selectedJobIds.length > 0 && selectedJobIds.length < jobs.length}
+                toggleSelectAll={() => {
+                  if (selectedJobIds.length === jobs.length) {
+                    setSelectedJobIds([]);
+                  } else {
+                    setSelectedJobIds(jobs.map((job) => job.id));
+                  }
+                }}
+              />
+
+              <TableBody>
+                {isLoading || (!delayPassed && jobs.length === 0) ? (
+                  [...Array(rowsPerPage)].map((_, index) => {
+                    const isEven = index % 2 === 0;
+                    const backgroundColor =
+                      theme.palette.mode === 'light'
+                        ? isEven
+                          ? '#f0f0f0'
+                          : theme.palette.background.default
+                        : isEven
+                          ? '#2d2d2d'
+                          : theme.palette.background.default;
+
+                    return (
+                      <TableRow key={index} sx={{ backgroundColor, height: 74 }}>
+                        {[...Array(8)].map((_, cellIndex) => (
+                          <TableCell key={cellIndex} sx={{ overflow: 'hidden' }}>
+                            <Skeleton variant="text" height={28} />
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    );
+                  })
+                ) : jobs.length === 0 ? (
+                  <TableCell
+                    colSpan={8}
+                    sx={{
+                      borderBottom: 'none',
+                      textAlign: 'center',
+                    }}
+                  >
+                    <Typography variant="h6" mt={2} color={theme.palette.text.primary}>
+                      No reductions found
+                    </Typography>
+                  </TableCell>
+                ) : (
+                  jobs.map((job, index) => (
+                    <Row
+                      key={index}
+                      index={index}
+                      job={job}
+                      showInstrumentColumn={selectedInstrument === 'ALL'}
+                      resubmitJob={resubmitJob}
+                      refreshJobs={refreshJobs}
+                      isSelected={selectedJobIds.includes(job.id)}
+                      toggleSelection={toggleJobSelection}
+                      mantidVersions={mantidVersions}
+                    />
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Paper>
       </Box>
     </>
   );

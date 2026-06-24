@@ -2,6 +2,8 @@ import { Box, CSSObject, SxProps, TableCell, TableHead, TableRow, TableSortLabel
 import { Theme } from '@mui/material/styles';
 import React from 'react';
 
+import { JOB_TABLE_HEADER_BORDER_COLOR } from './constants';
+
 interface SortableHeaderCellProps {
   headerName: string; // Title of the column
   sortKey: string; // The key related to sorting, like 'experiment_number'
@@ -16,7 +18,7 @@ const headerStyles = (theme: Theme): CSSObject => ({
   color: theme.palette.primary.contrastText,
   backgroundColor: theme.palette.primary.main,
   fontWeight: 'bold',
-  borderRight: '2px solid #1f4996',
+  borderRight: `2px solid ${JOB_TABLE_HEADER_BORDER_COLOR}`,
   '&:last-child': {
     borderRight: 'none',
   },

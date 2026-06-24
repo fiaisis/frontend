@@ -18,6 +18,7 @@ import {
   Typography,
   useTheme,
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import * as React from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 
@@ -53,6 +54,8 @@ const Instruments: React.FC = () => {
   const [searchTerm, setSearchTerm] = React.useState('');
   const [selectedType, setSelectedType] = React.useState(ALL_TYPES);
   const [showFavoritesOnly, setShowFavoritesOnly] = React.useState(false);
+  const instrumentActionColor = theme.palette.mode === 'dark' ? '#86b4ff' : theme.palette.primary.main;
+  const instrumentActionHoverColor = theme.palette.mode === 'dark' ? '#b7d1ff' : theme.palette.primary.dark;
 
   React.useEffect(() => {
     localStorage.setItem('favoriteInstruments', JSON.stringify(favoriteIds));
@@ -236,7 +239,7 @@ const Instruments: React.FC = () => {
                     height: '100%',
                     display: 'flex',
                     flexDirection: 'column',
-                    borderColor: expanded ? 'primary.main' : 'divider',
+                    borderColor: expanded ? instrumentActionColor : 'divider',
                     backgroundColor: favourite ? theme.palette.action.hover : 'background.paper',
                   }}
                 >
@@ -245,7 +248,7 @@ const Instruments: React.FC = () => {
                       <Typography
                         variant="h6"
                         component="h2"
-                        sx={{ color: 'primary.main', fontWeight: 700, lineHeight: 1.2 }}
+                        sx={{ color: instrumentActionColor, fontWeight: 700, lineHeight: 1.2 }}
                       >
                         {instrument.name}
                       </Typography>
@@ -294,6 +297,13 @@ const Instruments: React.FC = () => {
                       size="small"
                       onClick={() => handleToggleExpand(instrument.id)}
                       aria-expanded={expanded}
+                      sx={{
+                        color: instrumentActionColor,
+                        '&:hover': {
+                          color: instrumentActionHoverColor,
+                          backgroundColor: alpha(instrumentActionColor, theme.palette.mode === 'dark' ? 0.16 : 0.08),
+                        },
+                      }}
                       endIcon={
                         <ExpandMoreIcon
                           sx={{
@@ -340,6 +350,15 @@ const Instruments: React.FC = () => {
                         target="_blank"
                         rel="noopener noreferrer"
                         startIcon={<OpenInNewIcon />}
+                        sx={{
+                          color: instrumentActionColor,
+                          borderColor: alpha(instrumentActionColor, theme.palette.mode === 'dark' ? 0.72 : 0.5),
+                          '&:hover': {
+                            color: instrumentActionHoverColor,
+                            borderColor: instrumentActionHoverColor,
+                            backgroundColor: alpha(instrumentActionColor, theme.palette.mode === 'dark' ? 0.16 : 0.08),
+                          },
+                        }}
                       >
                         ISIS page
                       </Button>
