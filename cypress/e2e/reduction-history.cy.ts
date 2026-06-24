@@ -1,3 +1,5 @@
+import { JOB_ROWS_PER_PAGE_OPTIONS, JOB_TABLE_MIN_WIDTH } from '../../src/components/jobs/constants';
+
 const baseJob = {
   start: '2025-01-01T10:00:00Z',
   end: '2025-01-01T10:15:00Z',
@@ -120,6 +122,83 @@ describe('Reduction history page', () => {
     });
     cy.contains('h1', 'LOQ reduction history').should('be.visible');
     cy.contains('LOQ scoped reduction').should('be.visible');
+  });
+
+  it('keeps table controls and column headers on one line with horizontal scrolling on narrow screens', () => {
+    cy.viewport(700, 900);
+
+    cy.intercept('GET', /\/api\/jobs\/count\?.*$/, (req) => {
+      expect(req.headers.authorization).to.match(/^Bearer(?: .+)?$/);
+      req.reply({
+        statusCode: 200,
+        body: { count: allJobsResponse.length },
+      });
+    }).as('getAllCount');
+
+    cy.intercept('GET', /\/api\/jobs\?.*$/, (req) => {
+      expect(req.headers.authorization).to.match(/^Bearer(?: .+)?$/);
+      req.reply({
+        statusCode: 200,
+        body: allJobsResponse,
+      });
+    }).as('getAllJobs');
+
+    cy.visitFia('/fia/reduction-history');
+
+    cy.wait('@getRunners');
+    cy.wait('@getAllCount');
+    cy.wait('@getAllJobs');
+
+    cy.contains('All instruments reduction').should('be.visible');
+
+    cy.get('[data-testid="reduction-history-table-container"]').should(($container) => {
+      const container = $container[0];
+
+      expect(container.scrollWidth).to.be.greaterThan(container.clientWidth);
+    });
+
+    cy.get('[data-testid="reduction-history-table-toolbar"]').should(($toolbar) => {
+      const toolbar = $toolbar[0];
+
+      expect(toolbar.getBoundingClientRect().width).to.be.at.least(JOB_TABLE_MIN_WIDTH);
+      expect(getComputedStyle(toolbar).flexWrap).to.equal('nowrap');
+    });
+
+    cy.get('[data-testid="reduction-history-table-toolbar"]')
+      .children()
+      .should(($groups) => {
+        expect($groups).to.have.length(2);
+
+        $groups.toArray().forEach((group) => {
+          expect(getComputedStyle(group).flexWrap).to.equal('nowrap');
+        });
+      });
+
+    cy.get('[data-testid="reduction-history-table-toolbar"] .MuiTablePagination-toolbar').should(($pagination) => {
+      expect(getComputedStyle($pagination[0]).flexWrap).to.equal('nowrap');
+    });
+
+    cy.get('.tour-job-table-adv-filters').should(($toolbarControls) => {
+      expect(getComputedStyle($toolbarControls[0]).gap).to.equal('32px');
+    });
+
+    cy.get('[data-testid="rows-per-page-controls"]').within(() => {
+      cy.contains('Rows per page').should('be.visible');
+      cy.get('button').should('have.length', JOB_ROWS_PER_PAGE_OPTIONS.length);
+      JOB_ROWS_PER_PAGE_OPTIONS.forEach((option) => {
+        cy.contains('button', option.toString()).should('be.visible');
+      });
+      cy.get('button[aria-pressed="true"]').should('have.length', 1).and('have.text', '25');
+      cy.get('[role="combobox"]').should('not.exist');
+    });
+
+    cy.get('[data-testid="reduction-history-table-container"] table').should(($table) => {
+      expect($table[0].getBoundingClientRect().width).to.be.at.least(JOB_TABLE_MIN_WIDTH);
+    });
+
+    cy.contains('th', 'Experiment number').should(($header) => {
+      expect(getComputedStyle($header[0]).whiteSpace).to.equal('nowrap');
+    });
   });
 
   it('shows the IMAT image view breadcrumb selector without the current reduction-history option', () => {

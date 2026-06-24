@@ -18,6 +18,7 @@ const headerStyles = (theme: Theme): CSSObject => ({
   color: theme.palette.primary.contrastText,
   backgroundColor: theme.palette.primary.main,
   fontWeight: 'bold',
+  whiteSpace: 'nowrap',
   borderRight: `2px solid ${JOB_TABLE_HEADER_BORDER_COLOR}`,
   '&:last-child': {
     borderRight: 'none',
@@ -37,7 +38,7 @@ const SortableHeaderCell: React.FC<SortableHeaderCellProps> = ({
 
   return (
     <TableCell align={align} sx={sx} onClick={() => onSort(sortKey)}>
-      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', whiteSpace: 'nowrap' }}>
         {headerName}
         {isActive && (
           <TableSortLabel
@@ -86,7 +87,7 @@ const JobTableHead: React.FC<JobTableHeadProps> = ({ handleSort, orderBy, orderD
           orderBy={orderBy}
           orderDirection={orderDirection}
           onSort={handleSort}
-          sx={{ width: '18%', ...headerStyles(theme), '&:hover': highlightHover(theme) }}
+          sx={{ width: '14%', ...headerStyles(theme), '&:hover': highlightHover(theme) }}
         />
         <SortableHeaderCell
           headerName="Filename"
@@ -129,7 +130,7 @@ const JobTableHead: React.FC<JobTableHeadProps> = ({ handleSort, orderBy, orderD
           onSort={handleSort}
           sx={{ width: '12%', ...headerStyles(theme), '&:hover': highlightHover(theme) }}
         />
-        <TableCell sx={{ width: '24%', ...headerStyles(theme) }} align="left" colSpan={2}>
+        <TableCell sx={{ width: '28%', ...headerStyles(theme) }} align="left" colSpan={2}>
           Title
         </TableCell>
       </TableRow>

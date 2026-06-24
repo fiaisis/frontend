@@ -585,7 +585,7 @@ const Row: React.FC<{
         }}
         onClick={() => setOpen(!open)}
       >
-        <TableCell sx={{ width: '18%', px: 1 }}>
+        <TableCell sx={{ width: '14%', px: 1 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
             <Box
               onMouseEnter={() => setIsStatusHovered(true)}

@@ -203,7 +203,8 @@ const Instruments: React.FC = () => {
                 xl: 'repeat(3, minmax(0, 1fr))',
               },
               gap: 2,
-              alignItems: 'start',
+              alignItems: 'stretch',
+              gridAutoRows: '1fr',
             }}
           >
             {filteredInstruments.map((instrument) => {
@@ -212,12 +213,14 @@ const Instruments: React.FC = () => {
               return (
                 <Paper
                   key={instrument.id}
+                  data-testid="instrument-card"
                   variant="outlined"
                   sx={{
                     p: 2,
                     borderRadius: 1,
                     minWidth: 0,
                     minHeight: 0,
+                    height: '100%',
                     display: 'flex',
                     flexDirection: 'column',
                     borderColor: 'divider',
