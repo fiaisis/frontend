@@ -420,7 +420,7 @@ const Jobs: React.FC = (): ReactElement => {
           }}
         >
           <Typography variant="subtitle2" component="h2" sx={{ mb: 1, fontWeight: 700 }}>
-            Reduction controls
+            Instrument controls
           </Typography>
           <Box className="tour-view-as-user" sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
             {userRole === 'staff' && (
