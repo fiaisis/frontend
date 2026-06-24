@@ -26,6 +26,7 @@ import NavArrows from '../components/navigation/NavArrows';
 import { instruments } from '../lib/instrumentData';
 
 const ALL_TYPES = 'All';
+const COLLAPSED_INSTRUMENT_CARD_HEIGHT = 236;
 
 const getStoredFavoriteIds = (): number[] => {
   if (typeof window === 'undefined') {
@@ -208,7 +209,19 @@ const Instruments: React.FC = () => {
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
               Try another search term or filter.
             </Typography>
-            <Button variant="outlined" onClick={handleClearFilters}>
+            <Button
+              variant="outlined"
+              onClick={handleClearFilters}
+              sx={{
+                color: instrumentActionColor,
+                borderColor: alpha(instrumentActionColor, theme.palette.mode === 'dark' ? 0.72 : 0.5),
+                '&:hover': {
+                  color: instrumentActionHoverColor,
+                  borderColor: instrumentActionHoverColor,
+                  backgroundColor: alpha(instrumentActionColor, theme.palette.mode === 'dark' ? 0.16 : 0.08),
+                },
+              }}
+            >
               Clear filters
             </Button>
           </Paper>
@@ -222,6 +235,7 @@ const Instruments: React.FC = () => {
                 xl: 'repeat(3, minmax(0, 1fr))',
               },
               gap: 2,
+              alignItems: 'start',
             }}
           >
             {filteredInstruments.map((instrument) => {
@@ -236,7 +250,8 @@ const Instruments: React.FC = () => {
                     p: 2,
                     borderRadius: 1,
                     minWidth: 0,
-                    height: '100%',
+                    minHeight: COLLAPSED_INSTRUMENT_CARD_HEIGHT,
+                    height: expanded ? 'auto' : COLLAPSED_INSTRUMENT_CARD_HEIGHT,
                     display: 'flex',
                     flexDirection: 'column',
                     borderColor: expanded ? instrumentActionColor : 'divider',
