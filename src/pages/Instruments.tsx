@@ -21,32 +21,13 @@ import { Link as RouterLink } from 'react-router-dom';
 
 import NavArrows from '../components/navigation/NavArrows';
 import { instruments } from '../lib/instrumentData';
+import { getStoredFavoriteInstrumentIds, setStoredFavoriteInstrumentIds } from '../lib/instrumentFavorites';
 
 const ALL_TYPES = 'All';
 
-const getStoredFavoriteIds = (): number[] => {
-  if (typeof window === 'undefined') {
-    return [];
-  }
-
-  const storedFavorites = localStorage.getItem('favoriteInstruments');
-  if (!storedFavorites) {
-    return [];
-  }
-
-  try {
-    const parsedFavorites: unknown = JSON.parse(storedFavorites);
-    return Array.isArray(parsedFavorites)
-      ? parsedFavorites.filter((favoriteId): favoriteId is number => Number.isInteger(favoriteId))
-      : [];
-  } catch {
-    return [];
-  }
-};
-
 const Instruments: React.FC = () => {
   const theme = useTheme();
-  const [favoriteIds, setFavoriteIds] = React.useState<number[]>(getStoredFavoriteIds);
+  const [favoriteIds, setFavoriteIds] = React.useState<number[]>(getStoredFavoriteInstrumentIds);
   const [searchTerm, setSearchTerm] = React.useState('');
   const [selectedType, setSelectedType] = React.useState(ALL_TYPES);
   const [showFavoritesOnly, setShowFavoritesOnly] = React.useState(false);
@@ -54,7 +35,7 @@ const Instruments: React.FC = () => {
   const instrumentActionHoverColor = theme.palette.mode === 'dark' ? '#b7d1ff' : theme.palette.primary.dark;
 
   React.useEffect(() => {
-    localStorage.setItem('favoriteInstruments', JSON.stringify(favoriteIds));
+    setStoredFavoriteInstrumentIds(favoriteIds);
   }, [favoriteIds]);
 
   const instrumentTypes = React.useMemo(

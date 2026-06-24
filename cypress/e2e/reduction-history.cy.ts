@@ -52,7 +52,7 @@ const loqJobsResponse = [
 ];
 
 describe('Reduction history page', () => {
-  it('loads with mocked auth-aware API responses and supports instrument scoping', () => {
+  beforeEach(() => {
     cy.intercept('GET', /\/api\/jobs\/runners$/, (req) => {
       expect(req.headers.authorization).to.match(/^Bearer(?: .+)?$/);
       req.reply({
@@ -60,7 +60,9 @@ describe('Reduction history page', () => {
         body: { 'sha256:abc123': 'Mantid 6.9.0' },
       });
     }).as('getRunners');
+  });
 
+  it('loads with mocked auth-aware API responses and supports instrument scoping', () => {
     cy.intercept('GET', /\/api\/jobs\/count\?.*$/, (req) => {
       expect(req.headers.authorization).to.match(/^Bearer(?: .+)?$/);
       req.reply({
@@ -105,8 +107,9 @@ describe('Reduction history page', () => {
     cy.get('[aria-label="breadcrumb"]').within(() => {
       cy.get('#instrument-selector-button').should('contain', 'Select an instrument').click();
     });
-    cy.contains('[role="menuitem"]', 'Small-angle neutron scattering').trigger('mouseover');
-    cy.contains('[role="menuitem"]', /^LOQ$/).click();
+    cy.contains('[role="menuitem"]', 'View all reductions').should('not.exist');
+    cy.contains('button', 'Small-angle neutron scattering').click();
+    cy.contains('[role="menuitem"]', 'LOQ').click();
 
     cy.wait('@getLoqCount');
     cy.wait('@getLoqJobs');
@@ -117,5 +120,37 @@ describe('Reduction history page', () => {
     });
     cy.contains('h1', 'LOQ reduction history').should('be.visible');
     cy.contains('LOQ scoped reduction').should('be.visible');
+  });
+
+  it('shows the IMAT image view breadcrumb selector without the current reduction-history option', () => {
+    cy.intercept('GET', /\/api\/instrument\/IMAT\/jobs\/count\?.*$/, (req) => {
+      expect(req.headers.authorization).to.match(/^Bearer(?: .+)?$/);
+      req.reply({
+        statusCode: 200,
+        body: { count: 0 },
+      });
+    }).as('getImatCount');
+
+    cy.intercept('GET', /\/api\/instrument\/IMAT\/jobs\?.*$/, (req) => {
+      expect(req.headers.authorization).to.match(/^Bearer(?: .+)?$/);
+      req.reply({
+        statusCode: 200,
+        body: [],
+      });
+    }).as('getImatJobs');
+
+    cy.visitFia('/fia/reduction-history/IMAT');
+
+    cy.wait('@getRunners');
+    cy.wait('@getImatCount');
+    cy.wait('@getImatJobs');
+
+    cy.get('[aria-label="breadcrumb"]').within(() => {
+      cy.get('#imat-view-selector-button').should('contain', 'Select to view images').click();
+    });
+
+    cy.contains('[role="menuitem"]', 'Reduction history').should('not.exist');
+    cy.contains('[role="menuitem"]', 'Latest image').should('be.visible');
+    cy.contains('[role="menuitem"]', 'Stack viewer').should('be.visible');
   });
 });
