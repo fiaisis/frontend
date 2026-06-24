@@ -430,7 +430,7 @@ const Jobs: React.FC = (): ReactElement => {
           gap: 2,
           flexWrap: { xs: 'wrap', md: 'nowrap' },
           mb: 2,
-          pr: { xs: 2, sm: 8 },
+          pr: { xs: 2, sm: 3 },
         }}
       >
         <Box
@@ -448,6 +448,12 @@ const Jobs: React.FC = (): ReactElement => {
             {reductionHistoryHeading}
           </Typography>
         </Box>
+        <InstrumentConfigDrawer
+          drawerOpen={configDrawerOpen}
+          setDrawerOpen={setConfigDrawerOpen}
+          selectedInstrument={selectedInstrument}
+          disabled={!configAvailable}
+        />
       </Box>
       <FilterContainer
         showInstrumentFilter={selectedInstrument === 'ALL'}
@@ -456,12 +462,6 @@ const Jobs: React.FC = (): ReactElement => {
         handleFiltersChange={handleFiltersChange}
         appliedFilters={currentFilters}
         resetPageNumber={() => handlePageChange(0)}
-      />
-      <InstrumentConfigDrawer
-        drawerOpen={configDrawerOpen}
-        setDrawerOpen={setConfigDrawerOpen}
-        selectedInstrument={selectedInstrument}
-        disabled={!configAvailable}
       />
       {isImat ? (
         <>

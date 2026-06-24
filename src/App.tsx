@@ -90,6 +90,9 @@ const App: FC = () => {
             <Route path="/reduction-history/:instrumentName/experiment-viewer-:jobId">
               <ExperimentViewer />
             </Route>
+            <Route exact path="/experiment-viewer/experiment/:experimentOnlyNumber">
+              <ExperimentViewer />
+            </Route>
             <Route exact path="/experiment-viewer/:instrumentName/:experimentNumber?">
               <ExperimentViewer />
             </Route>

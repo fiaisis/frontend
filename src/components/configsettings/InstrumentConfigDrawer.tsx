@@ -1,5 +1,5 @@
 import Settings from '@mui/icons-material/Settings';
-import { Box, Button, Drawer, useTheme } from '@mui/material';
+import { Button, Drawer, useTheme } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import React from 'react';
 
@@ -12,12 +12,8 @@ import ConfigSettingsSANS2D from './ConfigSettingsSANS2D';
 import ConfigSettingsVESUVIO from './ConfigSettingsVESUVIO';
 
 const CONFIG_DRAWER_WIDTH = 600;
-const CONFIG_TAB_WIDTH = 48;
-const CONFIG_TAB_HEIGHT = 96;
-const CONFIG_TAB_TOP = 84;
-const CONFIG_TAB_EDGE_OFFSET = 32;
-const CONFIG_DRAWER_MAX_WIDTH = `calc(100vw - ${CONFIG_TAB_WIDTH + CONFIG_TAB_EDGE_OFFSET}px)`;
-const CONFIG_TAB_OPEN_RIGHT = `min(${CONFIG_DRAWER_WIDTH + CONFIG_TAB_EDGE_OFFSET}px, calc(100vw - ${CONFIG_TAB_WIDTH}px))`;
+const CONFIG_DRAWER_EDGE_OFFSET = 32;
+const CONFIG_DRAWER_MAX_WIDTH = `calc(100vw - ${CONFIG_DRAWER_EDGE_OFFSET}px)`;
 
 const InstrumentConfigDrawer: React.FC<{
   selectedInstrument: string;
@@ -26,9 +22,7 @@ const InstrumentConfigDrawer: React.FC<{
   disabled?: boolean;
 }> = ({ selectedInstrument, drawerOpen, setDrawerOpen, disabled = false }) => {
   const theme = useTheme();
-  const tabDisabled = disabled && !drawerOpen;
-  const tabOutlineColor = theme.palette.primary.contrastText;
-  const tabOutlineRingColor = alpha(tabOutlineColor, theme.palette.mode === 'dark' ? 0.7 : 0.6);
+  const buttonDisabled = disabled && !drawerOpen;
 
   return (
     <>
@@ -39,65 +33,36 @@ const InstrumentConfigDrawer: React.FC<{
         aria-label={drawerOpen ? 'Close instrument config' : 'Open instrument config'}
         aria-controls="instrument-config-drawer"
         aria-expanded={drawerOpen}
-        disabled={tabDisabled}
+        disabled={buttonDisabled}
         onClick={() => setDrawerOpen(!drawerOpen)}
+        startIcon={<Settings fontSize="small" />}
         sx={{
-          position: 'fixed',
-          top: CONFIG_TAB_TOP,
-          right: drawerOpen ? CONFIG_TAB_OPEN_RIGHT : `${CONFIG_TAB_EDGE_OFFSET}px`,
-          zIndex: theme.zIndex.drawer + 1,
-          width: CONFIG_TAB_WIDTH,
-          minWidth: CONFIG_TAB_WIDTH,
-          height: CONFIG_TAB_HEIGHT,
+          minWidth: 0,
+          height: 40,
           boxSizing: 'border-box',
-          p: 0,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          borderTopRightRadius: 0,
-          borderBottomRightRadius: 0,
-          borderTopLeftRadius: 8,
-          borderBottomLeftRadius: 8,
-          border: `2px solid ${tabOutlineColor}`,
-          boxShadow: `${theme.shadows[6]}, inset 0 0 0 1px ${alpha(
-            tabOutlineColor,
-            0.35
-          )}, 0 0 0 4px ${tabOutlineRingColor}`,
+          mt: 2,
+          px: 2,
+          borderRadius: 1,
+          flexShrink: 0,
+          boxShadow: theme.shadows[4],
           textTransform: 'none',
-          transition: theme.transitions.create(['right', 'box-shadow', 'border-color'], {
+          whiteSpace: 'nowrap',
+          transition: theme.transitions.create(['box-shadow', 'background-color'], {
             duration: theme.transitions.duration.enteringScreen,
             easing: theme.transitions.easing.easeOut,
           }),
           '&:hover': {
-            borderColor: tabOutlineColor,
-            boxShadow: `${theme.shadows[8]}, inset 0 0 0 1px ${alpha(
-              tabOutlineColor,
-              0.45
-            )}, 0 0 0 5px ${alpha(tabOutlineColor, theme.palette.mode === 'dark' ? 0.78 : 0.68)}`,
+            boxShadow: theme.shadows[6],
           },
           '&.Mui-disabled': {
             color: theme.palette.text.secondary,
             backgroundColor: theme.palette.mode === 'dark' ? theme.palette.grey[800] : theme.palette.grey[300],
-            borderColor: theme.palette.divider,
-            boxShadow: `${theme.shadows[2]}, 0 0 0 3px ${alpha(theme.palette.text.primary, 0.16)}`,
+            boxShadow: `${theme.shadows[1]}, 0 0 0 1px ${alpha(theme.palette.text.primary, 0.12)}`,
             opacity: 1,
           },
         }}
       >
-        <Box
-          component="span"
-          sx={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 0.75,
-            lineHeight: 1,
-            transform: 'rotate(-90deg)',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          <Settings fontSize="small" />
-          Config
-        </Box>
+        Edit config
       </Button>
       <Drawer
         anchor={'right'}

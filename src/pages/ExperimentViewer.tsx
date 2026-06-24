@@ -1,9 +1,10 @@
 import '@h5web/lib/styles.css';
 import ArrowDropDown from '@mui/icons-material/ArrowDropDown';
+import CloseIcon from '@mui/icons-material/Close';
 import SearchIcon from '@mui/icons-material/Search';
-import { Alert, Box, Button, CircularProgress, Link as MuiLink, Popover, TextField, Typography } from '@mui/material';
+import { Alert, Box, Button, CircularProgress, Popover, TextField, Typography } from '@mui/material';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Link as RouterLink, useHistory, useParams } from 'react-router-dom';
+import { useHistory, useParams } from 'react-router-dom';
 
 import FileTree from '../components/experimentViewer/FileTree';
 import PlotViewer from '../components/experimentViewer/Graph';
@@ -21,10 +22,12 @@ import type { NumericType } from '@h5web/app';
 interface RouteParams {
   instrumentName?: string;
   experimentNumber?: string;
+  experimentOnlyNumber?: string;
   jobId?: string;
 }
 
 const VIEWER_HEIGHT_BOTTOM_BUFFER_PX = 32;
+const EXPERIMENT_VIEWER_PAGE_SIZE = 10;
 
 const parseExperimentNumber = (experimentNumber: string | undefined): number | null => {
   if (!experimentNumber) {
@@ -37,7 +40,7 @@ const parseExperimentNumber = (experimentNumber: string | undefined): number | n
 
 const getExperimentViewerPath = (instrument: string | null, experimentNumber: number | null = null): string => {
   if (!instrument) {
-    return '/experiment-viewer';
+    return experimentNumber === null ? '/experiment-viewer' : `/experiment-viewer/experiment/${experimentNumber}`;
   }
 
   const instrumentPath = `/experiment-viewer/${encodeURIComponent(instrument)}`;
@@ -59,6 +62,15 @@ const ExperimentNumberBreadcrumb: React.FC<{
   const closeEditor = (): void => {
     setAnchorEl(null);
     setDraftExperimentNumber(experimentNumber?.toString() ?? '');
+  };
+
+  const clearExperimentNumber = (): void => {
+    setDraftExperimentNumber('');
+
+    if (experimentNumber !== null) {
+      onExperimentNumberChange(null);
+      setAnchorEl(null);
+    }
   };
 
   const applyExperimentNumber = (): void => {
@@ -151,6 +163,23 @@ const ExperimentNumberBreadcrumb: React.FC<{
             >
               Search
             </Button>
+            {experimentNumber !== null && (
+              <Button
+                aria-label="Clear experiment number"
+                size="small"
+                variant="outlined"
+                onClick={clearExperimentNumber}
+                sx={{
+                  flex: '0 0 auto',
+                  minWidth: 40,
+                  width: 40,
+                  height: 40,
+                  px: 0,
+                }}
+              >
+                <CloseIcon fontSize="small" />
+              </Button>
+            )}
           </Box>
         </Box>
       </Popover>
@@ -159,20 +188,21 @@ const ExperimentNumberBreadcrumb: React.FC<{
 };
 
 const ExperimentViewer: React.FC = (): JSX.Element => {
-  const { instrumentName, experimentNumber, jobId } = useParams<RouteParams>();
+  const { instrumentName, experimentNumber, experimentOnlyNumber, jobId } = useParams<RouteParams>();
   const history = useHistory();
   const viewerRootRef = useRef<HTMLDivElement | null>(null);
-  const routeExperimentNumber = parseExperimentNumber(experimentNumber);
+  const routeExperimentNumber = parseExperimentNumber(experimentOnlyNumber ?? experimentNumber);
+  const hasRouteExperimentNumber = experimentNumber !== undefined || experimentOnlyNumber !== undefined;
 
   // Redirect if an instrument is specified in the URL but it's not a valid instrument name
   useEffect(() => {
     if (
       (instrumentName && !isValidInstrument(instrumentName)) ||
-      (experimentNumber !== undefined && routeExperimentNumber === null)
+      (hasRouteExperimentNumber && routeExperimentNumber === null)
     ) {
       window.location.replace('/404/');
     }
-  }, [experimentNumber, instrumentName, routeExperimentNumber]);
+  }, [hasRouteExperimentNumber, instrumentName, routeExperimentNumber]);
 
   const [jobs, setJobs] = useState<Job[]>([]);
   const [files, setFiles] = useState<FileConfig[]>([]);
@@ -187,20 +217,36 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
   const [loading2DPath, setLoading2DPath] = useState(false);
   const [viewer2DError, setViewer2DError] = useState<string | null>(null);
   const [viewerHeight, setViewerHeight] = useState('100vh');
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalJobs, setTotalJobs] = useState(0);
 
   // Search state - initialize from route params
   const [searchInstrument, setSearchInstrument] = useState<string | null>(() => instrumentName ?? null);
   const [searchExperimentNumber, setSearchExperimentNumber] = useState<number | null>(() => routeExperimentNumber);
-  const [searchLimit, setSearchLimit] = useState<number>(10);
   const [isSearchActive, setIsSearchActive] = useState<boolean>(() => {
     return Boolean(instrumentName || routeExperimentNumber !== null);
   });
 
   useEffect(() => {
+    const nextSearchActive = Boolean(instrumentName || routeExperimentNumber !== null);
+
     setSearchInstrument(instrumentName ?? null);
     setSearchExperimentNumber(routeExperimentNumber);
-    setIsSearchActive(Boolean(instrumentName || routeExperimentNumber !== null));
-  }, [instrumentName, routeExperimentNumber]);
+    setIsSearchActive(nextSearchActive);
+    setCurrentPage(0);
+
+    if (!jobId && !nextSearchActive) {
+      setJobs([]);
+      setFiles([]);
+      setLinePlotData([]);
+      setSelected2DFile(null);
+      setSelected2DFilePath(null);
+      setViewer2DError(null);
+      setTotalJobs(0);
+      setLoading(false);
+      setError(null);
+    }
+  }, [instrumentName, jobId, routeExperimentNumber]);
 
   const updateViewerHeight = useCallback((): void => {
     const topOffset = viewerRootRef.current?.getBoundingClientRect().top ?? 0;
@@ -219,17 +265,62 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
     };
   }, [updateViewerHeight]);
 
+  const clearViewerSelections = useCallback((): void => {
+    setLinePlotData([]);
+    setSelected2DFile(null);
+    setSelected2DFilePath(null);
+    setViewer2DError(null);
+    setFiles((prevFiles) =>
+      prevFiles.map((file) => ({
+        ...file,
+        enabled: false,
+        path: undefined,
+        errorPath: undefined,
+        selection: [],
+        selectedDatasetIs2D: undefined,
+      }))
+    );
+  }, []);
+
   // Fetch jobs based on URL params or search
   useEffect(() => {
+    let isCurrentRequest = true;
+
+    const resetLoadedData = (): void => {
+      if (!isCurrentRequest) {
+        return;
+      }
+
+      setJobs([]);
+      setFiles([]);
+      setLinePlotData([]);
+      setSelected2DFile(null);
+      setSelected2DFilePath(null);
+      setViewer2DError(null);
+      setTotalJobs(0);
+      setLoading(false);
+    };
+
     const loadJobs = async (): Promise<void> => {
       try {
+        if (!jobId && !isSearchActive) {
+          resetLoadedData();
+          return;
+        }
+
         setLoading(true);
+        setError(null);
+        clearViewerSelections();
         let jobsData: Job[];
 
         if (jobId) {
           // Fetch specific job by ID (from URL)
           const response = await fiaApi.get<Job>(`/job/${jobId}`);
+          if (!isCurrentRequest) {
+            return;
+          }
           jobsData = [response.data];
+          setTotalJobs(1);
         } else if (isSearchActive) {
           // Fetch jobs based on search criteria
           const filters: JobQueryFilters = {
@@ -244,17 +335,56 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
             filters.experiment_number_in = [searchExperimentNumber];
           }
 
-          const response = await fiaApi.get<Job[]>('/jobs', {
+          const countResponse = await fiaApi.get<{ count: number }>('/jobs/count', {
             params: {
               filters: JSON.stringify(filters),
-              include_run: 'true',
-              limit: searchLimit,
             },
           });
-          jobsData = response.data;
+          if (!isCurrentRequest) {
+            return;
+          }
+          const totalMatchingJobs = countResponse.data.count;
+          setTotalJobs(totalMatchingJobs);
+
+          if (totalMatchingJobs === 0) {
+            jobsData = [];
+          } else {
+            const maxPageIndex = Math.max(0, Math.ceil(totalMatchingJobs / EXPERIMENT_VIEWER_PAGE_SIZE) - 1);
+
+            if (currentPage > maxPageIndex) {
+              setCurrentPage(maxPageIndex);
+              return;
+            }
+
+            const response = await fiaApi.get<Job[]>('/jobs', {
+              params: {
+                filters: JSON.stringify(filters),
+                include_run: 'true',
+                limit: EXPERIMENT_VIEWER_PAGE_SIZE,
+                offset: currentPage * EXPERIMENT_VIEWER_PAGE_SIZE,
+                order_by: 'run_start',
+                order_direction: 'desc',
+              },
+            });
+            if (!isCurrentRequest) {
+              return;
+            }
+            jobsData = response.data;
+
+            if (!searchInstrument && searchExperimentNumber !== null) {
+              const resolvedJob = jobsData.find((job) => isValidInstrument(job.run.instrument_name));
+              const resolvedInstrument = resolvedJob?.run.instrument_name;
+
+              if (resolvedInstrument) {
+                setSearchInstrument(resolvedInstrument);
+                history.replace(getExperimentViewerPath(resolvedInstrument, searchExperimentNumber));
+                return;
+              }
+            }
+          }
         } else {
           // No URL params and no search - don't fetch
-          setLoading(false);
+          resetLoadedData();
           return;
         }
 
@@ -314,6 +444,10 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
           };
         });
 
+        if (!isCurrentRequest) {
+          return;
+        }
+
         setJobs(filteredJobs);
 
         // Fetch full paths for all files in parallel
@@ -332,6 +466,9 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
         });
 
         const filePathResults = await Promise.all(filePathPromises);
+        if (!isCurrentRequest) {
+          return;
+        }
         const filePathMap = new Map(filePathResults.map((r) => [r.filename, r.fullPath]));
 
         // Create file configs with full paths
@@ -349,15 +486,33 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
 
         setFiles(allFiles);
       } catch (err) {
+        if (!isCurrentRequest) {
+          return;
+        }
         console.error('Error loading jobs:', err);
         setError('Failed to load jobs from server');
       } finally {
-        setLoading(false);
+        if (isCurrentRequest) {
+          setLoading(false);
+        }
       }
     };
 
     loadJobs();
-  }, [jobId, instrumentName, isSearchActive, searchInstrument, searchExperimentNumber, searchLimit]);
+
+    return () => {
+      isCurrentRequest = false;
+    };
+  }, [
+    clearViewerSelections,
+    currentPage,
+    jobId,
+    history,
+    instrumentName,
+    isSearchActive,
+    searchInstrument,
+    searchExperimentNumber,
+  ]);
 
   const handleBreadcrumbInstrumentChange = (instrument: string): void => {
     const nextInstrument = instrument === 'ALL' ? null : instrument;
@@ -367,30 +522,54 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
     setSearchInstrument(nextInstrument);
     setSearchExperimentNumber(nextExperimentNumber);
     setIsSearchActive(nextSearchActive);
+    setCurrentPage(0);
+    clearViewerSelections();
     setError(null);
 
     if (!nextSearchActive) {
       setJobs([]);
       setFiles([]);
       setLinePlotData([]);
+      setTotalJobs(0);
     }
 
     history.push(getExperimentViewerPath(nextInstrument, nextExperimentNumber));
   };
 
   const handleBreadcrumbExperimentNumberChange = (experimentNumber: number | null): void => {
-    if (!searchInstrument) {
-      return;
-    }
-
-    const nextSearchActive = true;
+    const nextSearchActive = Boolean(searchInstrument || experimentNumber !== null);
 
     setSearchInstrument(searchInstrument);
     setSearchExperimentNumber(experimentNumber);
     setIsSearchActive(nextSearchActive);
+    setCurrentPage(0);
+    clearViewerSelections();
     setError(null);
 
+    if (!nextSearchActive) {
+      setJobs([]);
+      setFiles([]);
+      setLinePlotData([]);
+      setTotalJobs(0);
+    }
+
     history.push(getExperimentViewerPath(searchInstrument, experimentNumber));
+  };
+
+  const handlePageChange = (nextPage: number): void => {
+    if (!Number.isInteger(nextPage) || nextPage < 0) {
+      return;
+    }
+
+    const maxPageIndex = Math.max(0, Math.ceil(totalJobs / EXPERIMENT_VIEWER_PAGE_SIZE) - 1);
+    const boundedPage = Math.min(nextPage, maxPageIndex);
+
+    if (boundedPage === currentPage) {
+      return;
+    }
+
+    clearViewerSelections();
+    setCurrentPage(boundedPage);
   };
 
   // Discover datasets in a file
@@ -633,7 +812,13 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
   }, [activeViewerTab, selected2DFile, files, jobs]);
 
   const showBreadcrumbFilters = !jobId;
-  const breadcrumbRouteCrumbCount = searchInstrument ? (searchExperimentNumber === null ? 1 : 2) : 0;
+  const breadcrumbRouteCrumbCount = searchInstrument
+    ? searchExperimentNumber === null
+      ? 1
+      : 2
+    : searchExperimentNumber === null
+      ? 0
+      : 2;
   const breadcrumbTrailingCrumb = showBreadcrumbFilters
     ? [
         <InstrumentSelector
@@ -644,18 +829,14 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
           allInstrumentsLabel="All instruments"
           showAllInstrumentsOption={false}
         />,
-        searchInstrument ? (
-          <ExperimentNumberBreadcrumb
-            key="experiment-number"
-            experimentNumber={searchExperimentNumber}
-            onExperimentNumberChange={handleBreadcrumbExperimentNumberChange}
-          />
-        ) : null,
+        <ExperimentNumberBreadcrumb
+          key="experiment-number"
+          experimentNumber={searchExperimentNumber}
+          onExperimentNumberChange={handleBreadcrumbExperimentNumberChange}
+        />,
       ]
     : undefined;
-  const showInitialEmptyState = !jobId && !instrumentName && !isSearchActive;
-  const showNoJobsState = !jobId && isSearchActive && jobs.length === 0 && !loading;
-  const showResultsLayout = Boolean(jobId || (isSearchActive && jobs.length > 0));
+  const hasViewableFiles = files.length > 0;
 
   return (
     <Box
@@ -700,158 +881,107 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
       >
         {/* Main content area */}
         <Box sx={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'hidden' }}>
-          {/* Empty state - no search active and no URL params */}
-          {showInitialEmptyState && (
-            <Box
-              sx={{
-                flex: 1,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                bgcolor: 'background.default',
-              }}
-            >
-              <Box sx={{ textAlign: 'center', maxWidth: 500, p: 4 }}>
-                <Typography variant="h5" color="text.primary" sx={{ mb: 2 }}>
-                  Search for HDF5 data
-                </Typography>
-                <Typography variant="body1" color="text.secondary">
-                  Select an instrument in the breadcrumbs to search for jobs with HDF5 output files.
-                </Typography>
-              </Box>
-            </Box>
-          )}
+          {/* Left panel - File tree */}
+          <Box
+            sx={{
+              width: 320,
+              borderRight: 1,
+              borderColor: 'divider',
+              display: 'flex',
+              flexDirection: 'column',
+              minHeight: 0,
+              overflow: 'hidden',
+            }}
+          >
+            <ViewerTabs activeTab={activeViewerTab} onTabChange={setActiveViewerTab} disabled={!hasViewableFiles} />
+            <FileTree
+              jobs={jobs}
+              files={files}
+              currentPage={showBreadcrumbFilters ? currentPage : undefined}
+              totalJobs={showBreadcrumbFilters ? totalJobs : undefined}
+              pageSize={EXPERIMENT_VIEWER_PAGE_SIZE}
+              isPaginationDisabled={loading}
+              onPageChange={showBreadcrumbFilters ? handlePageChange : undefined}
+              onFileToggle={handleFileToggle}
+              onDatasetChange={handleDatasetChange}
+              onSelectionChange={handleSelectionChange}
+              autoSelectPrimary={autoSelectPrimary}
+              onAutoSelectPrimaryChange={setAutoSelectPrimary}
+              activeViewerTab={activeViewerTab}
+              selected2DFile={selected2DFile}
+              onSelect2DFile={setSelected2DFile}
+            />
+          </Box>
 
-          {/* No results state */}
-          {showNoJobsState && (
-            <Box
-              sx={{
-                flex: 1,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Box sx={{ textAlign: 'center', maxWidth: 500, p: 4 }}>
-                <Typography variant="h5" color="text.primary" sx={{ mb: 2 }}>
-                  No jobs found
-                </Typography>
-                <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
-                  {searchInstrument && `Instrument: ${searchInstrument}`}
-                  {searchInstrument && searchExperimentNumber && ' | '}
-                  {searchExperimentNumber && `Experiment: ${searchExperimentNumber}`}
-                </Typography>
-                {searchInstrument && searchExperimentNumber !== null ? (
-                  <Typography variant="body2" color="text.secondary">
-                    Go back to{' '}
-                    <MuiLink component={RouterLink} to={getExperimentViewerPath(searchInstrument)} underline="hover">
-                      {searchInstrument} experiments
-                    </MuiLink>
-                    .
-                  </Typography>
-                ) : (
-                  <Typography variant="body2" color="text.secondary">
-                    Try adjusting your search criteria.
-                  </Typography>
-                )}
-              </Box>
-            </Box>
-          )}
-
-          {/* Results - show FileTree and Graph when we have jobs */}
-          {showResultsLayout && (
-            <>
-              {/* Left panel - File tree */}
+          {/* Right panel - Plot or 2D Viewer */}
+          <Box
+            sx={{
+              flex: 1,
+              minWidth: 0,
+              minHeight: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              position: 'relative',
+              overflow: 'hidden',
+            }}
+          >
+            {/* Loading indicator */}
+            {(loading || loading2DPath) && (
               <Box
                 sx={{
-                  width: 320,
-                  borderRight: 1,
-                  borderColor: 'divider',
+                  position: 'absolute',
+                  inset: 0,
                   display: 'flex',
-                  flexDirection: 'column',
-                  minHeight: 0,
-                  overflow: 'hidden',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  bgcolor: 'rgba(255, 255, 255, 0.8)',
+                  zIndex: 10,
                 }}
               >
-                <ViewerTabs activeTab={activeViewerTab} onTabChange={setActiveViewerTab} />
-                <FileTree
-                  jobs={jobs}
-                  files={files}
-                  resultLimit={showBreadcrumbFilters ? searchLimit : undefined}
-                  onResultLimitChange={showBreadcrumbFilters ? setSearchLimit : undefined}
-                  isResultLimitDisabled={loading}
-                  onFileToggle={handleFileToggle}
-                  onDatasetChange={handleDatasetChange}
-                  onSelectionChange={handleSelectionChange}
-                  autoSelectPrimary={autoSelectPrimary}
-                  onAutoSelectPrimaryChange={setAutoSelectPrimary}
-                  activeViewerTab={activeViewerTab}
-                  selected2DFile={selected2DFile}
-                  onSelect2DFile={setSelected2DFile}
-                />
+                <CircularProgress size={60} />
               </Box>
+            )}
 
-              {/* Right panel - Plot or 2D Viewer */}
+            {/* Error message */}
+            {(error || viewer2DError) && (
               <Box
                 sx={{
-                  flex: 1,
-                  minWidth: 0,
-                  minHeight: 0,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  position: 'relative',
-                  overflow: 'hidden',
+                  position: 'absolute',
+                  top: 16,
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  zIndex: 20,
                 }}
               >
-                {/* Loading indicator */}
-                {(loading || loading2DPath) && (
-                  <Box
-                    sx={{
-                      position: 'absolute',
-                      inset: 0,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      bgcolor: 'rgba(255, 255, 255, 0.8)',
-                      zIndex: 10,
-                    }}
-                  >
-                    <CircularProgress size={60} />
-                  </Box>
-                )}
-
-                {/* Error message */}
-                {(error || viewer2DError) && (
-                  <Box
-                    sx={{
-                      position: 'absolute',
-                      top: 16,
-                      left: '50%',
-                      transform: 'translateX(-50%)',
-                      zIndex: 20,
-                    }}
-                  >
-                    <Alert
-                      severity="error"
-                      onClose={() => {
-                        setError(null);
-                        setViewer2DError(null);
-                      }}
-                    >
-                      {error || viewer2DError}
-                    </Alert>
-                  </Box>
-                )}
-
-                {/* Conditional viewer rendering */}
-                {activeViewerTab === '1d' ? (
-                  <PlotViewer linePlotData={linePlotData} showErrors={showErrors} onShowErrorsChange={setShowErrors} />
-                ) : (
-                  <Viewer2D filepath={selected2DFilePath} />
-                )}
+                <Alert
+                  severity="error"
+                  onClose={() => {
+                    setError(null);
+                    setViewer2DError(null);
+                  }}
+                >
+                  {error || viewer2DError}
+                </Alert>
               </Box>
-            </>
-          )}
+            )}
+
+            {/* Conditional viewer rendering */}
+            {activeViewerTab === '1d' ? (
+              <PlotViewer
+                linePlotData={linePlotData}
+                showErrors={showErrors}
+                onShowErrorsChange={setShowErrors}
+                emptyTitle={hasViewableFiles ? undefined : 'Search by instrument and experiment number'}
+                emptyMessage={
+                  hasViewableFiles
+                    ? undefined
+                    : 'Use the breadcrumbs to select an instrument and search for an experiment number.'
+                }
+              />
+            ) : (
+              <Viewer2D filepath={selected2DFilePath} />
+            )}
+          </Box>
         </Box>
       </Box>
     </Box>

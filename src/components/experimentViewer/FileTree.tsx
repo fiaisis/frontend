@@ -9,8 +9,7 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
-  ToggleButton,
-  ToggleButtonGroup,
+  Pagination,
 } from '@mui/material';
 import React, { useState } from 'react';
 
@@ -21,9 +20,11 @@ import type { FileConfig, Job } from '../../lib/types';
 interface FileTreeProps {
   jobs: Job[];
   files: FileConfig[];
-  resultLimit?: number;
-  onResultLimitChange?: (limit: number) => void;
-  isResultLimitDisabled?: boolean;
+  currentPage?: number;
+  totalJobs?: number;
+  pageSize?: number;
+  isPaginationDisabled?: boolean;
+  onPageChange?: (page: number) => void;
   onFileToggle: (index: number) => void;
   onDatasetChange: (index: number, datasetPath: string) => void;
   onSelectionChange: (index: number, selections: number[]) => void;
@@ -37,9 +38,11 @@ interface FileTreeProps {
 const FileTree: React.FC<FileTreeProps> = ({
   jobs,
   files,
-  resultLimit,
-  onResultLimitChange,
-  isResultLimitDisabled = false,
+  currentPage = 0,
+  totalJobs = 0,
+  pageSize = 10,
+  isPaginationDisabled = false,
+  onPageChange,
   onFileToggle,
   onDatasetChange,
   onSelectionChange,
@@ -98,7 +101,10 @@ const FileTree: React.FC<FileTreeProps> = ({
 
   const filteredJobs = showEmptyJobs ? jobsWithOutputs : jobsWithOutputs.filter((job) => job.outputsArray.length > 0);
   const emptyJobsCount = jobsWithOutputs.filter((job) => job.outputsArray.length === 0).length;
-  const showResultLimit = resultLimit !== undefined && onResultLimitChange !== undefined;
+  const pageCount = pageSize > 0 ? Math.ceil(totalJobs / pageSize) : 0;
+  const showPagination = Boolean(onPageChange && totalJobs > pageSize && pageCount > 1);
+  const firstVisibleJob = totalJobs === 0 ? 0 : currentPage * pageSize + 1;
+  const lastVisibleJob = Math.min((currentPage + 1) * pageSize, totalJobs);
 
   return (
     <Box
@@ -115,42 +121,33 @@ const FileTree: React.FC<FileTreeProps> = ({
           File tree
         </Typography>
 
-        {showResultLimit && (
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, mb: 1 }}>
-            <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>
-              Limit
+        {showPagination && (
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5, mb: 1 }}>
+            <Typography variant="caption" color="text.secondary">
+              Showing {firstVisibleJob}-{lastVisibleJob} of {totalJobs} jobs
             </Typography>
-            <ToggleButtonGroup
-              value={resultLimit}
-              exclusive
-              onChange={(_event: React.MouseEvent<HTMLElement>, nextLimit: number | null) => {
-                if (nextLimit !== null && nextLimit !== resultLimit) {
-                  onResultLimitChange(nextLimit);
-                }
+            <Pagination
+              count={pageCount}
+              page={Math.min(currentPage + 1, pageCount)}
+              onChange={(_event, nextPage) => {
+                onPageChange?.(nextPage - 1);
               }}
               size="small"
-              disabled={isResultLimitDisabled}
-              aria-label="Job result limit"
+              disabled={isPaginationDisabled}
+              siblingCount={0}
+              boundaryCount={1}
+              aria-label="Experiment viewer job pages"
               sx={{
-                borderRadius: 0,
-                '& .MuiToggleButtonGroup-grouped': {
-                  borderRadius: 0,
-                  width: 48,
-                  minWidth: 48,
-                  height: 30,
-                  px: 0,
+                '& .MuiPagination-ul': {
                   justifyContent: 'center',
+                },
+                '& .MuiPaginationItem-root': {
+                  minWidth: 28,
+                  height: 28,
                   fontSize: '0.75rem',
-                  fontVariantNumeric: 'tabular-nums',
                 },
               }}
-            >
-              {[10, 25, 50, 100].map((limit) => (
-                <ToggleButton key={limit} value={limit} aria-label={`${limit} jobs`}>
-                  {limit}
-                </ToggleButton>
-              ))}
-            </ToggleButtonGroup>
+            />
           </Box>
         )}
 
@@ -194,7 +191,7 @@ const FileTree: React.FC<FileTreeProps> = ({
 
       {filteredJobs.length === 0 && (
         <Typography variant="body2" align="center" sx={{ mt: 4 }}>
-          {jobs.length === 0 ? 'No jobs available' : 'No jobs with files'}
+          {jobs.length === 0 ? 'No jobs listed' : 'No jobs with files'}
         </Typography>
       )}
 
@@ -300,6 +297,7 @@ const FileTree: React.FC<FileTreeProps> = ({
           </AccordionDetails>
         </Accordion>
       ))}
+      {filteredJobs.length > 0 && <Box aria-hidden="true" sx={{ height: 72 }} />}
     </Box>
   );
 };
