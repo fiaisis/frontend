@@ -357,7 +357,7 @@ const FilterContainer: React.FC<{
 
   return (
     <Dialog open={visible} onClose={handleFiltersClose} maxWidth="lg" fullWidth>
-      <DialogTitle>Advanced filters</DialogTitle>
+      <DialogTitle>Filters</DialogTitle>
       <DialogContent dividers>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
           <Box display={'flex'} width={'100%'} justifyContent={'space-between'} gap={2} sx={{ flexWrap: 'wrap' }}>

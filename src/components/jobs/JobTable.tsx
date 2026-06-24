@@ -10,9 +10,7 @@ import {
   Alert,
   Box,
   Button,
-  Checkbox,
   CircularProgress,
-  FormControlLabel,
   Paper,
   Snackbar,
   Table,
@@ -443,8 +441,9 @@ const JobTable: React.FC<{
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                gap: 2,
-                flexWrap: 'nowrap',
+                columnGap: 2,
+                rowGap: 1,
+                flexWrap: 'wrap',
                 minWidth: JOB_TABLE_MIN_WIDTH,
                 width: '100%',
                 boxSizing: 'border-box',
@@ -508,6 +507,19 @@ const JobTable: React.FC<{
                     </Button>
                   </>
                 )}
+                {showAsUserControl && (
+                  <Button
+                    className="tour-view-as-user"
+                    variant={asUser ? 'contained' : 'outlined'}
+                    size="small"
+                    aria-pressed={asUser}
+                    onClick={() => setAsUser(!asUser)}
+                    sx={{ width: 150, ...(asUser ? toolbarContainedButtonSx : toolbarButtonSx) }}
+                    startIcon={asUser ? <CheckBox /> : <CheckBoxOutlineBlank />}
+                  >
+                    View as user
+                  </Button>
+                )}
               </Box>
 
               <Box
@@ -515,36 +527,15 @@ const JobTable: React.FC<{
                 sx={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 4,
-                  flexWrap: 'nowrap',
+                  columnGap: 4,
+                  rowGap: 1,
+                  flex: '1 1 520px',
+                  minWidth: 0,
+                  flexWrap: 'wrap',
                   justifyContent: 'flex-end',
                   whiteSpace: 'nowrap',
                 }}
               >
-                {showAsUserControl && (
-                  <FormControlLabel
-                    className="tour-view-as-user"
-                    control={
-                      <Checkbox
-                        checked={asUser}
-                        onChange={(event: React.ChangeEvent<HTMLInputElement>) => setAsUser(event.target.checked)}
-                        size="small"
-                        sx={{
-                          color: toolbarContrastColor,
-                          '&.Mui-checked': {
-                            color: toolbarContrastColor,
-                          },
-                        }}
-                      />
-                    }
-                    label={
-                      <Typography component="span" variant="body2" sx={{ color: toolbarContrastColor }}>
-                        View as user
-                      </Typography>
-                    }
-                    sx={{ m: 0 }}
-                  />
-                )}
                 <Button
                   variant={filtersApplied ? 'contained' : 'outlined'}
                   size="small"
@@ -552,7 +543,7 @@ const JobTable: React.FC<{
                   onClick={openFilters}
                   sx={filtersApplied ? toolbarContainedButtonSx : toolbarButtonSx}
                 >
-                  Filter
+                  Filters
                 </Button>
                 <Box
                   data-testid="rows-per-page-controls"
@@ -636,9 +627,10 @@ const JobTable: React.FC<{
                       minHeight: '36px',
                       p: 0,
                       pl: 0,
-                      gap: 1,
                       columnGap: 2,
-                      flexWrap: 'nowrap',
+                      rowGap: 1,
+                      flexWrap: 'wrap',
+                      justifyContent: 'flex-end',
                     },
                     '& .MuiTablePagination-spacer': {
                       display: 'none',
@@ -646,6 +638,11 @@ const JobTable: React.FC<{
                     '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
                       m: 0,
                       whiteSpace: 'nowrap',
+                    },
+                    '& .MuiTablePagination-actions': {
+                      display: 'flex',
+                      flexShrink: 0,
+                      ml: 0,
                     },
                     '& .MuiIconButton-root': {
                       width: 36,

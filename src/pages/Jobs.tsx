@@ -466,7 +466,7 @@ const Jobs: React.FC = (): ReactElement => {
       {isImat ? (
         <>
           {imatView === 0 && (
-            <Box className="tour-red-his-tablehead" sx={{ padding: '0 20px 20px' }}>
+            <Box className="tour-red-his-tablehead" sx={{ padding: '0 20px 160px' }}>
               <JobTable
                 selectedInstrument={selectedInstrument}
                 currentPage={currentPage}
@@ -497,7 +497,7 @@ const Jobs: React.FC = (): ReactElement => {
           )}
         </>
       ) : (
-        <Box className="tour-red-his-tablehead" sx={{ padding: '0 20px 20px' }}>
+        <Box className="tour-red-his-tablehead" sx={{ padding: '0 20px 160px' }}>
           <JobTable
             selectedInstrument={selectedInstrument}
             currentPage={currentPage}
