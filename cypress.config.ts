@@ -4,8 +4,8 @@ export default defineConfig({
   component: {
     specPattern: 'cypress/component/**/*.cy.{js,jsx,ts,tsx}',
     devServer: {
-      framework: 'create-react-app',
-      bundler: 'webpack',
+      framework: 'react',
+      bundler: 'vite',
     },
   },
 

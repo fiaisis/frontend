@@ -1,6 +1,7 @@
+import { mount } from 'cypress/react';
 import React from 'react';
 import { BrowserRouter } from 'react-router-dom';
-import { mount } from '@cypress/react';
+
 import Homepage from '../../src/pages/Homepage';
 
 describe('Homepage Component Tests', () => {

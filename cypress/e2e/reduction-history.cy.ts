@@ -99,11 +99,12 @@ describe('Reduction history page', () => {
     cy.wait('@getAllCount');
     cy.wait('@getAllJobs');
 
-    cy.contains('h1', 'ALL reductions').should('be.visible');
+    cy.contains('h1', 'View all reductions').should('be.visible');
     cy.contains('All instruments reduction').should('be.visible');
 
-    cy.get('[role="combobox"][aria-labelledby="instrument-select-label"]').click();
-    cy.get('li[role="option"][data-value="LOQ"]').click();
+    cy.get('#instrument-selector-button').click();
+    cy.contains('[role="menuitem"]', 'Small-angle neutron scattering').click();
+    cy.contains('[role="menuitem"]', /^LOQ$/).click();
 
     cy.wait('@getLoqCount');
     cy.wait('@getLoqJobs');
