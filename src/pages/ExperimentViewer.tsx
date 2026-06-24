@@ -28,6 +28,9 @@ interface RouteParams {
 
 const VIEWER_HEIGHT_BOTTOM_BUFFER_PX = 32;
 const EXPERIMENT_VIEWER_PAGE_SIZE = 10;
+const EXPERIMENT_NUMBER_BREADCRUMB_MENU_WIDTH = 280;
+const EXPERIMENT_NUMBER_BREADCRUMB_CLEAR_BUTTON_WIDTH = 40;
+const EXPERIMENT_NUMBER_BREADCRUMB_MENU_GAP = 8;
 
 const parseExperimentNumber = (experimentNumber: string | undefined): number | null => {
   if (!experimentNumber) {
@@ -54,6 +57,12 @@ const ExperimentNumberBreadcrumb: React.FC<{
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const [draftExperimentNumber, setDraftExperimentNumber] = useState('');
   const open = Boolean(anchorEl);
+  const menuWidth =
+    experimentNumber === null
+      ? EXPERIMENT_NUMBER_BREADCRUMB_MENU_WIDTH
+      : EXPERIMENT_NUMBER_BREADCRUMB_MENU_WIDTH +
+        EXPERIMENT_NUMBER_BREADCRUMB_CLEAR_BUTTON_WIDTH +
+        EXPERIMENT_NUMBER_BREADCRUMB_MENU_GAP;
 
   useEffect(() => {
     setDraftExperimentNumber(experimentNumber?.toString() ?? '');
@@ -128,7 +137,7 @@ const ExperimentNumberBreadcrumb: React.FC<{
         transformOrigin={{ vertical: 'top', horizontal: 'left' }}
         slotProps={{
           paper: {
-            sx: { width: 280, maxWidth: 'calc(100vw - 32px)' },
+            sx: { width: menuWidth, maxWidth: 'calc(100vw - 32px)' },
           },
         }}
       >
