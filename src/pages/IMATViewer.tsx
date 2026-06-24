@@ -1,6 +1,16 @@
 import '@h5web/lib/styles.css';
 import { DomainWidget, HeatmapVis, RgbVis, ScaleType, Toolbar, useSafeDomain } from '@h5web/lib';
-import { Box, CircularProgress, Paper, Slider, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material';
+import {
+  Box,
+  CircularProgress,
+  Paper,
+  Slider,
+  ToggleButton,
+  ToggleButtonGroup,
+  Typography,
+  useTheme,
+} from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import axios from 'axios';
 import ndarray from 'ndarray';
 import React from 'react';
@@ -45,6 +55,7 @@ const isViewerSize = (value: string | null): value is ViewerSize =>
   value !== null && VIEWER_SIZES.includes(value as ViewerSize);
 
 const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
+  const theme = useTheme();
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
   const initialJobId = queryParams.get('jobId');
@@ -330,6 +341,76 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
     setCurrentImageIndex(index);
   };
 
+  const stackDomainWidgetStyles = {
+    width: { xs: '100%', sm: 500 },
+    maxWidth: '100%',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 1,
+    pl: 1.25,
+    pr: 0.5,
+    color: 'text.primary',
+    backgroundColor: 'background.paper',
+    border: '1px solid',
+    borderColor:
+      theme.palette.mode === 'dark' ? alpha(theme.palette.common.white, 0.28) : alpha(theme.palette.text.primary, 0.16),
+    borderRadius: 1,
+    overflow: 'visible',
+    boxShadow: theme.palette.mode === 'dark' ? `0 0 0 1px ${alpha(theme.palette.common.black, 0.18)}` : undefined,
+    '--h5w-toolbar--height': '2.25rem',
+    '--h5w-toolbar--bgColor': theme.palette.background.paper,
+    '--h5w-toolbar-label--color': theme.palette.text.secondary,
+    '--h5w-toolbar-separator--color': alpha(theme.palette.text.primary, theme.palette.mode === 'dark' ? 0.22 : 0.14),
+    '--h5w-toolbar-popup--bgColor': theme.palette.background.paper,
+    '--h5w-toolbar-input-focus--shadowColor': theme.palette.primary.main,
+    '--h5w-btn-hover--bgColor': theme.palette.action.hover,
+    '--h5w-btn-hover--shadowColor': alpha(theme.palette.text.primary, theme.palette.mode === 'dark' ? 0.32 : 0.16),
+    '--h5w-btnRaised--bgColor': theme.palette.background.default,
+    '--h5w-btnRaised--shadowColor': alpha(theme.palette.text.primary, theme.palette.mode === 'dark' ? 0.34 : 0.18),
+    '--h5w-btnRaised-hover--shadowColor': alpha(
+      theme.palette.text.primary,
+      theme.palette.mode === 'dark' ? 0.46 : 0.24
+    ),
+    '--h5w-btnPressed--bgColor': alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.34 : 0.18),
+    '--h5w-btnPressed--shadowColor': alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.54 : 0.32),
+    '--h5w-btnPressed-hover--shadowColor': alpha(
+      theme.palette.primary.main,
+      theme.palette.mode === 'dark' ? 0.64 : 0.4
+    ),
+    '--h5w-domainWidget-popup--bgColor': theme.palette.background.paper,
+    '--h5w-domainControls--colorAlt': theme.palette.text.primary,
+    '--h5w-domainControls-boundInput--shadowColor': alpha(
+      theme.palette.text.primary,
+      theme.palette.mode === 'dark' ? 0.34 : 0.16
+    ),
+    '--h5w-domainControls-boundInput-focus--shadowColor': theme.palette.primary.main,
+    '--h5w-domainControls-boundInput-editing--bgColor': theme.palette.background.default,
+    '--h5w-domainControls-boundInput-editing--borderColor': theme.palette.primary.main,
+    '--h5w-domainSlider-track--bgColor': alpha(theme.palette.text.primary, theme.palette.mode === 'dark' ? 0.24 : 0.18),
+    '--h5w-domainSlider-track--shadowColor': alpha(
+      theme.palette.common.black,
+      theme.palette.mode === 'dark' ? 0.68 : 0.22
+    ),
+    '--h5w-domainSlider-dataTrack--bgColor':
+      theme.palette.mode === 'dark' ? theme.palette.primary.light : theme.palette.primary.main,
+    '--h5w-domainSlider-dataTrack--shadowColor': alpha(
+      theme.palette.primary.main,
+      theme.palette.mode === 'dark' ? 0.72 : 0.36
+    ),
+    '--h5w-domainSlider-thumb--bgColor':
+      theme.palette.mode === 'dark' ? theme.palette.primary.light : theme.palette.primary.main,
+    '--h5w-domainSlider-thumb-auto--bgColor':
+      theme.palette.mode === 'dark' ? theme.palette.grey[100] : theme.palette.background.paper,
+    '& input[name="bound"]': {
+      color: theme.palette.text.primary,
+      backgroundColor: theme.palette.mode === 'dark' ? alpha(theme.palette.common.white, 0.1) : alpha('#ffffff', 0.72),
+      borderColor: alpha(theme.palette.text.primary, theme.palette.mode === 'dark' ? 0.24 : 0.12),
+    },
+    '& button:disabled': {
+      color: alpha(theme.palette.text.primary, 0.36),
+    },
+  };
+
   return (
     <>
       {showNav && <NavArrows />}
@@ -403,44 +484,39 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
 
                   <Box
                     sx={{
-                      display: 'flex',
+                      display: 'grid',
+                      gridTemplateColumns: { xs: '1fr', lg: 'minmax(0, 1fr) auto minmax(0, 1fr)' },
                       alignItems: 'center',
                       gap: 2,
                       mt: 2,
-                      flexWrap: 'wrap',
                     }}
                   >
-                    <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                      Colourbar intensity
-                    </Typography>
                     <Box
                       sx={{
-                        flex: '1 1 300px',
-                        minWidth: 260,
-                        maxWidth: 520,
                         display: 'flex',
-                        border: '1px solid',
-                        borderColor: 'divider',
-                        borderRadius: 1,
-                        overflow: 'visible',
+                        alignItems: 'center',
+                        gap: 2,
+                        flexWrap: 'wrap',
+                        minWidth: 0,
                       }}
                     >
-                      <Toolbar>
-                        <DomainWidget
-                          dataDomain={STACK_INTENSITY_DOMAIN}
-                          customDomain={stackCustomIntensityDomain}
-                          scaleType={ScaleType.Linear}
-                          disabled={!stackDataset}
-                          onCustomDomainChange={setStackCustomIntensityDomain}
-                        />
-                      </Toolbar>
-                    </Box>
-                  </Box>
+                      <Typography variant="body2" sx={{ flexShrink: 0 }}>
+                        Image {currentImageIndex + 1} of {stackImages.length}
+                      </Typography>
 
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
-                    <Typography variant="body2">
-                      Image {currentImageIndex + 1} of {stackImages.length}
-                    </Typography>
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: 'text.secondary',
+                          minWidth: 0,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {stackImages[currentImageIndex]}
+                      </Typography>
+                    </Box>
 
                     <ToggleButtonGroup
                       value={viewerSize}
@@ -449,6 +525,7 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
                       size="small"
                       aria-label="viewer size"
                       sx={{
+                        justifySelf: { xs: 'start', lg: 'center' },
                         '& .MuiToggleButton-root': {
                           width: 76,
                           px: 0,
@@ -472,9 +549,22 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
                       </ToggleButton>
                     </ToggleButtonGroup>
 
-                    <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                      {stackImages[currentImageIndex]}
-                    </Typography>
+                    <Box sx={{ justifySelf: { xs: 'stretch', lg: 'end' }, width: { xs: '100%', sm: 'auto' } }}>
+                      <Box sx={stackDomainWidgetStyles}>
+                        <Typography variant="body2" sx={{ fontWeight: 500, flexShrink: 0 }}>
+                          Colourbar intensity
+                        </Typography>
+                        <Toolbar>
+                          <DomainWidget
+                            dataDomain={STACK_INTENSITY_DOMAIN}
+                            customDomain={stackCustomIntensityDomain}
+                            scaleType={ScaleType.Linear}
+                            disabled={!stackDataset}
+                            onCustomDomainChange={setStackCustomIntensityDomain}
+                          />
+                        </Toolbar>
+                      </Box>
+                    </Box>
                   </Box>
                 </Paper>
 
