@@ -102,14 +102,19 @@ describe('Reduction history page', () => {
     cy.contains('h1', 'Reduction history').should('be.visible');
     cy.contains('All instruments reduction').should('be.visible');
 
-    cy.get('#instrument-selector-button').click();
-    cy.contains('[role="menuitem"]', 'Small-angle neutron scattering').click();
+    cy.get('[aria-label="breadcrumb"]').within(() => {
+      cy.get('#instrument-selector-button').should('contain', 'Select an instrument').click();
+    });
+    cy.contains('[role="menuitem"]', 'Small-angle neutron scattering').trigger('mouseover');
     cy.contains('[role="menuitem"]', /^LOQ$/).click();
 
     cy.wait('@getLoqCount');
     cy.wait('@getLoqJobs');
 
     cy.location('pathname').should('eq', '/fia/reduction-history/LOQ');
+    cy.get('[aria-label="breadcrumb"]').within(() => {
+      cy.get('#instrument-selector-button').should('contain', 'LOQ');
+    });
     cy.contains('h1', 'LOQ reduction history').should('be.visible');
     cy.contains('LOQ scoped reduction').should('be.visible');
   });

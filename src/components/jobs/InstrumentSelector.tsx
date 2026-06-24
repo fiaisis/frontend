@@ -1,6 +1,6 @@
 import ArrowDropDown from '@mui/icons-material/ArrowDropDown';
 import ChevronRight from '@mui/icons-material/ChevronRight';
-import { Box, Button, Divider, ListItemText, Menu, MenuItem, Typography } from '@mui/material';
+import { Box, Button, Divider, ListItemText, Menu, MenuItem, MenuList, Paper, Popper, Typography } from '@mui/material';
 import React from 'react';
 
 import { instruments } from '../../lib/instrumentData';
@@ -20,10 +20,14 @@ const instrumentsByType = Array.from(new Set(instruments.map((instrument) => ins
 const InstrumentSelector: React.FC<{
   selectedInstrument: string;
   handleInstrumentChange: (instrument: string) => void;
-}> = ({ selectedInstrument, handleInstrumentChange }) => {
+  variant?: 'default' | 'breadcrumb';
+}> = ({ selectedInstrument, handleInstrumentChange, variant = 'default' }) => {
   const [typeMenuAnchorEl, setTypeMenuAnchorEl] = React.useState<HTMLElement | null>(null);
   const [instrumentMenuAnchorEl, setInstrumentMenuAnchorEl] = React.useState<HTMLElement | null>(null);
   const [activeInstrumentType, setActiveInstrumentType] = React.useState<string | null>(null);
+  const isBreadcrumbVariant = variant === 'breadcrumb';
+  const selectorLabel = getInstrumentSelectorLabel(selectedInstrument);
+  const buttonLabel = isBreadcrumbVariant && selectedInstrument === 'ALL' ? 'Select an instrument' : selectorLabel;
 
   const typeMenuOpen = Boolean(typeMenuAnchorEl);
   const instrumentMenuOpen = Boolean(instrumentMenuAnchorEl);
@@ -42,45 +46,71 @@ const InstrumentSelector: React.FC<{
     closeMenus();
   };
 
-  const openInstrumentMenu = (event: React.MouseEvent<HTMLElement>, instrumentType: string): void => {
-    setInstrumentMenuAnchorEl(event.currentTarget);
+  const openInstrumentMenu = (anchorElement: HTMLElement, instrumentType: string): void => {
+    setInstrumentMenuAnchorEl(anchorElement);
     setActiveInstrumentType(instrumentType);
+  };
+
+  const closeInstrumentMenu = (): void => {
+    setInstrumentMenuAnchorEl(null);
+    setActiveInstrumentType(null);
   };
 
   return (
     <>
       <Button
         id="instrument-selector-button"
-        variant="outlined"
+        className={isBreadcrumbVariant ? 'breadcrumb-control' : undefined}
+        variant={isBreadcrumbVariant ? 'text' : 'outlined'}
         aria-haspopup="menu"
         aria-controls={typeMenuOpen ? 'instrument-type-menu' : undefined}
         aria-expanded={typeMenuOpen ? 'true' : undefined}
+        aria-label={isBreadcrumbVariant ? `Instrument: ${buttonLabel}` : undefined}
         endIcon={<ArrowDropDown />}
         onClick={(event: React.MouseEvent<HTMLButtonElement>) => setTypeMenuAnchorEl(event.currentTarget)}
-        sx={{
-          width: 240,
-          height: 56,
-          justifyContent: 'space-between',
-          px: 1.75,
-          textAlign: 'left',
-          textTransform: 'none',
-          color: 'text.primary',
-          '& .MuiButton-endIcon': { ml: 'auto' },
-        }}
+        sx={
+          isBreadcrumbVariant
+            ? {
+                minWidth: 0,
+                border: 0,
+                borderRadius: 0,
+                boxShadow: 'none',
+                font: 'inherit',
+                textTransform: 'none',
+                '& .MuiButton-endIcon': { ml: 0.75, mr: 0, color: 'inherit' },
+              }
+            : {
+                width: 240,
+                height: 56,
+                justifyContent: 'space-between',
+                px: 1.75,
+                textAlign: 'left',
+                textTransform: 'none',
+                color: 'text.primary',
+                '& .MuiButton-endIcon': { ml: 'auto' },
+              }
+        }
       >
-        <Box component="span" sx={{ display: 'flex', minWidth: 0, flexDirection: 'column', alignItems: 'flex-start' }}>
-          <Typography component="span" variant="caption" color="text.secondary" sx={{ lineHeight: 1.2 }}>
-            Instrument
-          </Typography>
-          <Typography
+        {isBreadcrumbVariant ? (
+          <Box component="span">{buttonLabel}</Box>
+        ) : (
+          <Box
             component="span"
-            variant="body1"
-            color="text.primary"
-            sx={{ maxWidth: 170, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+            sx={{ display: 'flex', minWidth: 0, flexDirection: 'column', alignItems: 'flex-start' }}
           >
-            {getInstrumentSelectorLabel(selectedInstrument)}
-          </Typography>
-        </Box>
+            <Typography component="span" variant="caption" color="text.secondary" sx={{ lineHeight: 1.2 }}>
+              Instrument
+            </Typography>
+            <Typography
+              component="span"
+              variant="body1"
+              color="text.primary"
+              sx={{ maxWidth: 170, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+            >
+              {selectorLabel}
+            </Typography>
+          </Box>
+        )}
       </Button>
       <Menu
         id="instrument-type-menu"
@@ -92,7 +122,12 @@ const InstrumentSelector: React.FC<{
           sx: { minWidth: 240 },
         }}
       >
-        <MenuItem selected={selectedInstrument === 'ALL'} onClick={() => selectInstrument('ALL')}>
+        <MenuItem
+          selected={selectedInstrument === 'ALL'}
+          onMouseEnter={closeInstrumentMenu}
+          onFocus={closeInstrumentMenu}
+          onClick={() => selectInstrument('ALL')}
+        >
           View all reductions
         </MenuItem>
         <Divider component="li" />
@@ -102,7 +137,15 @@ const InstrumentSelector: React.FC<{
               selected={instrumentGroup.instruments.some((instrument) => instrument.name === selectedInstrument)}
               aria-haspopup="menu"
               aria-expanded={activeInstrumentType === instrumentGroup.type && instrumentMenuOpen ? 'true' : undefined}
-              onClick={(event: React.MouseEvent<HTMLElement>) => openInstrumentMenu(event, instrumentGroup.type)}
+              onMouseEnter={(event: React.MouseEvent<HTMLElement>) =>
+                openInstrumentMenu(event.currentTarget, instrumentGroup.type)
+              }
+              onFocus={(event: React.FocusEvent<HTMLElement>) =>
+                openInstrumentMenu(event.currentTarget, instrumentGroup.type)
+              }
+              onClick={(event: React.MouseEvent<HTMLElement>) =>
+                openInstrumentMenu(event.currentTarget, instrumentGroup.type)
+              }
             >
               <ListItemText primary={instrumentGroup.type} />
               <ChevronRight fontSize="small" sx={{ ml: 2, color: 'action.active' }} />
@@ -111,33 +154,37 @@ const InstrumentSelector: React.FC<{
           </React.Fragment>
         ))}
       </Menu>
-      <Menu
+      <Popper
         id="instrument-options-menu"
         anchorEl={instrumentMenuAnchorEl}
         open={instrumentMenuOpen}
-        onClose={() => {
-          setInstrumentMenuAnchorEl(null);
-          setActiveInstrumentType(null);
-        }}
-        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-        MenuListProps={{
-          'aria-label': activeInstrumentType ? `${activeInstrumentType} instruments` : 'Instrument options',
-          sx: { minWidth: 160 },
-        }}
+        placement="right-start"
+        sx={(theme) => ({ zIndex: theme.zIndex.modal + 1 })}
       >
-        {activeInstrumentGroup?.instruments.map((instrument, index) => (
-          <React.Fragment key={instrument.name}>
-            <MenuItem
-              selected={instrument.name === selectedInstrument}
-              onClick={() => selectInstrument(instrument.name)}
-            >
-              {instrument.name}
-            </MenuItem>
-            {index < activeInstrumentGroup.instruments.length - 1 ? <Divider component="li" /> : null}
-          </React.Fragment>
-        ))}
-      </Menu>
+        <Paper elevation={8}>
+          <MenuList
+            aria-label={activeInstrumentType ? `${activeInstrumentType} instruments` : 'Instrument options'}
+            sx={{ minWidth: 160 }}
+            onKeyDown={(event: React.KeyboardEvent<HTMLUListElement>) => {
+              if (event.key === 'Escape') {
+                closeInstrumentMenu();
+              }
+            }}
+          >
+            {activeInstrumentGroup?.instruments.map((instrument, index) => (
+              <React.Fragment key={instrument.name}>
+                <MenuItem
+                  selected={instrument.name === selectedInstrument}
+                  onClick={() => selectInstrument(instrument.name)}
+                >
+                  {instrument.name}
+                </MenuItem>
+                {index < activeInstrumentGroup.instruments.length - 1 ? <Divider component="li" /> : null}
+              </React.Fragment>
+            ))}
+          </MenuList>
+        </Paper>
+      </Popper>
     </>
   );
 };

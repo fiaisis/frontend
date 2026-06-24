@@ -466,7 +466,7 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
           <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2, minHeight: 0 }}>
             {!stackJobId ? (
               <Typography sx={{ p: 4, textAlign: 'center' }}>
-                Select a completed job from the Reduction history tab to view its image stack.
+                Select a completed job from the Reduction history view to view its image stack.
               </Typography>
             ) : (
               <>

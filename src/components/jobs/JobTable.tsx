@@ -591,7 +591,6 @@ const JobTable: React.FC<{
               }}
             >
               <JobTableHead
-                selectedInstrument={selectedInstrument}
                 orderBy={orderBy}
                 orderDirection={orderDirection}
                 handleSort={handleSort}
@@ -621,11 +620,14 @@ const JobTable: React.FC<{
 
                     return (
                       <TableRow key={index} sx={{ backgroundColor, height: 74 }}>
-                        {[...Array(8)].map((_, cellIndex) => (
+                        {[...Array(6)].map((_, cellIndex) => (
                           <TableCell key={cellIndex} sx={{ overflow: 'hidden' }}>
                             <Skeleton variant="text" height={28} />
                           </TableCell>
                         ))}
+                        <TableCell colSpan={2} sx={{ overflow: 'hidden' }}>
+                          <Skeleton variant="text" height={28} />
+                        </TableCell>
                       </TableRow>
                     );
                   })
@@ -647,7 +649,6 @@ const JobTable: React.FC<{
                       key={index}
                       index={index}
                       job={job}
-                      showInstrumentColumn={selectedInstrument === 'ALL'}
                       resubmitJob={resubmitJob}
                       refreshJobs={refreshJobs}
                       isSelected={selectedJobIds.includes(job.id)}

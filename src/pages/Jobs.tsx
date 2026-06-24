@@ -1,5 +1,5 @@
-import Settings from '@mui/icons-material/Settings';
-import { Box, Button, FormControlLabel, Paper, Switch, Tab, Tabs, Typography, useTheme } from '@mui/material';
+import ArrowDropDown from '@mui/icons-material/ArrowDropDown';
+import { Box, Button, FormControlLabel, Menu, MenuItem, Paper, Switch, Typography, useTheme } from '@mui/material';
 import { jwtDecode } from 'jwt-decode';
 import React, { ReactElement, useState } from 'react';
 import { useHistory, useLocation, useParams } from 'react-router-dom';
@@ -35,33 +35,75 @@ const hasFilters = (filters: JobQueryFilters): boolean =>
     return value !== undefined && value !== null && value !== '';
   });
 
-interface TabPanelProps {
-  children?: React.ReactNode;
-  index: number;
-  value: number;
-}
+const IMAT_VIEW_OPTIONS = [
+  { value: 0, label: 'Reduction history' },
+  { value: 1, label: 'Latest image' },
+  { value: 2, label: 'Stack viewer' },
+] as const;
 
-const TabPanel = (props: TabPanelProps): JSX.Element => {
-  const { children, value, index, ...other } = props;
+type ImatViewValue = (typeof IMAT_VIEW_OPTIONS)[number]['value'];
+
+const getImatViewLabel = (value: number): string =>
+  IMAT_VIEW_OPTIONS.find((option) => option.value === value)?.label ?? IMAT_VIEW_OPTIONS[0].label;
+
+const isImatViewValue = (value: number): value is ImatViewValue =>
+  IMAT_VIEW_OPTIONS.some((option) => option.value === value);
+
+const ImatViewSelector: React.FC<{
+  value: number;
+  onChange: (value: ImatViewValue) => void;
+}> = ({ value, onChange }) => {
+  const [anchorEl, setAnchorEl] = React.useState<HTMLElement | null>(null);
+  const open = Boolean(anchorEl);
+  const selectedLabel = getImatViewLabel(value);
+
+  const handleSelect = (nextValue: ImatViewValue): void => {
+    onChange(nextValue);
+    setAnchorEl(null);
+  };
 
   return (
-    <div
-      role="tabpanel"
-      hidden={value !== index}
-      id={`imat-tabpanel-${index}`}
-      aria-labelledby={`imat-tab-${index}`}
-      {...other}
-    >
-      {value === index ? <Box sx={{ pt: 2 }}>{children}</Box> : null}
-    </div>
+    <>
+      <Button
+        id="imat-view-selector-button"
+        className="breadcrumb-control"
+        variant="text"
+        aria-haspopup="menu"
+        aria-controls={open ? 'imat-view-selector-menu' : undefined}
+        aria-expanded={open ? 'true' : undefined}
+        aria-label={`IMAT view: ${selectedLabel}`}
+        endIcon={<ArrowDropDown />}
+        onClick={(event: React.MouseEvent<HTMLButtonElement>) => setAnchorEl(event.currentTarget)}
+        sx={{
+          minWidth: 0,
+          border: 0,
+          borderRadius: 0,
+          boxShadow: 'none',
+          font: 'inherit',
+          textTransform: 'none',
+          '& .MuiButton-endIcon': { ml: 0.75, mr: 0, color: 'inherit' },
+        }}
+      >
+        <Box component="span">{selectedLabel}</Box>
+      </Button>
+      <Menu
+        id="imat-view-selector-menu"
+        anchorEl={anchorEl}
+        open={open}
+        onClose={() => setAnchorEl(null)}
+        MenuListProps={{
+          'aria-labelledby': 'imat-view-selector-button',
+          sx: { minWidth: 180 },
+        }}
+      >
+        {IMAT_VIEW_OPTIONS.map((option) => (
+          <MenuItem key={option.value} selected={option.value === value} onClick={() => handleSelect(option.value)}>
+            {option.label}
+          </MenuItem>
+        ))}
+      </Menu>
+    </>
   );
-};
-
-const a11yProps = (index: number): { id: string; 'aria-controls': string } => {
-  return {
-    id: `imat-tab-${index}`,
-    'aria-controls': `imat-tabpanel-${index}`,
-  };
 };
 
 const Jobs: React.FC = (): ReactElement => {
@@ -69,17 +111,18 @@ const Jobs: React.FC = (): ReactElement => {
   const history = useHistory();
   const location = useLocation();
   const isImat = (instrumentName || '').toUpperCase() === 'IMAT';
-  const showConfigButton = ['LOQ', 'MARI', 'SANS2D', 'VESUVIO', 'OSIRIS', 'IRIS', 'ENGINX'].includes(
-    instrumentName?.toUpperCase() || ''
-  );
   const [selectedInstrument, setSelectedInstrument] = React.useState<string>(instrumentName || 'ALL');
+  const configAvailable = ['LOQ', 'MARI', 'SANS2D', 'VESUVIO', 'OSIRIS', 'IRIS', 'ENGINX'].includes(
+    selectedInstrument.toUpperCase()
+  );
   const reductionHistoryHeading =
     selectedInstrument === 'ALL' ? 'Reduction history' : `${selectedInstrument} reduction history`;
   const [imatTab, setImatTab] = React.useState<number>(() => {
     const params = new URLSearchParams(location.search);
     const tabParam = params.get('tab');
     if (tabParam !== null) {
-      return parseInt(tabParam, 10) || 0;
+      const parsedTab = parseInt(tabParam, 10);
+      return isImatViewValue(parsedTab) ? parsedTab : 0;
     }
     if (params.has('jobId')) {
       return 2; // Default to stack viewer if jobId is present
@@ -182,6 +225,7 @@ const Jobs: React.FC = (): ReactElement => {
           targetTab = imatTab;
         }
       }
+      targetTab = isImatViewValue(targetTab) ? targetTab : 0;
 
       if (isImat) {
         if (targetTab === 2) {
@@ -193,7 +237,7 @@ const Jobs: React.FC = (): ReactElement => {
         }
 
         if (targetTab !== 2) {
-          // Clear stack params if on IMAT but not on tab 2
+          // Clear stack params if on IMAT but not on the stack viewer.
           params.delete('jobId');
           params.delete('experiment');
           params.delete('instrument');
@@ -331,12 +375,13 @@ const Jobs: React.FC = (): ReactElement => {
     const tabParam = params.get('tab');
     if (tabParam !== null) {
       const parsedTab = parseInt(tabParam, 10);
-      if (!isNaN(parsedTab) && parsedTab !== imatTab) {
+      if (isImatViewValue(parsedTab) && parsedTab !== imatTab) {
         setImatTab(parsedTab);
+      } else if (!isImatViewValue(parsedTab)) {
+        updateQueryParams({ imatTab: 0 });
       }
     } else if (isImat && imatTab !== 0 && !params.has('jobId')) {
-      // If tab is missing from URL, we are on IMAT, we are NOT on tab 0, and there is NO jobId (auto-switch trigger)
-      // then we should reset to 0.
+      // If the view is missing from the URL, reset IMAT back to the reduction history view.
       setImatTab(0);
     }
   }, [location.search, rowsPerPage, updateQueryParams, imatTab, isImat]);
@@ -375,16 +420,26 @@ const Jobs: React.FC = (): ReactElement => {
     if (isImat) {
       const params = new URLSearchParams(location.search);
       if (!params.has('tab') && params.has('jobId')) {
-        setImatTab(2); // Stack Viewer
+        setImatTab(2); // Stack viewer
         updateQueryParams({ imatTab: 2 });
       }
     }
   }, [isImat, location.search, updateQueryParams]);
 
-  const handleImatTabChange = (_event: React.SyntheticEvent, newValue: number): void => {
+  const handleImatViewChange = (newValue: ImatViewValue): void => {
     setImatTab(newValue);
     updateQueryParams({ imatTab: newValue });
   };
+
+  const breadcrumbTrailingCrumbs = [
+    <InstrumentSelector
+      key="instrument"
+      selectedInstrument={selectedInstrument}
+      handleInstrumentChange={handleInstrumentChange}
+      variant="breadcrumb"
+    />,
+    ...(isImat ? [<ImatViewSelector key="imat-view" value={imatTab} onChange={handleImatViewChange} />] : []),
+  ];
 
   return (
     <>
@@ -396,7 +451,7 @@ const Jobs: React.FC = (): ReactElement => {
           gap: 2,
           flexWrap: { xs: 'wrap', md: 'nowrap' },
           mb: 2,
-          pr: 2,
+          pr: { xs: 2, sm: 8 },
         }}
       >
         <Box
@@ -405,26 +460,26 @@ const Jobs: React.FC = (): ReactElement => {
             minWidth: 0,
           }}
         >
-          <NavArrows />
+          <NavArrows trailingCrumb={breadcrumbTrailingCrumbs} replaceLastCrumb={selectedInstrument !== 'ALL'} />
           <Typography variant="h3" component="h1" sx={{ color: theme.palette.text.primary, px: '20px', pt: 2, pb: 1 }}>
             {reductionHistoryHeading}
           </Typography>
         </Box>
-        <Paper
-          variant="outlined"
-          sx={{
-            mt: 2,
-            p: 2,
-            minWidth: 320,
-            maxWidth: 760,
-            flexShrink: 0,
-          }}
-        >
-          <Typography variant="subtitle2" component="h2" sx={{ mb: 1, fontWeight: 700 }}>
-            Instrument controls
-          </Typography>
-          <Box className="tour-view-as-user" sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
-            {userRole === 'staff' && (
+        {userRole === 'staff' && (
+          <Paper
+            variant="outlined"
+            sx={{
+              mt: 2,
+              p: 2,
+              minWidth: 320,
+              maxWidth: 760,
+              flexShrink: 0,
+            }}
+          >
+            <Typography variant="subtitle2" component="h2" sx={{ mb: 1, fontWeight: 700 }}>
+              Instrument controls
+            </Typography>
+            <Box className="tour-view-as-user" sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
               <FormControlLabel
                 control={<Switch checked={asUser} onChange={() => setAsUser(!asUser)} color="secondary" />}
                 label={
@@ -434,21 +489,9 @@ const Jobs: React.FC = (): ReactElement => {
                 }
                 sx={{ mr: 0 }}
               />
-            )}
-            <Button
-              variant="contained"
-              startIcon={<Settings />}
-              onClick={() => setConfigDrawerOpen(true)}
-              disabled={!showConfigButton}
-            >
-              Config
-            </Button>
-            <InstrumentSelector
-              selectedInstrument={selectedInstrument}
-              handleInstrumentChange={handleInstrumentChange}
-            />
-          </Box>
-        </Paper>
+            </Box>
+          </Paper>
+        )}
       </Box>
       <FilterContainer
         showInstrumentFilter={selectedInstrument === 'ALL'}
@@ -462,53 +505,40 @@ const Jobs: React.FC = (): ReactElement => {
         drawerOpen={configDrawerOpen}
         setDrawerOpen={setConfigDrawerOpen}
         selectedInstrument={selectedInstrument}
+        disabled={!configAvailable}
       />
       {isImat ? (
         <>
-          <Box sx={{ borderBottom: 1, borderColor: 'divider', px: 2 }}>
-            <Tabs
-              value={imatTab}
-              onChange={handleImatTabChange}
-              aria-label="IMAT reduction history tabs"
-              sx={{
-                '& .MuiTab-root': {
-                  color: theme.palette.mode === 'dark' ? theme.palette.common.white : undefined,
-                  '&.Mui-selected': {
-                    color: theme.palette.mode === 'dark' ? theme.palette.common.white : undefined,
-                    backgroundColor: theme.palette.mode === 'dark' ? theme.palette.grey[800] : undefined,
-                  },
-                },
-              }}
-            >
-              <Tab label="Reduction history" {...a11yProps(0)} />
-              <Tab label="Latest Image" {...a11yProps(1)} />
-              <Tab label="Stack Viewer" {...a11yProps(2)} />
-            </Tabs>
-          </Box>
-          <TabPanel value={imatTab} index={0}>
-            <Box className="tour-red-his-tablehead" sx={{ padding: '0 20px 20px' }}>
-              <JobTable
-                selectedInstrument={selectedInstrument}
-                currentPage={currentPage}
-                handlePageChange={handlePageChange}
-                asUser={asUser}
-                rowsPerPage={rowsPerPage}
-                handleRowsPerPageChange={handleRowsPerPageChange}
-                filters={currentFilters}
-                orderBy={orderBy}
-                orderDirection={orderDirection}
-                handleSort={handleSort}
-                filtersApplied={hasFilters(currentFilters)}
-                openFilters={() => setFiltersOpen(true)}
-              />
+          {imatTab === 0 && (
+            <Box sx={{ pt: 2 }}>
+              <Box className="tour-red-his-tablehead" sx={{ padding: '0 20px 20px' }}>
+                <JobTable
+                  selectedInstrument={selectedInstrument}
+                  currentPage={currentPage}
+                  handlePageChange={handlePageChange}
+                  asUser={asUser}
+                  rowsPerPage={rowsPerPage}
+                  handleRowsPerPageChange={handleRowsPerPageChange}
+                  filters={currentFilters}
+                  orderBy={orderBy}
+                  orderDirection={orderDirection}
+                  handleSort={handleSort}
+                  filtersApplied={hasFilters(currentFilters)}
+                  openFilters={() => setFiltersOpen(true)}
+                />
+              </Box>
             </Box>
-          </TabPanel>
-          <TabPanel value={imatTab} index={1}>
-            <IMATViewer mode="latest" showNav={false} />
-          </TabPanel>
-          <TabPanel value={imatTab} index={2}>
-            <IMATViewer mode="stack" showNav={false} />
-          </TabPanel>
+          )}
+          {imatTab === 1 && (
+            <Box sx={{ pt: 2 }}>
+              <IMATViewer mode="latest" showNav={false} />
+            </Box>
+          )}
+          {imatTab === 2 && (
+            <Box sx={{ pt: 2 }}>
+              <IMATViewer mode="stack" showNav={false} />
+            </Box>
+          )}
         </>
       ) : (
         <Box className="tour-red-his-tablehead" sx={{ padding: '0 20px 20px' }}>

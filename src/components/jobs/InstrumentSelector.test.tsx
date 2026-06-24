@@ -11,7 +11,7 @@ describe('InstrumentSelector', () => {
     cleanup();
   });
 
-  test('renders view all reductions plus clickable instrument type headings', async () => {
+  test('renders view all reductions plus hoverable instrument type headings', async () => {
     const user = userEvent.setup();
     const instrumentTypes = Array.from(new Set(instruments.map((instrument) => instrument.type)));
 
@@ -27,9 +27,14 @@ describe('InstrumentSelector', () => {
     });
     expect(screen.queryByRole('menuitem', { name: 'ALF' })).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole('menuitem', { name: 'Neutron diffraction' }));
+    await user.hover(screen.getByRole('menuitem', { name: 'Neutron diffraction' }));
 
     expect(screen.getByRole('menuitem', { name: 'ALF' })).toBeInTheDocument();
+
+    await user.hover(screen.getByRole('menuitem', { name: 'Small-angle neutron scattering' }));
+
+    expect(screen.getByRole('menuitem', { name: 'LOQ' })).toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: 'ALF' })).not.toBeInTheDocument();
   });
 
   test('passes the selected instrument value to the change handler', async () => {
@@ -39,7 +44,31 @@ describe('InstrumentSelector', () => {
     render(<InstrumentSelector selectedInstrument="ALL" handleInstrumentChange={handleInstrumentChange} />);
 
     await user.click(screen.getByRole('button', { name: /Instrument\s+View all reductions/ }));
-    await user.click(screen.getByRole('menuitem', { name: 'Small-angle neutron scattering' }));
+    await user.hover(screen.getByRole('menuitem', { name: 'Small-angle neutron scattering' }));
+    await user.click(screen.getByRole('menuitem', { name: 'LOQ' }));
+
+    expect(handleInstrumentChange).toHaveBeenCalledTimes(1);
+    expect(handleInstrumentChange).toHaveBeenCalledWith('LOQ');
+  });
+
+  test('breadcrumb variant shows the selected value without the field label and keeps menu behavior', async () => {
+    const user = userEvent.setup();
+    const handleInstrumentChange = vi.fn();
+
+    render(
+      <InstrumentSelector
+        selectedInstrument="ALL"
+        handleInstrumentChange={handleInstrumentChange}
+        variant="breadcrumb"
+      />
+    );
+
+    const selectorButton = screen.getByRole('button', { name: /Instrument:\s+Select an instrument/ });
+    expect(selectorButton).toHaveTextContent('Select an instrument');
+    expect(selectorButton).not.toHaveTextContent('Instrument');
+
+    await user.click(selectorButton);
+    await user.hover(screen.getByRole('menuitem', { name: 'Small-angle neutron scattering' }));
     await user.click(screen.getByRole('menuitem', { name: 'LOQ' }));
 
     expect(handleInstrumentChange).toHaveBeenCalledTimes(1);

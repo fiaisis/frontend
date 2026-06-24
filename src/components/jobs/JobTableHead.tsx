@@ -67,7 +67,6 @@ const highlightHover = (theme: Theme): React.CSSProperties => {
 };
 
 interface JobTableHeadProps {
-  selectedInstrument: string;
   orderBy: string;
   orderDirection: 'asc' | 'desc';
   handleSort: (key: string) => void;
@@ -76,7 +75,7 @@ interface JobTableHeadProps {
   toggleSelectAll: () => void;
 }
 
-const JobTableHead: React.FC<JobTableHeadProps> = ({ selectedInstrument, handleSort, orderBy, orderDirection }) => {
+const JobTableHead: React.FC<JobTableHeadProps> = ({ handleSort, orderBy, orderDirection }) => {
   const theme = useTheme();
   return (
     <TableHead sx={{ '& th': { py: 0.5 }, height: '54px' }}>
@@ -130,16 +129,9 @@ const JobTableHead: React.FC<JobTableHeadProps> = ({ selectedInstrument, handleS
           onSort={handleSort}
           sx={{ width: '12%', ...headerStyles(theme), '&:hover': highlightHover(theme) }}
         />
-        <TableCell
-          sx={{ width: '24%', ...headerStyles(theme) }}
-          align="left"
-          colSpan={selectedInstrument === 'ALL' ? 1 : 2}
-        >
+        <TableCell sx={{ width: '24%', ...headerStyles(theme) }} align="left" colSpan={2}>
           Title
         </TableCell>
-        {selectedInstrument === 'ALL' && (
-          <TableCell sx={{ width: '12%', ...headerStyles(theme) }}>Instrument</TableCell>
-        )}
       </TableRow>
     </TableHead>
   );

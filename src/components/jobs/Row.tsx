@@ -23,6 +23,7 @@ import {
   Collapse,
   IconButton,
   Snackbar,
+  SxProps,
   Table,
   TableBody,
   TableCell,
@@ -33,7 +34,7 @@ import {
   useTheme,
 } from '@mui/material';
 import Grid from '@mui/material/Grid2';
-import React, { ReactElement, useEffect, useRef, useState } from 'react';
+import React, { ReactElement, useCallback, useEffect, useRef, useState } from 'react';
 import ReactGA from 'react-ga4';
 import { Link } from 'react-router-dom';
 
@@ -47,6 +48,71 @@ const ellipsisWrap = {
   overflow: 'hidden',
   textOverflow: 'ellipsis',
   maxWidth: '200px',
+};
+
+const ellipsisTextSx: SxProps<Theme> = {
+  display: 'block',
+  width: '100%',
+  minWidth: 0,
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
+};
+
+const useOverflowStatus = (content: string): [React.RefObject<HTMLSpanElement>, boolean] => {
+  const textRef = useRef<HTMLSpanElement>(null);
+  const [isOverflowing, setIsOverflowing] = useState(false);
+
+  const updateOverflowStatus = useCallback(() => {
+    const element = textRef.current;
+    setIsOverflowing(Boolean(element && element.scrollWidth > element.clientWidth));
+  }, []);
+
+  useEffect(() => {
+    updateOverflowStatus();
+
+    const element = textRef.current;
+    if (!element) {
+      return undefined;
+    }
+
+    const resizeObserver = typeof ResizeObserver === 'undefined' ? undefined : new ResizeObserver(updateOverflowStatus);
+    resizeObserver?.observe(element);
+    window.addEventListener('resize', updateOverflowStatus);
+
+    return () => {
+      resizeObserver?.disconnect();
+      window.removeEventListener('resize', updateOverflowStatus);
+    };
+  }, [content, updateOverflowStatus]);
+
+  return [textRef, isOverflowing];
+};
+
+const EllipsisTooltipText: React.FC<{
+  value: string | number;
+  sx?: SxProps<Theme>;
+}> = ({ value, sx }) => {
+  const text = String(value);
+  const [textRef, isOverflowing] = useOverflowStatus(text);
+
+  return (
+    <Tooltip
+      title={text}
+      disableFocusListener={!isOverflowing}
+      disableHoverListener={!isOverflowing}
+      disableTouchListener={!isOverflowing}
+    >
+      <Typography
+        ref={textRef}
+        component="span"
+        variant="body2"
+        sx={[ellipsisTextSx, ...(Array.isArray(sx) ? sx : sx ? [sx] : [])]}
+      >
+        {text}
+      </Typography>
+    </Tooltip>
+  );
 };
 
 const openDataViewer = (jobId: number, instrumentName: string, experimentNumber: number, output: string): void => {
@@ -233,14 +299,13 @@ const JobStatus: React.FC<{ state: string; statusMessage: string }> = ({ state, 
 
 const Row: React.FC<{
   job: Job;
-  showInstrumentColumn: boolean;
   index: number;
   isSelected: boolean;
   toggleSelection: (jobId: number) => void;
   resubmitJob: (job: Job) => Promise<void>;
   refreshJobs: () => void;
   mantidVersions: MantidVersionMap;
-}> = ({ job, showInstrumentColumn, index, resubmitJob, refreshJobs, isSelected, toggleSelection, mantidVersions }) => {
+}> = ({ job, index, resubmitJob, refreshJobs, isSelected, toggleSelection, mantidVersions }) => {
   const [open, setOpen] = useState(false);
   const theme = useTheme();
   const [loading, setLoading] = useState(false);
@@ -547,149 +612,51 @@ const Row: React.FC<{
                 <JobStatusIcon state={job.state} />
               )}
             </Box>
-            <Tooltip title={String(job.run?.experiment_number || 'N/A')}>
-              <Typography
-                variant="body2"
-                sx={{
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                  minWidth: 0,
-                  flexGrow: 1,
-                }}
-              >
-                {job.run?.experiment_number || 'N/A'}
-              </Typography>
-            </Tooltip>
+            <EllipsisTooltipText value={job.run?.experiment_number || 'N/A'} sx={{ flexGrow: 1 }} />
           </Box>
         </TableCell>
-        <TableCell sx={{ ...ellipsisWrap }}>
-          <Tooltip title={extractFilename(job.run?.filename || 'N/A')}>
-            <span>{extractFilename(job.run?.filename)}</span>
-          </Tooltip>
+        <TableCell>
+          <EllipsisTooltipText value={extractFilename(job.run?.filename || 'N/A')} />
         </TableCell>
-        <TableCell sx={{ ...ellipsisWrap }}>
-          <Tooltip title={formatUtcForLocale(job.run?.run_start)}>
-            <span>{formatUtcForLocale(job.run?.run_start)}</span>
-          </Tooltip>
+        <TableCell>
+          <EllipsisTooltipText value={formatUtcForLocale(job.run?.run_start)} />
         </TableCell>
-        <TableCell sx={{ ...ellipsisWrap }}>
-          <Tooltip title={formatUtcForLocale(job.run?.run_end)}>
-            <span>{formatUtcForLocale(job.run?.run_end)}</span>
-          </Tooltip>
+        <TableCell>
+          <EllipsisTooltipText value={formatUtcForLocale(job.run?.run_end)} />
         </TableCell>
-        <TableCell sx={{ ...ellipsisWrap }}>
-          <Tooltip title={formatUtcForLocale(job.start)}>
-            <span>{formatUtcForLocale(job.start)}</span>
-          </Tooltip>
+        <TableCell>
+          <EllipsisTooltipText value={formatUtcForLocale(job.start)} />
         </TableCell>
-        <TableCell sx={{ ...ellipsisWrap }}>
-          <Tooltip title={formatUtcForLocale(job.end)}>
-            <span>{formatUtcForLocale(job.end)}</span>
-          </Tooltip>
+        <TableCell>
+          <EllipsisTooltipText value={formatUtcForLocale(job.end)} />
         </TableCell>
-        {showInstrumentColumn && (
-          <TableCell sx={{ ...ellipsisWrap }}>
-            <Tooltip title={job.run?.title || 'N/A'}>
-              <span>{job.run?.title || 'N/A'}</span>
-            </Tooltip>
-          </TableCell>
-        )}
-
-        {showInstrumentColumn ? (
-          // Merge the reduction instrument name and expand icon into one cell for "ALL" page
-          <TableCell>
-            <Box display="flex" alignItems="center" justifyContent="space-between">
-              <Typography
-                sx={{
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                  flexGrow: 1,
-                  color: theme.palette.mode === 'dark' ? '#86b4ff' : theme.palette.primary.main,
-                }}
-                title={job.run.instrument_name}
-              >
-                <Link
-                  to={`/reduction-history/${job.run.instrument_name}`}
-                  onClick={(evt) => evt.stopPropagation()}
-                  style={{
-                    textDecoration: 'none',
-                    color: 'inherit',
-                  }}
-                  onMouseOver={(e) => (e.currentTarget.style.textDecoration = 'underline')}
-                  onMouseOut={(e) => (e.currentTarget.style.textDecoration = 'none')}
+        <TableCell colSpan={2}>
+          <Box display="flex" alignItems="center" justifyContent="space-between">
+            <EllipsisTooltipText value={job.run?.title || 'N/A'} sx={{ flexGrow: 1 }} />
+            <IconButton
+              aria-label="expand row"
+              onClick={(e: React.MouseEvent) => {
+                e.stopPropagation();
+                setOpen(!open);
+              }}
+              sx={{ ml: 1 }}
+            >
+              {open ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
+            </IconButton>
+            {job.run?.instrument_name === 'IMAT' && job.state === 'SUCCESSFUL' && (
+              <Tooltip title="View image stack">
+                <IconButton
+                  component={Link}
+                  to={`/reduction-history/IMAT?jobId=${job.id}&experiment=${job.run?.experiment_number}&instrument=${job.run?.instrument_name}&tab=2`}
+                  onClick={(e) => e.stopPropagation()}
+                  sx={{ ml: 1 }}
                 >
-                  {job.run.instrument_name}
-                </Link>
-              </Typography>
-
-              <IconButton
-                aria-label="expand row"
-                onClick={(e: React.MouseEvent) => {
-                  e.stopPropagation();
-                  setOpen(!open);
-                }}
-                sx={{ ml: 1 }}
-              >
-                {open ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
-              </IconButton>
-              {job.run?.instrument_name === 'IMAT' && job.state === 'SUCCESSFUL' && (
-                <Tooltip title="View image stack">
-                  <IconButton
-                    component={Link}
-                    to={`/reduction-history/IMAT?jobId=${job.id}&experiment=${job.run?.experiment_number}&instrument=${job.run?.instrument_name}&tab=2`}
-                    onClick={(e) => e.stopPropagation()}
-                    sx={{ ml: 1 }}
-                  >
-                    <StackedBarChart />
-                  </IconButton>
-                </Tooltip>
-              )}
-            </Box>
-          </TableCell>
-        ) : (
-          // Merge the reduction title and expand icon into one cell for instrument specific pages
-          <TableCell colSpan={2}>
-            <Box display="flex" alignItems="center" justifyContent="space-between">
-              <Tooltip title={job.run?.title || 'N/A'}>
-                <Typography
-                  variant="body2"
-                  sx={{
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                    flexGrow: 1,
-                  }}
-                >
-                  {job.run?.title || 'N/A'}
-                </Typography>
+                  <StackedBarChart />
+                </IconButton>
               </Tooltip>
-              <IconButton
-                aria-label="expand row"
-                onClick={(e: React.MouseEvent) => {
-                  e.stopPropagation();
-                  setOpen(!open);
-                }}
-                sx={{ ml: 1 }}
-              >
-                {open ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
-              </IconButton>
-              {job.run?.instrument_name === 'IMAT' && job.state === 'SUCCESSFUL' && (
-                <Tooltip title="View image stack">
-                  <IconButton
-                    component={Link}
-                    to={`/reduction-history/IMAT?jobId=${job.id}&experiment=${job.run?.experiment_number}&instrument=${job.run?.instrument_name}&tab=2`}
-                    onClick={(e) => e.stopPropagation()}
-                    sx={{ ml: 1 }}
-                  >
-                    <StackedBarChart />
-                  </IconButton>
-                </Tooltip>
-              )}
-            </Box>
-          </TableCell>
-        )}
+            )}
+          </Box>
+        </TableCell>
       </TableRow>
       <TableRow>
         <TableCell colSpan={8} style={{ paddingBottom: 0, paddingTop: 0, backgroundColor: bandedRows.backgroundColor }}>
