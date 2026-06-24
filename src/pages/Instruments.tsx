@@ -1,4 +1,3 @@
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import HistoryIcon from '@mui/icons-material/History';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import SearchIcon from '@mui/icons-material/Search';
@@ -8,8 +7,6 @@ import {
   Box,
   Button,
   Chip,
-  Collapse,
-  Divider,
   IconButton,
   InputAdornment,
   Paper,
@@ -26,7 +23,6 @@ import NavArrows from '../components/navigation/NavArrows';
 import { instruments } from '../lib/instrumentData';
 
 const ALL_TYPES = 'All';
-const COLLAPSED_INSTRUMENT_CARD_HEIGHT = 236;
 
 const getStoredFavoriteIds = (): number[] => {
   if (typeof window === 'undefined') {
@@ -50,7 +46,6 @@ const getStoredFavoriteIds = (): number[] => {
 
 const Instruments: React.FC = () => {
   const theme = useTheme();
-  const [expandedIds, setExpandedIds] = React.useState<number[]>([]);
   const [favoriteIds, setFavoriteIds] = React.useState<number[]>(getStoredFavoriteIds);
   const [searchTerm, setSearchTerm] = React.useState('');
   const [selectedType, setSelectedType] = React.useState(ALL_TYPES);
@@ -100,14 +95,6 @@ const Instruments: React.FC = () => {
         return favoriteSort || instrumentA.name.localeCompare(instrumentB.name);
       });
   }, [favoriteIdSet, searchTerm, selectedType, showFavoritesOnly]);
-
-  const handleToggleExpand = (id: number): void => {
-    setExpandedIds((prevExpandedIds) =>
-      prevExpandedIds.includes(id)
-        ? prevExpandedIds.filter((expandedId) => expandedId !== id)
-        : [...prevExpandedIds, id]
-    );
-  };
 
   const handleToggleFavorite = (id: number): void => {
     setFavoriteIds((prevFavoriteIds) =>
@@ -239,7 +226,6 @@ const Instruments: React.FC = () => {
             }}
           >
             {filteredInstruments.map((instrument) => {
-              const expanded = expandedIds.includes(instrument.id);
               const favourite = favoriteIdSet.has(instrument.id);
 
               return (
@@ -250,11 +236,10 @@ const Instruments: React.FC = () => {
                     p: 2,
                     borderRadius: 1,
                     minWidth: 0,
-                    minHeight: COLLAPSED_INSTRUMENT_CARD_HEIGHT,
-                    height: expanded ? 'auto' : COLLAPSED_INSTRUMENT_CARD_HEIGHT,
+                    minHeight: 0,
                     display: 'flex',
                     flexDirection: 'column',
-                    borderColor: expanded ? instrumentActionColor : 'divider',
+                    borderColor: 'divider',
                     backgroundColor: favourite ? theme.palette.action.hover : 'background.paper',
                   }}
                 >
@@ -294,48 +279,12 @@ const Instruments: React.FC = () => {
                     sx={{
                       mt: 1.5,
                       flexGrow: 1,
-                      ...(expanded
-                        ? {}
-                        : {
-                            display: '-webkit-box',
-                            WebkitLineClamp: 3,
-                            WebkitBoxOrient: 'vertical',
-                            overflow: 'hidden',
-                          }),
                     }}
                   >
                     {instrument.description}
                   </Typography>
 
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2 }}>
-                    <Button
-                      size="small"
-                      onClick={() => handleToggleExpand(instrument.id)}
-                      aria-expanded={expanded}
-                      sx={{
-                        color: instrumentActionColor,
-                        '&:hover': {
-                          color: instrumentActionHoverColor,
-                          backgroundColor: alpha(instrumentActionColor, theme.palette.mode === 'dark' ? 0.16 : 0.08),
-                        },
-                      }}
-                      endIcon={
-                        <ExpandMoreIcon
-                          sx={{
-                            transform: expanded ? 'rotate(180deg)' : 'none',
-                            transition: theme.transitions.create('transform', {
-                              duration: theme.transitions.duration.shortest,
-                            }),
-                          }}
-                        />
-                      }
-                    >
-                      {expanded ? 'Hide details' : 'Details'}
-                    </Button>
-                  </Box>
-
-                  <Collapse in={expanded} timeout="auto" unmountOnExit>
-                    <Divider sx={{ my: 2 }} />
+                  <Box sx={{ mt: 2 }}>
                     <Typography variant="subtitle2" component="h3" sx={{ mb: 1 }}>
                       Scientists
                     </Typography>
@@ -350,35 +299,36 @@ const Instruments: React.FC = () => {
                         No scientists listed by ISIS.
                       </Typography>
                     )}
-                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ mt: 2 }}>
-                      <Button
-                        variant="contained"
-                        component={RouterLink}
-                        to={`/reduction-history/${instrument.name.toUpperCase()}`}
-                        startIcon={<HistoryIcon />}
-                      >
-                        Reduction history
-                      </Button>
-                      <Button
-                        variant="outlined"
-                        href={instrument.infoPage}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        startIcon={<OpenInNewIcon />}
-                        sx={{
-                          color: instrumentActionColor,
-                          borderColor: alpha(instrumentActionColor, theme.palette.mode === 'dark' ? 0.72 : 0.5),
-                          '&:hover': {
-                            color: instrumentActionHoverColor,
-                            borderColor: instrumentActionHoverColor,
-                            backgroundColor: alpha(instrumentActionColor, theme.palette.mode === 'dark' ? 0.16 : 0.08),
-                          },
-                        }}
-                      >
-                        ISIS page
-                      </Button>
-                    </Stack>
-                  </Collapse>
+                  </Box>
+
+                  <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ mt: 2 }}>
+                    <Button
+                      variant="contained"
+                      component={RouterLink}
+                      to={`/reduction-history/${instrument.name.toUpperCase()}`}
+                      startIcon={<HistoryIcon />}
+                    >
+                      Reduction history
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      href={instrument.infoPage}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      startIcon={<OpenInNewIcon />}
+                      sx={{
+                        color: instrumentActionColor,
+                        borderColor: alpha(instrumentActionColor, theme.palette.mode === 'dark' ? 0.72 : 0.5),
+                        '&:hover': {
+                          color: instrumentActionHoverColor,
+                          borderColor: instrumentActionHoverColor,
+                          backgroundColor: alpha(instrumentActionColor, theme.palette.mode === 'dark' ? 0.16 : 0.08),
+                        },
+                      }}
+                    >
+                      ISIS page
+                    </Button>
+                  </Stack>
                 </Paper>
               );
             })}

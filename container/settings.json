@@ -59,7 +59,7 @@
     },
     {
       "target": ".tour-homepage-instruments",
-      "content": "Click here to see a list of all instruments."
+      "content": "Click here to see a list of all ISIS instruments."
     },
     {
       "target": ".tour-homepage-neutron-muon",
@@ -70,8 +70,8 @@
       "content": "Click here to navigate externally and read about TS1, TS2, and each ISIS instrument by scientific technique."
     },
     {
-      "target": ".tour-Instruments-instruments",
-      "content": "Click on each Instrument to expand and see info about it; from here you can also access all data reduction files for experiments on this specific Instrument."
+      "target": ".tour-ISIS-instruments-isis-instruments",
+      "content": "Each instrument card shows its description, scientist contacts, ISIS information page, and data reduction history link."
     },
     {
       "target": ".tour-red-his-tablehead",

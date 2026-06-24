@@ -102,8 +102,8 @@ const NavArrows: React.FC = () => {
       >
         {pathsList.map((label, index) => {
           const isLast = index === pathsList.length - 1;
-          if (label === 'instruments') {
-            label = 'Instruments';
+          if (label === 'isis-instruments' || label === 'instruments') {
+            label = 'ISIS instruments';
           }
           if (label === 'reduction-history') {
             label = 'Reduction history';

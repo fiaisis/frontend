@@ -1,5 +1,5 @@
-import React from 'react';
 import { act, cleanup, render, screen } from '@testing-library/react';
+import React from 'react';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
 import App from './App';
@@ -27,7 +27,7 @@ vi.mock('./pages/Homepage', () => ({
 }));
 
 vi.mock('./pages/Instruments', () => ({
-  default: () => <h1>Instruments</h1>,
+  default: () => <h1>ISIS instruments</h1>,
 }));
 
 vi.mock('./pages/Jobs', () => ({
@@ -76,9 +76,16 @@ describe('App', () => {
   });
 
   test('routes to the instruments page under the FIA basename', () => {
+    renderAt('/fia/isis-instruments');
+
+    expect(screen.getByRole('heading', { name: 'ISIS instruments' })).toBeInTheDocument();
+  });
+
+  test('redirects the old instruments route to the renamed route', async () => {
     renderAt('/fia/instruments');
 
-    expect(screen.getByRole('heading', { name: 'Instruments' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'ISIS instruments' })).toBeInTheDocument();
+    expect(window.location.pathname).toBe('/fia/isis-instruments');
   });
 
   test('redirects unmatched FIA routes back to the homepage', async () => {

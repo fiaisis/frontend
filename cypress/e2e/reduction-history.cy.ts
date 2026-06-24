@@ -99,7 +99,7 @@ describe('Reduction history page', () => {
     cy.wait('@getAllCount');
     cy.wait('@getAllJobs');
 
-    cy.contains('h1', 'View all reductions').should('be.visible');
+    cy.contains('h1', 'Reduction history').should('be.visible');
     cy.contains('All instruments reduction').should('be.visible');
 
     cy.get('#instrument-selector-button').click();
@@ -110,7 +110,7 @@ describe('Reduction history page', () => {
     cy.wait('@getLoqJobs');
 
     cy.location('pathname').should('eq', '/fia/reduction-history/LOQ');
-    cy.contains('h1', 'LOQ reductions').should('be.visible');
+    cy.contains('h1', 'LOQ reduction history').should('be.visible');
     cy.contains('LOQ scoped reduction').should('be.visible');
   });
 });

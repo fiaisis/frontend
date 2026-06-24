@@ -73,7 +73,8 @@ const Jobs: React.FC = (): ReactElement => {
     instrumentName?.toUpperCase() || ''
   );
   const [selectedInstrument, setSelectedInstrument] = React.useState<string>(instrumentName || 'ALL');
-  const reductionsHeading = selectedInstrument === 'ALL' ? 'View all reductions' : `${selectedInstrument} reductions`;
+  const reductionHistoryHeading =
+    selectedInstrument === 'ALL' ? 'Reduction history' : `${selectedInstrument} reduction history`;
   const [imatTab, setImatTab] = React.useState<number>(() => {
     const params = new URLSearchParams(location.search);
     const tabParam = params.get('tab');
@@ -406,7 +407,7 @@ const Jobs: React.FC = (): ReactElement => {
         >
           <NavArrows />
           <Typography variant="h3" component="h1" sx={{ color: theme.palette.text.primary, px: '20px', pt: 2, pb: 1 }}>
-            {reductionsHeading}
+            {reductionHistoryHeading}
           </Typography>
         </Box>
         <Paper
@@ -479,7 +480,7 @@ const Jobs: React.FC = (): ReactElement => {
                 },
               }}
             >
-              <Tab label="Reductions" {...a11yProps(0)} />
+              <Tab label="Reduction history" {...a11yProps(0)} />
               <Tab label="Latest Image" {...a11yProps(1)} />
               <Tab label="Stack Viewer" {...a11yProps(2)} />
             </Tabs>

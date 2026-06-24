@@ -68,7 +68,14 @@ const reactLifecycles = singleSpaReact({
 // 5. Help text renders a tooltip in the site tour for this link
 // 6. Whether the link should be visible to unauthenticated users
 createRoute('Browse', 'Home page', '/fia', 1, '', false);
-createRoute('Browse', 'Instruments', '/fia/instruments', 2, 'Click here to see a list of all Instruments.', false);
+createRoute(
+  'Browse',
+  'ISIS instruments',
+  '/fia/isis-instruments',
+  2,
+  'Click here to see a list of all ISIS instruments.',
+  false
+);
 createRoute(
   'Browse',
   'Reduction history',
