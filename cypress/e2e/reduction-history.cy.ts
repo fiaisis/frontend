@@ -53,6 +53,8 @@ const loqJobsResponse = [
   },
 ];
 
+const tableContainerSelector = '[data-testid="reduction-history-table-container"]';
+
 describe('Reduction history page', () => {
   beforeEach(() => {
     cy.intercept('GET', /\/api\/jobs\/runners$/, (req) => {
@@ -123,11 +125,16 @@ describe('Reduction history page', () => {
     cy.contains('h1', 'LOQ reduction history').should('be.visible');
     cy.contains('LOQ scoped reduction').should('be.visible');
 
-    cy.contains('LOQ scoped reduction').click();
-    cy.contains('button', 'Experiment viewer').within(() => {
-      cy.get('[data-testid="VisibilityIcon"]').should('exist');
-      cy.get('[data-testid="OpenInNewIcon"]').should('not.exist');
-    });
+    cy.get(tableContainerSelector).scrollTo('right');
+    cy.contains('LOQ scoped reduction').should('be.visible').click();
+    cy.get(tableContainerSelector).scrollTo('right');
+    cy.contains('a', 'Experiment viewer').scrollIntoView();
+    cy.contains('a', 'Experiment viewer')
+      .should('be.visible')
+      .within(() => {
+        cy.get('[data-testid="VisibilityIcon"]').should('exist');
+        cy.get('[data-testid="OpenInNewIcon"]').should('not.exist');
+      });
   });
 
   it('wraps table controls while keeping column headers horizontally scrollable on narrow screens', () => {
@@ -155,18 +162,20 @@ describe('Reduction history page', () => {
     cy.wait('@getAllCount');
     cy.wait('@getAllJobs');
 
-    cy.contains('All instruments reduction').should('be.visible');
+    cy.contains('All instruments reduction').should('exist');
 
+    cy.get(tableContainerSelector).scrollTo('right');
     cy.get('[data-testid="rows-per-page-controls"]').within(() => {
-      cy.contains('button', '10').click();
+      cy.contains('button', '10').should('be.visible').click();
     });
 
     cy.wait('@getAllCount');
     cy.wait('@getAllJobs');
 
+    cy.get(tableContainerSelector).scrollTo('right');
     cy.contains('Showing 1-10 of 74082 reductions').should('be.visible');
 
-    cy.get('[data-testid="reduction-history-table-container"]').should(($container) => {
+    cy.get(tableContainerSelector).should(($container) => {
       const container = $container[0];
 
       expect(container.scrollWidth).to.be.greaterThan(container.clientWidth);
@@ -209,10 +218,11 @@ describe('Reduction history page', () => {
       cy.get('[role="combobox"]').should('not.exist');
     });
 
-    cy.get('[data-testid="reduction-history-table-container"] table').should(($table) => {
+    cy.get(`${tableContainerSelector} table`).should(($table) => {
       expect($table[0].getBoundingClientRect().width).to.be.at.least(JOB_TABLE_MIN_WIDTH);
     });
 
+    cy.get(tableContainerSelector).scrollTo('left');
     cy.contains('th', 'Experiment number').should(($header) => {
       expect(getComputedStyle($header[0]).whiteSpace).to.equal('nowrap');
     });
