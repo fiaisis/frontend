@@ -17,7 +17,14 @@ import {
 import { alpha, type SxProps, type Theme } from '@mui/material/styles';
 import React from 'react';
 
-import { instruments as allInstruments, type InstrumentData } from '../../lib/instrumentData';
+import {
+  formatInstrumentTechniques,
+  getInstrumentTechniques,
+  getUniqueInstrumentTechniques,
+  instrumentHasTechnique,
+  instruments as allInstruments,
+  type InstrumentData,
+} from '../../lib/instrumentData';
 import { getStoredFavoriteInstrumentIds, setStoredFavoriteInstrumentIds } from '../../lib/instrumentFavorites';
 
 const ALL_INSTRUMENTS_VALUE = 'ALL';
@@ -86,9 +93,9 @@ export const TechniqueFilterButton: React.FC<{
       component="span"
       sx={{
         display: 'grid',
-        gridTemplateColumns: 'minmax(0, 1fr) 2.5rem',
+        gridTemplateColumns: 'minmax(0, 1fr) 1.35rem',
         alignItems: 'center',
-        columnGap: 1,
+        columnGap: 0.5,
         width: '100%',
       }}
     >
@@ -161,14 +168,12 @@ const InstrumentSelector: React.FC<{
   const favoriteIdSet = React.useMemo(() => new Set(favoriteIds), [favoriteIds]);
   const instrumentsByType = React.useMemo(
     () =>
-      Array.from(new Set(instrumentOptions.map((instrument) => instrument.type)))
-        .sort((typeA, typeB) => typeA.localeCompare(typeB))
-        .map((type) => ({
-          type,
-          instruments: instrumentOptions
-            .filter((instrument) => instrument.type === type)
-            .sort((instrumentA, instrumentB) => instrumentA.name.localeCompare(instrumentB.name)),
-        })),
+      getUniqueInstrumentTechniques(instrumentOptions).map((type) => ({
+        type,
+        instruments: instrumentOptions
+          .filter((instrument) => instrumentHasTechnique(instrument, type))
+          .sort((instrumentA, instrumentB) => instrumentA.name.localeCompare(instrumentB.name)),
+      })),
     [instrumentOptions]
   );
   const favoriteInstruments = React.useMemo(() => {
@@ -184,10 +189,12 @@ const InstrumentSelector: React.FC<{
         const matchesFilter =
           activeFilter === ALL_FILTER ||
           (activeFilter === FAVORITES_FILTER && favoriteIdSet.has(instrument.id)) ||
-          instrument.type === activeFilter;
+          instrumentHasTechnique(instrument, activeFilter);
         const matchesSearch =
           normalizedSearchTerm.length === 0 ||
-          [instrument.name, instrument.type].some((value) => value.toLowerCase().includes(normalizedSearchTerm));
+          [instrument.name, ...getInstrumentTechniques(instrument)].some((value) =>
+            value.toLowerCase().includes(normalizedSearchTerm)
+          );
 
         return matchesFilter && matchesSearch;
       })
@@ -392,7 +399,7 @@ const InstrumentSelector: React.FC<{
                   >
                     <ListItemText
                       primary={instrument.name}
-                      secondary={instrument.type}
+                      secondary={formatInstrumentTechniques(instrument)}
                       secondaryTypographyProps={{ noWrap: true }}
                       sx={{ mr: 1 }}
                     />

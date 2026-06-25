@@ -32,7 +32,14 @@ import {
   TechniqueFilterButton,
 } from '../components/jobs/InstrumentSelector';
 import NavArrows from '../components/navigation/NavArrows';
-import { instruments, type InstrumentData } from '../lib/instrumentData';
+import {
+  formatInstrumentTechniques,
+  getInstrumentTechniques,
+  getUniqueInstrumentTechniques,
+  instrumentHasTechnique,
+  instruments,
+  type InstrumentData,
+} from '../lib/instrumentData';
 import { getStoredFavoriteInstrumentIds, setStoredFavoriteInstrumentIds } from '../lib/instrumentFavorites';
 
 const INSTRUMENT_SEARCH_LABEL = 'Search for instrument';
@@ -230,7 +237,7 @@ const InstrumentSearchBreadcrumb: React.FC<{
                   >
                     <ListItemText
                       primary={instrument.name}
-                      secondary={instrument.type}
+                      secondary={formatInstrumentTechniques(instrument)}
                       secondaryTypographyProps={{ noWrap: true }}
                       sx={{ mr: 1 }}
                     />
@@ -275,13 +282,7 @@ const Instruments: React.FC = () => {
   const instrumentActionColor = theme.palette.mode === 'dark' ? '#86b4ff' : theme.palette.primary.main;
   const instrumentActionHoverColor = theme.palette.mode === 'dark' ? '#b7d1ff' : theme.palette.primary.dark;
 
-  const instrumentTypes = React.useMemo(
-    () =>
-      Array.from(new Set(instruments.map((instrument) => instrument.type))).sort((typeA, typeB) =>
-        typeA.localeCompare(typeB)
-      ),
-    []
-  );
+  const instrumentTypes = React.useMemo(() => getUniqueInstrumentTechniques(instruments), []);
   const routeSelectedType = React.useMemo(
     () => getTechniqueFromRouteParam(technique, instrumentTypes),
     [instrumentTypes, technique]
@@ -291,7 +292,9 @@ const Instruments: React.FC = () => {
   const instrumentCountByType = React.useMemo(
     () =>
       instruments.reduce<Map<string, number>>((countByType, instrument) => {
-        countByType.set(instrument.type, (countByType.get(instrument.type) ?? 0) + 1);
+        getInstrumentTechniques(instrument).forEach((technique) => {
+          countByType.set(technique, (countByType.get(technique) ?? 0) + 1);
+        });
         return countByType;
       }, new Map<string, number>()),
     []
@@ -338,11 +341,16 @@ const Instruments: React.FC = () => {
 
     return instruments
       .filter((instrument) => {
-        const searchableValues = [instrument.name, instrument.type, instrument.description, ...instrument.scientists];
+        const searchableValues = [
+          instrument.name,
+          ...getInstrumentTechniques(instrument),
+          instrument.description,
+          ...instrument.scientists,
+        ];
         const matchesSearch =
           normalizedSearch.length === 0 ||
           searchableValues.some((searchableValue) => searchableValue.toLowerCase().includes(normalizedSearch));
-        const matchesType = selectedType === ALL_FILTER || instrument.type === selectedType;
+        const matchesType = selectedType === ALL_FILTER || instrumentHasTechnique(instrument, selectedType);
         const matchesFavorite = !showFavoritesOnly || favoriteIdSet.has(instrument.id);
 
         return matchesSearch && matchesType && matchesFavorite;
@@ -532,15 +540,19 @@ const Instruments: React.FC = () => {
                         >
                           {instrument.name}
                         </Typography>
-                        <Chip
-                          size="small"
-                          label={instrument.type}
-                          sx={{
-                            mt: 1,
-                            maxWidth: '100%',
-                            '& .MuiChip-label': { overflow: 'hidden', textOverflow: 'ellipsis' },
-                          }}
-                        />
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, mt: 1 }}>
+                          {getInstrumentTechniques(instrument).map((technique) => (
+                            <Chip
+                              key={technique}
+                              size="small"
+                              label={technique}
+                              sx={{
+                                maxWidth: '100%',
+                                '& .MuiChip-label': { overflow: 'hidden', textOverflow: 'ellipsis' },
+                              }}
+                            />
+                          ))}
+                        </Box>
                       </Box>
                       <IconButton
                         aria-label={`${favourite ? 'Remove' : 'Add'} ${instrument.name} ${
