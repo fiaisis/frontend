@@ -133,10 +133,6 @@ const NavArrows: React.FC<NavArrowsProps> = ({ trailingCrumb, replaceLastCrumb =
           if (valueEditorRegex.test(label)) {
             label = 'Value editor';
           }
-          const experimentViewerRegex = /^experiment-viewer-(\d+)$/i;
-          if (experimentViewerRegex.test(label)) {
-            label = 'Experiment viewer';
-          }
           if (isLast) {
             return (
               <Typography color="text.primary" key={index}>
