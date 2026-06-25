@@ -867,6 +867,7 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
           justifyContent: 'space-between',
           gap: 2,
           flexWrap: { xs: 'wrap', lg: 'nowrap' },
+          mb: 2,
           pr: { xs: 2, sm: 8 },
         }}
       >

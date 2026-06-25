@@ -2,9 +2,9 @@ import '@h5web/lib/styles.css';
 import {
   Alert,
   Box,
-  Button,
   Chip,
   CircularProgress,
+  Link as MuiLink,
   List,
   ListItemButton,
   ListItemText,
@@ -13,7 +13,7 @@ import {
 } from '@mui/material';
 import { jwtDecode } from 'jwt-decode';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useHistory, useParams } from 'react-router-dom';
+import { Link as RouterLink, useHistory, useParams } from 'react-router-dom';
 
 import Viewer2D from '../components/experimentViewer/Viewer2D';
 import InstrumentSelector from '../components/jobs/InstrumentSelector';
@@ -54,13 +54,7 @@ const LiveData: React.FC = (): JSX.Element => {
   const [error, setError] = useState<string | null>(null);
 
   // SSE connection
-  const {
-    isConnected,
-    directory,
-    changedFile,
-    lastUpdated,
-    error: sseError,
-  } = useLiveDataSSE(selectedInstrument, true);
+  const { isConnected, directory, changedFile, error: sseError } = useLiveDataSSE(selectedInstrument, true);
 
   // Build full file path using directory from SSE and selected file
   const selectedFilePath = directory && selectedFile ? `${directory}/${selectedFile}` : null;
@@ -211,24 +205,29 @@ const LiveData: React.FC = (): JSX.Element => {
     setViewerKey((prev) => prev + 1);
   };
 
-  // Format last updated time
-  const formatLastUpdated = (date: Date | null): string => {
-    if (!date) {
-      return '';
-    }
-    return date.toLocaleTimeString();
-  };
-
-  const breadcrumbTrailingCrumb = (
+  const breadcrumbTrailingCrumb = [
     <InstrumentSelector
+      key="instrument"
       selectedInstrument={selectedInstrument || 'ALL'}
       handleInstrumentChange={handleInstrumentChange}
       variant="breadcrumb"
       instrumentOptions={liveDataInstrumentOptions}
       showAllInstrumentsOption={false}
       disabled={loadingInstruments || liveDataInstrumentOptions.length === 0}
-    />
-  );
+    />,
+    ...(userRole === 'staff' && selectedInstrument
+      ? [
+          <MuiLink
+            key="edit-script"
+            component={RouterLink}
+            underline="hover"
+            to={`/live-data/${selectedInstrument}/edit-script`}
+          >
+            Click to edit script
+          </MuiLink>,
+        ]
+      : []),
+  ];
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100%', overflow: 'hidden' }}>
@@ -239,6 +238,7 @@ const LiveData: React.FC = (): JSX.Element => {
           justifyContent: 'space-between',
           gap: 2,
           flexWrap: { xs: 'wrap', lg: 'nowrap' },
+          mb: 2,
           pr: { xs: 2, sm: 8 },
         }}
       >
@@ -248,47 +248,17 @@ const LiveData: React.FC = (): JSX.Element => {
             Live data
           </Typography>
         </Box>
-        <Paper
+        <Chip
+          label={isConnected ? 'Connected' : 'Disconnected'}
+          color={isConnected ? 'success' : 'default'}
+          size="small"
           variant="outlined"
           sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1,
-            flexWrap: 'wrap',
-            flex: '0 1 auto',
-            minWidth: 0,
+            flex: '0 0 auto',
             mt: 2,
-            ml: { xs: 2, lg: 0 },
-            p: 1,
-            borderRadius: 1,
-            backgroundColor: 'background.paper',
+            ml: 'auto',
           }}
-        >
-          <Chip
-            label={isConnected ? 'Connected' : 'Disconnected'}
-            color={isConnected ? 'success' : 'default'}
-            size="small"
-            variant="outlined"
-          />
-
-          {lastUpdated && (
-            <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>
-              Last update: {formatLastUpdated(lastUpdated)}
-            </Typography>
-          )}
-
-          {loadingInstruments && <CircularProgress size={20} />}
-
-          {userRole === 'staff' && selectedInstrument && (
-            <Button
-              variant="contained"
-              size="small"
-              onClick={() => history.push(`/live-data/${selectedInstrument}/edit-script`)}
-            >
-              Edit Script
-            </Button>
-          )}
-        </Paper>
+        />
       </Box>
       <Box sx={{ display: 'flex', flexDirection: 'column', flex: '1 1 auto', minHeight: 0, width: '100%' }}>
         {/* Main content area */}

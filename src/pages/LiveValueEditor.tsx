@@ -1,23 +1,96 @@
 import Editor from '@monaco-editor/react';
 import { Save } from '@mui/icons-material';
 import { Alert, Box, Button, CircularProgress, Snackbar, Typography, useTheme } from '@mui/material';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useHistory, useParams } from 'react-router-dom';
 
 import { LiveLogViewer } from '../components/experimentViewer/LiveLogViewer';
+import InstrumentSelector from '../components/jobs/InstrumentSelector';
 import NavArrows from '../components/navigation/NavArrows';
 import { fiaApi } from '../lib/api';
+import { instruments as allInstruments } from '../lib/instrumentData';
+import { fetchLiveDataInstruments } from '../lib/plottingServiceAPI';
 
 const LiveValueEditor: React.FC = () => {
   const theme = useTheme();
   const { instrumentName } = useParams<{ instrumentName: string }>();
+  const history = useHistory();
   const [scriptValue, setScriptValue] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
+  const [instruments, setInstruments] = useState<string[]>([]);
+  const [loadingInstruments, setLoadingInstruments] = useState(true);
   const [saving, setSaving] = useState<boolean>(false);
   const [saveResult, setSaveResult] = useState<{ success: boolean; message: string } | null>(null);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [showLiveLogViewer, setShowLiveLogViewer] = useState(false);
   const userModified = useRef(false);
+  const liveDataInstrumentOptions = useMemo(() => {
+    const instrumentMetadataByName = new Map(
+      allInstruments.map((instrument) => [instrument.name.toLowerCase(), instrument])
+    );
+
+    return instruments.map((instrument, index) => {
+      return (
+        instrumentMetadataByName.get(instrument.toLowerCase()) ?? {
+          id: -(index + 1),
+          name: instrument,
+          description: '',
+          type: 'Live data',
+          infoPage: '',
+          scientists: [],
+        }
+      );
+    });
+  }, [instruments]);
+
+  useEffect(() => {
+    const loadInstruments = async (): Promise<void> => {
+      try {
+        setLoadingInstruments(true);
+        const instrumentList = await fetchLiveDataInstruments();
+        setInstruments(instrumentList);
+      } catch (err) {
+        console.error('Failed to load instruments:', err);
+      } finally {
+        setLoadingInstruments(false);
+      }
+    };
+
+    loadInstruments();
+  }, []);
+
+  useEffect(() => {
+    if (loadingInstruments) {
+      return;
+    }
+
+    const matchedInstrument = instruments.find(
+      (instrument) => instrument.toLowerCase() === instrumentName.toLowerCase()
+    );
+
+    if (matchedInstrument && matchedInstrument !== instrumentName) {
+      history.replace(`/live-data/${matchedInstrument}/edit-script`);
+    }
+  }, [history, instrumentName, instruments, loadingInstruments]);
+
+  const handleInstrumentChange = (instrument: string): void => {
+    history.push(`/live-data/${instrument}/edit-script`);
+  };
+
+  const breadcrumbTrailingCrumbs = [
+    <InstrumentSelector
+      key="instrument"
+      selectedInstrument={instrumentName}
+      handleInstrumentChange={handleInstrumentChange}
+      variant="breadcrumb"
+      instrumentOptions={liveDataInstrumentOptions}
+      showAllInstrumentsOption={false}
+      disabled={loadingInstruments || liveDataInstrumentOptions.length === 0}
+    />,
+    <Typography key="edit-script" color="text.primary">
+      Edit script
+    </Typography>,
+  ];
 
   const fetchScript = useCallback(async (): Promise<void> => {
     if (!instrumentName) return;
@@ -64,7 +137,7 @@ const LiveValueEditor: React.FC = () => {
 
   return (
     <>
-      <NavArrows />
+      <NavArrows trailingCrumb={breadcrumbTrailingCrumbs} replaceLastCrumbCount={2} />
       <Box
         sx={{
           width: '100%',

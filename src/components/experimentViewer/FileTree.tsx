@@ -169,7 +169,7 @@ const FileTree: React.FC<FileTreeProps> = ({
           )}
 
           {/* Auto-select primary dataset toggle */}
-          {onAutoSelectPrimaryChange && (
+          {onAutoSelectPrimaryChange && jobs.length > 0 && (
             <FormControlLabel
               control={
                 <Checkbox
