@@ -196,6 +196,24 @@ export const instruments: InstrumentData[] = [
     scientists: ['Alex Louat', 'Peter Baker', 'Rhea Stewart'],
   },
   {
+    id: 36,
+    name: 'MUX',
+    description:
+      'MuX is a negative-muon elemental analysis instrument for non-destructively measuring depth-sensitive elemental composition in cultural heritage objects, biomaterials and energy storage devices.',
+    type: 'Elemental analysis',
+    infoPage: 'https://www.isis.stfc.ac.uk/instruments/mux/',
+    scientists: ['Adrian Hillier', 'Sayani Biswas'],
+  },
+  {
+    id: 37,
+    name: 'NILE',
+    description:
+      'NILE is a neutron irradiation facility providing well-characterised mono-energetic neutron beams for electronics testing, detector studies and fusion materials research.',
+    type: 'Irradiation',
+    infoPage: 'https://www.isis.stfc.ac.uk/instruments/nile/',
+    scientists: ['Carlo Cazzaniga', 'Christopher Frost', 'Maria Kastriotou'],
+  },
+  {
     id: 22,
     name: 'NIMROD',
     description:
@@ -248,6 +266,15 @@ export const instruments: InstrumentData[] = [
     type: 'Neutron reflectometry',
     infoPage: 'https://www.isis.stfc.ac.uk/instruments/polref/',
     scientists: ['Andrew Caruana', 'Christy Kinane'],
+  },
+  {
+    id: 38,
+    name: 'RF-MUSR',
+    description:
+      'RF-muSR is a radio-frequency muon spectroscopy instrument using RF pulses or continuous waves to probe resonant states across a range of sample environments.',
+    type: 'Muon spectroscopy',
+    infoPage: 'https://www.isis.stfc.ac.uk/instruments/rf-musr/',
+    scientists: ['Alex Louat', 'James Lord', 'Stephen Cottrell'],
   },
   {
     id: 28,
