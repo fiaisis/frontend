@@ -757,18 +757,7 @@ const Row: React.FC<{
         <TableCell colSpan={8} style={{ paddingBottom: 0, paddingTop: 0, backgroundColor: bandedRows.backgroundColor }}>
           <Collapse in={open} timeout="auto" unmountOnExit>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, p: 2 }}>
-              <Box
-                sx={{
-                  px: 1.5,
-                  py: 1.25,
-                  border: '1px solid',
-                  borderColor: 'divider',
-                  borderRadius: 1,
-                  backgroundColor: 'background.paper',
-                }}
-              >
-                <JobStatus state={job.state} statusMessage={job.status_message} />
-              </Box>
+              <JobStatus state={job.state} statusMessage={job.status_message} />
 
               <Box
                 sx={{

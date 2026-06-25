@@ -46,14 +46,14 @@ type ImatViewValue = (typeof IMAT_VIEW_OPTIONS)[number]['value'];
 const IMAT_STACK_QUERY_PARAMS = ['jobId', 'experiment', 'instrument', 'imageIndex', 'viewerSize'] as const;
 const JOB_TABLE_QUERY_PARAMS = ['page', 'rowsPerPage', 'filters', 'orderBy', 'orderDir'] as const;
 
-const getImatViewLabel = (value: number): string =>
-  IMAT_VIEW_OPTIONS.find((option) => option.value === value)?.label ?? IMAT_VIEW_OPTIONS[0].label;
-
 const getImatViewPath = (value: ImatViewValue): string =>
   IMAT_VIEW_OPTIONS.find((option) => option.value === value)?.path ?? IMAT_VIEW_OPTIONS[0].path;
 
-const getImatBreadcrumbViewLabel = (value: number): string =>
-  value === 0 ? 'Select to view images' : getImatViewLabel(value);
+const getImatBreadcrumbViewLabel = (value: number): string => {
+  if (value === 1) return 'Viewing latest image';
+  if (value === 2) return 'Viewing image stack';
+  return 'Viewing reductions';
+};
 
 const getImatViewFromPath = (pathname: string): ImatViewValue => {
   if (pathname.endsWith('/latest-image')) return 1;
@@ -76,7 +76,6 @@ const ImatViewSelector: React.FC<{
   const [anchorEl, setAnchorEl] = React.useState<HTMLElement | null>(null);
   const open = Boolean(anchorEl);
   const selectedLabel = getImatBreadcrumbViewLabel(value);
-  const visibleOptions = value === 0 ? IMAT_VIEW_OPTIONS.filter((option) => option.value !== 0) : IMAT_VIEW_OPTIONS;
 
   const handleSelect = (nextValue: ImatViewValue): void => {
     onChange(nextValue);
@@ -117,7 +116,7 @@ const ImatViewSelector: React.FC<{
           sx: { minWidth: 180 },
         }}
       >
-        {visibleOptions.map((option) => (
+        {IMAT_VIEW_OPTIONS.map((option) => (
           <MenuItem key={option.value} selected={option.value === value} onClick={() => handleSelect(option.value)}>
             {option.label}
           </MenuItem>

@@ -135,7 +135,7 @@ const InstrumentSearchBreadcrumb: React.FC<{
                 size="small"
                 value={searchTerm}
                 onChange={(event) => onSearchTermChange(event.target.value)}
-                placeholder="Instrument, technique or scientist"
+                placeholder="Search for instrument, technique, or scientist"
                 sx={{ minWidth: 0, flex: '1 1 auto' }}
                 InputProps={{
                   startAdornment: (
@@ -408,111 +408,139 @@ const Instruments: React.FC = () => {
                   data-testid="instrument-card"
                   variant="outlined"
                   sx={{
-                    p: 2,
                     borderRadius: 1,
                     minWidth: 0,
                     minHeight: 0,
                     height: '100%',
                     display: 'flex',
                     flexDirection: 'column',
+                    overflow: 'hidden',
                     borderColor: 'divider',
                     backgroundColor: favourite ? theme.palette.action.hover : 'background.paper',
                   }}
                 >
-                  <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 1 }}>
-                    <Box sx={{ minWidth: 0 }}>
-                      <Typography
-                        variant="h6"
-                        component="h2"
-                        sx={{ color: instrumentActionColor, fontWeight: 700, lineHeight: 1.2 }}
-                      >
-                        {instrument.name}
-                      </Typography>
-                      <Chip
-                        size="small"
-                        label={instrument.type}
-                        sx={{
-                          mt: 1,
-                          maxWidth: '100%',
-                          '& .MuiChip-label': { overflow: 'hidden', textOverflow: 'ellipsis' },
-                        }}
-                      />
-                    </Box>
-                    <IconButton
-                      aria-label={`${favourite ? 'Remove' : 'Add'} ${instrument.name} ${
-                        favourite ? 'from favourites' : 'to favourites'
-                      }`}
-                      onClick={() => handleToggleFavorite(instrument.id)}
-                      sx={{ color: favourite ? 'warning.main' : 'action.active' }}
-                    >
-                      {favourite ? <StarIcon /> : <StarBorderIcon />}
-                    </IconButton>
-                  </Box>
+                  {instrument.image && (
+                    <Box
+                      component="img"
+                      src={instrument.image.url}
+                      alt={instrument.image.alt}
+                      loading="lazy"
+                      sx={{
+                        display: 'block',
+                        width: '100%',
+                        aspectRatio: '16 / 9',
+                        objectFit: 'cover',
+                        backgroundColor: 'action.hover',
+                        flex: '0 0 auto',
+                      }}
+                    />
+                  )}
 
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
+                  <Box
                     sx={{
-                      mt: 1.5,
+                      p: 2,
+                      minWidth: 0,
+                      minHeight: 0,
                       flexGrow: 1,
+                      display: 'flex',
+                      flexDirection: 'column',
                     }}
                   >
-                    {instrument.description}
-                  </Typography>
-
-                  <Box sx={{ mt: 2 }}>
-                    <Typography variant="subtitle2" component="h3" sx={{ mb: 1 }}>
-                      Scientists
-                    </Typography>
-                    {instrument.scientists.length > 0 ? (
-                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                        {instrument.scientists.map((scientist) => (
-                          <Chip key={scientist} size="small" label={scientist} />
-                        ))}
+                    <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 1 }}>
+                      <Box sx={{ minWidth: 0 }}>
+                        <Typography
+                          variant="h6"
+                          component="h2"
+                          sx={{ color: instrumentActionColor, fontWeight: 700, lineHeight: 1.2 }}
+                        >
+                          {instrument.name}
+                        </Typography>
+                        <Chip
+                          size="small"
+                          label={instrument.type}
+                          sx={{
+                            mt: 1,
+                            maxWidth: '100%',
+                            '& .MuiChip-label': { overflow: 'hidden', textOverflow: 'ellipsis' },
+                          }}
+                        />
                       </Box>
-                    ) : (
-                      <Typography variant="body2" color="text.secondary">
-                        No scientists listed by ISIS.
-                      </Typography>
-                    )}
-                  </Box>
+                      <IconButton
+                        aria-label={`${favourite ? 'Remove' : 'Add'} ${instrument.name} ${
+                          favourite ? 'from favourites' : 'to favourites'
+                        }`}
+                        onClick={() => handleToggleFavorite(instrument.id)}
+                        sx={{ color: favourite ? 'warning.main' : 'action.active' }}
+                      >
+                        {favourite ? <StarIcon /> : <StarBorderIcon />}
+                      </IconButton>
+                    </Box>
 
-                  <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ mt: 2 }}>
-                    <Button
-                      variant="contained"
-                      component={RouterLink}
-                      to={`/reduction-history/${instrument.name.toUpperCase()}`}
-                      startIcon={<HistoryIcon />}
-                    >
-                      Reduction history
-                    </Button>
-                    <Button
-                      variant="contained"
-                      component={RouterLink}
-                      to={`/experiment-viewer/${instrument.name.toUpperCase()}`}
-                      startIcon={<VisibilityIcon />}
-                    >
-                      Experiment viewer
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      href={instrument.infoPage}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      startIcon={<OpenInNewIcon />}
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
                       sx={{
-                        color: instrumentActionColor,
-                        borderColor: alpha(instrumentActionColor, theme.palette.mode === 'dark' ? 0.72 : 0.5),
-                        '&:hover': {
-                          color: instrumentActionHoverColor,
-                          borderColor: instrumentActionHoverColor,
-                          backgroundColor: alpha(instrumentActionColor, theme.palette.mode === 'dark' ? 0.16 : 0.08),
-                        },
+                        mt: 1.5,
+                        flexGrow: 1,
                       }}
                     >
-                      ISIS page
-                    </Button>
-                  </Stack>
+                      {instrument.description}
+                    </Typography>
+
+                    <Box sx={{ mt: 2 }}>
+                      <Typography variant="subtitle2" component="h3" sx={{ mb: 1 }}>
+                        Scientists
+                      </Typography>
+                      {instrument.scientists.length > 0 ? (
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                          {instrument.scientists.map((scientist) => (
+                            <Chip key={scientist} size="small" label={scientist} />
+                          ))}
+                        </Box>
+                      ) : (
+                        <Typography variant="body2" color="text.secondary">
+                          No scientists listed by ISIS.
+                        </Typography>
+                      )}
+                    </Box>
+
+                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ mt: 2 }}>
+                      <Button
+                        variant="contained"
+                        component={RouterLink}
+                        to={`/reduction-history/${instrument.name.toUpperCase()}`}
+                        startIcon={<HistoryIcon />}
+                      >
+                        Reduction history
+                      </Button>
+                      <Button
+                        variant="contained"
+                        component={RouterLink}
+                        to={`/experiment-viewer/${instrument.name.toUpperCase()}`}
+                        startIcon={<VisibilityIcon />}
+                      >
+                        Experiment viewer
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        href={instrument.infoPage}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        startIcon={<OpenInNewIcon />}
+                        sx={{
+                          color: instrumentActionColor,
+                          borderColor: alpha(instrumentActionColor, theme.palette.mode === 'dark' ? 0.72 : 0.5),
+                          '&:hover': {
+                            color: instrumentActionHoverColor,
+                            borderColor: instrumentActionHoverColor,
+                            backgroundColor: alpha(instrumentActionColor, theme.palette.mode === 'dark' ? 0.16 : 0.08),
+                          },
+                        }}
+                      >
+                        ISIS page
+                      </Button>
+                    </Stack>
+                  </Box>
                 </Paper>
               );
             })}
