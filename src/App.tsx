@@ -69,7 +69,7 @@ const App: FC = () => {
             <Route exact path="/instruments">
               <Redirect to="/isis-instruments" />
             </Route>
-            <Route path="/isis-instruments">
+            <Route exact path="/isis-instruments/:technique?">
               <Instruments />
             </Route>
             <Route exact path="/reduction-history">
