@@ -10,6 +10,10 @@ import { FAVORITE_INSTRUMENTS_STORAGE_KEY } from '../../lib/instrumentFavorites'
 const getMenuItemIndex = (name: string): number =>
   screen.getAllByRole('menuitem').findIndex((menuItem) => menuItem.textContent?.includes(name));
 
+const focusedInstrumentOptions = instruments.filter((instrument) =>
+  ['ALF', 'LARMOR', 'LOQ', 'SANS2D', 'ZOOM'].includes(instrument.name)
+);
+
 describe('InstrumentSelector', () => {
   afterEach(() => {
     cleanup();
@@ -18,9 +22,15 @@ describe('InstrumentSelector', () => {
 
   test('renders view all reductions plus clickable technique filters', async () => {
     const user = userEvent.setup();
-    const instrumentTypes = Array.from(new Set(instruments.map((instrument) => instrument.type)));
+    const instrumentTypes = Array.from(new Set(focusedInstrumentOptions.map((instrument) => instrument.type)));
 
-    render(<InstrumentSelector selectedInstrument="ALL" handleInstrumentChange={vi.fn()} />);
+    render(
+      <InstrumentSelector
+        selectedInstrument="ALL"
+        handleInstrumentChange={vi.fn()}
+        instrumentOptions={focusedInstrumentOptions}
+      />
+    );
 
     expect(screen.getByRole('button', { name: /Instrument\s+View all reductions/ })).toBeInTheDocument();
 

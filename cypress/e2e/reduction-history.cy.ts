@@ -218,7 +218,7 @@ describe('Reduction history page', () => {
     });
   });
 
-  it('shows the IMAT image view breadcrumb selector without the current reduction-history option', () => {
+  it('shows the IMAT image view breadcrumb selector with image view options', () => {
     cy.intercept('GET', /\/api\/instrument\/IMAT\/jobs\/count\?.*$/, (req) => {
       expect(req.headers.authorization).to.match(/^Bearer(?: .+)?$/);
       req.reply({
@@ -242,10 +242,10 @@ describe('Reduction history page', () => {
     cy.wait('@getImatJobs');
 
     cy.get('[aria-label="breadcrumb"]').within(() => {
-      cy.get('#imat-view-selector-button').should('contain', 'Select to view images').click();
+      cy.get('#imat-view-selector-button').should('contain', 'Reduction history').click();
     });
 
-    cy.contains('[role="menuitem"]', 'Reduction history').should('not.exist');
+    cy.contains('[role="menuitem"]', 'Reduction history').should('be.visible');
     cy.contains('[role="menuitem"]', 'Latest image').should('be.visible');
     cy.contains('[role="menuitem"]', 'Stack viewer').should('be.visible');
   });
