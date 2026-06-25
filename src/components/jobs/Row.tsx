@@ -13,6 +13,7 @@ import {
   Schedule,
   Schema,
   StackedBarChart,
+  Visibility,
   VpnKey,
   WarningAmber,
   WorkOutline,
@@ -849,7 +850,7 @@ const Row: React.FC<{
                         size="small"
                         component={Link}
                         to={`/experiment-viewer/${job.run.instrument_name}/${job.run.experiment_number}`}
-                        startIcon={<OpenInNew />}
+                        startIcon={<Visibility />}
                         onClick={() =>
                           ReactGA.event({
                             category: 'Button',

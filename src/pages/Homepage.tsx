@@ -1,6 +1,7 @@
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { Box, Button, Paper, styled, Typography, useMediaQuery, useTheme } from '@mui/material';
 import Grid from '@mui/material/Grid2';
+import { type Theme } from '@mui/material/styles';
 import React from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
@@ -161,7 +162,7 @@ const Homepage = (): React.ReactElement => {
               <Box className="tour-homepage-overview" sx={paperContentStyles}>
                 <Typography
                   variant="h3"
-                  sx={(theme) => ({
+                  sx={(theme: Theme) => ({
                     fontWeight: 'bold',
                     fontSize: '32px',
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -285,7 +286,7 @@ const Homepage = (): React.ReactElement => {
                       color="primary"
                       variant="contained"
                       data-testid="facility-button"
-                      endIcon={<OpenInNewIcon />}
+                      startIcon={<OpenInNewIcon />}
                     >
                       {t('Read more')}
                     </Button>
@@ -314,7 +315,12 @@ const Homepage = (): React.ReactElement => {
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    <Button color="primary" variant="contained" data-testid="browse-button" endIcon={<OpenInNewIcon />}>
+                    <Button
+                      color="primary"
+                      variant="contained"
+                      data-testid="browse-button"
+                      startIcon={<OpenInNewIcon />}
+                    >
                       {t('Instrument info')}
                     </Button>
                   </a>

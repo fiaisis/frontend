@@ -33,4 +33,16 @@ describe('Homepage Component Tests', () => {
         expect(url).to.match(/background.*\.jpg/);
       });
   });
+
+  it('displays external-link button icons before their labels', () => {
+    cy.contains('button', 'Read more').within(() => {
+      cy.get('.MuiButton-startIcon').should('exist');
+      cy.get('.MuiButton-endIcon').should('not.exist');
+    });
+
+    cy.contains('button', 'Instrument info').within(() => {
+      cy.get('.MuiButton-startIcon').should('exist');
+      cy.get('.MuiButton-endIcon').should('not.exist');
+    });
+  });
 });

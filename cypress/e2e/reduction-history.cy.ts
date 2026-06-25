@@ -122,6 +122,12 @@ describe('Reduction history page', () => {
     });
     cy.contains('h1', 'LOQ reduction history').should('be.visible');
     cy.contains('LOQ scoped reduction').should('be.visible');
+
+    cy.contains('LOQ scoped reduction').click();
+    cy.contains('button', 'Experiment viewer').within(() => {
+      cy.get('[data-testid="VisibilityIcon"]').should('exist');
+      cy.get('[data-testid="OpenInNewIcon"]').should('not.exist');
+    });
   });
 
   it('wraps table controls while keeping column headers horizontally scrollable on narrow screens', () => {

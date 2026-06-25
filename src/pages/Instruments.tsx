@@ -48,7 +48,7 @@ const InstrumentSearchBreadcrumb: React.FC<{
   filteredInstruments: InstrumentData[];
   onSearchTermChange: (searchTerm: string) => void;
   onSelectedTypeChange: (instrumentType: string) => void;
-  onToggleFavoritesOnly: () => void;
+  onSelectFavorites: () => void;
   onShowAllTypes: () => void;
   onClearFilters: () => void;
   onSelectInstrument: (instrument: InstrumentData) => void;
@@ -64,7 +64,7 @@ const InstrumentSearchBreadcrumb: React.FC<{
   filteredInstruments,
   onSearchTermChange,
   onSelectedTypeChange,
-  onToggleFavoritesOnly,
+  onSelectFavorites,
   onShowAllTypes,
   onClearFilters,
   onSelectInstrument,
@@ -167,7 +167,7 @@ const InstrumentSearchBreadcrumb: React.FC<{
                 label={FAVORITES_FILTER}
                 count={favoriteIds.length}
                 active={showFavoritesOnly}
-                onClick={onToggleFavoritesOnly}
+                onClick={onSelectFavorites}
               />
               {instrumentTypes.map((instrumentType) => (
                 <TechniqueFilterButton
@@ -301,13 +301,21 @@ const Instruments: React.FC = () => {
     setShowFavoritesOnly(false);
   };
 
+  const handleSelectFavorites = (): void => {
+    setSelectedType(ALL_FILTER);
+    setShowFavoritesOnly(true);
+  };
+
+  const handleSelectType = (instrumentType: string): void => {
+    setSelectedType(instrumentType);
+    setShowFavoritesOnly(false);
+  };
+
   const handleSelectInstrument = (instrument: InstrumentData): void => {
     setSearchTerm(instrument.name);
     setSelectedType(ALL_FILTER);
     setShowFavoritesOnly(false);
   };
-
-  const resultLabel = `${filteredInstruments.length} instrument${filteredInstruments.length === 1 ? '' : 's'}`;
 
   return (
     <>
@@ -323,8 +331,8 @@ const Instruments: React.FC = () => {
             instrumentCountByType={instrumentCountByType}
             filteredInstruments={filteredInstruments}
             onSearchTermChange={setSearchTerm}
-            onSelectedTypeChange={setSelectedType}
-            onToggleFavoritesOnly={() => setShowFavoritesOnly((currentValue) => !currentValue)}
+            onSelectedTypeChange={handleSelectType}
+            onSelectFavorites={handleSelectFavorites}
             onShowAllTypes={handleShowAllTypes}
             onClearFilters={handleClearFilters}
             onSelectInstrument={handleSelectInstrument}
@@ -351,9 +359,6 @@ const Instruments: React.FC = () => {
               {instruments.length} instruments across {instrumentTypes.length} techniques
             </Typography>
           </Box>
-          <Typography variant="body2" color="text.secondary">
-            {resultLabel}
-          </Typography>
         </Box>
 
         {filteredInstruments.length === 0 ? (
