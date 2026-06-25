@@ -28,9 +28,9 @@ const getInstrumentSelectorLabel = (
   allInstrumentsLabel: string
 ): string => (instrument === allInstrumentsValue ? allInstrumentsLabel : instrument);
 
-const ALL_FILTER = 'All';
-const FAVORITES_FILTER = 'Favourites';
-const SELECTOR_MENU_WIDTH = 540;
+export const ALL_FILTER = 'All';
+export const FAVORITES_FILTER = 'Favourites';
+export const SELECTOR_MENU_WIDTH = 540;
 
 const getFilterButtonSx =
   (active: boolean): SxProps<Theme> =>
@@ -69,7 +69,7 @@ const getFilterButtonSx =
     };
   };
 
-const TechniqueFilterButton: React.FC<{
+export const TechniqueFilterButton: React.FC<{
   label: string;
   count: number;
   active: boolean;

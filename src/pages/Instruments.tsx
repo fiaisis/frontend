@@ -1,3 +1,4 @@
+import ArrowDropDown from '@mui/icons-material/ArrowDropDown';
 import HistoryIcon from '@mui/icons-material/History';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import SearchIcon from '@mui/icons-material/Search';
@@ -8,9 +9,13 @@ import {
   Box,
   Button,
   Chip,
+  Divider,
   IconButton,
   InputAdornment,
+  ListItemText,
+  MenuItem,
   Paper,
+  Popover,
   Stack,
   TextField,
   Typography,
@@ -20,17 +25,216 @@ import { alpha } from '@mui/material/styles';
 import * as React from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 
+import {
+  ALL_FILTER,
+  FAVORITES_FILTER,
+  SELECTOR_MENU_WIDTH,
+  TechniqueFilterButton,
+} from '../components/jobs/InstrumentSelector';
 import NavArrows from '../components/navigation/NavArrows';
-import { instruments } from '../lib/instrumentData';
+import { instruments, type InstrumentData } from '../lib/instrumentData';
 import { getStoredFavoriteInstrumentIds, setStoredFavoriteInstrumentIds } from '../lib/instrumentFavorites';
 
-const ALL_TYPES = 'All';
+const INSTRUMENT_SEARCH_LABEL = 'Search for instrument';
+
+const InstrumentSearchBreadcrumb: React.FC<{
+  searchTerm: string;
+  selectedType: string;
+  showFavoritesOnly: boolean;
+  favoriteIds: number[];
+  favoriteIdSet: Set<number>;
+  instrumentTypes: string[];
+  instrumentCountByType: Map<string, number>;
+  filteredInstruments: InstrumentData[];
+  onSearchTermChange: (searchTerm: string) => void;
+  onSelectedTypeChange: (instrumentType: string) => void;
+  onToggleFavoritesOnly: () => void;
+  onShowAllTypes: () => void;
+  onClearFilters: () => void;
+  onSelectInstrument: (instrument: InstrumentData) => void;
+  onToggleFavorite: (id: number) => void;
+}> = ({
+  searchTerm,
+  selectedType,
+  showFavoritesOnly,
+  favoriteIds,
+  favoriteIdSet,
+  instrumentTypes,
+  instrumentCountByType,
+  filteredInstruments,
+  onSearchTermChange,
+  onSelectedTypeChange,
+  onToggleFavoritesOnly,
+  onShowAllTypes,
+  onClearFilters,
+  onSelectInstrument,
+  onToggleFavorite,
+}) => {
+  const [anchorEl, setAnchorEl] = React.useState<HTMLElement | null>(null);
+  const menuOpen = Boolean(anchorEl);
+  const hasActiveFilters = searchTerm.trim().length > 0 || selectedType !== ALL_FILTER || showFavoritesOnly;
+
+  const closeMenu = (): void => {
+    setAnchorEl(null);
+  };
+
+  const handleInstrumentSelect = (instrument: InstrumentData): void => {
+    onSelectInstrument(instrument);
+    closeMenu();
+  };
+
+  return (
+    <>
+      <Button
+        id="instrument-search-button"
+        className="breadcrumb-control"
+        variant="text"
+        aria-haspopup="menu"
+        aria-controls={menuOpen ? 'instrument-search-menu' : undefined}
+        aria-expanded={menuOpen ? 'true' : undefined}
+        aria-label={`Instrument search: ${INSTRUMENT_SEARCH_LABEL}`}
+        endIcon={<ArrowDropDown />}
+        onClick={(event: React.MouseEvent<HTMLButtonElement>) => setAnchorEl(event.currentTarget)}
+        sx={{
+          minWidth: 0,
+          border: 0,
+          borderRadius: 0,
+          boxShadow: 'none',
+          font: 'inherit',
+          textTransform: 'none',
+          '& .MuiButton-endIcon': { ml: 0.75, mr: 0, color: 'inherit' },
+        }}
+      >
+        <Box component="span">{INSTRUMENT_SEARCH_LABEL}</Box>
+      </Button>
+      <Popover
+        id="instrument-search-menu"
+        anchorEl={anchorEl}
+        open={menuOpen}
+        onClose={closeMenu}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+        slotProps={{
+          paper: {
+            sx: { width: SELECTOR_MENU_WIDTH, maxWidth: 'calc(100vw - 32px)' },
+          },
+        }}
+      >
+        <Box
+          aria-labelledby="instrument-search-button"
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            maxHeight: 'min(620px, calc(100vh - 96px))',
+          }}
+        >
+          <Box sx={{ p: 1.5, pb: 1.25 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <TextField
+                fullWidth
+                size="small"
+                value={searchTerm}
+                onChange={(event) => onSearchTermChange(event.target.value)}
+                placeholder="Instrument, technique or scientist"
+                sx={{ minWidth: 0, flex: '1 1 auto' }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon fontSize="small" />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+              {hasActiveFilters && (
+                <Button
+                  variant="contained"
+                  size="medium"
+                  onClick={onClearFilters}
+                  sx={{ flex: '0 0 auto', height: 40, whiteSpace: 'nowrap', textTransform: 'none' }}
+                >
+                  Clear filters
+                </Button>
+              )}
+            </Box>
+            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 0.75, mt: 1 }}>
+              <TechniqueFilterButton
+                label={ALL_FILTER}
+                count={instruments.length}
+                active={selectedType === ALL_FILTER && !showFavoritesOnly}
+                onClick={onShowAllTypes}
+              />
+              <TechniqueFilterButton
+                label={FAVORITES_FILTER}
+                count={favoriteIds.length}
+                active={showFavoritesOnly}
+                onClick={onToggleFavoritesOnly}
+              />
+              {instrumentTypes.map((instrumentType) => (
+                <TechniqueFilterButton
+                  key={instrumentType}
+                  label={instrumentType}
+                  count={instrumentCountByType.get(instrumentType) ?? 0}
+                  active={selectedType === instrumentType}
+                  onClick={() => onSelectedTypeChange(instrumentType)}
+                />
+              ))}
+            </Box>
+          </Box>
+          <Divider />
+          <Box role="menu" aria-labelledby="instrument-search-button" sx={{ overflowY: 'auto', py: 0.5 }}>
+            {filteredInstruments.length > 0 ? (
+              filteredInstruments.map((instrument) => {
+                const favourite = favoriteIdSet.has(instrument.id);
+
+                return (
+                  <MenuItem
+                    component="div"
+                    role="menuitem"
+                    key={instrument.id}
+                    selected={searchTerm.trim().toLowerCase() === instrument.name.toLowerCase()}
+                    onClick={() => handleInstrumentSelect(instrument)}
+                  >
+                    <ListItemText
+                      primary={instrument.name}
+                      secondary={instrument.type}
+                      secondaryTypographyProps={{ noWrap: true }}
+                      sx={{ mr: 1 }}
+                    />
+                    <IconButton
+                      aria-label={`${favourite ? 'Remove' : 'Add'} ${instrument.name} ${
+                        favourite ? 'from favourites' : 'to favourites'
+                      }`}
+                      size="small"
+                      onClick={(event: React.MouseEvent<HTMLButtonElement>) => {
+                        event.stopPropagation();
+                        onToggleFavorite(instrument.id);
+                      }}
+                      sx={{ flex: '0 0 auto', color: favourite ? 'warning.main' : 'action.active' }}
+                    >
+                      {favourite ? <StarIcon fontSize="small" /> : <StarBorderIcon fontSize="small" />}
+                    </IconButton>
+                  </MenuItem>
+                );
+              })
+            ) : (
+              <Box sx={{ px: 2, py: 3, textAlign: 'center' }}>
+                <Typography variant="body2" color="text.secondary">
+                  No instruments found
+                </Typography>
+              </Box>
+            )}
+          </Box>
+        </Box>
+      </Popover>
+    </>
+  );
+};
 
 const Instruments: React.FC = () => {
   const theme = useTheme();
   const [favoriteIds, setFavoriteIds] = React.useState<number[]>(getStoredFavoriteInstrumentIds);
   const [searchTerm, setSearchTerm] = React.useState('');
-  const [selectedType, setSelectedType] = React.useState(ALL_TYPES);
+  const [selectedType, setSelectedType] = React.useState(ALL_FILTER);
   const [showFavoritesOnly, setShowFavoritesOnly] = React.useState(false);
   const instrumentActionColor = theme.palette.mode === 'dark' ? '#86b4ff' : theme.palette.primary.main;
   const instrumentActionHoverColor = theme.palette.mode === 'dark' ? '#b7d1ff' : theme.palette.primary.dark;
@@ -67,7 +271,7 @@ const Instruments: React.FC = () => {
         const matchesSearch =
           normalizedSearch.length === 0 ||
           searchableValues.some((searchableValue) => searchableValue.toLowerCase().includes(normalizedSearch));
-        const matchesType = selectedType === ALL_TYPES || instrument.type === selectedType;
+        const matchesType = selectedType === ALL_FILTER || instrument.type === selectedType;
         const matchesFavorite = !showFavoritesOnly || favoriteIdSet.has(instrument.id);
 
         return matchesSearch && matchesType && matchesFavorite;
@@ -88,7 +292,18 @@ const Instruments: React.FC = () => {
 
   const handleClearFilters = (): void => {
     setSearchTerm('');
-    setSelectedType(ALL_TYPES);
+    setSelectedType(ALL_FILTER);
+    setShowFavoritesOnly(false);
+  };
+
+  const handleShowAllTypes = (): void => {
+    setSelectedType(ALL_FILTER);
+    setShowFavoritesOnly(false);
+  };
+
+  const handleSelectInstrument = (instrument: InstrumentData): void => {
+    setSearchTerm(instrument.name);
+    setSelectedType(ALL_FILTER);
     setShowFavoritesOnly(false);
   };
 
@@ -96,7 +311,27 @@ const Instruments: React.FC = () => {
 
   return (
     <>
-      <NavArrows />
+      <NavArrows
+        trailingCrumb={
+          <InstrumentSearchBreadcrumb
+            searchTerm={searchTerm}
+            selectedType={selectedType}
+            showFavoritesOnly={showFavoritesOnly}
+            favoriteIds={favoriteIds}
+            favoriteIdSet={favoriteIdSet}
+            instrumentTypes={instrumentTypes}
+            instrumentCountByType={instrumentCountByType}
+            filteredInstruments={filteredInstruments}
+            onSearchTermChange={setSearchTerm}
+            onSelectedTypeChange={setSelectedType}
+            onToggleFavoritesOnly={() => setShowFavoritesOnly((currentValue) => !currentValue)}
+            onShowAllTypes={handleShowAllTypes}
+            onClearFilters={handleClearFilters}
+            onSelectInstrument={handleSelectInstrument}
+            onToggleFavorite={handleToggleFavorite}
+          />
+        }
+      />
       <Box className="tour-instruments" sx={{ px: { xs: 2, md: 3 }, py: 2, pb: 4 }}>
         <Box
           sx={{
@@ -120,55 +355,6 @@ const Instruments: React.FC = () => {
             {resultLabel}
           </Typography>
         </Box>
-
-        <Paper variant="outlined" sx={{ p: 2, mb: 2, borderRadius: 1, backgroundColor: 'background.paper' }}>
-          <Stack spacing={1.5}>
-            <TextField
-              fullWidth
-              size="small"
-              label="Search"
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-              placeholder="Instrument, technique or scientist"
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon fontSize="small" />
-                  </InputAdornment>
-                ),
-              }}
-            />
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-              <Chip
-                label={`All (${instruments.length})`}
-                clickable
-                color={selectedType === ALL_TYPES && !showFavoritesOnly ? 'primary' : 'default'}
-                variant={selectedType === ALL_TYPES && !showFavoritesOnly ? 'filled' : 'outlined'}
-                onClick={() => {
-                  setSelectedType(ALL_TYPES);
-                  setShowFavoritesOnly(false);
-                }}
-              />
-              <Chip
-                label={`Favourites (${favoriteIds.length})`}
-                clickable
-                color={showFavoritesOnly ? 'primary' : 'default'}
-                variant={showFavoritesOnly ? 'filled' : 'outlined'}
-                onClick={() => setShowFavoritesOnly((currentValue) => !currentValue)}
-              />
-              {instrumentTypes.map((instrumentType) => (
-                <Chip
-                  key={instrumentType}
-                  label={`${instrumentType} (${instrumentCountByType.get(instrumentType) ?? 0})`}
-                  clickable
-                  color={selectedType === instrumentType ? 'primary' : 'default'}
-                  variant={selectedType === instrumentType ? 'filled' : 'outlined'}
-                  onClick={() => setSelectedType(instrumentType)}
-                />
-              ))}
-            </Box>
-          </Stack>
-        </Paper>
 
         {filteredInstruments.length === 0 ? (
           <Paper variant="outlined" sx={{ p: 4, borderRadius: 1, textAlign: 'center' }}>

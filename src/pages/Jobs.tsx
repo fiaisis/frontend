@@ -448,12 +448,14 @@ const Jobs: React.FC = (): ReactElement => {
             {reductionHistoryHeading}
           </Typography>
         </Box>
-        <InstrumentConfigDrawer
-          drawerOpen={configDrawerOpen}
-          setDrawerOpen={setConfigDrawerOpen}
-          selectedInstrument={selectedInstrument}
-          disabled={!configAvailable}
-        />
+        {selectedInstrument !== 'ALL' && (
+          <InstrumentConfigDrawer
+            drawerOpen={configDrawerOpen}
+            setDrawerOpen={setConfigDrawerOpen}
+            selectedInstrument={selectedInstrument}
+            disabled={!configAvailable}
+          />
+        )}
       </Box>
       <FilterContainer
         showInstrumentFilter={selectedInstrument === 'ALL'}
