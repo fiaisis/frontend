@@ -242,7 +242,7 @@ describe('Reduction history page', () => {
     cy.wait('@getImatJobs');
 
     cy.get('[aria-label="breadcrumb"]').within(() => {
-      cy.get('#imat-view-selector-button').should('contain', 'Reduction history').click();
+      cy.get('#imat-view-selector-button').should('contain', 'Viewing reductions').click();
     });
 
     cy.contains('[role="menuitem"]', 'Reduction history').should('be.visible');
