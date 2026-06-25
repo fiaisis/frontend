@@ -3,13 +3,15 @@ import {
   Button,
   Checkbox,
   Divider,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   FormControl,
-  Grow,
   InputLabel,
   ListItemText,
   MenuItem,
   OutlinedInput,
-  Paper,
   Select,
   SelectChangeEvent,
   TextField,
@@ -19,7 +21,7 @@ import dayjs from 'dayjs';
 import React, { FC, ReactElement, useEffect, useState, Dispatch, SetStateAction } from 'react';
 
 import { instruments } from '../../lib/instrumentData';
-import { JobQueryFilters, reductionStates, Job } from '../../lib/types';
+import { JobQueryFilters, reductionStates } from '../../lib/types';
 
 const itemHeight = 48;
 const itemPaddingTop = 8;
@@ -123,12 +125,16 @@ const FilterContainer: React.FC<{
   handleFiltersClose: () => void;
   showInstrumentFilter: boolean;
   handleFiltersChange: (filters: JobQueryFilters) => void;
-  jobs: Job[];
-  handleBulkResubmit: () => void;
-  isBulkResubmitting: boolean;
   resetPageNumber: () => void;
   appliedFilters: JobQueryFilters;
-}> = ({ visible, showInstrumentFilter, handleFiltersChange, resetPageNumber, appliedFilters }): ReactElement => {
+}> = ({
+  visible,
+  handleFiltersClose,
+  showInstrumentFilter,
+  handleFiltersChange,
+  resetPageNumber,
+  appliedFilters,
+}): ReactElement => {
   const [selectedInstruments, setSelectedInstruments, setSelectedInstrumentsSilently] = useFilterWithReset<string[]>(
     [],
     resetPageNumber
@@ -350,13 +356,14 @@ const FilterContainer: React.FC<{
   };
 
   return (
-    <Grow in={visible}>
-      <Box sx={{ pr: '20px', display: visible ? 'flex' : 'none', flexWrap: 'wrap', width: '100%' }}>
-        <Paper elevation={3} sx={{ display: 'flex', flexDirection: 'column', mb: 1, width: '100%', p: 1, gap: 1 }}>
-          <Box display={'flex'} width={'100%'} justifyContent={'space-between'} gap={2}>
+    <Dialog open={visible} onClose={handleFiltersClose} maxWidth="lg" fullWidth>
+      <DialogTitle>Filters</DialogTitle>
+      <DialogContent dividers>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
+          <Box display={'flex'} width={'100%'} justifyContent={'space-between'} gap={2} sx={{ flexWrap: 'wrap' }}>
             <Box display={'flex'} flexDirection={'column'} gap={1}>
               <span>General</span>
-              <Box display={'flex'} gap={1}>
+              <Box display={'flex'} gap={1} sx={{ flexWrap: 'wrap' }}>
                 <MultipleSelectCheckmarks
                   name={'Reduction state'}
                   items={(reductionStates as unknown as string[]) ?? []}
@@ -394,7 +401,7 @@ const FilterContainer: React.FC<{
             <Divider orientation={'vertical'} flexItem />
             <Box display={'flex'} flexDirection={'column'} gap={1}>
               <span>Experiment numbers</span>
-              <Box display={'flex'} gap={1}>
+              <Box display={'flex'} gap={1} sx={{ flexWrap: 'wrap' }}>
                 <TextField
                   size={'small'}
                   sx={{ width: 175 }}
@@ -436,7 +443,7 @@ const FilterContainer: React.FC<{
           <Divider orientation={'horizontal'} flexItem />
           <Box display={'flex'} gap={1} flexDirection={'column'}>
             <span>Dates</span>
-            <Box display={'flex'} gap={1}>
+            <Box display={'flex'} gap={1} sx={{ flexWrap: 'wrap' }}>
               <DatePickerPair
                 handleBeforeChange={setRunStartBefore}
                 handleAfterChange={setRunStartAfter}
@@ -467,14 +474,17 @@ const FilterContainer: React.FC<{
               />
             </Box>
           </Box>
-          <Box sx={{ alignSelf: 'end' }}>
-            <Button variant="contained" color="warning" sx={{ width: 150 }} onClick={clearAndCloseFilters}>
-              Clear
-            </Button>
-          </Box>
-        </Paper>
-      </Box>
-    </Grow>
+        </Box>
+      </DialogContent>
+      <DialogActions>
+        <Button variant="outlined" onClick={handleFiltersClose}>
+          Close
+        </Button>
+        <Button variant="contained" color="warning" sx={{ width: 150 }} onClick={clearAndCloseFilters}>
+          Clear
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 };
 

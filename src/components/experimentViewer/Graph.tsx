@@ -44,9 +44,17 @@ interface PlotViewerProps {
   linePlotData: LinePlotData[];
   showErrors: boolean;
   onShowErrorsChange: (showErrors: boolean) => void;
+  emptyTitle?: string;
+  emptyMessage?: string;
 }
 
-const PlotViewer: React.FC<PlotViewerProps> = ({ linePlotData, showErrors, onShowErrorsChange }): JSX.Element => {
+const PlotViewer: React.FC<PlotViewerProps> = ({
+  linePlotData,
+  showErrors,
+  onShowErrorsChange,
+  emptyTitle = 'Select a file to view 1D data',
+  emptyMessage = 'Choose a file from the File tree to plot its available 1D datasets.',
+}): JSX.Element => {
   const theme = useTheme();
   const hasData = linePlotData.length > 0;
 
@@ -134,10 +142,10 @@ const PlotViewer: React.FC<PlotViewerProps> = ({ linePlotData, showErrors, onSho
       >
         <Box sx={{ textAlign: 'center' }}>
           <Typography variant="h5" color="text.secondary" sx={{ mb: 1 }}>
-            No data selected
+            {emptyTitle}
           </Typography>
           <Typography variant="body2" color="text.disabled">
-            Select files from the left panel to plot
+            {emptyMessage}
           </Typography>
         </Box>
       </Box>
@@ -242,7 +250,9 @@ const PlotViewer: React.FC<PlotViewerProps> = ({ linePlotData, showErrors, onSho
   };
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
+    <Box
+      sx={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, width: '100%', overflow: 'hidden' }}
+    >
       <Paper elevation={1} sx={toolbarThemeTokens}>
         <Box sx={{ display: 'flex' }} className={'toolbar'}>
           <Toolbar>
@@ -305,7 +315,7 @@ const PlotViewer: React.FC<PlotViewerProps> = ({ linePlotData, showErrors, onSho
           </Toolbar>
         </Box>
       </Paper>
-      <Box sx={{ flex: 1, minHeight: 0, display: 'flex', ...lineVisStyles }}>
+      <Box sx={{ flex: 1, minHeight: 0, display: 'flex', overflow: 'hidden', ...lineVisStyles }}>
         <LineVis
           dataArray={primaryArray}
           domain={safeYDomain}

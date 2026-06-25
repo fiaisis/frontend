@@ -2,33 +2,32 @@ import '@h5web/lib/styles.css';
 import {
   Alert,
   Box,
-  Button,
   Chip,
   CircularProgress,
-  FormControl,
-  InputLabel,
+  Link as MuiLink,
   List,
   ListItemButton,
   ListItemText,
-  MenuItem,
   Paper,
-  Select,
   Typography,
 } from '@mui/material';
 import { jwtDecode } from 'jwt-decode';
-import React, { useCallback, useEffect, useState } from 'react';
-import { useHistory } from 'react-router-dom';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link as RouterLink, useHistory, useParams } from 'react-router-dom';
 
 import Viewer2D from '../components/experimentViewer/Viewer2D';
+import InstrumentSelector from '../components/jobs/InstrumentSelector';
 import NavArrows from '../components/navigation/NavArrows';
+import { instruments as allInstruments } from '../lib/instrumentData';
 import { fetchLiveDataFiles, fetchLiveDataInstruments } from '../lib/plottingServiceAPI';
 import { outputFilter } from '../lib/types';
 import { useLiveDataSSE } from '../lib/useLiveDataSSE';
 
 const LiveData: React.FC = (): JSX.Element => {
+  const { instrumentName } = useParams<{ instrumentName?: string }>();
   // Instrument selection
   const [instruments, setInstruments] = useState<string[]>([]);
-  const [selectedInstrument, setSelectedInstrument] = useState<string | null>(null);
+  const [selectedInstrument, setSelectedInstrument] = useState<string | null>(() => instrumentName ?? null);
   const [loadingInstruments, setLoadingInstruments] = useState(true);
 
   // File list
@@ -55,16 +54,28 @@ const LiveData: React.FC = (): JSX.Element => {
   const [error, setError] = useState<string | null>(null);
 
   // SSE connection
-  const {
-    isConnected,
-    directory,
-    changedFile,
-    lastUpdated,
-    error: sseError,
-  } = useLiveDataSSE(selectedInstrument, true);
+  const { isConnected, directory, changedFile, error: sseError } = useLiveDataSSE(selectedInstrument, true);
 
   // Build full file path using directory from SSE and selected file
   const selectedFilePath = directory && selectedFile ? `${directory}/${selectedFile}` : null;
+  const liveDataInstrumentOptions = useMemo(() => {
+    const instrumentMetadataByName = new Map(
+      allInstruments.map((instrument) => [instrument.name.toLowerCase(), instrument])
+    );
+
+    return instruments.map((instrument, index) => {
+      return (
+        instrumentMetadataByName.get(instrument.toLowerCase()) ?? {
+          id: -(index + 1),
+          name: instrument,
+          description: '',
+          type: 'Live data',
+          infoPage: '',
+          scientists: [],
+        }
+      );
+    });
+  }, [instruments]);
 
   // Fetch available instruments on mount
   useEffect(() => {
@@ -73,11 +84,6 @@ const LiveData: React.FC = (): JSX.Element => {
         setLoadingInstruments(true);
         const instrumentList = await fetchLiveDataInstruments();
         setInstruments(instrumentList);
-
-        // Auto-select first instrument if available
-        if (instrumentList.length > 0) {
-          setSelectedInstrument(instrumentList[0]);
-        }
       } catch (err) {
         console.error('Failed to load instruments:', err);
         setError('Failed to load available instruments');
@@ -88,6 +94,40 @@ const LiveData: React.FC = (): JSX.Element => {
 
     loadInstruments();
   }, []);
+
+  useEffect(() => {
+    if (loadingInstruments) {
+      return;
+    }
+
+    if (instrumentName) {
+      const matchedInstrument = instruments.find(
+        (instrument) => instrument.toLowerCase() === instrumentName.toLowerCase()
+      );
+      const nextInstrument = matchedInstrument ?? instrumentName;
+
+      setSelectedInstrument((currentInstrument) =>
+        currentInstrument === nextInstrument ? currentInstrument : nextInstrument
+      );
+
+      if (matchedInstrument && matchedInstrument !== instrumentName) {
+        history.replace(`/live-data/${matchedInstrument}`);
+      }
+
+      return;
+    }
+
+    if (instruments.length === 0) {
+      setSelectedInstrument(null);
+      return;
+    }
+
+    const nextInstrument =
+      selectedInstrument && instruments.includes(selectedInstrument) ? selectedInstrument : instruments[0];
+
+    setSelectedInstrument(nextInstrument);
+    history.replace(`/live-data/${nextInstrument}`);
+  }, [history, instrumentName, instruments, loadingInstruments, selectedInstrument]);
 
   // Fetch files when instrument changes
   const loadFiles = useCallback(
@@ -156,6 +196,7 @@ const LiveData: React.FC = (): JSX.Element => {
     setSelectedInstrument(instrument);
     setSelectedFile(null);
     setError(null);
+    history.push(`/live-data/${instrument}`);
   };
 
   // Handle file selection
@@ -164,82 +205,62 @@ const LiveData: React.FC = (): JSX.Element => {
     setViewerKey((prev) => prev + 1);
   };
 
-  // Format last updated time
-  const formatLastUpdated = (date: Date | null): string => {
-    if (!date) {
-      return '';
-    }
-    return date.toLocaleTimeString();
-  };
+  const breadcrumbTrailingCrumb = [
+    <InstrumentSelector
+      key="instrument"
+      selectedInstrument={selectedInstrument || 'ALL'}
+      handleInstrumentChange={handleInstrumentChange}
+      variant="breadcrumb"
+      instrumentOptions={liveDataInstrumentOptions}
+      showAllInstrumentsOption={false}
+      disabled={loadingInstruments || liveDataInstrumentOptions.length === 0}
+    />,
+    ...(userRole === 'staff' && selectedInstrument
+      ? [
+          <MuiLink
+            key="edit-script"
+            component={RouterLink}
+            underline="hover"
+            to={`/live-data/${selectedInstrument}/edit-script`}
+          >
+            Click to edit script
+          </MuiLink>,
+        ]
+      : []),
+  ];
 
   return (
-    <>
-      <NavArrows />
-      <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100%' }}>
-        {/* Header with instrument selector and status */}
-        <Box
-          sx={{
-            p: 2,
-            borderBottom: 1,
-            borderColor: 'divider',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 2,
-          }}
-        >
-          <Typography variant="h6" sx={{ minWidth: 80 }}>
-            Live Data
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100%', overflow: 'hidden' }}>
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          justifyContent: 'space-between',
+          gap: 2,
+          flexWrap: { xs: 'wrap', lg: 'nowrap' },
+          mb: 2,
+          pr: { xs: 2, sm: 8 },
+        }}
+      >
+        <Box sx={{ flex: '1 1 auto', minWidth: 0 }}>
+          <NavArrows trailingCrumb={breadcrumbTrailingCrumb} replaceLastCrumb={Boolean(instrumentName)} />
+          <Typography variant="h3" component="h1" sx={{ color: 'text.primary', px: '20px', pt: 2, pb: 1 }}>
+            Live data
           </Typography>
-
-          {/* Instrument selector */}
-          <FormControl size="small" sx={{ minWidth: 150 }}>
-            <InputLabel id="instrument-select-label">Instrument</InputLabel>
-            <Select
-              labelId="instrument-select-label"
-              value={selectedInstrument || ''}
-              label="Instrument"
-              onChange={(e) => handleInstrumentChange(e.target.value)}
-              disabled={loadingInstruments || instruments.length === 0}
-            >
-              {instruments.map((inst) => (
-                <MenuItem key={inst} value={inst}>
-                  {inst}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
-          {/* Connection status */}
-          <Chip
-            label={isConnected ? 'Connected' : 'Disconnected'}
-            color={isConnected ? 'success' : 'default'}
-            size="small"
-            variant="outlined"
-          />
-
-          {/* Last updated time */}
-          {lastUpdated && (
-            <Typography variant="body2" color="text.secondary">
-              Last update: {formatLastUpdated(lastUpdated)}
-            </Typography>
-          )}
-
-          {/* Loading indicator */}
-          {loadingInstruments && <CircularProgress size={20} />}
-
-          {/* Edit Script Button */}
-          {userRole === 'staff' && selectedInstrument && (
-            <Button
-              variant="contained"
-              size="small"
-              onClick={() => history.push(`/live-data/${selectedInstrument}/edit-script`)}
-              sx={{ ml: 'auto' }}
-            >
-              Edit Script
-            </Button>
-          )}
         </Box>
-
+        <Chip
+          label={isConnected ? 'Connected' : 'Disconnected'}
+          color={isConnected ? 'success' : 'default'}
+          size="small"
+          variant="outlined"
+          sx={{
+            flex: '0 0 auto',
+            mt: 2,
+            ml: 'auto',
+          }}
+        />
+      </Box>
+      <Box sx={{ display: 'flex', flexDirection: 'column', flex: '1 1 auto', minHeight: 0, width: '100%' }}>
         {/* Main content area */}
         <Box sx={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
           {/* Left panel - File list */}
@@ -320,7 +341,7 @@ const LiveData: React.FC = (): JSX.Element => {
           </Box>
         </Box>
       </Box>
-    </>
+    </Box>
   );
 };
 

@@ -66,7 +66,10 @@ const App: FC = () => {
             <Route exact path="/">
               <Homepage />
             </Route>
-            <Route path="/instruments">
+            <Route exact path="/instruments">
+              <Redirect to="/isis-instruments" />
+            </Route>
+            <Route exact path="/isis-instruments/:technique?">
               <Instruments />
             </Route>
             <Route exact path="/reduction-history">
@@ -75,19 +78,31 @@ const App: FC = () => {
             <Route exact path="/reduction-history/:instrumentName">
               <Jobs />
             </Route>
+            <Route exact path="/reduction-history/:instrumentName/latest-image">
+              <Jobs />
+            </Route>
+            <Route exact path="/reduction-history/:instrumentName/stack-viewer">
+              <Jobs />
+            </Route>
             <Route path="/reduction-history/:instrumentName/value-editor-:jobId">
               <ValueEditor />
             </Route>
-            <Route path="/reduction-history/:instrumentName/experiment-viewer-:jobId">
+            <Route exact path="/experiment-viewer/experiment/:experimentOnlyNumber">
               <ExperimentViewer />
             </Route>
-            <Route path="/experiment-viewer">
+            <Route exact path="/experiment-viewer/:instrumentName/:experimentNumber?">
+              <ExperimentViewer />
+            </Route>
+            <Route exact path="/experiment-viewer">
               <ExperimentViewer />
             </Route>
             <Route path="/live-data/:instrumentName/edit-script">
               <LiveValueEditor />
             </Route>
-            <Route path="/live-data">
+            <Route exact path="/live-data">
+              <LiveData />
+            </Route>
+            <Route exact path="/live-data/:instrumentName">
               <LiveData />
             </Route>
             <Route path="/data-viewer/view/generic/experiment_number/:experimentNumber/:filename">

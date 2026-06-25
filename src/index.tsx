@@ -68,7 +68,14 @@ const reactLifecycles = singleSpaReact({
 // 5. Help text renders a tooltip in the site tour for this link
 // 6. Whether the link should be visible to unauthenticated users
 createRoute('Browse', 'Home page', '/fia', 1, '', false);
-createRoute('Browse', 'Instruments', '/fia/instruments', 2, 'Click here to see a list of all Instruments.', false);
+createRoute(
+  'Browse',
+  'ISIS instruments',
+  '/fia/isis-instruments',
+  2,
+  'Click here to see a list of all ISIS instruments.',
+  false
+);
 createRoute(
   'Browse',
   'Reduction history',
@@ -79,14 +86,21 @@ createRoute(
 );
 createRoute(
   'Viewers',
-  'Expriment viewer',
+  'Experiment viewer',
   '/fia/experiment-viewer',
   4,
   'View and visualize HDF5 data files from reduction jobs.',
   false
 );
-createRoute('Viewers', 'Live Data', '/fia/live-data', 5, 'View live data from instruments in real-time.', false);
-createRoute('Viewers', 'IMAT viewer', '/fia/reduction-history/IMAT', 6, 'Latest IMAT image', false);
+createRoute(
+  'Viewers',
+  'IMAT stack viewer',
+  '/fia/reduction-history/IMAT/stack-viewer',
+  5,
+  'View IMAT image stacks.',
+  false
+);
+createRoute('Viewers', 'Live data', '/fia/live-data', 6, 'View live data from instruments in real-time.', false);
 
 // Single-SPA bootstrap methods have no idea what type of inputs may be
 // pushed down from the parent app

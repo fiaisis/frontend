@@ -1,6 +1,7 @@
 import '@h5web/app/styles.css';
 import { createAxiosFetcher } from '@h5web/app';
 import { Box, Typography } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 import React, { Suspense, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { ReflexContainer, ReflexElement } from 'react-reflex';
@@ -19,6 +20,7 @@ interface Viewer2DProps {
 }
 
 const Viewer2D: React.FC<Viewer2DProps> = ({ filepath }): JSX.Element => {
+  const theme = useTheme();
   const [selectedPath] = useState<string>('/');
 
   const fetcher = createAxiosFetcher(h5Api);
@@ -33,14 +35,14 @@ const Viewer2D: React.FC<Viewer2DProps> = ({ filepath }): JSX.Element => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          bgcolor: 'background.default',
+          backgroundColor: theme.palette.background.default,
         }}
       >
-        <Box sx={{ textAlign: 'center', maxWidth: 500, p: 4 }}>
-          <Typography variant="h6" color="text.secondary" sx={{ mb: 1 }}>
+        <Box sx={{ textAlign: 'center' }}>
+          <Typography variant="h5" color="text.secondary" sx={{ mb: 1 }}>
             Select a file to view 2D data
           </Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" color="text.disabled">
             Choose a file from the File tree to visualize HDF5 datasets in 2D
           </Typography>
         </Box>
@@ -50,7 +52,7 @@ const Viewer2D: React.FC<Viewer2DProps> = ({ filepath }): JSX.Element => {
 
   // Render h5web App with H5GroveProvider
   return (
-    <Box sx={{ height: '100%', width: '100%' }}>
+    <Box sx={{ height: '100%', minHeight: 0, width: '100%', overflow: 'hidden' }}>
       <H5GroveProvider
         url={''}
         filepath={filepath}

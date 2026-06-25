@@ -1,15 +1,19 @@
 import {
   CheckCircleOutline,
   Download,
+  Edit,
   ErrorOutline,
   HighlightOff,
   ImageAspectRatio,
   KeyboardArrowDown,
   KeyboardArrowUp,
+  OpenInNew,
   People,
+  Replay,
   Schedule,
   Schema,
   StackedBarChart,
+  Visibility,
   VpnKey,
   WarningAmber,
   WorkOutline,
@@ -23,6 +27,7 @@ import {
   Collapse,
   IconButton,
   Snackbar,
+  SxProps,
   Table,
   TableBody,
   TableCell,
@@ -32,8 +37,7 @@ import {
   Typography,
   useTheme,
 } from '@mui/material';
-import Grid from '@mui/material/Grid2';
-import React, { ReactElement, useEffect, useRef, useState } from 'react';
+import React, { ReactElement, useCallback, useEffect, useRef, useState } from 'react';
 import ReactGA from 'react-ga4';
 import { Link } from 'react-router-dom';
 
@@ -42,11 +46,69 @@ import { parseJobOutputs } from '../../lib/hooks';
 import { formatUtcForLocale } from '../../lib/timezone';
 import { Job, MantidVersionMap } from '../../lib/types';
 
-const ellipsisWrap = {
-  whiteSpace: 'nowrap',
+const ellipsisTextSx: SxProps<Theme> = {
+  display: 'block',
+  width: '100%',
+  minWidth: 0,
   overflow: 'hidden',
   textOverflow: 'ellipsis',
-  maxWidth: '200px',
+  whiteSpace: 'nowrap',
+};
+
+const useOverflowStatus = (content: string): [React.RefObject<HTMLSpanElement>, boolean] => {
+  const textRef = useRef<HTMLSpanElement>(null);
+  const [isOverflowing, setIsOverflowing] = useState(false);
+
+  const updateOverflowStatus = useCallback(() => {
+    const element = textRef.current;
+    setIsOverflowing(Boolean(element && element.scrollWidth > element.clientWidth));
+  }, []);
+
+  useEffect(() => {
+    updateOverflowStatus();
+
+    const element = textRef.current;
+    if (!element) {
+      return undefined;
+    }
+
+    const resizeObserver = typeof ResizeObserver === 'undefined' ? undefined : new ResizeObserver(updateOverflowStatus);
+    resizeObserver?.observe(element);
+    window.addEventListener('resize', updateOverflowStatus);
+
+    return () => {
+      resizeObserver?.disconnect();
+      window.removeEventListener('resize', updateOverflowStatus);
+    };
+  }, [content, updateOverflowStatus]);
+
+  return [textRef, isOverflowing];
+};
+
+const EllipsisTooltipText: React.FC<{
+  value: string | number;
+  sx?: SxProps<Theme>;
+}> = ({ value, sx }) => {
+  const text = String(value);
+  const [textRef, isOverflowing] = useOverflowStatus(text);
+
+  return (
+    <Tooltip
+      title={text}
+      disableFocusListener={!isOverflowing}
+      disableHoverListener={!isOverflowing}
+      disableTouchListener={!isOverflowing}
+    >
+      <Typography
+        ref={textRef}
+        component="span"
+        variant="body2"
+        sx={[ellipsisTextSx, ...(Array.isArray(sx) ? sx : sx ? [sx] : [])]}
+      >
+        {text}
+      </Typography>
+    </Tooltip>
+  );
 };
 
 const openDataViewer = (jobId: number, instrumentName: string, experimentNumber: number, output: string): void => {
@@ -68,149 +130,252 @@ const JobStatusIcon: React.FC<{ state: string }> = ({ state }: { state: string }
     NOT_STARTED: <HighlightOff color="action" />,
   };
 
-  return <Tooltip title={state}>{icons[state] || <ErrorOutline />}</Tooltip>;
+  return (
+    <Box component="span" aria-label={`Reduction state: ${state}`} sx={{ display: 'inline-flex' }}>
+      {icons[state] || <ErrorOutline />}
+    </Box>
+  );
 };
+
+const panelActionButtonSx: SxProps<Theme> = {
+  flexShrink: 0,
+  whiteSpace: 'nowrap',
+  minHeight: 34,
+};
+
+const detailTableSx: SxProps<Theme> = {
+  tableLayout: 'fixed',
+  border: '1px solid',
+  borderColor: 'divider',
+  '& .MuiTableCell-root': {
+    py: 0.75,
+    px: 1,
+    borderBottom: '1px solid',
+    borderBottomColor: 'divider',
+  },
+  '& .MuiTableCell-root:not(:last-child)': {
+    borderRight: '1px solid',
+    borderRightColor: 'divider',
+  },
+  '& .detail-empty-cell.MuiTableCell-root': {
+    borderBottom: '1px solid transparent',
+  },
+  '& .detail-empty-cell.MuiTableCell-root:not(:last-child)': {
+    borderRight: '1px solid transparent',
+  },
+  '& .MuiTableRow-root:last-of-type .MuiTableCell-root': {
+    borderBottom: 0,
+  },
+};
+
+const DetailPanel: React.FC<{
+  title: string;
+  actions?: React.ReactNode;
+  children: React.ReactNode;
+  sx?: SxProps<Theme>;
+}> = ({ title, actions, children, sx }) => (
+  <Box
+    sx={[
+      {
+        minWidth: 0,
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        border: '1px solid',
+        borderColor: 'divider',
+        borderRadius: 1,
+        backgroundColor: 'background.paper',
+        overflow: 'hidden',
+      },
+      ...(Array.isArray(sx) ? sx : sx ? [sx] : []),
+    ]}
+  >
+    <Box
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 1.5,
+        minHeight: 54,
+        boxSizing: 'border-box',
+        px: 1.5,
+        py: 1,
+        borderBottom: '1px solid',
+        borderBottomColor: 'divider',
+        backgroundColor: 'action.hover',
+      }}
+    >
+      <Typography variant="subtitle1" sx={{ fontWeight: 700, minWidth: 0 }}>
+        {title}
+      </Typography>
+      {actions && (
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'flex-end',
+            gap: 1,
+            flexWrap: 'wrap',
+          }}
+        >
+          {actions}
+        </Box>
+      )}
+    </Box>
+    <Box sx={{ p: 1.5, minWidth: 0, flex: 1 }}>{children}</Box>
+  </Box>
+);
+
+const EmptyDetailRows: React.FC<{ count: number }> = ({ count }) => (
+  <>
+    {Array.from({ length: count }).map((_, index) => (
+      <TableRow key={`empty-detail-row-${index}`} aria-hidden="true">
+        <TableCell className="detail-empty-cell" component="th" scope="row" sx={{ width: '30%', minWidth: 0 }}>
+          <Typography variant="body2" sx={{ visibility: 'hidden' }}>
+            Empty
+          </Typography>
+        </TableCell>
+        <TableCell className="detail-empty-cell" sx={{ minWidth: 0 }}>
+          <Typography variant="body2" sx={{ visibility: 'hidden' }}>
+            Empty
+          </Typography>
+        </TableCell>
+      </TableRow>
+    ))}
+  </>
+);
+
+const DetailItem: React.FC<{ icon: ReactElement; label: string; value: string | number }> = ({
+  icon,
+  label,
+  value,
+}) => (
+  <TableRow>
+    <TableCell component="th" scope="row" sx={{ width: '30%', minWidth: 0 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
+        <Box sx={{ display: 'inline-flex', color: 'text.secondary', flexShrink: 0 }}>{icon}</Box>
+        <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 700, whiteSpace: 'nowrap' }}>
+          {label}
+        </Typography>
+      </Box>
+    </TableCell>
+    <TableCell sx={{ minWidth: 0 }}>
+      <EllipsisTooltipText value={value} />
+    </TableCell>
+  </TableRow>
+);
 
 const JobOutput: React.FC<{
   job: Job;
+  outputs: string[];
   downloadingSingle: string | null;
   handleDownload: (job: Job, output: string) => Promise<void>;
-}> = ({ job, downloadingSingle, handleDownload }) => {
-  try {
-    if (typeof job.outputs !== 'string') {
-      return <Typography>No outputs to show</Typography>;
-    }
-
-    let parsedOutputs;
-    if (job.outputs.startsWith('[') && job.outputs.endsWith(']')) {
-      parsedOutputs = JSON.parse(job.outputs.replace(/'/g, '"'));
-    } else {
-      parsedOutputs = [job.outputs];
-    }
-    return parsedOutputs.map((output: string, index: number) => (
-      <TableRow key={index}>
-        <TableCell>
-          <Box
-            maxHeight="80px"
-            display="flex"
-            alignItems="center"
-            justifyContent="space-between"
-            width="100%"
-            sx={{ flexWrap: 'nowrap', gap: 2 }}
-          >
-            <Box display="flex" alignItems="center">
-              <Box display="flex" alignItems="center" sx={{ overflow: 'hidden' }}>
-                <Typography
-                  variant="body2"
-                  sx={{
-                    ...ellipsisWrap,
-                    maxWidth: `calc(${ellipsisWrap.maxWidth} + 60px)`,
-                  }}
-                  title={output}
-                >
-                  {output}
-                </Typography>
-              </Box>
-            </Box>
-            <Box
-              sx={{
-                display: 'flex',
-                flexWrap: 'nowrap',
-                gap: 1,
-                whiteSpace: 'nowrap',
-                minWidth: 'fit-content',
-              }}
-            >
-              <Button
-                variant="contained"
-                onClick={() =>
-                  openDataViewer(job.id, job.run?.instrument_name || 'unknown', job.run?.experiment_number || 0, output)
-                }
-              >
-                View
-              </Button>
-              {/* Show H5 Viewer button for HDF5 files */}
-              {(output.endsWith('.h5') ||
-                output.endsWith('.hdf5') ||
-                output.endsWith('.nxs') ||
-                output.endsWith('.nxspe')) && (
-                <Button
-                  variant="contained"
-                  component={Link}
-                  to={`/reduction-history/${job.run?.instrument_name || 'unknown'}/experiment-viewer-${job.id}`}
-                  sx={{ flexShrink: 0, whiteSpace: 'nowrap' }}
-                >
-                  Experiment viewer
-                </Button>
-              )}
-              <Button
-                variant="contained"
-                startIcon={downloadingSingle === output ? null : <Download />}
-                onClick={() => handleDownload(job, output)}
-                disabled={downloadingSingle === output}
-                sx={{ flexShrink: 0, whiteSpace: 'nowrap', width: 110, height: 38 }}
-              >
-                {downloadingSingle === output ? <CircularProgress size={24} color="inherit" /> : 'Download'}
-              </Button>
-            </Box>
-          </Box>
-        </TableCell>
-      </TableRow>
-    ));
-  } catch (error) {
-    console.error('Failed to parse job outputs as JSON:', job.outputs);
-    console.error('Error:', error);
-    return <TableCell>{job.outputs}</TableCell>;
-  }
-};
-
-const JobInput: React.FC<{ job: Job }> = ({ job }: { job: Job }): ReactElement => {
-  const entries = Object.entries(job.inputs);
-  if (entries.length === 0) {
+}> = ({ job, outputs, downloadingSingle, handleDownload }) => {
+  if (outputs.length === 0) {
     return (
-      <Typography variant="body2" sx={{ margin: 2 }}>
-        No input data available
+      <Typography variant="body2" color="text.secondary">
+        No output files to show
       </Typography>
     );
   }
+
   return (
-    <>
-      {entries.map(([key, value], index) => (
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+      {outputs.map((output, index) => (
         <Box
-          key={index}
+          key={`${output}-${index}`}
           sx={{
-            display: 'flex',
-            flexWrap: 'wrap',
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 1fr) auto' },
             alignItems: 'center',
-            marginBottom: '4px',
-            wordBreak: 'break-word',
-            maxWidth: '100%',
+            gap: 1.5,
+            p: 1,
+            border: '1px solid',
+            borderColor: 'divider',
+            borderRadius: 1,
+            minWidth: 0,
           }}
         >
-          <Typography
-            variant="body2"
+          <Box sx={{ minWidth: 0 }}>
+            <EllipsisTooltipText value={output} sx={{ fontWeight: 600 }} />
+          </Box>
+          <Box
             sx={{
-              fontWeight: 'bold',
-              marginRight: '16px',
-              whiteSpace: 'nowrap', // Stops the key from wrapping
+              display: 'flex',
+              flexWrap: 'wrap',
+              justifyContent: { xs: 'flex-start', md: 'flex-end' },
+              gap: 1,
+              minWidth: 'fit-content',
             }}
           >
-            {key}:
-          </Typography>
-          <Typography
-            variant="body2"
-            title={value as string}
-            sx={{
-              flex: '1 1 auto',
-              ...ellipsisWrap,
-              maxWidth: `calc(${ellipsisWrap.maxWidth} + 300px)`,
-            }}
-          >
-            {`${value}`}
-          </Typography>
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={<OpenInNew />}
+              onClick={() =>
+                openDataViewer(job.id, job.run?.instrument_name || 'unknown', job.run?.experiment_number || 0, output)
+              }
+              sx={panelActionButtonSx}
+            >
+              View
+            </Button>
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={downloadingSingle === output ? undefined : <Download />}
+              onClick={() => handleDownload(job, output)}
+              disabled={downloadingSingle === output}
+              sx={[panelActionButtonSx, { width: 112 }]}
+            >
+              {downloadingSingle === output ? <CircularProgress size={22} color="inherit" /> : 'Download'}
+            </Button>
+          </Box>
         </Box>
       ))}
-    </>
+    </Box>
+  );
+};
+
+const InputDetailRow: React.FC<{ inputKey: string; value: string | number | boolean | null }> = ({
+  inputKey,
+  value,
+}) => (
+  <TableRow>
+    <TableCell component="th" scope="row" sx={{ width: '30%', minWidth: 0 }}>
+      <EllipsisTooltipText value={`${inputKey}:`} sx={{ color: 'text.secondary', fontWeight: 700 }} />
+    </TableCell>
+    <TableCell sx={{ minWidth: 0 }}>
+      <EllipsisTooltipText value={value === null ? 'null' : String(value)} />
+    </TableCell>
+  </TableRow>
+);
+
+const JobInput: React.FC<{ job: Job; emptyRowCount: number }> = ({
+  job,
+  emptyRowCount,
+}: {
+  job: Job;
+  emptyRowCount: number;
+}): ReactElement => {
+  const entries = Object.entries(job.inputs);
+
+  return (
+    <Table size="small" aria-label="Reduction inputs" sx={detailTableSx}>
+      <TableBody>
+        {entries.length === 0 ? (
+          <TableRow>
+            <TableCell colSpan={2}>
+              <Typography variant="body2" color="text.secondary">
+                No input data available
+              </Typography>
+            </TableCell>
+          </TableRow>
+        ) : (
+          entries.map(([key, value], index) => <InputDetailRow key={index} inputKey={key} value={value} />)
+        )}
+        <EmptyDetailRows count={emptyRowCount} />
+      </TableBody>
+    </Table>
   );
 };
 
@@ -233,14 +398,13 @@ const JobStatus: React.FC<{ state: string; statusMessage: string }> = ({ state, 
 
 const Row: React.FC<{
   job: Job;
-  showInstrumentColumn: boolean;
   index: number;
   isSelected: boolean;
   toggleSelection: (jobId: number) => void;
   resubmitJob: (job: Job) => Promise<void>;
   refreshJobs: () => void;
   mantidVersions: MantidVersionMap;
-}> = ({ job, showInstrumentColumn, index, resubmitJob, refreshJobs, isSelected, toggleSelection, mantidVersions }) => {
+}> = ({ job, index, resubmitJob, refreshJobs, isSelected, toggleSelection, mantidVersions }) => {
   const [open, setOpen] = useState(false);
   const theme = useTheme();
   const [loading, setLoading] = useState(false);
@@ -249,6 +413,7 @@ const Row: React.FC<{
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [downloadErrorOpen, setDownloadErrorOpen] = useState(false);
   const [downloadErrorMessage, setDownloadErrorMessage] = useState('');
+  const [isStatusHovered, setIsStatusHovered] = useState(false);
 
   const jobOutputs = parseJobOutputs(job.outputs);
   const [downloadingAll, setDownloadingAll] = useState(false);
@@ -448,6 +613,14 @@ const Row: React.FC<{
       value: job.run?.users || '—',
     },
   ];
+  const inputRowCount = Math.max(Object.keys(job.inputs).length, 1);
+  const balancedDetailRowCount = Math.max(inputRowCount, runDetails.length);
+  const emptyInputRowCount = balancedDetailRowCount - inputRowCount;
+  const emptyRunDetailRowCount = balancedDetailRowCount - runDetails.length;
+  const outputPanelTitle =
+    job.state === 'UNSUCCESSFUL' || job.state === 'ERROR' ? 'Stacktrace output' : 'Reduction outputs';
+  const showStackViewer = job.run?.instrument_name === 'IMAT' && job.state === 'SUCCESSFUL';
+  const showExperimentViewer = job.run?.instrument_name !== 'IMAT';
 
   return (
     <>
@@ -519,283 +692,154 @@ const Row: React.FC<{
         }}
         onClick={() => setOpen(!open)}
       >
-        <TableCell
-          sx={{
-            py: 0,
-            px: 1,
-            width: '80px',
-            minWidth: '80px',
-            maxWidth: '80px',
-          }}
-        >
-          <Box display="flex" alignItems="center" gap={0.5}>
-            <Checkbox
-              color="primary"
-              checked={isSelected}
-              onChange={() => toggleSelection(job.id)}
-              onClick={(e) => e.stopPropagation()}
-              sx={{ p: 0.5 }}
-            />
-            <JobStatusIcon state={job.state} />
-          </Box>
-        </TableCell>
-
-        <TableCell sx={{ width: '18%', px: 1 }}>
-          <Tooltip title={String(job.run?.experiment_number || 'N/A')}>
-            <Typography
-              variant="body2"
+        <TableCell sx={{ width: '14%', px: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
+            <Box
+              onMouseEnter={() => setIsStatusHovered(true)}
+              onMouseLeave={() => setIsStatusHovered(false)}
+              onClick={(e: React.MouseEvent) => e.stopPropagation()}
               sx={{
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-                minWidth: 0,
-                flexGrow: 1,
+                width: 32,
+                height: 32,
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
               }}
             >
-              {job.run?.experiment_number || 'N/A'}
-            </Typography>
-          </Tooltip>
-        </TableCell>
-        <TableCell sx={{ ...ellipsisWrap }}>
-          <Tooltip title={extractFilename(job.run?.filename || 'N/A')}>
-            <span>{extractFilename(job.run?.filename)}</span>
-          </Tooltip>
-        </TableCell>
-        <TableCell sx={{ ...ellipsisWrap }}>
-          <Tooltip title={formatUtcForLocale(job.run?.run_start)}>
-            <span>{formatUtcForLocale(job.run?.run_start)}</span>
-          </Tooltip>
-        </TableCell>
-        <TableCell sx={{ ...ellipsisWrap }}>
-          <Tooltip title={formatUtcForLocale(job.run?.run_end)}>
-            <span>{formatUtcForLocale(job.run?.run_end)}</span>
-          </Tooltip>
-        </TableCell>
-        <TableCell sx={{ ...ellipsisWrap }}>
-          <Tooltip title={formatUtcForLocale(job.start)}>
-            <span>{formatUtcForLocale(job.start)}</span>
-          </Tooltip>
-        </TableCell>
-        <TableCell sx={{ ...ellipsisWrap }}>
-          <Tooltip title={formatUtcForLocale(job.end)}>
-            <span>{formatUtcForLocale(job.end)}</span>
-          </Tooltip>
-        </TableCell>
-        {showInstrumentColumn && (
-          <TableCell sx={{ ...ellipsisWrap }}>
-            <Tooltip title={job.run?.title || 'N/A'}>
-              <span>{job.run?.title || 'N/A'}</span>
-            </Tooltip>
-          </TableCell>
-        )}
-
-        {showInstrumentColumn ? (
-          // Merge the reduction instrument name and expand icon into one cell for "ALL" page
-          <TableCell>
-            <Box display="flex" alignItems="center" justifyContent="space-between">
-              <Typography
-                sx={{
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                  flexGrow: 1,
-                  color: theme.palette.mode === 'dark' ? '#86b4ff' : theme.palette.primary.main,
-                }}
-                title={job.run.instrument_name}
-              >
-                <Link
-                  to={`/reduction-history/${job.run.instrument_name}`}
-                  onClick={(evt) => evt.stopPropagation()}
-                  style={{
-                    textDecoration: 'none',
-                    color: 'inherit',
-                  }}
-                  onMouseOver={(e) => (e.currentTarget.style.textDecoration = 'underline')}
-                  onMouseOut={(e) => (e.currentTarget.style.textDecoration = 'none')}
-                >
-                  {job.run.instrument_name}
-                </Link>
-              </Typography>
-
-              <IconButton
-                aria-label="expand row"
-                onClick={(e: React.MouseEvent) => {
-                  e.stopPropagation();
-                  setOpen(!open);
-                }}
-                sx={{ ml: 1 }}
-              >
-                {open ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
-              </IconButton>
-              {job.run?.instrument_name === 'IMAT' && job.state === 'SUCCESSFUL' && (
-                <Tooltip title="View image stack">
-                  <IconButton
-                    component={Link}
-                    to={`/reduction-history/IMAT?jobId=${job.id}&experiment=${job.run?.experiment_number}&instrument=${job.run?.instrument_name}&tab=2`}
-                    onClick={(e) => e.stopPropagation()}
-                    sx={{ ml: 1 }}
-                  >
-                    <StackedBarChart />
-                  </IconButton>
-                </Tooltip>
+              {isStatusHovered || isSelected ? (
+                <Checkbox
+                  color="primary"
+                  checked={isSelected}
+                  onChange={() => toggleSelection(job.id)}
+                  sx={{ p: 0.5 }}
+                  inputProps={{ 'aria-label': `${isSelected ? 'Deselect' : 'Select'} reduction ${job.id}` }}
+                />
+              ) : (
+                <JobStatusIcon state={job.state} />
               )}
             </Box>
-          </TableCell>
-        ) : (
-          // Merge the reduction title and expand icon into one cell for instrument specific pages
-          <TableCell colSpan={2}>
-            <Box display="flex" alignItems="center" justifyContent="space-between">
-              <Tooltip title={job.run?.title || 'N/A'}>
-                <Typography
-                  variant="body2"
-                  sx={{
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                    flexGrow: 1,
-                  }}
-                >
-                  {job.run?.title || 'N/A'}
-                </Typography>
-              </Tooltip>
-              <IconButton
-                aria-label="expand row"
-                onClick={(e: React.MouseEvent) => {
-                  e.stopPropagation();
-                  setOpen(!open);
-                }}
-                sx={{ ml: 1 }}
-              >
-                {open ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
-              </IconButton>
-              {job.run?.instrument_name === 'IMAT' && job.state === 'SUCCESSFUL' && (
-                <Tooltip title="View image stack">
-                  <IconButton
-                    component={Link}
-                    to={`/reduction-history/IMAT?jobId=${job.id}&experiment=${job.run?.experiment_number}&instrument=${job.run?.instrument_name}&tab=2`}
-                    onClick={(e) => e.stopPropagation()}
-                    sx={{ ml: 1 }}
-                  >
-                    <StackedBarChart />
-                  </IconButton>
-                </Tooltip>
-              )}
-            </Box>
-          </TableCell>
-        )}
+            <EllipsisTooltipText value={job.run?.experiment_number || 'N/A'} sx={{ flexGrow: 1 }} />
+          </Box>
+        </TableCell>
+        <TableCell>
+          <EllipsisTooltipText value={extractFilename(job.run?.filename || 'N/A')} />
+        </TableCell>
+        <TableCell>
+          <EllipsisTooltipText value={formatUtcForLocale(job.run?.run_start)} />
+        </TableCell>
+        <TableCell>
+          <EllipsisTooltipText value={formatUtcForLocale(job.run?.run_end)} />
+        </TableCell>
+        <TableCell>
+          <EllipsisTooltipText value={formatUtcForLocale(job.start)} />
+        </TableCell>
+        <TableCell>
+          <EllipsisTooltipText value={formatUtcForLocale(job.end)} />
+        </TableCell>
+        <TableCell colSpan={2}>
+          <Box display="flex" alignItems="center" justifyContent="space-between">
+            <EllipsisTooltipText value={job.run?.title || 'N/A'} sx={{ flexGrow: 1 }} />
+            <IconButton
+              aria-label="expand row"
+              onClick={(e: React.MouseEvent) => {
+                e.stopPropagation();
+                setOpen(!open);
+              }}
+              sx={{ ml: 1 }}
+            >
+              {open ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
+            </IconButton>
+          </Box>
+        </TableCell>
       </TableRow>
       <TableRow>
-        <TableCell
-          colSpan={showInstrumentColumn ? 10 : 9}
-          style={{ paddingBottom: 0, paddingTop: 0, backgroundColor: bandedRows.backgroundColor }}
-        >
+        <TableCell colSpan={8} style={{ paddingBottom: 0, paddingTop: 0, backgroundColor: bandedRows.backgroundColor }}>
           <Collapse in={open} timeout="auto" unmountOnExit>
-            <Box margin={2}>
-              <Typography variant="h6" gutterBottom>
-                <JobStatus state={job.state} statusMessage={job.status_message} />
-              </Typography>
-              <Grid container spacing={3}>
-                <Grid size={4}>
-                  <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
-                    {job.state === 'UNSUCCESSFUL' || job.state === 'ERROR' ? 'Stacktrace output' : 'Reduction outputs'}
-                  </Typography>
-                  <Box sx={{ maxHeight: 200, overflowY: 'auto' }}>
-                    {job.state === 'NOT_STARTED' ? (
-                      <Typography variant="body2" style={{ margin: 2 }}>
-                        No output files to show
-                      </Typography>
-                    ) : job.state === 'UNSUCCESSFUL' || job.state === 'ERROR' ? (
-                      <Typography variant="body2" style={{ margin: 2, whiteSpace: 'pre-wrap' }}>
-                        {job.stacktrace ? job.stacktrace : 'No detailed stacktrace to show'}
-                      </Typography>
-                    ) : (
-                      <Table size="small" aria-label="details">
-                        <TableBody>
-                          <JobOutput job={job} downloadingSingle={downloadingSingle} handleDownload={handleDownload} />
-                        </TableBody>
-                      </Table>
-                    )}
-                  </Box>
-                </Grid>
-                <Grid size={3}>
-                  <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
-                    Run details
-                  </Typography>
-                  {runDetails.map(({ icon, label, value }, index) => (
-                    <Box
-                      key={index}
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 1,
-                        marginBottom: '4px',
-                      }}
-                    >
-                      {React.cloneElement(icon, { sx: { mr: 1, flexShrink: 0 } })}
-                      <Typography variant="body2" sx={{ fontWeight: 'bold', mr: 1, display: 'inline' }}>
-                        {label}
-                      </Typography>
-                      <Typography variant="body2" sx={{ ...ellipsisWrap, display: 'inline' }} title={String(value)}>
-                        {value}
-                      </Typography>
-                    </Box>
-                  ))}
-                </Grid>
-                <Grid size={5}>
-                  <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
-                    Reduction inputs
-                  </Typography>
-                  <Box
-                    sx={{
-                      height: 160,
-                      overflowY: 'auto',
-                      overflowX: 'auto',
-                      marginBottom: 2,
-                      width: '100%',
-                    }}
-                  >
-                    <JobInput job={job} />
-                  </Box>
-                  <Box
-                    display="flex"
-                    justifyContent="flex-end"
-                    alignItems="center"
-                    sx={{
-                      gap: 1,
-                      flexWrap: 'nowrap',
-                      overflowX: 'auto',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    <Link
-                      to={`/reduction-history/${job.run.instrument_name}/value-editor-${job.id}`}
-                      onClick={() =>
-                        ReactGA.event({
-                          category: 'Button',
-                          action: 'Click',
-                          label: 'Value editor button',
-                          value: job.id,
-                        })
-                      }
-                      style={{ textDecoration: 'none' }}
-                    >
-                      <Button variant="contained" sx={{ flexShrink: 0, whiteSpace: 'nowrap' }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, p: 2 }}>
+              <JobStatus state={job.state} statusMessage={job.status_message} />
+
+              <Box
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns: { xs: '1fr', lg: 'repeat(2, minmax(0, 1fr))' },
+                  gap: 2,
+                  alignItems: 'stretch',
+                }}
+              >
+                <DetailPanel
+                  title="Reduction inputs"
+                  actions={
+                    <>
+                      <Button
+                        variant="contained"
+                        size="small"
+                        component={Link}
+                        to={`/reduction-history/${job.run.instrument_name}/value-editor-${job.id}`}
+                        startIcon={<Edit />}
+                        onClick={() =>
+                          ReactGA.event({
+                            category: 'Button',
+                            action: 'Click',
+                            label: 'Value editor button',
+                            value: job.id,
+                          })
+                        }
+                        sx={panelActionButtonSx}
+                      >
                         Value editor
                       </Button>
-                    </Link>
-                    {job.run?.instrument_name === 'IMAT' && job.state === 'SUCCESSFUL' && (
-                      <Link
-                        to={`/reduction-history/IMAT?jobId=${job.id}&experiment=${job.run?.experiment_number}&instrument=${job.run?.instrument_name}&tab=2`}
-                        style={{ textDecoration: 'none' }}
+                      <Button
+                        variant="contained"
+                        size="small"
+                        startIcon={loading ? undefined : <Replay />}
+                        disabled={loading}
+                        onClick={handleResubmit}
+                        sx={[panelActionButtonSx, { width: 116 }]}
                       >
-                        <Button variant="contained" sx={{ flexShrink: 0, whiteSpace: 'nowrap' }}>
-                          Stack viewer
-                        </Button>
-                      </Link>
+                        {loading ? <CircularProgress size={22} color="inherit" /> : 'Resubmit'}
+                      </Button>
+                    </>
+                  }
+                >
+                  <JobInput job={job} emptyRowCount={emptyInputRowCount} />
+                </DetailPanel>
+
+                <DetailPanel title="Run details">
+                  <Table size="small" aria-label="Run details" sx={detailTableSx}>
+                    <TableBody>
+                      {runDetails.map(({ icon, label, value }, index) => (
+                        <DetailItem key={index} icon={icon} label={label} value={value} />
+                      ))}
+                      <EmptyDetailRows count={emptyRunDetailRowCount} />
+                    </TableBody>
+                  </Table>
+                </DetailPanel>
+              </Box>
+
+              <DetailPanel
+                title={outputPanelTitle}
+                actions={
+                  <>
+                    {showStackViewer && (
+                      <Button
+                        variant="contained"
+                        size="small"
+                        component={Link}
+                        to={`/reduction-history/IMAT/stack-viewer?jobId=${job.id}&experiment=${job.run?.experiment_number}&instrument=${job.run?.instrument_name}`}
+                        startIcon={<StackedBarChart />}
+                        sx={panelActionButtonSx}
+                      >
+                        Stack viewer
+                      </Button>
                     )}
-                    {job.run?.instrument_name !== 'IMAT' && (
-                      <Link
-                        to={`/experiment-viewer?instrument=${job.run.instrument_name}&experiment=${job.run.experiment_number}`}
+                    {showExperimentViewer && (
+                      <Button
+                        variant="contained"
+                        size="small"
+                        component={Link}
+                        to={`/experiment-viewer/${job.run.instrument_name}/${job.run.experiment_number}`}
+                        startIcon={<Visibility />}
                         onClick={() =>
                           ReactGA.event({
                             category: 'Button',
@@ -804,33 +848,41 @@ const Row: React.FC<{
                             value: job.id,
                           })
                         }
-                        style={{ textDecoration: 'none' }}
+                        sx={panelActionButtonSx}
                       >
-                        <Button variant="contained" sx={{ flexShrink: 0, whiteSpace: 'nowrap' }}>
-                          Experiment viewer
-                        </Button>
-                      </Link>
+                        Experiment viewer
+                      </Button>
                     )}
                     <Button
                       variant="contained"
-                      sx={{ flexShrink: 0, whiteSpace: 'nowrap', width: 90, height: 38 }}
-                      disabled={loading}
-                      onClick={handleResubmit}
-                    >
-                      {loading ? <CircularProgress size={24} color="inherit" /> : 'Resubmit'}
-                    </Button>
-                    <Button
-                      variant="contained"
-                      startIcon={!downloadingAll && <Download />}
+                      size="small"
+                      startIcon={downloadingAll ? undefined : <Download />}
                       onClick={handleDownloadAll}
                       disabled={jobOutputs.length === 0 || downloadingAll}
-                      sx={{ flexShrink: 0, whiteSpace: 'nowrap', width: 140, height: 38 }}
+                      sx={[panelActionButtonSx, { width: 140 }]}
                     >
-                      {downloadingAll ? <CircularProgress size={24} color="inherit" /> : 'Download all'}
+                      {downloadingAll ? <CircularProgress size={22} color="inherit" /> : 'Download all'}
                     </Button>
+                  </>
+                }
+              >
+                {job.state === 'UNSUCCESSFUL' || job.state === 'ERROR' ? (
+                  <Box sx={{ maxHeight: 280, overflowY: 'auto' }}>
+                    <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
+                      {job.stacktrace ? job.stacktrace : 'No detailed stacktrace to show'}
+                    </Typography>
                   </Box>
-                </Grid>
-              </Grid>
+                ) : (
+                  <Box sx={{ maxHeight: 300, overflowY: 'auto', pr: 0.5 }}>
+                    <JobOutput
+                      job={job}
+                      outputs={jobOutputs}
+                      downloadingSingle={downloadingSingle}
+                      handleDownload={handleDownload}
+                    />
+                  </Box>
+                )}
+              </DetailPanel>
             </Box>
           </Collapse>
         </TableCell>

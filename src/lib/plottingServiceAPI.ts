@@ -52,7 +52,7 @@ export const fetchLiveDataFiles = async (instrument: string): Promise<string[]> 
     const response = await h5Api.get<string[]>(`/live/live-data/${instrument}/files`);
     return response.data;
   } catch (error) {
-    console.error(`Error fetching live data files for ${instrument}:`, error);
+    console.error('Error fetching live data files for instrument:', instrument, error);
     throw error;
   }
 };
@@ -74,7 +74,7 @@ export const fetchData1D = async (file: string, path: string, selection?: number
     const response = await h5Api.get<DataArray1D>('/data/', { params });
     return response.data;
   } catch (error) {
-    console.error(`Error fetching 1D data for file ${file}:`, error);
+    console.error('Error fetching 1D data for file:', file, error);
     throw error;
   }
 };
@@ -96,7 +96,7 @@ export const fetchErrorData = async (file: string, errorPath: string, selection?
     const response = await h5Api.get<DataArray1D>('/data/', { params });
     return response.data;
   } catch (error) {
-    console.error(`Error fetching error data for file ${file}:`, error);
+    console.error('Error fetching error data for file:', file, error);
     throw error;
   }
 };
@@ -120,7 +120,7 @@ export const fetchFilePath = async (
     });
     return response.data;
   } catch (error) {
-    console.error(`Error fetching file path for ${filename}:`, error);
+    console.error('Error fetching file path for filename:', filename, error);
     throw error;
   }
 };
@@ -173,7 +173,7 @@ export async function fetchEntityMetadata(file: string, path: string = '/'): Pro
     });
     return response.data;
   } catch (error) {
-    console.error(`Error fetching metadata for ${file}:${path}:`, error);
+    console.error('Error fetching metadata for file and path:', file, path, error);
     throw error;
   }
 }
@@ -189,7 +189,7 @@ export async function fetchSearchablePaths(file: string): Promise<string[]> {
     });
     return response.data;
   } catch (error) {
-    console.error(`Error fetching paths for ${file}:`, error);
+    console.error('Error fetching paths for file:', file, error);
     throw error;
   }
 }
@@ -206,7 +206,7 @@ export async function fetchAttributes(file: string, path: string): Promise<Recor
     });
     return response.data;
   } catch (error) {
-    console.error(`Error fetching attributes for ${file}:${path}:`, error);
+    console.error('Error fetching attributes for file and path:', file, path, error);
     return {};
   }
 }
@@ -355,7 +355,7 @@ export async function discoverFileStructure(filename: string, fullPath: string):
       errorDataset,
     };
   } catch (error) {
-    console.error(`Error discovering structure for ${filename}:`, error);
+    console.error('Error discovering structure for filename:', filename, error);
     throw error;
   }
 }

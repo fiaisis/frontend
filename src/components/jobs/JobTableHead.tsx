@@ -2,6 +2,8 @@ import { Box, CSSObject, SxProps, TableCell, TableHead, TableRow, TableSortLabel
 import { Theme } from '@mui/material/styles';
 import React from 'react';
 
+import { JOB_TABLE_HEADER_BORDER_COLOR } from './constants';
+
 interface SortableHeaderCellProps {
   headerName: string; // Title of the column
   sortKey: string; // The key related to sorting, like 'experiment_number'
@@ -16,10 +18,8 @@ const headerStyles = (theme: Theme): CSSObject => ({
   color: theme.palette.primary.contrastText,
   backgroundColor: theme.palette.primary.main,
   fontWeight: 'bold',
-  borderRight: '2px solid #1f4996',
-  '&:last-child': {
-    borderRight: 'none',
-  },
+  whiteSpace: 'nowrap',
+  borderRight: `2px solid ${JOB_TABLE_HEADER_BORDER_COLOR}`,
 });
 
 const SortableHeaderCell: React.FC<SortableHeaderCellProps> = ({
@@ -35,7 +35,7 @@ const SortableHeaderCell: React.FC<SortableHeaderCellProps> = ({
 
   return (
     <TableCell align={align} sx={sx} onClick={() => onSort(sortKey)}>
-      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', whiteSpace: 'nowrap' }}>
         {headerName}
         {isActive && (
           <TableSortLabel
@@ -65,7 +65,6 @@ const highlightHover = (theme: Theme): React.CSSProperties => {
 };
 
 interface JobTableHeadProps {
-  selectedInstrument: string;
   orderBy: string;
   orderDirection: 'asc' | 'desc';
   handleSort: (key: string) => void;
@@ -74,20 +73,23 @@ interface JobTableHeadProps {
   toggleSelectAll: () => void;
 }
 
-const JobTableHead: React.FC<JobTableHeadProps> = ({ selectedInstrument, handleSort, orderBy, orderDirection }) => {
+const JobTableHead: React.FC<JobTableHeadProps> = ({ handleSort, orderBy, orderDirection }) => {
   const theme = useTheme();
   return (
-    <TableHead sx={{ '& th': { py: 0.5 }, height: '54px' }}>
+    <TableHead
+      sx={{
+        '& th': {
+          py: 0.5,
+          borderTop: `2px solid ${JOB_TABLE_HEADER_BORDER_COLOR}`,
+          borderBottom: `2px solid ${JOB_TABLE_HEADER_BORDER_COLOR}`,
+        },
+        '& th:first-of-type': {
+          borderLeft: `2px solid ${JOB_TABLE_HEADER_BORDER_COLOR}`,
+        },
+        height: '54px',
+      }}
+    >
       <TableRow>
-        <TableCell
-          sx={{
-            width: '80px',
-            minWidth: '80px',
-            maxWidth: '80px',
-            ...headerStyles(theme),
-          }}
-          align="left"
-        ></TableCell>
         <SortableHeaderCell
           headerName="Experiment number"
           sortKey="experiment_number"
@@ -137,16 +139,9 @@ const JobTableHead: React.FC<JobTableHeadProps> = ({ selectedInstrument, handleS
           onSort={handleSort}
           sx={{ width: '12%', ...headerStyles(theme), '&:hover': highlightHover(theme) }}
         />
-        <TableCell
-          sx={{ width: '24%', ...headerStyles(theme) }}
-          align="left"
-          colSpan={selectedInstrument === 'ALL' ? 1 : 2}
-        >
+        <TableCell sx={{ width: '28%', ...headerStyles(theme) }} align="left" colSpan={2}>
           Title
         </TableCell>
-        {selectedInstrument === 'ALL' && (
-          <TableCell sx={{ width: '12%', ...headerStyles(theme) }}>Instrument</TableCell>
-        )}
       </TableRow>
     </TableHead>
   );

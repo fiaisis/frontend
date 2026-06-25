@@ -2,7 +2,13 @@ import { Breadcrumbs, Typography, Link as MuiLink, breadcrumbsClasses, Theme } f
 import React from 'react';
 import { useLocation, Link as RouterLink } from 'react-router-dom';
 
-const NavArrows: React.FC = () => {
+interface NavArrowsProps {
+  trailingCrumb?: React.ReactNode;
+  replaceLastCrumb?: boolean;
+  replaceLastCrumbCount?: number;
+}
+
+const NavArrows: React.FC<NavArrowsProps> = ({ trailingCrumb, replaceLastCrumb = false, replaceLastCrumbCount }) => {
   const url = useLocation();
   const path = url.pathname;
 
@@ -10,6 +16,8 @@ const NavArrows: React.FC = () => {
 
   const pathSegments = path.split('/').filter(Boolean);
   const pathsList = ['FIA', ...pathSegments.map((s) => decodeURIComponent(s))];
+  const crumbsToReplace = trailingCrumb ? (replaceLastCrumbCount ?? (replaceLastCrumb ? 1 : 0)) : 0;
+  const displayPathsList = crumbsToReplace > 0 ? pathsList.slice(0, -crumbsToReplace) : pathsList;
 
   return (
     <>
@@ -21,7 +29,7 @@ const NavArrows: React.FC = () => {
           marginLeft: theme.spacing(2),
           backgroundColor: theme.palette.background.default,
           '& li': {
-            '& a, p': {
+            '& a, p, .breadcrumb-control': {
               color: theme.palette.primary.contrastText,
               backgroundColor: theme.palette.primary.light,
               display: 'block',
@@ -63,7 +71,7 @@ const NavArrows: React.FC = () => {
           },
           /* Every even breadcrumb has a darker background */
           '& li:nth-of-type(4n + 3)': {
-            '& a, p': {
+            '& a, p, .breadcrumb-control': {
               backgroundColor: theme.palette.primary.main,
               '&:after': {
                 backgroundColor: theme.palette.primary.main,
@@ -71,12 +79,12 @@ const NavArrows: React.FC = () => {
             },
           },
           '& li:first-of-type': {
-            '& a, p': {
+            '& a, p, .breadcrumb-control': {
               paddingLeft: '18px',
             },
           },
           '& li:last-of-type': {
-            '& a, p': {
+            '& a, p, .breadcrumb-control': {
               /* Curve the last breadcrumb border */
               borderRadius: '0 5px 5px 0',
               paddingLeft: '18px',
@@ -85,9 +93,13 @@ const NavArrows: React.FC = () => {
               },
             },
           },
+          '& li .breadcrumb-control': {
+            display: 'inline-flex',
+            alignItems: 'center',
+          },
 
           /* Control the width and shortening of text */
-          '& span': {
+          '& a span, & p span, & .breadcrumb-control > span:not(.MuiButton-endIcon)': {
             display: 'block',
             whiteSpace: 'nowrap',
             maxWidth: '20vw',
@@ -100,10 +112,10 @@ const NavArrows: React.FC = () => {
           },
         })}
       >
-        {pathsList.map((label, index) => {
-          const isLast = index === pathsList.length - 1;
-          if (label === 'instruments') {
-            label = 'Instruments';
+        {displayPathsList.map((label, index) => {
+          const isLast = index === displayPathsList.length - 1 && !trailingCrumb;
+          if (label === 'isis-instruments' || label === 'instruments') {
+            label = 'ISIS instruments';
           }
           if (label === 'reduction-history') {
             label = 'Reduction history';
@@ -121,10 +133,6 @@ const NavArrows: React.FC = () => {
           if (valueEditorRegex.test(label)) {
             label = 'Value editor';
           }
-          const experimentViewerRegex = /^experiment-viewer-(\d+)$/i;
-          if (experimentViewerRegex.test(label)) {
-            label = 'Experiment viewer';
-          }
           if (isLast) {
             return (
               <Typography color="text.primary" key={index}>
@@ -139,6 +147,7 @@ const NavArrows: React.FC = () => {
             </MuiLink>
           );
         })}
+        {trailingCrumb}
       </Breadcrumbs>
     </>
   );
