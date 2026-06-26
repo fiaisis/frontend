@@ -54,17 +54,38 @@ const getTechniqueSlug = (instrumentType: string): string =>
 const getTechniqueRoute = (instrumentType: string): string =>
   instrumentType === ALL_FILTER ? '/isis-instruments' : `/isis-instruments/${getTechniqueSlug(instrumentType)}`;
 
-const getTechniqueFromRouteParam = (routeTechnique: string | undefined, instrumentTypes: string[]): string => {
-  if (!routeTechnique) {
-    return ALL_FILTER;
+const getInstrumentRoute = (instrument: InstrumentData): string =>
+  `/isis-instruments/${encodeURIComponent(instrument.name.toUpperCase())}`;
+
+const getDecodedRouteParam = (routeParam: string | undefined): string | undefined => {
+  if (!routeParam) {
+    return undefined;
   }
 
-  let decodedTechnique = routeTechnique;
-
   try {
-    decodedTechnique = decodeURIComponent(routeTechnique);
+    return decodeURIComponent(routeParam);
   } catch {
-    decodedTechnique = routeTechnique;
+    return routeParam;
+  }
+};
+
+const getInstrumentFromRouteParam = (routeParam: string | undefined): InstrumentData | null => {
+  const decodedRouteParam = getDecodedRouteParam(routeParam);
+
+  if (!decodedRouteParam) {
+    return null;
+  }
+
+  const normalizedInstrument = decodedRouteParam.trim().toLowerCase();
+
+  return instruments.find((instrument) => instrument.name.toLowerCase() === normalizedInstrument) ?? null;
+};
+
+const getTechniqueFromRouteParam = (routeTechnique: string | undefined, instrumentTypes: string[]): string => {
+  const decodedTechnique = getDecodedRouteParam(routeTechnique);
+
+  if (!decodedTechnique) {
+    return ALL_FILTER;
   }
 
   const normalizedTechnique = decodedTechnique.trim().toLowerCase();
@@ -80,6 +101,7 @@ const getTechniqueFromRouteParam = (routeTechnique: string | undefined, instrume
 const InstrumentSearchBreadcrumb: React.FC<{
   searchTerm: string;
   selectedType: string;
+  selectedInstrumentName: string | null;
   showFavoritesOnly: boolean;
   favoriteIds: number[];
   favoriteIdSet: Set<number>;
@@ -96,6 +118,7 @@ const InstrumentSearchBreadcrumb: React.FC<{
 }> = ({
   searchTerm,
   selectedType,
+  selectedInstrumentName,
   showFavoritesOnly,
   favoriteIds,
   favoriteIdSet,
@@ -112,8 +135,11 @@ const InstrumentSearchBreadcrumb: React.FC<{
 }) => {
   const [anchorEl, setAnchorEl] = React.useState<HTMLElement | null>(null);
   const menuOpen = Boolean(anchorEl);
-  const hasActiveFilters = searchTerm.trim().length > 0 || selectedType !== ALL_FILTER || showFavoritesOnly;
-  const breadcrumbLabel = selectedType !== ALL_FILTER && !showFavoritesOnly ? selectedType : INSTRUMENT_SEARCH_LABEL;
+  const hasActiveFilters =
+    searchTerm.trim().length > 0 || selectedType !== ALL_FILTER || showFavoritesOnly || selectedInstrumentName !== null;
+  const breadcrumbLabel =
+    selectedInstrumentName ??
+    (selectedType !== ALL_FILTER && !showFavoritesOnly ? selectedType : INSTRUMENT_SEARCH_LABEL);
 
   const closeMenu = (): void => {
     setAnchorEl(null);
@@ -201,7 +227,7 @@ const InstrumentSearchBreadcrumb: React.FC<{
               <TechniqueFilterButton
                 label={ALL_FILTER}
                 count={instruments.length}
-                active={selectedType === ALL_FILTER && !showFavoritesOnly}
+                active={selectedType === ALL_FILTER && !showFavoritesOnly && selectedInstrumentName === null}
                 onClick={onShowAllTypes}
               />
               <TechniqueFilterButton
@@ -232,7 +258,7 @@ const InstrumentSearchBreadcrumb: React.FC<{
                     component="div"
                     role="menuitem"
                     key={instrument.id}
-                    selected={searchTerm.trim().toLowerCase() === instrument.name.toLowerCase()}
+                    selected={selectedInstrumentName === instrument.name}
                     onClick={() => handleInstrumentSelect(instrument)}
                   >
                     <ListItemText
@@ -275,7 +301,7 @@ const Instruments: React.FC = () => {
   const theme = useTheme();
   const history = useHistory();
   const location = useLocation();
-  const { technique } = useParams<{ technique?: string }>();
+  const { instrumentOrTechnique } = useParams<{ instrumentOrTechnique?: string }>();
   const [favoriteIds, setFavoriteIds] = React.useState<number[]>(getStoredFavoriteInstrumentIds);
   const [searchTerm, setSearchTerm] = React.useState('');
   const [showFavoritesOnly, setShowFavoritesOnly] = React.useState(false);
@@ -283,11 +309,19 @@ const Instruments: React.FC = () => {
   const instrumentActionHoverColor = theme.palette.mode === 'dark' ? '#b7d1ff' : theme.palette.primary.dark;
 
   const instrumentTypes = React.useMemo(() => getUniqueInstrumentTechniques(instruments), []);
+  const routeSelectedInstrument = React.useMemo(
+    () => getInstrumentFromRouteParam(instrumentOrTechnique),
+    [instrumentOrTechnique]
+  );
   const routeSelectedType = React.useMemo(
-    () => getTechniqueFromRouteParam(technique, instrumentTypes),
-    [instrumentTypes, technique]
+    () =>
+      routeSelectedInstrument === null
+        ? getTechniqueFromRouteParam(instrumentOrTechnique, instrumentTypes)
+        : ALL_FILTER,
+    [instrumentTypes, instrumentOrTechnique, routeSelectedInstrument]
   );
   const [selectedType, setSelectedType] = React.useState(routeSelectedType);
+  const selectedInstrumentName = routeSelectedInstrument?.name ?? null;
 
   const instrumentCountByType = React.useMemo(
     () =>
@@ -300,10 +334,8 @@ const Instruments: React.FC = () => {
     []
   );
 
-  const updateTechniqueRoute = React.useCallback(
-    (instrumentType: string, method: 'push' | 'replace' = 'push'): void => {
-      const nextPath = getTechniqueRoute(instrumentType);
-
+  const updateRoute = React.useCallback(
+    (nextPath: string, method: 'push' | 'replace' = 'push'): void => {
       if (location.pathname === nextPath) {
         return;
       }
@@ -318,6 +350,20 @@ const Instruments: React.FC = () => {
     [history, location.pathname]
   );
 
+  const updateTechniqueRoute = React.useCallback(
+    (instrumentType: string, method: 'push' | 'replace' = 'push'): void => {
+      updateRoute(getTechniqueRoute(instrumentType), method);
+    },
+    [updateRoute]
+  );
+
+  const updateInstrumentRoute = React.useCallback(
+    (instrument: InstrumentData, method: 'push' | 'replace' = 'push'): void => {
+      updateRoute(getInstrumentRoute(instrument), method);
+    },
+    [updateRoute]
+  );
+
   React.useEffect(() => {
     setStoredFavoriteInstrumentIds(favoriteIds);
   }, [favoriteIds]);
@@ -325,14 +371,19 @@ const Instruments: React.FC = () => {
   React.useEffect(() => {
     setSelectedType(routeSelectedType);
 
-    if (routeSelectedType !== ALL_FILTER) {
+    if (routeSelectedInstrument !== null || routeSelectedType !== ALL_FILTER) {
       setShowFavoritesOnly(false);
     }
 
-    if (technique) {
-      updateTechniqueRoute(routeSelectedType, 'replace');
+    if (instrumentOrTechnique) {
+      const canonicalRoute =
+        routeSelectedInstrument !== null
+          ? getInstrumentRoute(routeSelectedInstrument)
+          : getTechniqueRoute(routeSelectedType);
+
+      updateRoute(canonicalRoute, 'replace');
     }
-  }, [routeSelectedType, technique, updateTechniqueRoute]);
+  }, [instrumentOrTechnique, routeSelectedInstrument, routeSelectedType, updateRoute]);
 
   const favoriteIdSet = React.useMemo(() => new Set(favoriteIds), [favoriteIds]);
 
@@ -395,11 +446,16 @@ const Instruments: React.FC = () => {
   };
 
   const handleSelectInstrument = (instrument: InstrumentData): void => {
-    setSearchTerm(instrument.name);
+    setSearchTerm('');
     setSelectedType(ALL_FILTER);
     setShowFavoritesOnly(false);
-    updateTechniqueRoute(ALL_FILTER);
+    updateInstrumentRoute(instrument);
   };
+
+  const visibleInstruments = React.useMemo(
+    () => (routeSelectedInstrument !== null ? [routeSelectedInstrument] : filteredInstruments),
+    [filteredInstruments, routeSelectedInstrument]
+  );
 
   return (
     <>
@@ -408,6 +464,7 @@ const Instruments: React.FC = () => {
           <InstrumentSearchBreadcrumb
             searchTerm={searchTerm}
             selectedType={selectedType}
+            selectedInstrumentName={selectedInstrumentName}
             showFavoritesOnly={showFavoritesOnly}
             favoriteIds={favoriteIds}
             favoriteIdSet={favoriteIdSet}
@@ -423,7 +480,7 @@ const Instruments: React.FC = () => {
             onToggleFavorite={handleToggleFavorite}
           />
         }
-        replaceLastCrumb={Boolean(technique) && selectedType !== ALL_FILTER && !showFavoritesOnly}
+        replaceLastCrumb={routeSelectedInstrument !== null || routeSelectedType !== ALL_FILTER}
       />
       <Box className="tour-instruments" sx={{ px: { xs: 2, md: 3 }, py: 2, pb: 4 }}>
         <Box
@@ -446,7 +503,7 @@ const Instruments: React.FC = () => {
           </Box>
         </Box>
 
-        {filteredInstruments.length === 0 ? (
+        {visibleInstruments.length === 0 ? (
           <Paper variant="outlined" sx={{ p: 4, borderRadius: 1, textAlign: 'center' }}>
             <Typography variant="h6" component="h2" sx={{ mb: 1 }}>
               No instruments found
@@ -484,7 +541,7 @@ const Instruments: React.FC = () => {
               gridAutoRows: '1fr',
             }}
           >
-            {filteredInstruments.map((instrument) => {
+            {visibleInstruments.map((instrument) => {
               const favourite = favoriteIdSet.has(instrument.id);
 
               return (
