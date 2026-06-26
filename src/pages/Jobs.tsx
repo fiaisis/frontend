@@ -1,5 +1,5 @@
-import ArrowDropDown from '@mui/icons-material/ArrowDropDown';
-import { Box, Button, Menu, MenuItem, Typography, useTheme } from '@mui/material';
+import { Box, ToggleButton, ToggleButtonGroup, Typography, useTheme } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { jwtDecode } from 'jwt-decode';
 import React, { ReactElement, useState } from 'react';
 import { useHistory, useLocation, useParams } from 'react-router-dom';
@@ -11,7 +11,7 @@ import FilterContainer from '../components/jobs/Filters';
 import InstrumentSelector from '../components/jobs/InstrumentSelector';
 import JobTable from '../components/jobs/JobTable';
 import NavArrows from '../components/navigation/NavArrows';
-import { isValidInstrument } from '../lib/instrumentData';
+import { instruments, isValidInstrument } from '../lib/instrumentData';
 import { JobQueryFilters } from '../lib/types';
 
 const DEFAULT_ROWS_PER_PAGE: JobRowsPerPage = JOB_ROWS_PER_PAGE_OPTIONS[1];
@@ -49,12 +49,6 @@ const JOB_TABLE_QUERY_PARAMS = ['page', 'rowsPerPage', 'filters', 'orderBy', 'or
 const getImatViewPath = (value: ImatViewValue): string =>
   IMAT_VIEW_OPTIONS.find((option) => option.value === value)?.path ?? IMAT_VIEW_OPTIONS[0].path;
 
-const getImatBreadcrumbViewLabel = (value: number): string => {
-  if (value === 1) return 'Viewing latest image';
-  if (value === 2) return 'Viewing image stack';
-  return 'Viewing reductions';
-};
-
 const getImatViewFromPath = (pathname: string): ImatViewValue => {
   if (pathname.endsWith('/latest-image')) return 1;
   if (pathname.endsWith('/stack-viewer')) return 2;
@@ -69,60 +63,74 @@ const clearJobTableQueryParams = (params: URLSearchParams): void => {
   JOB_TABLE_QUERY_PARAMS.forEach((param) => params.delete(param));
 };
 
-const ImatViewSelector: React.FC<{
-  value: number;
+const getCanonicalInstrumentName = (name: string | undefined): string | undefined =>
+  instruments.find((instrument) => instrument.name.toUpperCase() === name?.toUpperCase())?.name;
+
+const ImatViewButtons: React.FC<{
+  value: ImatViewValue;
   onChange: (value: ImatViewValue) => void;
 }> = ({ value, onChange }) => {
-  const [anchorEl, setAnchorEl] = React.useState<HTMLElement | null>(null);
-  const open = Boolean(anchorEl);
-  const selectedLabel = getImatBreadcrumbViewLabel(value);
-
-  const handleSelect = (nextValue: ImatViewValue): void => {
-    onChange(nextValue);
-    setAnchorEl(null);
+  const handleChange = (_event: React.MouseEvent<HTMLElement>, nextValue: ImatViewValue | null): void => {
+    if (nextValue !== null && nextValue !== value) {
+      onChange(nextValue);
+    }
   };
 
   return (
-    <>
-      <Button
-        id="imat-view-selector-button"
-        className="breadcrumb-control"
-        variant="text"
-        aria-haspopup="menu"
-        aria-controls={open ? 'imat-view-selector-menu' : undefined}
-        aria-expanded={open ? 'true' : undefined}
-        aria-label={`IMAT view: ${selectedLabel}`}
-        endIcon={<ArrowDropDown />}
-        onClick={(event: React.MouseEvent<HTMLButtonElement>) => setAnchorEl(event.currentTarget)}
-        sx={{
-          minWidth: 0,
-          border: 0,
-          borderRadius: 0,
-          boxShadow: 'none',
-          font: 'inherit',
-          textTransform: 'none',
-          '& .MuiButton-endIcon': { ml: 0.75, mr: 0, color: 'inherit' },
-        }}
-      >
-        <Box component="span">{selectedLabel}</Box>
-      </Button>
-      <Menu
-        id="imat-view-selector-menu"
-        anchorEl={anchorEl}
-        open={open}
-        onClose={() => setAnchorEl(null)}
-        MenuListProps={{
-          'aria-labelledby': 'imat-view-selector-button',
-          sx: { minWidth: 180 },
-        }}
+    <Box
+      className="breadcrumb-control breadcrumb-control-preserve-hover-background"
+      sx={{
+        gap: 0.5,
+        alignItems: 'center',
+        boxSizing: 'border-box',
+        height: 40,
+        lineHeight: '32px !important',
+      }}
+    >
+      <ToggleButtonGroup
+        exclusive
+        size="small"
+        value={value}
+        onChange={handleChange}
+        aria-label="IMAT view"
+        sx={(theme) => ({
+          gap: 0.5,
+          '& .MuiToggleButtonGroup-grouped': {
+            border: 0,
+            margin: 0,
+          },
+          '& .MuiToggleButton-root': {
+            minWidth: 0,
+            border: 0,
+            borderRadius: '3px !important',
+            px: 1,
+            py: 0.25,
+            color: 'inherit',
+            font: 'inherit',
+            lineHeight: '24px',
+            textTransform: 'none',
+            whiteSpace: 'nowrap',
+            '&:hover': {
+              backgroundColor: alpha(theme.palette.common.white, 0.16),
+            },
+            '&.Mui-selected': {
+              color: theme.palette.primary.main,
+              backgroundColor: theme.palette.primary.contrastText,
+              fontWeight: 700,
+            },
+            '&.Mui-selected:hover': {
+              backgroundColor: alpha(theme.palette.primary.contrastText, 0.9),
+            },
+          },
+        })}
       >
         {IMAT_VIEW_OPTIONS.map((option) => (
-          <MenuItem key={option.value} selected={option.value === value} onClick={() => handleSelect(option.value)}>
+          <ToggleButton key={option.value} value={option.value} aria-label={option.label}>
             {option.label}
-          </MenuItem>
+          </ToggleButton>
         ))}
-      </Menu>
-    </>
+      </ToggleButtonGroup>
+    </Box>
   );
 };
 
@@ -395,6 +403,10 @@ const Jobs: React.FC = (): ReactElement => {
   }, []);
 
   const [configDrawerOpen, setConfigDrawerOpen] = React.useState<boolean>(false);
+  const selectedRouteInstrumentName = getCanonicalInstrumentName(instrumentName);
+  const breadcrumbLabelOverrides = selectedRouteInstrumentName
+    ? { [instrumentName ?? selectedRouteInstrumentName]: selectedRouteInstrumentName }
+    : undefined;
 
   const handleImatViewChange = (newValue: ImatViewValue): void => {
     const params = new URLSearchParams(location.search);
@@ -415,8 +427,10 @@ const Jobs: React.FC = (): ReactElement => {
       selectedInstrument={selectedInstrument}
       handleInstrumentChange={handleInstrumentChange}
       variant="breadcrumb"
+      allInstrumentsLabel="Clear filters"
+      breadcrumbLabel="Browse instruments"
     />,
-    ...(isImat ? [<ImatViewSelector key="imat-view" value={imatView} onChange={handleImatViewChange} />] : []),
+    ...(isImat ? [<ImatViewButtons key="imat-view" value={imatView} onChange={handleImatViewChange} />] : []),
   ];
 
   return (
@@ -440,8 +454,8 @@ const Jobs: React.FC = (): ReactElement => {
         >
           <NavArrows
             trailingCrumb={breadcrumbTrailingCrumbs}
-            replaceLastCrumb={selectedInstrument !== 'ALL'}
-            replaceLastCrumbCount={isImat && imatView !== 0 ? 2 : undefined}
+            replaceLastCrumbCount={isImat && imatView !== 0 ? 1 : undefined}
+            labelOverrides={breadcrumbLabelOverrides}
           />
           <Typography variant="h3" component="h1" sx={{ color: theme.palette.text.primary, px: '20px', pt: 2, pb: 1 }}>
             {reductionHistoryHeading}

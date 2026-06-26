@@ -138,6 +138,7 @@ const InstrumentSelector: React.FC<{
   allInstrumentsValue?: string;
   allInstrumentsLabel?: string;
   breadcrumbAllInstrumentsLabel?: string;
+  breadcrumbLabel?: string;
   showAllInstrumentsOption?: boolean;
   disabled?: boolean;
 }> = ({
@@ -148,6 +149,7 @@ const InstrumentSelector: React.FC<{
   allInstrumentsValue = ALL_INSTRUMENTS_VALUE,
   allInstrumentsLabel = 'View all reductions',
   breadcrumbAllInstrumentsLabel = 'Select an instrument',
+  breadcrumbLabel,
   showAllInstrumentsOption = true,
   disabled = false,
 }) => {
@@ -158,7 +160,11 @@ const InstrumentSelector: React.FC<{
   const isBreadcrumbVariant = variant === 'breadcrumb';
   const selectorLabel = getInstrumentSelectorLabel(selectedInstrument, allInstrumentsValue, allInstrumentsLabel);
   const buttonLabel =
-    isBreadcrumbVariant && selectedInstrument === allInstrumentsValue ? breadcrumbAllInstrumentsLabel : selectorLabel;
+    isBreadcrumbVariant && breadcrumbLabel
+      ? breadcrumbLabel
+      : isBreadcrumbVariant && selectedInstrument === allInstrumentsValue
+        ? breadcrumbAllInstrumentsLabel
+        : selectorLabel;
   const showAllInstrumentsSelection =
     showAllInstrumentsOption && (!isBreadcrumbVariant || selectedInstrument !== allInstrumentsValue);
   const showAllInstrumentsHeaderAction = showAllInstrumentsOption && selectedInstrument !== allInstrumentsValue;
