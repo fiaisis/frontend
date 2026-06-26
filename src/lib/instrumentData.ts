@@ -3,6 +3,7 @@ export type InstrumentData = {
   name: string;
   description: string;
   type: string;
+  techniques?: string[];
   infoPage: string;
   image?: {
     url: string;
@@ -109,6 +110,7 @@ export const instruments: InstrumentData[] = [
     description:
       'GEM is a high-intensity, high-resolution neutron diffractometer for studying the structure of disordered materials and crystalline powders.',
     type: 'Crystallography',
+    techniques: ['Crystallography', 'Neutron diffraction', 'Total scattering'],
     infoPage: 'https://www.isis.stfc.ac.uk/instruments/gem/',
     image: {
       url: new URL('../images/instruments/gem.jpg', import.meta.url).href,
@@ -135,6 +137,7 @@ export const instruments: InstrumentData[] = [
     description:
       'HRPD is a high-resolution powder diffractometer for precise structural studies of crystalline materials.',
     type: 'Crystallography',
+    techniques: ['Crystallography', 'Neutron diffraction'],
     infoPage: 'https://www.isis.stfc.ac.uk/instruments/hrpd/',
     image: {
       url: new URL('../images/instruments/hrpd.jpg', import.meta.url).href,
@@ -148,6 +151,7 @@ export const instruments: InstrumentData[] = [
     description:
       'IMAT is a neutron imaging and diffraction instrument for non-destructive and in-situ testing across materials science, engineering and cultural heritage.',
     type: 'Engineering diffraction',
+    techniques: ['Engineering diffraction', 'Neutron imaging'],
     infoPage: 'https://www.isis.stfc.ac.uk/instruments/imat/',
     image: {
       url: new URL('../images/instruments/imat.jpg', import.meta.url).href,
@@ -161,6 +165,7 @@ export const instruments: InstrumentData[] = [
     description:
       'Ines is a general-purpose diffractometer mainly used for materials characterisation, structure refinement, phase analysis and elemental composition.',
     type: 'Elemental analysis',
+    techniques: ['Elemental analysis', 'Neutron diffraction'],
     infoPage: 'https://www.isis.stfc.ac.uk/instruments/ines/',
     image: {
       url: new URL('../images/instruments/ines.jpg', import.meta.url).href,
@@ -289,6 +294,7 @@ export const instruments: InstrumentData[] = [
     description:
       'MuX is a negative-muon elemental analysis instrument for non-destructively measuring depth-sensitive elemental composition in cultural heritage objects, biomaterials and energy storage devices.',
     type: 'Elemental analysis',
+    techniques: ['Elemental analysis', 'Muon spectroscopy'],
     infoPage: 'https://www.isis.stfc.ac.uk/instruments/mux/',
     image: {
       url: new URL('../images/instruments/mux.jpg', import.meta.url).href,
@@ -354,6 +360,7 @@ export const instruments: InstrumentData[] = [
     description:
       'Pearl is a high-pressure neutron diffractometer for studying structural changes that occur under applied pressure.',
     type: 'Crystallography',
+    techniques: ['Crystallography', 'Neutron diffraction'],
     infoPage: 'https://www.isis.stfc.ac.uk/instruments/pearl/',
     image: {
       url: new URL('../images/instruments/pearl.jpg', import.meta.url).href,
@@ -367,6 +374,7 @@ export const instruments: InstrumentData[] = [
     description:
       'Polaris is a medium-resolution, high-intensity powder diffractometer for studying materials with neutron diffraction and total scattering.',
     type: 'Crystallography',
+    techniques: ['Crystallography', 'Neutron diffraction', 'Total scattering'],
     infoPage: 'https://www.isis.stfc.ac.uk/instruments/polaris/',
     image: {
       url: new URL('../images/instruments/polaris.jpeg', import.meta.url).href,
@@ -444,6 +452,7 @@ export const instruments: InstrumentData[] = [
     description:
       'SXD is a single-crystal diffractometer using time-of-flight Laue methods to access large three-dimensional volumes of reciprocal space.',
     type: 'Crystallography',
+    techniques: ['Crystallography', 'Neutron diffraction'],
     infoPage: 'https://www.isis.stfc.ac.uk/instruments/sxd/',
     image: {
       url: new URL('../images/instruments/sxd.jpg', import.meta.url).href,
@@ -470,6 +479,7 @@ export const instruments: InstrumentData[] = [
     description:
       'Vesuvio is a unique neutron spectrometer using high-energy neutrons to separate spectra into nuclear momentum distributions.',
     type: 'Neutron diffraction',
+    techniques: ['Neutron diffraction', 'Neutron spectroscopy'],
     infoPage: 'https://www.isis.stfc.ac.uk/instruments/vesuvio/',
     image: {
       url: new URL('../images/instruments/vesuvio.jpg', import.meta.url).href,
@@ -483,6 +493,7 @@ export const instruments: InstrumentData[] = [
     description:
       'WISH is a long-wavelength diffractometer for powder diffraction at long d-spacing in magnetic and large-unit-cell systems.',
     type: 'Crystallography',
+    techniques: ['Crystallography', 'Neutron diffraction'],
     infoPage: 'https://www.isis.stfc.ac.uk/instruments/wish/',
     image: {
       url: new URL('../images/instruments/wish.jpg', import.meta.url).href,
@@ -504,6 +515,20 @@ export const instruments: InstrumentData[] = [
     scientists: ['Diego Alba Venero', 'Dirk Honecker', 'Leide Cavalcanti'],
   },
 ];
+
+export const getInstrumentTechniques = (instrument: InstrumentData): string[] =>
+  instrument.techniques && instrument.techniques.length > 0 ? instrument.techniques : [instrument.type];
+
+export const formatInstrumentTechniques = (instrument: InstrumentData): string =>
+  getInstrumentTechniques(instrument).join(', ');
+
+export const instrumentHasTechnique = (instrument: InstrumentData, technique: string): boolean =>
+  getInstrumentTechniques(instrument).includes(technique);
+
+export const getUniqueInstrumentTechniques = (instrumentOptions: InstrumentData[] = instruments): string[] =>
+  Array.from(new Set(instrumentOptions.flatMap(getInstrumentTechniques))).sort((typeA, typeB) =>
+    typeA.localeCompare(typeB)
+  );
 
 export const VALID_INSTRUMENT_NAMES = instruments.map((instrument) => instrument.name.toUpperCase());
 

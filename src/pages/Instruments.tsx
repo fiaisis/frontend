@@ -32,10 +32,17 @@ import {
   TechniqueFilterButton,
 } from '../components/jobs/InstrumentSelector';
 import NavArrows from '../components/navigation/NavArrows';
-import { instruments, type InstrumentData } from '../lib/instrumentData';
+import {
+  formatInstrumentTechniques,
+  getInstrumentTechniques,
+  getUniqueInstrumentTechniques,
+  instrumentHasTechnique,
+  instruments,
+  type InstrumentData,
+} from '../lib/instrumentData';
 import { getStoredFavoriteInstrumentIds, setStoredFavoriteInstrumentIds } from '../lib/instrumentFavorites';
 
-const INSTRUMENT_SEARCH_LABEL = 'Search for instrument';
+const INSTRUMENT_BROWSER_LABEL = 'Browse instruments';
 
 const getTechniqueSlug = (instrumentType: string): string =>
   instrumentType
@@ -47,17 +54,38 @@ const getTechniqueSlug = (instrumentType: string): string =>
 const getTechniqueRoute = (instrumentType: string): string =>
   instrumentType === ALL_FILTER ? '/isis-instruments' : `/isis-instruments/${getTechniqueSlug(instrumentType)}`;
 
-const getTechniqueFromRouteParam = (routeTechnique: string | undefined, instrumentTypes: string[]): string => {
-  if (!routeTechnique) {
-    return ALL_FILTER;
+const getInstrumentRoute = (instrument: InstrumentData): string =>
+  `/isis-instruments/${encodeURIComponent(instrument.name.toUpperCase())}`;
+
+const getDecodedRouteParam = (routeParam: string | undefined): string | undefined => {
+  if (!routeParam) {
+    return undefined;
   }
 
-  let decodedTechnique = routeTechnique;
-
   try {
-    decodedTechnique = decodeURIComponent(routeTechnique);
+    return decodeURIComponent(routeParam);
   } catch {
-    decodedTechnique = routeTechnique;
+    return routeParam;
+  }
+};
+
+const getInstrumentFromRouteParam = (routeParam: string | undefined): InstrumentData | null => {
+  const decodedRouteParam = getDecodedRouteParam(routeParam);
+
+  if (!decodedRouteParam) {
+    return null;
+  }
+
+  const normalizedInstrument = decodedRouteParam.trim().toLowerCase();
+
+  return instruments.find((instrument) => instrument.name.toLowerCase() === normalizedInstrument) ?? null;
+};
+
+const getTechniqueFromRouteParam = (routeTechnique: string | undefined, instrumentTypes: string[]): string => {
+  const decodedTechnique = getDecodedRouteParam(routeTechnique);
+
+  if (!decodedTechnique) {
+    return ALL_FILTER;
   }
 
   const normalizedTechnique = decodedTechnique.trim().toLowerCase();
@@ -71,8 +99,43 @@ const getTechniqueFromRouteParam = (routeTechnique: string | undefined, instrume
 };
 
 const InstrumentSearchBreadcrumb: React.FC<{
+  menuOpen: boolean;
+  onMenuOpen: (button: HTMLButtonElement) => void;
+}> = ({ menuOpen, onMenuOpen }) => {
+  const breadcrumbLabel = INSTRUMENT_BROWSER_LABEL;
+
+  return (
+    <Button
+      id="instrument-search-button"
+      className="breadcrumb-control"
+      variant="text"
+      aria-haspopup="menu"
+      aria-controls={menuOpen ? 'instrument-search-menu' : undefined}
+      aria-expanded={menuOpen ? 'true' : undefined}
+      aria-label={`Instrument search: ${breadcrumbLabel}`}
+      endIcon={<ArrowDropDown />}
+      onClick={(event: React.MouseEvent<HTMLButtonElement>) => onMenuOpen(event.currentTarget)}
+      sx={{
+        minWidth: 0,
+        border: 0,
+        borderRadius: 0,
+        boxShadow: 'none',
+        font: 'inherit',
+        textTransform: 'none',
+        '& .MuiButton-endIcon': { ml: 0.75, mr: 0, color: 'inherit' },
+      }}
+    >
+      <Box component="span">{breadcrumbLabel}</Box>
+    </Button>
+  );
+};
+
+const InstrumentSearchPopover: React.FC<{
+  menuOpen: boolean;
+  menuAnchorPosition: { top: number; left: number } | null;
   searchTerm: string;
   selectedType: string;
+  selectedInstrumentName: string | null;
   showFavoritesOnly: boolean;
   favoriteIds: number[];
   favoriteIdSet: Set<number>;
@@ -85,10 +148,14 @@ const InstrumentSearchBreadcrumb: React.FC<{
   onShowAllTypes: () => void;
   onClearFilters: () => void;
   onSelectInstrument: (instrument: InstrumentData) => void;
+  onMenuClose: () => void;
   onToggleFavorite: (id: number) => void;
 }> = ({
+  menuOpen,
+  menuAnchorPosition,
   searchTerm,
   selectedType,
+  selectedInstrumentName,
   showFavoritesOnly,
   favoriteIds,
   favoriteIdSet,
@@ -101,166 +168,137 @@ const InstrumentSearchBreadcrumb: React.FC<{
   onShowAllTypes,
   onClearFilters,
   onSelectInstrument,
+  onMenuClose,
   onToggleFavorite,
 }) => {
-  const [anchorEl, setAnchorEl] = React.useState<HTMLElement | null>(null);
-  const menuOpen = Boolean(anchorEl);
-  const hasActiveFilters = searchTerm.trim().length > 0 || selectedType !== ALL_FILTER || showFavoritesOnly;
-  const breadcrumbLabel = selectedType !== ALL_FILTER && !showFavoritesOnly ? selectedType : INSTRUMENT_SEARCH_LABEL;
-
-  const closeMenu = (): void => {
-    setAnchorEl(null);
-  };
+  const hasActiveFilters =
+    searchTerm.trim().length > 0 || selectedType !== ALL_FILTER || showFavoritesOnly || selectedInstrumentName !== null;
 
   const handleInstrumentSelect = (instrument: InstrumentData): void => {
     onSelectInstrument(instrument);
-    closeMenu();
   };
 
   return (
-    <>
-      <Button
-        id="instrument-search-button"
-        className="breadcrumb-control"
-        variant="text"
-        aria-haspopup="menu"
-        aria-controls={menuOpen ? 'instrument-search-menu' : undefined}
-        aria-expanded={menuOpen ? 'true' : undefined}
-        aria-label={`Instrument search: ${breadcrumbLabel}`}
-        endIcon={<ArrowDropDown />}
-        onClick={(event: React.MouseEvent<HTMLButtonElement>) => setAnchorEl(event.currentTarget)}
+    <Popover
+      id="instrument-search-menu"
+      anchorPosition={menuAnchorPosition ?? undefined}
+      anchorReference="anchorPosition"
+      open={menuOpen && menuAnchorPosition !== null}
+      onClose={onMenuClose}
+      anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+      transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+      slotProps={{
+        paper: {
+          sx: { width: SELECTOR_MENU_WIDTH, maxWidth: 'calc(100vw - 32px)' },
+        },
+      }}
+    >
+      <Box
+        aria-labelledby="instrument-search-button"
         sx={{
-          minWidth: 0,
-          border: 0,
-          borderRadius: 0,
-          boxShadow: 'none',
-          font: 'inherit',
-          textTransform: 'none',
-          '& .MuiButton-endIcon': { ml: 0.75, mr: 0, color: 'inherit' },
+          display: 'flex',
+          flexDirection: 'column',
+          maxHeight: 'min(620px, calc(100vh - 96px))',
         }}
       >
-        <Box component="span">{breadcrumbLabel}</Box>
-      </Button>
-      <Popover
-        id="instrument-search-menu"
-        anchorEl={anchorEl}
-        open={menuOpen}
-        onClose={closeMenu}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-        slotProps={{
-          paper: {
-            sx: { width: SELECTOR_MENU_WIDTH, maxWidth: 'calc(100vw - 32px)' },
-          },
-        }}
-      >
-        <Box
-          aria-labelledby="instrument-search-button"
-          sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            maxHeight: 'min(620px, calc(100vh - 96px))',
-          }}
-        >
-          <Box sx={{ p: 1.5, pb: 1.25 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <TextField
-                fullWidth
-                size="small"
-                value={searchTerm}
-                onChange={(event) => onSearchTermChange(event.target.value)}
-                placeholder="Search for instrument, technique, or scientist"
-                sx={{ minWidth: 0, flex: '1 1 auto' }}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon fontSize="small" />
-                    </InputAdornment>
-                  ),
-                }}
-              />
-              {hasActiveFilters && (
-                <Button
-                  variant="contained"
-                  size="medium"
-                  onClick={onClearFilters}
-                  sx={{ flex: '0 0 auto', height: 40, whiteSpace: 'nowrap', textTransform: 'none' }}
-                >
-                  Clear filters
-                </Button>
-              )}
-            </Box>
-            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 0.75, mt: 1 }}>
-              <TechniqueFilterButton
-                label={ALL_FILTER}
-                count={instruments.length}
-                active={selectedType === ALL_FILTER && !showFavoritesOnly}
-                onClick={onShowAllTypes}
-              />
-              <TechniqueFilterButton
-                label={FAVORITES_FILTER}
-                count={favoriteIds.length}
-                active={showFavoritesOnly}
-                onClick={onSelectFavorites}
-              />
-              {instrumentTypes.map((instrumentType) => (
-                <TechniqueFilterButton
-                  key={instrumentType}
-                  label={instrumentType}
-                  count={instrumentCountByType.get(instrumentType) ?? 0}
-                  active={selectedType === instrumentType}
-                  onClick={() => onSelectedTypeChange(instrumentType)}
-                />
-              ))}
-            </Box>
-          </Box>
-          <Divider />
-          <Box role="menu" aria-labelledby="instrument-search-button" sx={{ overflowY: 'auto', py: 0.5 }}>
-            {filteredInstruments.length > 0 ? (
-              filteredInstruments.map((instrument) => {
-                const favourite = favoriteIdSet.has(instrument.id);
-
-                return (
-                  <MenuItem
-                    component="div"
-                    role="menuitem"
-                    key={instrument.id}
-                    selected={searchTerm.trim().toLowerCase() === instrument.name.toLowerCase()}
-                    onClick={() => handleInstrumentSelect(instrument)}
-                  >
-                    <ListItemText
-                      primary={instrument.name}
-                      secondary={instrument.type}
-                      secondaryTypographyProps={{ noWrap: true }}
-                      sx={{ mr: 1 }}
-                    />
-                    <IconButton
-                      aria-label={`${favourite ? 'Remove' : 'Add'} ${instrument.name} ${
-                        favourite ? 'from favourites' : 'to favourites'
-                      }`}
-                      size="small"
-                      onClick={(event: React.MouseEvent<HTMLButtonElement>) => {
-                        event.stopPropagation();
-                        onToggleFavorite(instrument.id);
-                      }}
-                      sx={{ flex: '0 0 auto', color: favourite ? 'warning.main' : 'action.active' }}
-                    >
-                      {favourite ? <StarIcon fontSize="small" /> : <StarBorderIcon fontSize="small" />}
-                    </IconButton>
-                  </MenuItem>
-                );
-              })
-            ) : (
-              <Box sx={{ px: 2, py: 3, textAlign: 'center' }}>
-                <Typography variant="body2" color="text.secondary">
-                  No instruments found
-                </Typography>
-              </Box>
+        <Box sx={{ p: 1.5, pb: 1.25 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <TextField
+              fullWidth
+              size="small"
+              value={searchTerm}
+              onChange={(event) => onSearchTermChange(event.target.value)}
+              placeholder="Search for instrument, technique, or scientist"
+              sx={{ minWidth: 0, flex: '1 1 auto' }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon fontSize="small" />
+                  </InputAdornment>
+                ),
+              }}
+            />
+            {hasActiveFilters && (
+              <Button
+                variant="contained"
+                size="medium"
+                onClick={onClearFilters}
+                sx={{ flex: '0 0 auto', height: 40, whiteSpace: 'nowrap', textTransform: 'none' }}
+              >
+                Clear filters
+              </Button>
             )}
           </Box>
+          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 0.75, mt: 1 }}>
+            <TechniqueFilterButton
+              label={ALL_FILTER}
+              count={instruments.length}
+              active={selectedType === ALL_FILTER && !showFavoritesOnly && selectedInstrumentName === null}
+              onClick={onShowAllTypes}
+            />
+            <TechniqueFilterButton
+              label={FAVORITES_FILTER}
+              count={favoriteIds.length}
+              active={showFavoritesOnly}
+              onClick={onSelectFavorites}
+            />
+            {instrumentTypes.map((instrumentType) => (
+              <TechniqueFilterButton
+                key={instrumentType}
+                label={instrumentType}
+                count={instrumentCountByType.get(instrumentType) ?? 0}
+                active={selectedType === instrumentType}
+                onClick={() => onSelectedTypeChange(instrumentType)}
+              />
+            ))}
+          </Box>
         </Box>
-      </Popover>
-    </>
+        <Divider />
+        <Box role="menu" aria-labelledby="instrument-search-button" sx={{ overflowY: 'auto', py: 0.5 }}>
+          {filteredInstruments.length > 0 ? (
+            filteredInstruments.map((instrument) => {
+              const favourite = favoriteIdSet.has(instrument.id);
+
+              return (
+                <MenuItem
+                  component="div"
+                  role="menuitem"
+                  key={instrument.id}
+                  selected={selectedInstrumentName === instrument.name}
+                  onClick={() => handleInstrumentSelect(instrument)}
+                >
+                  <ListItemText
+                    primary={instrument.name}
+                    secondary={formatInstrumentTechniques(instrument)}
+                    secondaryTypographyProps={{ noWrap: true }}
+                    sx={{ mr: 1 }}
+                  />
+                  <IconButton
+                    aria-label={`${favourite ? 'Remove' : 'Add'} ${instrument.name} ${
+                      favourite ? 'from favourites' : 'to favourites'
+                    }`}
+                    size="small"
+                    onClick={(event: React.MouseEvent<HTMLButtonElement>) => {
+                      event.stopPropagation();
+                      onToggleFavorite(instrument.id);
+                    }}
+                    sx={{ flex: '0 0 auto', color: favourite ? 'warning.main' : 'action.active' }}
+                  >
+                    {favourite ? <StarIcon fontSize="small" /> : <StarBorderIcon fontSize="small" />}
+                  </IconButton>
+                </MenuItem>
+              );
+            })
+          ) : (
+            <Box sx={{ px: 2, py: 3, textAlign: 'center' }}>
+              <Typography variant="body2" color="text.secondary">
+                No instruments found
+              </Typography>
+            </Box>
+          )}
+        </Box>
+      </Box>
+    </Popover>
   );
 };
 
@@ -268,39 +306,61 @@ const Instruments: React.FC = () => {
   const theme = useTheme();
   const history = useHistory();
   const location = useLocation();
-  const { technique } = useParams<{ technique?: string }>();
+  const { instrumentOrTechnique } = useParams<{ instrumentOrTechnique?: string }>();
   const [favoriteIds, setFavoriteIds] = React.useState<number[]>(getStoredFavoriteInstrumentIds);
   const [searchTerm, setSearchTerm] = React.useState('');
   const [showFavoritesOnly, setShowFavoritesOnly] = React.useState(false);
+  const [menuOpen, setMenuOpen] = React.useState(false);
+  const [menuAnchorPosition, setMenuAnchorPosition] = React.useState<{ top: number; left: number } | null>(null);
   const instrumentActionColor = theme.palette.mode === 'dark' ? '#86b4ff' : theme.palette.primary.main;
   const instrumentActionHoverColor = theme.palette.mode === 'dark' ? '#b7d1ff' : theme.palette.primary.dark;
 
-  const instrumentTypes = React.useMemo(
-    () =>
-      Array.from(new Set(instruments.map((instrument) => instrument.type))).sort((typeA, typeB) =>
-        typeA.localeCompare(typeB)
-      ),
-    []
+  const instrumentTypes = React.useMemo(() => getUniqueInstrumentTechniques(instruments), []);
+  const routeSelectedInstrument = React.useMemo(
+    () => getInstrumentFromRouteParam(instrumentOrTechnique),
+    [instrumentOrTechnique]
   );
   const routeSelectedType = React.useMemo(
-    () => getTechniqueFromRouteParam(technique, instrumentTypes),
-    [instrumentTypes, technique]
+    () =>
+      routeSelectedInstrument === null
+        ? getTechniqueFromRouteParam(instrumentOrTechnique, instrumentTypes)
+        : ALL_FILTER,
+    [instrumentTypes, instrumentOrTechnique, routeSelectedInstrument]
   );
   const [selectedType, setSelectedType] = React.useState(routeSelectedType);
+  const selectedInstrumentName = routeSelectedInstrument?.name ?? null;
+  const breadcrumbLabelOverrides = React.useMemo(() => {
+    const overrides: Record<string, string> = {};
+    const decodedRouteParam = getDecodedRouteParam(instrumentOrTechnique);
+
+    if (decodedRouteParam && routeSelectedInstrument !== null) {
+      overrides[decodedRouteParam] = routeSelectedInstrument.name;
+    }
+
+    if (routeSelectedType !== ALL_FILTER) {
+      overrides[getTechniqueSlug(routeSelectedType)] = routeSelectedType;
+
+      if (decodedRouteParam) {
+        overrides[decodedRouteParam] = routeSelectedType;
+      }
+    }
+
+    return overrides;
+  }, [instrumentOrTechnique, routeSelectedInstrument, routeSelectedType]);
 
   const instrumentCountByType = React.useMemo(
     () =>
       instruments.reduce<Map<string, number>>((countByType, instrument) => {
-        countByType.set(instrument.type, (countByType.get(instrument.type) ?? 0) + 1);
+        getInstrumentTechniques(instrument).forEach((technique) => {
+          countByType.set(technique, (countByType.get(technique) ?? 0) + 1);
+        });
         return countByType;
       }, new Map<string, number>()),
     []
   );
 
-  const updateTechniqueRoute = React.useCallback(
-    (instrumentType: string, method: 'push' | 'replace' = 'push'): void => {
-      const nextPath = getTechniqueRoute(instrumentType);
-
+  const updateRoute = React.useCallback(
+    (nextPath: string, method: 'push' | 'replace' = 'push'): void => {
       if (location.pathname === nextPath) {
         return;
       }
@@ -315,6 +375,20 @@ const Instruments: React.FC = () => {
     [history, location.pathname]
   );
 
+  const updateTechniqueRoute = React.useCallback(
+    (instrumentType: string, method: 'push' | 'replace' = 'push'): void => {
+      updateRoute(getTechniqueRoute(instrumentType), method);
+    },
+    [updateRoute]
+  );
+
+  const updateInstrumentRoute = React.useCallback(
+    (instrument: InstrumentData, method: 'push' | 'replace' = 'push'): void => {
+      updateRoute(getInstrumentRoute(instrument), method);
+    },
+    [updateRoute]
+  );
+
   React.useEffect(() => {
     setStoredFavoriteInstrumentIds(favoriteIds);
   }, [favoriteIds]);
@@ -322,14 +396,19 @@ const Instruments: React.FC = () => {
   React.useEffect(() => {
     setSelectedType(routeSelectedType);
 
-    if (routeSelectedType !== ALL_FILTER) {
+    if (routeSelectedInstrument !== null || routeSelectedType !== ALL_FILTER) {
       setShowFavoritesOnly(false);
     }
 
-    if (technique) {
-      updateTechniqueRoute(routeSelectedType, 'replace');
+    if (instrumentOrTechnique) {
+      const canonicalRoute =
+        routeSelectedInstrument !== null
+          ? getInstrumentRoute(routeSelectedInstrument)
+          : getTechniqueRoute(routeSelectedType);
+
+      updateRoute(canonicalRoute, 'replace');
     }
-  }, [routeSelectedType, technique, updateTechniqueRoute]);
+  }, [instrumentOrTechnique, routeSelectedInstrument, routeSelectedType, updateRoute]);
 
   const favoriteIdSet = React.useMemo(() => new Set(favoriteIds), [favoriteIds]);
 
@@ -338,11 +417,16 @@ const Instruments: React.FC = () => {
 
     return instruments
       .filter((instrument) => {
-        const searchableValues = [instrument.name, instrument.type, instrument.description, ...instrument.scientists];
+        const searchableValues = [
+          instrument.name,
+          ...getInstrumentTechniques(instrument),
+          instrument.description,
+          ...instrument.scientists,
+        ];
         const matchesSearch =
           normalizedSearch.length === 0 ||
           searchableValues.some((searchableValue) => searchableValue.toLowerCase().includes(normalizedSearch));
-        const matchesType = selectedType === ALL_FILTER || instrument.type === selectedType;
+        const matchesType = selectedType === ALL_FILTER || instrumentHasTechnique(instrument, selectedType);
         const matchesFavorite = !showFavoritesOnly || favoriteIdSet.has(instrument.id);
 
         return matchesSearch && matchesType && matchesFavorite;
@@ -368,6 +452,11 @@ const Instruments: React.FC = () => {
     updateTechniqueRoute(ALL_FILTER);
   };
 
+  const clearSearchFilters = React.useCallback((): void => {
+    setSearchTerm('');
+    setShowFavoritesOnly(false);
+  }, []);
+
   const handleShowAllTypes = (): void => {
     setSelectedType(ALL_FILTER);
     setShowFavoritesOnly(false);
@@ -387,35 +476,68 @@ const Instruments: React.FC = () => {
   };
 
   const handleSelectInstrument = (instrument: InstrumentData): void => {
-    setSearchTerm(instrument.name);
+    setSearchTerm('');
     setSelectedType(ALL_FILTER);
     setShowFavoritesOnly(false);
-    updateTechniqueRoute(ALL_FILTER);
+    updateInstrumentRoute(instrument);
   };
+
+  const handleBreadcrumbClick = React.useCallback(
+    (destination: string): void => {
+      if (destination.startsWith('/isis-instruments/')) {
+        clearSearchFilters();
+      }
+    },
+    [clearSearchFilters]
+  );
+
+  const handleMenuOpen = React.useCallback((button: HTMLButtonElement): void => {
+    const rect = button.getBoundingClientRect();
+
+    setMenuOpen(true);
+    setMenuAnchorPosition({
+      left: rect.left,
+      top: rect.bottom,
+    });
+  }, []);
+
+  const handleMenuClose = React.useCallback((): void => {
+    setMenuOpen(false);
+    setMenuAnchorPosition(null);
+  }, []);
+
+  const visibleInstruments = React.useMemo(
+    () => (routeSelectedInstrument !== null ? [routeSelectedInstrument] : filteredInstruments),
+    [filteredInstruments, routeSelectedInstrument]
+  );
 
   return (
     <>
       <NavArrows
-        trailingCrumb={
-          <InstrumentSearchBreadcrumb
-            searchTerm={searchTerm}
-            selectedType={selectedType}
-            showFavoritesOnly={showFavoritesOnly}
-            favoriteIds={favoriteIds}
-            favoriteIdSet={favoriteIdSet}
-            instrumentTypes={instrumentTypes}
-            instrumentCountByType={instrumentCountByType}
-            filteredInstruments={filteredInstruments}
-            onSearchTermChange={setSearchTerm}
-            onSelectedTypeChange={handleSelectType}
-            onSelectFavorites={handleSelectFavorites}
-            onShowAllTypes={handleShowAllTypes}
-            onClearFilters={handleClearFilters}
-            onSelectInstrument={handleSelectInstrument}
-            onToggleFavorite={handleToggleFavorite}
-          />
-        }
-        replaceLastCrumb={Boolean(technique) && selectedType !== ALL_FILTER && !showFavoritesOnly}
+        trailingCrumb={<InstrumentSearchBreadcrumb menuOpen={menuOpen} onMenuOpen={handleMenuOpen} />}
+        labelOverrides={breadcrumbLabelOverrides}
+        onCrumbClick={handleBreadcrumbClick}
+      />
+      <InstrumentSearchPopover
+        menuOpen={menuOpen}
+        menuAnchorPosition={menuAnchorPosition}
+        searchTerm={searchTerm}
+        selectedType={selectedType}
+        selectedInstrumentName={selectedInstrumentName}
+        showFavoritesOnly={showFavoritesOnly}
+        favoriteIds={favoriteIds}
+        favoriteIdSet={favoriteIdSet}
+        instrumentTypes={instrumentTypes}
+        instrumentCountByType={instrumentCountByType}
+        filteredInstruments={filteredInstruments}
+        onSearchTermChange={setSearchTerm}
+        onSelectedTypeChange={handleSelectType}
+        onSelectFavorites={handleSelectFavorites}
+        onShowAllTypes={handleShowAllTypes}
+        onClearFilters={handleClearFilters}
+        onSelectInstrument={handleSelectInstrument}
+        onMenuClose={handleMenuClose}
+        onToggleFavorite={handleToggleFavorite}
       />
       <Box className="tour-instruments" sx={{ px: { xs: 2, md: 3 }, py: 2, pb: 4 }}>
         <Box
@@ -438,7 +560,7 @@ const Instruments: React.FC = () => {
           </Box>
         </Box>
 
-        {filteredInstruments.length === 0 ? (
+        {visibleInstruments.length === 0 ? (
           <Paper variant="outlined" sx={{ p: 4, borderRadius: 1, textAlign: 'center' }}>
             <Typography variant="h6" component="h2" sx={{ mb: 1 }}>
               No instruments found
@@ -476,7 +598,7 @@ const Instruments: React.FC = () => {
               gridAutoRows: '1fr',
             }}
           >
-            {filteredInstruments.map((instrument) => {
+            {visibleInstruments.map((instrument) => {
               const favourite = favoriteIdSet.has(instrument.id);
 
               return (
@@ -532,15 +654,19 @@ const Instruments: React.FC = () => {
                         >
                           {instrument.name}
                         </Typography>
-                        <Chip
-                          size="small"
-                          label={instrument.type}
-                          sx={{
-                            mt: 1,
-                            maxWidth: '100%',
-                            '& .MuiChip-label': { overflow: 'hidden', textOverflow: 'ellipsis' },
-                          }}
-                        />
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, mt: 1 }}>
+                          {getInstrumentTechniques(instrument).map((technique) => (
+                            <Chip
+                              key={technique}
+                              size="small"
+                              label={technique}
+                              sx={{
+                                maxWidth: '100%',
+                                '& .MuiChip-label': { overflow: 'hidden', textOverflow: 'ellipsis' },
+                              }}
+                            />
+                          ))}
+                        </Box>
                       </Box>
                       <IconButton
                         aria-label={`${favourite ? 'Remove' : 'Add'} ${instrument.name} ${
