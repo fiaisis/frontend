@@ -109,7 +109,7 @@ describe('Reduction history page', () => {
     cy.contains('All instruments reduction').should('be.visible');
 
     cy.get('[aria-label="breadcrumb"]').within(() => {
-      cy.get('#instrument-selector-button').should('contain', 'Select an instrument').click();
+      cy.get('#instrument-selector-button').should('contain', 'Browse instruments').click();
     });
     cy.contains('[role="menuitem"]', 'View all reductions').should('not.exist');
     cy.contains('button', 'Small-angle neutron scattering').click();
@@ -120,7 +120,8 @@ describe('Reduction history page', () => {
 
     cy.location('pathname').should('eq', '/fia/reduction-history/LOQ');
     cy.get('[aria-label="breadcrumb"]').within(() => {
-      cy.get('#instrument-selector-button').should('contain', 'LOQ');
+      cy.contains('a', 'LOQ').should('be.visible');
+      cy.get('#instrument-selector-button').should('contain', 'Browse instruments').and('not.contain', 'LOQ');
     });
     cy.contains('h1', 'LOQ reduction history').should('be.visible');
     cy.contains('LOQ scoped reduction').should('be.visible');
@@ -228,7 +229,7 @@ describe('Reduction history page', () => {
     });
   });
 
-  it('shows the IMAT image view breadcrumb selector with image view options', () => {
+  it('shows the IMAT image view breadcrumb buttons with one active option', () => {
     cy.intercept('GET', /\/api\/instrument\/IMAT\/jobs\/count\?.*$/, (req) => {
       expect(req.headers.authorization).to.match(/^Bearer(?: .+)?$/);
       req.reply({
@@ -252,11 +253,13 @@ describe('Reduction history page', () => {
     cy.wait('@getImatJobs');
 
     cy.get('[aria-label="breadcrumb"]').within(() => {
-      cy.get('#imat-view-selector-button').should('contain', 'Viewing reductions').click();
+      cy.contains('a', 'IMAT').should('be.visible');
+      cy.get('#instrument-selector-button').should('contain', 'Browse instruments');
+      cy.get('[role="group"][aria-label="IMAT view"]').within(() => {
+        cy.contains('button', 'Reduction history').should('have.attr', 'aria-pressed', 'true');
+        cy.contains('button', 'Latest image').should('have.attr', 'aria-pressed', 'false');
+        cy.contains('button', 'Stack viewer').should('have.attr', 'aria-pressed', 'false');
+      });
     });
-
-    cy.contains('[role="menuitem"]', 'Reduction history').should('be.visible');
-    cy.contains('[role="menuitem"]', 'Latest image').should('be.visible');
-    cy.contains('[role="menuitem"]', 'Stack viewer').should('be.visible');
   });
 });
