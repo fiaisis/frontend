@@ -13,7 +13,7 @@ import ViewerTabs from '../components/experimentViewer/ViewerTabs';
 import InstrumentSelector from '../components/jobs/InstrumentSelector';
 import NavArrows from '../components/navigation/NavArrows';
 import { fiaApi } from '../lib/api';
-import { isValidInstrument } from '../lib/instrumentData';
+import { instruments, isValidInstrument } from '../lib/instrumentData';
 import { discoverFileStructure, fetchData1D, fetchErrorData, fetchFilePath } from '../lib/plottingServiceAPI';
 import { DatasetInfo, FileConfig, Job, JobQueryFilters, LinePlotData, outputFilter } from '../lib/types';
 
@@ -49,6 +49,9 @@ const getExperimentViewerPath = (instrument: string | null, experimentNumber: nu
   const instrumentPath = `/experiment-viewer/${encodeURIComponent(instrument)}`;
   return experimentNumber === null ? instrumentPath : `${instrumentPath}/${experimentNumber}`;
 };
+
+const getCanonicalInstrumentName = (name: string | undefined): string | undefined =>
+  instruments.find((instrument) => instrument.name.toUpperCase() === name?.toUpperCase())?.name;
 
 const ExperimentNumberBreadcrumb: React.FC<{
   experimentNumber: number | null;
@@ -823,11 +826,15 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
   const showBreadcrumbFilters = !jobId;
   const breadcrumbRouteCrumbCount = searchInstrument
     ? searchExperimentNumber === null
-      ? 1
-      : 2
+      ? 0
+      : 1
     : searchExperimentNumber === null
       ? 0
       : 2;
+  const selectedRouteInstrumentName = getCanonicalInstrumentName(instrumentName);
+  const breadcrumbLabelOverrides = selectedRouteInstrumentName
+    ? { [instrumentName ?? selectedRouteInstrumentName]: selectedRouteInstrumentName }
+    : undefined;
   const breadcrumbTrailingCrumb = showBreadcrumbFilters
     ? [
         <InstrumentSelector
@@ -835,8 +842,8 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
           selectedInstrument={searchInstrument || 'ALL'}
           handleInstrumentChange={handleBreadcrumbInstrumentChange}
           variant="breadcrumb"
-          allInstrumentsLabel="All instruments"
-          showAllInstrumentsOption={false}
+          allInstrumentsLabel="Clear filters"
+          breadcrumbLabel="Browse instruments"
         />,
         <ExperimentNumberBreadcrumb
           key="experiment-number"
@@ -872,7 +879,11 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
         }}
       >
         <Box sx={{ flex: '1 1 auto', minWidth: 0 }}>
-          <NavArrows trailingCrumb={breadcrumbTrailingCrumb} replaceLastCrumbCount={breadcrumbRouteCrumbCount} />
+          <NavArrows
+            trailingCrumb={breadcrumbTrailingCrumb}
+            replaceLastCrumbCount={breadcrumbRouteCrumbCount}
+            labelOverrides={breadcrumbLabelOverrides}
+          />
           <Typography variant="h3" component="h1" sx={{ color: 'text.primary', px: '20px', pt: 2, pb: 1 }}>
             Experiment viewer
           </Typography>

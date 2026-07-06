@@ -4,14 +4,14 @@ import React from 'react';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 
 import InstrumentSelector from './InstrumentSelector';
-import { instruments } from '../../lib/instrumentData';
+import { getInstrumentTechniques, instruments } from '../../lib/instrumentData';
 import { FAVORITE_INSTRUMENTS_STORAGE_KEY } from '../../lib/instrumentFavorites';
 
 const getMenuItemIndex = (name: string): number =>
   screen.getAllByRole('menuitem').findIndex((menuItem) => menuItem.textContent?.includes(name));
 
 const focusedInstrumentOptions = instruments.filter((instrument) =>
-  ['ALF', 'LARMOR', 'LOQ', 'SANS2D', 'ZOOM'].includes(instrument.name)
+  ['ALF', 'GEM', 'LARMOR', 'LOQ', 'SANS2D', 'ZOOM'].includes(instrument.name)
 );
 
 describe('InstrumentSelector', () => {
@@ -22,7 +22,7 @@ describe('InstrumentSelector', () => {
 
   test('renders view all reductions plus clickable technique filters', async () => {
     const user = userEvent.setup();
-    const instrumentTypes = Array.from(new Set(focusedInstrumentOptions.map((instrument) => instrument.type)));
+    const instrumentTypes = Array.from(new Set(focusedInstrumentOptions.flatMap(getInstrumentTechniques)));
 
     render(
       <InstrumentSelector
@@ -43,11 +43,21 @@ describe('InstrumentSelector', () => {
     });
     expect(screen.getByRole('button', { name: /Small-angle neutron scattering\s+\(4\)/ })).toBeInTheDocument();
     expect(screen.getByRole('menuitem', { name: /ALF\s+Neutron diffraction/ })).toBeInTheDocument();
+    expect(
+      screen.getByRole('menuitem', { name: /GEM\s+Crystallography, Neutron diffraction, Total scattering/ })
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /Total scattering\s+\(1\)/ }));
+
+    expect(
+      screen.getByRole('menuitem', { name: /GEM\s+Crystallography, Neutron diffraction, Total scattering/ })
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: /ALF\s+Neutron diffraction/ })).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: /Small-angle neutron scattering\s+\(4\)/ }));
 
     expect(screen.getByRole('menuitem', { name: /LOQ\s+Small-angle neutron scattering/ })).toBeInTheDocument();
-    expect(screen.queryByRole('menuitem', { name: 'ALF' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: /ALF\s+Neutron diffraction/ })).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: /Favourites\s+\(0\)/ }));
 

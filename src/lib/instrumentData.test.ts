@@ -1,6 +1,13 @@
 import { describe, expect, test } from 'vitest';
 
-import { instruments, isValidInstrument, VALID_INSTRUMENT_NAMES } from './instrumentData';
+import {
+  formatInstrumentTechniques,
+  getInstrumentTechniques,
+  getUniqueInstrumentTechniques,
+  instruments,
+  isValidInstrument,
+  VALID_INSTRUMENT_NAMES,
+} from './instrumentData';
 
 describe('instrumentData', () => {
   test('validates instrument names case-insensitively', () => {
@@ -21,5 +28,29 @@ describe('instrumentData', () => {
     expect(VALID_INSTRUMENT_NAMES.every((name) => name === name.toUpperCase())).toBe(true);
     expect(VALID_INSTRUMENT_NAMES).toContain('IMAT');
     expect(VALID_INSTRUMENT_NAMES).toContain('SANS2D');
+  });
+
+  test('supports instruments with multiple techniques', () => {
+    const gem = instruments.find((instrument) => instrument.name === 'GEM');
+
+    expect(gem).toBeDefined();
+    expect(getInstrumentTechniques(gem!)).toEqual(['Crystallography', 'Neutron diffraction', 'Total scattering']);
+    expect(formatInstrumentTechniques(gem!)).toBe('Crystallography, Neutron diffraction, Total scattering');
+  });
+
+  test('exports unique instrument techniques across primary and secondary techniques', () => {
+    expect(getUniqueInstrumentTechniques()).toEqual([
+      'Crystallography',
+      'Elemental analysis',
+      'Engineering diffraction',
+      'Irradiation',
+      'Muon spectroscopy',
+      'Neutron diffraction',
+      'Neutron imaging',
+      'Neutron reflectometry',
+      'Neutron spectroscopy',
+      'Small-angle neutron scattering',
+      'Total scattering',
+    ]);
   });
 });

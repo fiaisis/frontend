@@ -6,9 +6,17 @@ interface NavArrowsProps {
   trailingCrumb?: React.ReactNode;
   replaceLastCrumb?: boolean;
   replaceLastCrumbCount?: number;
+  labelOverrides?: Record<string, string>;
+  onCrumbClick?: (destination: string) => void;
 }
 
-const NavArrows: React.FC<NavArrowsProps> = ({ trailingCrumb, replaceLastCrumb = false, replaceLastCrumbCount }) => {
+const NavArrows: React.FC<NavArrowsProps> = ({
+  trailingCrumb,
+  replaceLastCrumb = false,
+  replaceLastCrumbCount,
+  labelOverrides,
+  onCrumbClick,
+}) => {
   const url = useLocation();
   const path = url.pathname;
 
@@ -18,6 +26,7 @@ const NavArrows: React.FC<NavArrowsProps> = ({ trailingCrumb, replaceLastCrumb =
   const pathsList = ['FIA', ...pathSegments.map((s) => decodeURIComponent(s))];
   const crumbsToReplace = trailingCrumb ? (replaceLastCrumbCount ?? (replaceLastCrumb ? 1 : 0)) : 0;
   const displayPathsList = crumbsToReplace > 0 ? pathsList.slice(0, -crumbsToReplace) : pathsList;
+  const trailingCrumbs = React.Children.toArray(trailingCrumb);
 
   return (
     <>
@@ -30,8 +39,9 @@ const NavArrows: React.FC<NavArrowsProps> = ({ trailingCrumb, replaceLastCrumb =
           backgroundColor: theme.palette.background.default,
           '& li': {
             '& a, p, .breadcrumb-control': {
+              '--breadcrumb-background-color': theme.palette.primary.light,
               color: theme.palette.primary.contrastText,
-              backgroundColor: theme.palette.primary.light,
+              backgroundColor: 'var(--breadcrumb-background-color)',
               display: 'block',
               textDecoration: 'none',
               position: 'relative',
@@ -53,7 +63,7 @@ const NavArrows: React.FC<NavArrowsProps> = ({ trailingCrumb, replaceLastCrumb =
                 zIndex: 1,
                 boxShadow: `2px -2px 0 2px ${theme.palette.background.default}`,
                 borderRadius: ' 0 5px 0 50px',
-                backgroundColor: theme.palette.primary.light,
+                backgroundColor: 'var(--breadcrumb-background-color)',
               },
               '&:hover': {
                 backgroundColor: `${theme.palette.primary.light} !important`,
@@ -67,14 +77,20 @@ const NavArrows: React.FC<NavArrowsProps> = ({ trailingCrumb, replaceLastCrumb =
                   backgroundColor: `${theme.palette.grey[600]} !important`,
                 },
               },
+              '&.breadcrumb-control-preserve-hover-background:hover': {
+                backgroundColor: 'var(--breadcrumb-background-color) !important',
+                '&:after': {
+                  backgroundColor: 'var(--breadcrumb-background-color) !important',
+                },
+              },
             },
           },
           /* Every even breadcrumb has a darker background */
           '& li:nth-of-type(4n + 3)': {
             '& a, p, .breadcrumb-control': {
-              backgroundColor: theme.palette.primary.main,
+              '--breadcrumb-background-color': theme.palette.primary.main,
               '&:after': {
-                backgroundColor: theme.palette.primary.main,
+                backgroundColor: 'var(--breadcrumb-background-color)',
               },
             },
           },
@@ -114,6 +130,7 @@ const NavArrows: React.FC<NavArrowsProps> = ({ trailingCrumb, replaceLastCrumb =
       >
         {displayPathsList.map((label, index) => {
           const isLast = index === displayPathsList.length - 1 && !trailingCrumb;
+          label = labelOverrides?.[label] ?? labelOverrides?.[label.toLowerCase()] ?? label;
           if (label === 'isis-instruments' || label === 'instruments') {
             label = 'ISIS instruments';
           }
@@ -142,12 +159,18 @@ const NavArrows: React.FC<NavArrowsProps> = ({ trailingCrumb, replaceLastCrumb =
           }
           const destination = `/${pathsList.slice(1, index + 1).join('/')}`;
           return (
-            <MuiLink component={RouterLink} underline="hover" to={destination} key={index}>
+            <MuiLink
+              component={RouterLink}
+              underline="hover"
+              to={destination}
+              onClick={() => onCrumbClick?.(destination)}
+              key={index}
+            >
               {label}
             </MuiLink>
           );
         })}
-        {trailingCrumb}
+        {trailingCrumbs}
       </Breadcrumbs>
     </>
   );
