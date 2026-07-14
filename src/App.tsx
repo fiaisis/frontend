@@ -3,7 +3,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import React, { FC } from 'react';
 import ReactGA from 'react-ga4';
-import { BrowserRouter as Router, Redirect, Route, Switch } from 'react-router-dom';
+import { BrowserRouter as Router, Redirect, Route, Switch, useLocation } from 'react-router-dom';
 
 import GlobalStyles from './GlobalStyles';
 import { clearFailedAuthRequestsQueue, retryFailedAuthRequests } from './lib/api';
@@ -20,6 +20,40 @@ import ValueEditor from './pages/ValueEditor';
 ReactGA.initialize('G-7XJBCP6P75');
 // Track the initial page load event
 ReactGA.send({ hitType: 'pageview', page: window.location.pathname });
+
+const scrollableOverflowValues = new Set(['auto', 'scroll', 'overlay']);
+
+const findScrollableAncestor = (element: HTMLElement | null): HTMLElement | null => {
+  let currentElement = element;
+
+  while (currentElement && currentElement !== document.body && currentElement !== document.documentElement) {
+    if (scrollableOverflowValues.has(window.getComputedStyle(currentElement).overflowY)) {
+      return currentElement;
+    }
+
+    currentElement = currentElement.parentElement;
+  }
+
+  return null;
+};
+
+const ScrollToTop: FC = () => {
+  const { pathname } = useLocation();
+
+  React.useLayoutEffect(() => {
+    // SciGateway scrolls a container around the plugin; standalone mode scrolls the window.
+    const scrollContainer = findScrollableAncestor(document.getElementById('fia'));
+    const scrollOptions: ScrollToOptions = { top: 0, left: 0, behavior: 'auto' };
+
+    if (scrollContainer) {
+      scrollContainer.scrollTo(scrollOptions);
+    } else {
+      window.scrollTo(scrollOptions);
+    }
+  }, [pathname]);
+
+  return null;
+};
 
 const App: FC = () => {
   // Force update mechanism using React's useReducer hook
@@ -62,6 +96,7 @@ const App: FC = () => {
     <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale={'en-gb'}>
       <GlobalStyles>
         <Router basename="/fia">
+          <ScrollToTop />
           <Switch>
             <Route exact path="/">
               <Homepage />

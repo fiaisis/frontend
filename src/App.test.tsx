@@ -62,11 +62,14 @@ function renderAt(path: string): void {
 describe('App', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined);
     window.history.pushState({}, '', '/fia');
   });
 
   afterEach(() => {
     cleanup();
+    document.getElementById('app-scroll-test-host')?.remove();
+    vi.restoreAllMocks();
   });
 
   test('renders the homepage at the FIA root route', () => {
@@ -79,6 +82,48 @@ describe('App', () => {
     renderAt('/fia/isis-instruments');
 
     expect(screen.getByRole('heading', { name: 'ISIS instruments' })).toBeInTheDocument();
+  });
+
+  test('scrolls to the top when the pathname changes', async () => {
+    renderAt('/fia');
+    vi.mocked(window.scrollTo).mockClear();
+
+    act(() => {
+      window.history.pushState({}, '', '/fia/isis-instruments');
+      window.dispatchEvent(new PopStateEvent('popstate', { state: {} }));
+    });
+
+    expect(await screen.findByRole('heading', { name: 'ISIS instruments' })).toBeInTheDocument();
+    expect(window.scrollTo).toHaveBeenCalledTimes(1);
+    expect(window.scrollTo).toHaveBeenCalledWith({ top: 0, left: 0, behavior: 'auto' });
+  });
+
+  test('scrolls the nearest scrollable container when hosted in SciGateway', async () => {
+    const scrollContainer = document.createElement('div');
+    const pluginWrapper = document.createElement('div');
+    const pluginRoot = document.createElement('div');
+    const scrollContainerScrollTo = vi.fn();
+
+    scrollContainer.id = 'app-scroll-test-host';
+    scrollContainer.style.overflowY = 'auto';
+    Object.defineProperty(scrollContainer, 'scrollTo', { configurable: true, value: scrollContainerScrollTo });
+    pluginRoot.id = 'fia';
+    pluginWrapper.appendChild(pluginRoot);
+    scrollContainer.appendChild(pluginWrapper);
+    document.body.appendChild(scrollContainer);
+
+    render(<App />, { container: pluginRoot });
+    scrollContainerScrollTo.mockClear();
+    vi.mocked(window.scrollTo).mockClear();
+
+    act(() => {
+      window.history.pushState({}, '', '/fia/isis-instruments');
+      window.dispatchEvent(new PopStateEvent('popstate', { state: {} }));
+    });
+
+    expect(await screen.findByRole('heading', { name: 'ISIS instruments' })).toBeInTheDocument();
+    expect(scrollContainerScrollTo).toHaveBeenCalledWith({ top: 0, left: 0, behavior: 'auto' });
+    expect(window.scrollTo).not.toHaveBeenCalled();
   });
 
   test('routes to IMAT image views under reduction history', () => {
