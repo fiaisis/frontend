@@ -3,6 +3,7 @@ on: [push, pull_request]
 
 permissions:
   contents: read
+  id-token: write
 
 jobs:
   build:
@@ -24,7 +25,7 @@ jobs:
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v7
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
+          use_oidc: true
           files: ./coverage/lcov.info
           disable_search: true
           fail_ci_if_error: true
