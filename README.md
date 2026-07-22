@@ -1,5 +1,7 @@
 # Flexible Interactive Automation frontend
 
+[![Test Build](https://github.com/fiaisis/frontend/actions/workflows/yarn_build.yml/badge.svg?branch=main)](https://github.com/fiaisis/frontend/actions/workflows/yarn_build.yml) [![Cypress Tests](https://github.com/fiaisis/frontend/actions/workflows/cypress_tests.yml/badge.svg?branch=main)](https://github.com/fiaisis/frontend/actions/workflows/cypress_tests.yml) [![codecov](https://codecov.io/gh/fiaisis/frontend/branch/main/graph/badge.svg)](https://codecov.io/gh/fiaisis/frontend) [![code style: Prettier](https://img.shields.io/badge/code_style-Prettier-F7B93E?logo=prettier)](https://prettier.io/) [![License: GPL-3.0](https://img.shields.io/github/license/fiaisis/frontend)](LICENSE)
+
 This repository is for the frontend web application side of [FIA](https://github.com/fiaisis). It uses [Yarn](https://yarnpkg.com/), [React](https://react.dev/), [TypeScript](https://www.typescriptlang.org/), [Vite](https://vite.dev/), [Material UI](https://mui.com/material-ui/), and serves as a plugin for [SciGateway](https://github.com/ral-facilities/scigateway). The application allows users to view and manage runs and reductions performed by ISIS instruments.
 
 ## Starting development
