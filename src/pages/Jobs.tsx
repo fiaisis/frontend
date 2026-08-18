@@ -500,16 +500,8 @@ const Jobs: React.FC = (): ReactElement => {
               />
             </Box>
           )}
-          {imatView === 1 && (
-            <Box sx={{ pt: 2 }}>
-              <IMATViewer mode="latest" showNav={false} />
-            </Box>
-          )}
-          {imatView === 2 && (
-            <Box sx={{ pt: 2 }}>
-              <IMATViewer mode="stack" showNav={false} />
-            </Box>
-          )}
+          {imatView === 1 && <IMATViewer mode="latest" showNav={false} />}
+          {imatView === 2 && <IMATViewer mode="stack" showNav={false} />}
         </>
       ) : (
         <Box className="tour-red-his-tablehead" sx={{ padding: '0 20px 160px' }}>

@@ -1,6 +1,7 @@
 import '@h5web/lib/styles.css';
 import { DomainWidget, HeatmapVis, RgbVis, ScaleType, Toolbar, useSafeDomain } from '@h5web/lib';
 import {
+  Alert,
   Box,
   CircularProgress,
   Paper,
@@ -16,10 +17,12 @@ import ndarray from 'ndarray';
 import React from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 
+import ImatStackJobTree from '../components/imat/ImatStackJobTree';
 import NavArrows from '../components/navigation/NavArrows';
 import { fiaApi, h5Api } from '../lib/api';
-import { Job } from '../lib/types';
+import { parseJobOutputs } from '../lib/hooks';
 
+import type { Job } from '../lib/types';
 import type { CustomDomain, Domain } from '@h5web/lib';
 
 type ImatImagePayload = {
@@ -54,13 +57,26 @@ const STACK_INTENSITY_DOMAIN: Domain = [0, 65535];
 const isViewerSize = (value: string | null): value is ViewerSize =>
   value !== null && VIEWER_SIZES.includes(value as ViewerSize);
 
+const getJobId = (value: string | null): number | null => {
+  if (!value || !/^\d+$/.test(value)) return null;
+  const jobId = Number(value);
+  return Number.isSafeInteger(jobId) && jobId > 0 ? jobId : null;
+};
+
+const getImageIndex = (value: string | null): number => {
+  const index = Number(value);
+  return Number.isSafeInteger(index) && index >= 0 ? index : 0;
+};
+
+const isSuccessfulImatJob = (job: Job): boolean =>
+  job.state === 'SUCCESSFUL' && job.run?.instrument_name?.toUpperCase() === 'IMAT';
+
 const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
   const theme = useTheme();
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
-  const initialJobId = queryParams.get('jobId');
-  const initialInstrument = queryParams.get('instrument');
-  const initialExperiment = queryParams.get('experiment');
+  const rawStackJobId = queryParams.get('jobId');
+  const stackJobId = getJobId(rawStackJobId);
 
   // Latest Image state
   const [latestDataset, setLatestDataset] = React.useState<LatestImatImageDataset | null>(null);
@@ -68,12 +84,15 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
   const [latestError, setLatestError] = React.useState<string | null>(null);
 
   const history = useHistory();
-  const initialImageIndex = parseInt(queryParams.get('imageIndex') || '0', 10);
+  const initialImageIndex = getImageIndex(queryParams.get('imageIndex'));
   const viewerSizeParam = queryParams.get('viewerSize');
   const initialViewerSize = isViewerSize(viewerSizeParam) ? viewerSizeParam : 'fit';
 
   // Stack Viewer state
-  const [stackJobId] = React.useState<string | null>(initialJobId);
+  const [selectedJob, setSelectedJob] = React.useState<Job | null>(null);
+  const selectedJobRef = React.useRef<Job | null>(null);
+  const [selectedJobLoading, setSelectedJobLoading] = React.useState(false);
+  const [selectedJobError, setSelectedJobError] = React.useState<string | null>(null);
   const [stackImages, setStackImages] = React.useState<string[]>([]);
   const [currentImageIndex, setCurrentImageIndex] = React.useState(initialImageIndex);
   const [stackDataset, setStackDataset] = React.useState<StackImatImageDataset | null>(null);
@@ -81,8 +100,11 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
   const [stackError, setStackError] = React.useState<string | null>(null);
   const [directoryPath, setDirectoryPath] = React.useState<string | null>(null);
   const [isSliding, setIsSliding] = React.useState(false);
-  const [viewerSize, setViewerSize] = React.useState<'fit' | 'small' | 'medium' | 'large' | 'full'>(initialViewerSize);
+  const [viewerSize, setViewerSize] = React.useState<ViewerSize>(initialViewerSize);
   const [stackCustomIntensityDomain, setStackCustomIntensityDomain] = React.useState<CustomDomain>([null, null]);
+  const locationSearchRef = React.useRef(location.search);
+  locationSearchRef.current = location.search;
+  selectedJobRef.current = selectedJob;
 
   const stackIntensityDomain = React.useMemo<Domain>(
     () => [
@@ -93,36 +115,115 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
   );
   const [safeStackIntensityDomain] = useSafeDomain(stackIntensityDomain, STACK_INTENSITY_DOMAIN, ScaleType.Linear);
 
-  // Sync state to URL
+  const writeSelectedJobToUrl = React.useCallback(
+    (job: Job, replace: boolean, resetImageIndex: boolean): void => {
+      const params = new URLSearchParams(history.location.search);
+      params.set('jobId', job.id.toString());
+      params.set('experiment', job.run.experiment_number.toString());
+      params.set('instrument', 'IMAT');
+      if (resetImageIndex) params.delete('imageIndex');
+
+      const search = params.toString();
+      const nextLocation = {
+        pathname: history.location.pathname,
+        search: search ? `?${search}` : '',
+      };
+
+      if (nextLocation.search === history.location.search) return;
+      if (replace) {
+        history.replace(nextLocation);
+      } else {
+        history.push(nextLocation);
+      }
+    },
+    [history]
+  );
+
+  const handleSelectJob = React.useCallback(
+    (job: Job, replace = false): void => {
+      setSelectedJob(job);
+      setSelectedJobError(null);
+      setCurrentImageIndex(0);
+      writeSelectedJobToUrl(job, replace, true);
+    },
+    [writeSelectedJobToUrl]
+  );
+
+  // Hydrate deep-linked jobs and browser history selections that are not already in memory.
+  React.useEffect(() => {
+    if (mode !== 'stack') return;
+
+    if (rawStackJobId !== null && stackJobId === null) {
+      setSelectedJob(null);
+      setSelectedJobLoading(false);
+      setSelectedJobError('The selected stack job ID is invalid.');
+      return;
+    }
+
+    if (stackJobId === null) {
+      setSelectedJob(null);
+      setSelectedJobLoading(false);
+      setSelectedJobError(null);
+      return;
+    }
+
+    if (selectedJobRef.current?.id === stackJobId) {
+      setSelectedJobLoading(false);
+      setSelectedJobError(null);
+      return;
+    }
+
+    const controller = new AbortController();
+    setSelectedJob(null);
+    setSelectedJobLoading(true);
+    setSelectedJobError(null);
+
+    const fetchSelectedJob = async (): Promise<void> => {
+      try {
+        const response = await fiaApi.get<Job>(`/job/${stackJobId}`, { signal: controller.signal });
+        if (controller.signal.aborted) return;
+        if (!isSuccessfulImatJob(response.data)) {
+          setSelectedJobError('This job is not an available successful IMAT stack.');
+          return;
+        }
+
+        setSelectedJob(response.data);
+        writeSelectedJobToUrl(response.data, true, false);
+      } catch (err: unknown) {
+        if (axios.isAxiosError(err) && err.code === 'ERR_CANCELED') return;
+        setSelectedJobError('The selected IMAT stack could not be loaded.');
+      } finally {
+        if (!controller.signal.aborted) setSelectedJobLoading(false);
+      }
+    };
+
+    void fetchSelectedJob();
+    return () => controller.abort();
+  }, [mode, rawStackJobId, stackJobId, writeSelectedJobToUrl]);
+
+  // Keep viewer controls in sync with browser navigation.
   React.useEffect(() => {
     if (mode !== 'stack') return;
     const params = new URLSearchParams(location.search);
-    let changed = false;
+    const nextImageIndex = getImageIndex(params.get('imageIndex'));
+    const nextViewerSize = isViewerSize(params.get('viewerSize')) ? (params.get('viewerSize') as ViewerSize) : 'fit';
+    setCurrentImageIndex((current) => (current === nextImageIndex ? current : nextImageIndex));
+    setViewerSize((current) => (current === nextViewerSize ? current : nextViewerSize));
+  }, [location.search, mode]);
 
-    if (currentImageIndex !== 0) {
-      if (params.get('imageIndex') !== currentImageIndex.toString()) {
-        params.set('imageIndex', currentImageIndex.toString());
-        changed = true;
+  const replaceViewerQueryParam = React.useCallback(
+    (name: 'imageIndex' | 'viewerSize', value: string, defaultValue: string): void => {
+      const params = new URLSearchParams(locationSearchRef.current);
+      if (value === defaultValue) {
+        params.delete(name);
+      } else {
+        params.set(name, value);
       }
-    } else if (params.has('imageIndex')) {
-      params.delete('imageIndex');
-      changed = true;
-    }
-
-    if (viewerSize !== 'fit') {
-      if (params.get('viewerSize') !== viewerSize) {
-        params.set('viewerSize', viewerSize);
-        changed = true;
-      }
-    } else if (params.has('viewerSize')) {
-      params.delete('viewerSize');
-      changed = true;
-    }
-
-    if (changed) {
-      history.replace({ search: params.toString() });
-    }
-  }, [mode, currentImageIndex, viewerSize, history, location.search]);
+      const search = params.toString();
+      history.replace({ pathname: history.location.pathname, search: search ? `?${search}` : '' });
+    },
+    [history]
+  );
 
   // Memoized arrays for visualization
   const latestArray = React.useMemo(() => {
@@ -189,50 +290,55 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
     };
   }, [mode]);
 
-  // Resolve directory path for stack
+  // Reset all stack-specific state as soon as the selected URL job changes.
   React.useEffect(() => {
-    if (mode !== 'stack' || !stackJobId || !initialInstrument || !initialExperiment) return;
+    if (mode !== 'stack') return;
+    setStackImages([]);
+    setStackDataset(null);
+    setDirectoryPath(null);
+    setStackError(null);
+    setIsSliding(false);
+    setStackCustomIntensityDomain([null, null]);
+  }, [mode, stackJobId]);
+
+  // Resolve the selected job's output directory from authoritative job metadata.
+  React.useEffect(() => {
+    if (mode !== 'stack' || !selectedJob) return;
+    const controller = new AbortController();
+    const experimentNumber = selectedJob.run.experiment_number;
+    const instrumentName = selectedJob.run.instrument_name;
 
     const resolvePath = async (): Promise<void> => {
       try {
         setStackLoading(true);
         setStackError(null);
 
-        // Fetch job data to get the run number (from filename)
-        if (!initialInstrument || !initialExperiment) {
-          throw new Error('Missing instrument or experiment number');
-        }
-        const jobResponse = await fiaApi.get<Job>(`/job/${stackJobId}`);
-        const job = jobResponse.data;
-        const filename = job.run?.filename || '';
-        const runNumberMatch = filename.match(/\d+/);
-        const runNumber = runNumberMatch ? parseInt(runNumberMatch[0], 10).toString() : '';
+        const filename = selectedJob.run?.filename?.split(/[\\/]/).pop() || '';
+        const runNumberMatches = filename.match(/\d+/g);
+        const runNumberMatch = runNumberMatches?.[runNumberMatches.length - 1];
+        const runNumber = runNumberMatch ? parseInt(runNumberMatch, 10).toString() : '';
 
         // Try to resolve path via find_file
         try {
           const response = await h5Api.get<string>(
-            `/find_file/instrument/${initialInstrument}/experiment_number/${initialExperiment}`,
+            `/find_file/instrument/${instrumentName}/experiment_number/${experimentNumber}`,
             {
               params: { filename: '.' },
+              signal: controller.signal,
             }
           );
+          if (controller.signal.aborted) return;
           let path = response.data;
           if (runNumber) path = `${path}/run-${runNumber}`;
           setDirectoryPath(path);
-        } catch (err) {
+        } catch (err: unknown) {
+          if (axios.isAxiosError(err) && err.code === 'ERR_CANCELED') return;
           console.warn('find_file failed, falling back to job outputs:', err);
-          let path = job.outputs;
-          if (path && path.startsWith('[')) {
-            try {
-              const outputs = JSON.parse(path);
-              path = Array.isArray(outputs) ? outputs[0] : path;
-            } catch {
-              /* ignore */
-            }
-          }
+          let path = parseJobOutputs(selectedJob.outputs)[0] || selectedJob.outputs;
           if (path) {
             if (path.toLowerCase().endsWith('.tif') || path.toLowerCase().endsWith('.tiff')) {
-              path = path.substring(0, path.lastIndexOf('/'));
+              const lastSeparator = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
+              path = lastSeparator >= 0 ? path.substring(0, lastSeparator) : path;
             }
             if (runNumber && !path.includes(`run-${runNumber}`)) {
               path = `${path}/run-${runNumber}`;
@@ -242,48 +348,62 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
             setStackError('Failed to resolve output directory');
           }
         }
-      } catch {
+      } catch (err: unknown) {
+        if (axios.isAxiosError(err) && err.code === 'ERR_CANCELED') return;
         setStackError('Failed to resolve output directory');
       } finally {
-        setStackLoading(false);
+        if (!controller.signal.aborted) setStackLoading(false);
       }
     };
-    resolvePath();
-  }, [mode, stackJobId, initialInstrument, initialExperiment]);
+    void resolvePath();
+    return () => controller.abort();
+  }, [mode, selectedJob]);
 
   // Fetch stack image list
   React.useEffect(() => {
     if (mode !== 'stack' || !directoryPath) return;
+    const controller = new AbortController();
 
     const fetchList = async (): Promise<void> => {
       try {
+        setStackLoading(true);
+        setStackError(null);
         const response = await h5Api.get<string[]>('/imat/list-images', {
           params: { path: directoryPath },
+          signal: controller.signal,
         });
-        const sortedData = response.data.sort(
+        if (controller.signal.aborted) return;
+        const sortedData = [...response.data].sort(
           new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' }).compare
         );
         setStackImages(sortedData);
-      } catch {
+      } catch (err: unknown) {
+        if (axios.isAxiosError(err) && err.code === 'ERR_CANCELED') return;
         setStackError('Failed to list images in stack');
+      } finally {
+        if (!controller.signal.aborted) setStackLoading(false);
       }
     };
-    fetchList();
+    void fetchList();
+    return () => controller.abort();
   }, [mode, directoryPath]);
 
   // Fetch individual stack image
   const fetchStackImage = React.useCallback(
-    async (index: number, downsample: number = 1): Promise<void> => {
+    async (index: number, downsample: number, signal: AbortSignal): Promise<void> => {
       if (!directoryPath || !stackImages[index]) return;
       try {
         setStackLoading(true);
+        setStackError(null);
         const response = await h5Api.get<ArrayBuffer>('/imat/image', {
           responseType: 'arraybuffer',
+          signal,
           params: {
             path: `${directoryPath}/${stackImages[index]}`,
             downsample_factor: downsample,
           },
         });
+        if (signal.aborted) return;
 
         // Extract metadata from headers
         const headers = response.headers;
@@ -306,43 +426,63 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
           sampledWidth,
           sampledHeight,
         });
-      } catch {
+      } catch (err: unknown) {
+        if (axios.isAxiosError(err) && err.code === 'ERR_CANCELED') return;
         setStackError('Failed to load stack image');
       } finally {
-        setStackLoading(false);
+        if (!signal.aborted) setStackLoading(false);
       }
     },
     [directoryPath, stackImages]
   );
 
+  React.useEffect(() => {
+    if (mode !== 'stack' || stackImages.length === 0 || currentImageIndex < stackImages.length) return;
+    const clampedIndex = stackImages.length - 1;
+    setCurrentImageIndex(clampedIndex);
+    replaceViewerQueryParam('imageIndex', clampedIndex.toString(), '0');
+  }, [currentImageIndex, mode, replaceViewerQueryParam, stackImages.length]);
+
   // Consolidated image fetching with debounce
   React.useEffect(() => {
     if (mode !== 'stack' || stackImages.length === 0) return;
+    const controller = new AbortController();
 
     const delay = isSliding ? 50 : 250;
     const downsample = isSliding ? 8 : 1;
 
     const timer = setTimeout(() => {
-      fetchStackImage(currentImageIndex, downsample);
+      void fetchStackImage(currentImageIndex, downsample, controller.signal);
     }, delay);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
   }, [mode, stackImages, currentImageIndex, isSliding, fetchStackImage]);
 
   const handleSliderChange = (_event: React.SyntheticEvent | Event, newValue: number | number[]): void => {
     setIsSliding(true);
     const index = newValue as number;
     setCurrentImageIndex(index);
+    replaceViewerQueryParam('imageIndex', index.toString(), '0');
   };
 
   const handleSliderChangeCommitted = (_event: React.SyntheticEvent | Event, newValue: number | number[]): void => {
     setIsSliding(false);
     const index = newValue as number;
     setCurrentImageIndex(index);
+    replaceViewerQueryParam('imageIndex', index.toString(), '0');
+  };
+
+  const handleViewerSizeChange = (_event: React.MouseEvent<HTMLElement>, value: ViewerSize | null): void => {
+    if (!value) return;
+    setViewerSize(value);
+    replaceViewerQueryParam('viewerSize', value, 'fit');
   };
 
   const stackDomainWidgetStyles = {
-    width: { xs: '100%', sm: 500 },
+    width: '100%',
     maxWidth: '100%',
     display: 'flex',
     alignItems: 'center',
@@ -414,7 +554,7 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
   return (
     <>
       {showNav && <NavArrows />}
-      <Box sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <Box sx={{ px: '20px', pb: 2, height: '100%', display: 'flex', flexDirection: 'column' }}>
         {mode === 'latest' && (
           <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
             {latestLoading && !latestDataset ? (
@@ -463,179 +603,221 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
         )}
 
         {mode === 'stack' && (
-          <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2, minHeight: 0 }}>
-            {!stackJobId ? (
-              <Typography sx={{ p: 4, textAlign: 'center' }}>
-                Select a completed job from the Reduction history view to view its image stack.
-              </Typography>
-            ) : (
-              <>
-                <Paper sx={{ p: 2 }}>
-                  <Slider
-                    disabled={stackImages.length === 0}
-                    value={currentImageIndex}
-                    min={0}
-                    max={Math.max(0, stackImages.length - 1)}
-                    onChange={handleSliderChange}
-                    onChangeCommitted={handleSliderChangeCommitted}
-                    valueLabelDisplay="auto"
-                    valueLabelFormat={(v: number) => `Index: ${v}`}
-                  />
+          <Box
+            sx={{
+              flex: 1,
+              display: 'flex',
+              flexDirection: { xs: 'column', md: 'row' },
+              gap: 2,
+              minHeight: 0,
+            }}
+          >
+            <ImatStackJobTree
+              autoSelect={rawStackJobId === null}
+              selectedJobId={stackJobId}
+              selectedJob={selectedJob}
+              onSelectJob={handleSelectJob}
+            />
+
+            <Box sx={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {selectedJobError ? (
+                <Alert severity="error">{selectedJobError}</Alert>
+              ) : selectedJobLoading ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', p: 8 }}>
+                  <CircularProgress aria-label="Loading selected IMAT stack" />
+                </Box>
+              ) : !selectedJob ? (
+                <Typography sx={{ p: 4, textAlign: 'center' }}>Select a job to view its image stack.</Typography>
+              ) : (
+                <>
+                  <Paper sx={{ p: 2 }}>
+                    <Slider
+                      disabled={stackImages.length === 0}
+                      value={currentImageIndex}
+                      min={0}
+                      max={Math.max(0, stackImages.length - 1)}
+                      onChange={handleSliderChange}
+                      onChangeCommitted={handleSliderChangeCommitted}
+                      valueLabelDisplay="auto"
+                      valueLabelFormat={(v: number) => `Index: ${v}`}
+                    />
+
+                    <Box
+                      sx={{
+                        display: 'grid',
+                        gridTemplateColumns: {
+                          xs: 'minmax(0, 1fr)',
+                          md: 'minmax(0, 1fr) auto',
+                          xl: 'minmax(0, 1fr) auto minmax(0, 1fr)',
+                        },
+                        gridTemplateAreas: {
+                          xs: '"image" "size" "intensity"',
+                          md: '"image size" "intensity intensity"',
+                          xl: '"image size intensity"',
+                        },
+                        alignItems: 'center',
+                        gap: 2,
+                        mt: 2,
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 2,
+                          flexWrap: 'wrap',
+                          minWidth: 0,
+                          gridArea: 'image',
+                        }}
+                      >
+                        <Typography variant="body2" sx={{ flexShrink: 0 }}>
+                          Image {currentImageIndex + 1} of {stackImages.length}
+                        </Typography>
+
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: 'text.secondary',
+                            minWidth: 0,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {stackImages[currentImageIndex]}
+                        </Typography>
+                      </Box>
+
+                      <ToggleButtonGroup
+                        value={viewerSize}
+                        exclusive
+                        onChange={handleViewerSizeChange}
+                        size="small"
+                        aria-label="viewer size"
+                        sx={{
+                          gridArea: 'size',
+                          justifySelf: { xs: 'stretch', sm: 'start', md: 'end', xl: 'center' },
+                          width: { xs: '100%', sm: 'auto' },
+                          maxWidth: '100%',
+                          '& .MuiToggleButton-root': {
+                            width: { xs: 'auto', sm: 76 },
+                            flex: { xs: 1, sm: '0 0 auto' },
+                            px: 0,
+                          },
+                        }}
+                      >
+                        <ToggleButton value="fit" aria-label="fit">
+                          Fit
+                        </ToggleButton>
+                        <ToggleButton value="small" aria-label="small">
+                          Small
+                        </ToggleButton>
+                        <ToggleButton value="medium" aria-label="medium">
+                          Medium
+                        </ToggleButton>
+                        <ToggleButton value="large" aria-label="large">
+                          Large
+                        </ToggleButton>
+                        <ToggleButton value="full" aria-label="full">
+                          Full
+                        </ToggleButton>
+                      </ToggleButtonGroup>
+
+                      <Box
+                        sx={{
+                          gridArea: 'intensity',
+                          justifySelf: { xs: 'stretch', md: 'end' },
+                          width: '100%',
+                          maxWidth: 500,
+                        }}
+                      >
+                        <Box sx={stackDomainWidgetStyles}>
+                          <Typography variant="body2" sx={{ fontWeight: 500, flexShrink: 0 }}>
+                            Colourbar intensity
+                          </Typography>
+                          <Toolbar>
+                            <DomainWidget
+                              dataDomain={STACK_INTENSITY_DOMAIN}
+                              customDomain={stackCustomIntensityDomain}
+                              scaleType={ScaleType.Linear}
+                              disabled={!stackDataset}
+                              onCustomDomainChange={setStackCustomIntensityDomain}
+                            />
+                          </Toolbar>
+                        </Box>
+                      </Box>
+                    </Box>
+                  </Paper>
 
                   <Box
                     sx={{
-                      display: 'grid',
-                      gridTemplateColumns: { xs: '1fr', lg: 'minmax(0, 1fr) auto minmax(0, 1fr)' },
-                      alignItems: 'center',
-                      gap: 2,
-                      mt: 2,
+                      display: 'flex',
+                      justifyContent: 'center',
+                      overflow: viewerSize === 'fit' ? 'hidden' : 'auto',
+                      flex: 1,
+                      minHeight: 0,
                     }}
                   >
                     <Box
                       sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 2,
-                        flexWrap: 'wrap',
-                        minWidth: 0,
-                      }}
-                    >
-                      <Typography variant="body2" sx={{ flexShrink: 0 }}>
-                        Image {currentImageIndex + 1} of {stackImages.length}
-                      </Typography>
-
-                      <Typography
-                        variant="caption"
-                        sx={{
-                          color: 'text.secondary',
-                          minWidth: 0,
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {stackImages[currentImageIndex]}
-                      </Typography>
-                    </Box>
-
-                    <ToggleButtonGroup
-                      value={viewerSize}
-                      exclusive
-                      onChange={(_e, val) => val && setViewerSize(val)}
-                      size="small"
-                      aria-label="viewer size"
-                      sx={{
-                        justifySelf: { xs: 'start', lg: 'center' },
-                        '& .MuiToggleButton-root': {
-                          width: 76,
-                          px: 0,
-                        },
-                      }}
-                    >
-                      <ToggleButton value="fit" aria-label="fit">
-                        Fit
-                      </ToggleButton>
-                      <ToggleButton value="small" aria-label="small">
-                        Small
-                      </ToggleButton>
-                      <ToggleButton value="medium" aria-label="medium">
-                        Medium
-                      </ToggleButton>
-                      <ToggleButton value="large" aria-label="large">
-                        Large
-                      </ToggleButton>
-                      <ToggleButton value="full" aria-label="full">
-                        Full
-                      </ToggleButton>
-                    </ToggleButtonGroup>
-
-                    <Box sx={{ justifySelf: { xs: 'stretch', lg: 'end' }, width: { xs: '100%', sm: 'auto' } }}>
-                      <Box sx={stackDomainWidgetStyles}>
-                        <Typography variant="body2" sx={{ fontWeight: 500, flexShrink: 0 }}>
-                          Colourbar intensity
-                        </Typography>
-                        <Toolbar>
-                          <DomainWidget
-                            dataDomain={STACK_INTENSITY_DOMAIN}
-                            customDomain={stackCustomIntensityDomain}
-                            scaleType={ScaleType.Linear}
-                            disabled={!stackDataset}
-                            onCustomDomainChange={setStackCustomIntensityDomain}
-                          />
-                        </Toolbar>
-                      </Box>
-                    </Box>
-                  </Box>
-                </Paper>
-
-                <Box
-                  sx={{
-                    display: 'flex',
-                    justifyContent: 'center',
-                    overflow: viewerSize === 'fit' ? 'hidden' : 'auto',
-                    flex: 1,
-                    minHeight: 0,
-                  }}
-                >
-                  <Box
-                    sx={{
-                      width:
-                        viewerSize === 'fit'
-                          ? '100%'
-                          : viewerSize === 'small'
-                            ? stackDisplayWidth > 0
-                              ? stackDisplayWidth * 0.25
-                              : '100%'
-                            : viewerSize === 'medium'
+                        width:
+                          viewerSize === 'fit'
+                            ? '100%'
+                            : viewerSize === 'small'
                               ? stackDisplayWidth > 0
-                                ? stackDisplayWidth * 0.5
+                                ? stackDisplayWidth * 0.25
                                 : '100%'
-                              : viewerSize === 'large'
+                              : viewerSize === 'medium'
                                 ? stackDisplayWidth > 0
-                                  ? stackDisplayWidth * 0.75
+                                  ? stackDisplayWidth * 0.5
                                   : '100%'
-                                : stackDisplayWidth || '100%',
-                      aspectRatio: stackAspectRatio,
-                      maxHeight: viewerSize === 'fit' ? 'calc(100vh - 350px)' : 'none',
-                      position: 'relative',
-                      border: '1px solid #ccc',
-                      borderRadius: 1,
-                      overflow: 'hidden',
-                      backgroundColor: 'black',
-                      color: 'rgba(255, 255, 255, 0.92)',
-                      '--h5w-colorBar-bounds--color': 'rgba(255, 255, 255, 0.92)',
-                      '--h5w-colorBar-tickLabels--color': 'rgba(255, 255, 255, 0.86)',
-                      '--h5w-colorBar-ticks--color': 'rgba(255, 255, 255, 0.72)',
-                      mx: 'auto',
-                      flexShrink: 0,
-                    }}
-                  >
-                    {stackDataset ? (
-                      <HeatmapVis
-                        dataArray={stackArray!}
-                        aspect="equal"
-                        flipYAxis
-                        style={{ height: '100%', width: '100%' }}
-                        domain={safeStackIntensityDomain}
-                      />
-                    ) : stackLoading ? (
-                      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-                        <CircularProgress />
-                      </Box>
-                    ) : (
-                      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-                        <Typography color="white">
-                          {stackError ??
-                            (stackImages.length === 0
-                              ? 'No images found in this job stack.'
-                              : 'Loading stack images...')}
-                        </Typography>
-                      </Box>
-                    )}
+                                : viewerSize === 'large'
+                                  ? stackDisplayWidth > 0
+                                    ? stackDisplayWidth * 0.75
+                                    : '100%'
+                                  : stackDisplayWidth || '100%',
+                        aspectRatio: stackAspectRatio,
+                        maxHeight: viewerSize === 'fit' ? 'calc(100vh - 350px)' : 'none',
+                        position: 'relative',
+                        border: '1px solid #ccc',
+                        borderRadius: 1,
+                        overflow: 'hidden',
+                        backgroundColor: 'black',
+                        color: 'rgba(255, 255, 255, 0.92)',
+                        '--h5w-colorBar-bounds--color': 'rgba(255, 255, 255, 0.92)',
+                        '--h5w-colorBar-tickLabels--color': 'rgba(255, 255, 255, 0.86)',
+                        '--h5w-colorBar-ticks--color': 'rgba(255, 255, 255, 0.72)',
+                        mx: 'auto',
+                        flexShrink: 0,
+                      }}
+                    >
+                      {stackDataset ? (
+                        <HeatmapVis
+                          dataArray={stackArray!}
+                          aspect="equal"
+                          flipYAxis
+                          style={{ height: '100%', width: '100%' }}
+                          domain={safeStackIntensityDomain}
+                        />
+                      ) : stackLoading ? (
+                        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+                          <CircularProgress />
+                        </Box>
+                      ) : (
+                        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+                          <Typography color="white">
+                            {stackError ??
+                              (stackImages.length === 0
+                                ? 'No images found in this job stack.'
+                                : 'Loading stack images...')}
+                          </Typography>
+                        </Box>
+                      )}
+                    </Box>
                   </Box>
-                </Box>
-              </>
-            )}
+                </>
+              )}
+            </Box>
           </Box>
         )}
       </Box>

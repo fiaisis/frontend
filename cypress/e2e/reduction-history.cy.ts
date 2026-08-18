@@ -53,6 +53,41 @@ const loqJobsResponse = [
   },
 ];
 
+const imatJobsResponse = [
+  {
+    ...baseJob,
+    id: 302,
+    outputs: '/output/run-302',
+    run: {
+      experiment_number: 24680,
+      filename: '/archive/IMAT00000302.raw',
+      run_start: '2025-01-03T09:00:00Z',
+      run_end: '2025-01-03T09:30:00Z',
+      title: 'Newest IMAT stack',
+      users: 'Dr. Curie',
+      good_frames: 500,
+      raw_frames: 500,
+      instrument_name: 'IMAT',
+    },
+  },
+  {
+    ...baseJob,
+    id: 301,
+    outputs: '/output/run-301',
+    run: {
+      experiment_number: 13579,
+      filename: '/archive/IMAT00000301.raw',
+      run_start: '2025-01-02T09:00:00Z',
+      run_end: '2025-01-02T09:30:00Z',
+      title: 'Older IMAT stack',
+      users: 'Dr. Franklin',
+      good_frames: 500,
+      raw_frames: 500,
+      instrument_name: 'IMAT',
+    },
+  },
+];
+
 const tableContainerSelector = '[data-testid="reduction-history-table-container"]';
 
 describe('Reduction history page', () => {
@@ -261,5 +296,46 @@ describe('Reduction history page', () => {
         cy.contains('button', 'Stack viewer').should('have.attr', 'aria-pressed', 'false');
       });
     });
+  });
+
+  it('selects different IMAT stacks from the job tree', () => {
+    cy.intercept('GET', /\/api\/instrument\/IMAT\/jobs\?.*$/, {
+      statusCode: 200,
+      body: imatJobsResponse,
+    }).as('getImatStacks');
+
+    cy.intercept('GET', /\/plottingapi\/find_file\/instrument\/IMAT\/experiment_number\/\d+\?.*$/, {
+      statusCode: 200,
+      body: '/data/imat',
+    }).as('findImatStack');
+
+    cy.intercept('GET', /\/plottingapi\/imat\/list-images\?.*$/, (req) => {
+      const path = String(req.query.path);
+      req.reply({
+        statusCode: 200,
+        body: [path.includes('run-302') ? 'newest-frame.tif' : 'older-frame.tif'],
+      });
+    }).as('listImatImages');
+
+    cy.intercept('GET', /\/plottingapi\/imat\/image\?.*$/, {
+      statusCode: 500,
+      body: 'Image rendering is outside this navigation test',
+    });
+
+    cy.visitFia('/fia/reduction-history/IMAT/stack-viewer');
+
+    cy.wait('@getImatStacks');
+    cy.location('search').should('include', 'jobId=302').and('include', 'experiment=24680');
+    cy.wait('@findImatStack');
+    cy.wait('@listImatImages');
+    cy.contains('newest-frame.tif').should('be.visible');
+
+    cy.contains('button', 'Experiment 13579').click();
+    cy.contains('button', 'IMAT00000301').click();
+
+    cy.location('search').should('include', 'jobId=301').and('include', 'experiment=13579');
+    cy.wait('@findImatStack');
+    cy.wait('@listImatImages');
+    cy.contains('older-frame.tif').should('be.visible');
   });
 });
