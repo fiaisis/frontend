@@ -330,8 +330,8 @@ describe('Reduction history page', () => {
     cy.wait('@listImatImages');
     cy.contains('newest-frame.tif').should('be.visible');
 
-    cy.contains('button', 'Experiment 13579').click();
-    cy.contains('button', 'IMAT00000301').click();
+    cy.contains('[role="button"]', 'Experiment 13579').click();
+    cy.contains('[role="button"]', 'IMAT00000301').click();
 
     cy.location('search').should('include', 'jobId=301').and('include', 'experiment=13579');
     cy.wait('@findImatStack');
