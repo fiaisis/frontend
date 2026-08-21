@@ -41,6 +41,7 @@ import React, { ReactElement, useCallback, useEffect, useRef, useState } from 'r
 import ReactGA from 'react-ga4';
 import { Link } from 'react-router-dom';
 
+import { JOB_TABLE_ROW_HEIGHT } from './constants';
 import { fiaApi } from '../../lib/api';
 import { parseJobOutputs } from '../../lib/hooks';
 import { formatUtcForLocale } from '../../lib/timezone';
@@ -687,7 +688,8 @@ const Row: React.FC<{
       <TableRow
         sx={{
           ...bandedRows,
-          height: '50px',
+          height: JOB_TABLE_ROW_HEIGHT,
+          '& > .MuiTableCell-root': { py: 0.5 },
           '&:hover': bandedRowsHover(theme, index),
         }}
         onClick={() => setOpen(!open)}
@@ -746,7 +748,7 @@ const Row: React.FC<{
                 e.stopPropagation();
                 setOpen(!open);
               }}
-              sx={{ ml: 1 }}
+              sx={{ ml: 1, p: 0.5 }}
             >
               {open ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
             </IconButton>

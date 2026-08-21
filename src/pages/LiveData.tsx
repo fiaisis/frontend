@@ -21,9 +21,11 @@ import NavArrows from '../components/navigation/NavArrows';
 import { instruments as allInstruments } from '../lib/instrumentData';
 import { fetchLiveDataFiles, fetchLiveDataInstruments } from '../lib/plottingServiceAPI';
 import { outputFilter } from '../lib/types';
+import { useAvailablePluginHeight } from '../lib/useAvailablePluginHeight';
 import { useLiveDataSSE } from '../lib/useLiveDataSSE';
 
 const LiveData: React.FC = (): JSX.Element => {
+  const { rootRef, availableHeight } = useAvailablePluginHeight();
   const { instrumentName } = useParams<{ instrumentName?: string }>();
   // Instrument selection
   const [instruments, setInstruments] = useState<string[]>([]);
@@ -230,7 +232,18 @@ const LiveData: React.FC = (): JSX.Element => {
   ];
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100%', overflow: 'hidden' }}>
+    <Box
+      ref={rootRef}
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: availableHeight,
+        maxHeight: availableHeight,
+        minHeight: 0,
+        width: '100%',
+        overflow: 'hidden',
+      }}
+    >
       <Box
         sx={{
           display: 'flex',
@@ -238,6 +251,7 @@ const LiveData: React.FC = (): JSX.Element => {
           justifyContent: 'space-between',
           gap: 2,
           flexWrap: { xs: 'wrap', lg: 'nowrap' },
+          flexShrink: 0,
           mb: 2,
           pr: { xs: 2, sm: 8 },
         }}
@@ -262,7 +276,7 @@ const LiveData: React.FC = (): JSX.Element => {
       </Box>
       <Box sx={{ display: 'flex', flexDirection: 'column', flex: '1 1 auto', minHeight: 0, width: '100%' }}>
         {/* Main content area */}
-        <Box sx={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+        <Box sx={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'hidden' }}>
           {/* Left panel - File list */}
           <Paper
             elevation={0}
@@ -272,6 +286,7 @@ const LiveData: React.FC = (): JSX.Element => {
               borderColor: 'divider',
               display: 'flex',
               flexDirection: 'column',
+              minHeight: 0,
               overflow: 'hidden',
             }}
           >
@@ -318,7 +333,7 @@ const LiveData: React.FC = (): JSX.Element => {
           </Paper>
 
           {/* Right panel - 2D Viewer */}
-          <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative' }}>
+          <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, position: 'relative' }}>
             {/* Error messages */}
             {(error || sseError) && (
               <Box

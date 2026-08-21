@@ -7,7 +7,9 @@ import { afterEach, describe, expect, test, vi } from 'vitest';
 import Jobs from './Jobs';
 
 vi.mock('../components/jobs/JobTable', () => ({
-  default: () => <div data-testid="job-table" />,
+  default: ({ configControl }: { configControl?: React.ReactNode }) => (
+    <div data-testid="job-table">{configControl}</div>
+  ),
 }));
 
 vi.mock('../components/jobs/Filters', () => ({
@@ -15,7 +17,11 @@ vi.mock('../components/jobs/Filters', () => ({
 }));
 
 vi.mock('../components/configsettings/InstrumentConfigDrawer', () => ({
-  default: () => null,
+  default: ({ buttonPlacement }: { buttonPlacement?: string }) => (
+    <button type="button" data-placement={buttonPlacement}>
+      Edit config
+    </button>
+  ),
 }));
 
 vi.mock('./IMATViewer', () => ({
@@ -55,6 +61,14 @@ describe('Jobs', () => {
       'Browse instruments'
     );
     expect(breadcrumbText.indexOf('LOQ')).toBeLessThan(breadcrumbText.indexOf('Browse instruments'));
+    expect(screen.getByTestId('reduction-history-page')).toContainElement(screen.getByTestId('job-table'));
+
+    const pageHeader = screen.getByTestId('reduction-history-page-header');
+    const title = within(pageHeader).getByRole('heading', { name: 'LOQ reduction history' });
+    expect(pageHeader).toContainElement(breadcrumb);
+    expect(title).toHaveStyle({ textAlign: 'right' });
+    expect(screen.getByTestId('job-table')).toContainElement(screen.getByRole('button', { name: 'Edit config' }));
+    expect(screen.getByRole('button', { name: 'Edit config' })).toHaveAttribute('data-placement', 'toolbar');
   });
 
   test('shows clear filters in the breadcrumb instrument selector', async () => {

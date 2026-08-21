@@ -7,6 +7,7 @@ import { BrowserRouter as Router, Redirect, Route, Switch, useLocation } from 'r
 
 import GlobalStyles from './GlobalStyles';
 import { clearFailedAuthRequestsQueue, retryFailedAuthRequests } from './lib/api';
+import { findScrollableAncestor } from './lib/useAvailablePluginHeight';
 import DataViewer from './pages/DataViewer';
 import ExperimentViewer from './pages/ExperimentViewer';
 import Homepage from './pages/Homepage';
@@ -20,22 +21,6 @@ import ValueEditor from './pages/ValueEditor';
 ReactGA.initialize('G-7XJBCP6P75');
 // Track the initial page load event
 ReactGA.send({ hitType: 'pageview', page: window.location.pathname });
-
-const scrollableOverflowValues = new Set(['auto', 'scroll', 'overlay']);
-
-const findScrollableAncestor = (element: HTMLElement | null): HTMLElement | null => {
-  let currentElement = element;
-
-  while (currentElement && currentElement !== document.body && currentElement !== document.documentElement) {
-    if (scrollableOverflowValues.has(window.getComputedStyle(currentElement).overflowY)) {
-      return currentElement;
-    }
-
-    currentElement = currentElement.parentElement;
-  }
-
-  return null;
-};
 
 const ScrollToTop: FC = () => {
   const { pathname } = useLocation();

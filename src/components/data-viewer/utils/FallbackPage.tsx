@@ -7,7 +7,7 @@ export const Fallback = (): JSX.Element => (
       justifyContent: 'center',
       alignItems: 'center',
       flexDirection: 'column',
-      height: '100vh',
+      height: '100%',
     }}
   >
     <img

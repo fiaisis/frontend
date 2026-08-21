@@ -13,8 +13,9 @@ import JobTable from '../components/jobs/JobTable';
 import NavArrows from '../components/navigation/NavArrows';
 import { instruments, isValidInstrument } from '../lib/instrumentData';
 import { JobQueryFilters } from '../lib/types';
+import { useAvailablePluginHeight } from '../lib/useAvailablePluginHeight';
 
-const DEFAULT_ROWS_PER_PAGE: JobRowsPerPage = JOB_ROWS_PER_PAGE_OPTIONS[1];
+const DEFAULT_ROWS_PER_PAGE: JobRowsPerPage = JOB_ROWS_PER_PAGE_OPTIONS[0];
 
 // Retrieve rows per page from localStorage or use default
 const getStoredRowsPerPage = (): JobRowsPerPage => {
@@ -135,6 +136,7 @@ const ImatViewButtons: React.FC<{
 };
 
 const Jobs: React.FC = (): ReactElement => {
+  const { rootRef: reductionHistoryRootRef, availableHeight: reductionHistoryHeight } = useAvailablePluginHeight();
   const { instrumentName } = useParams<{ instrumentName?: string }>();
   const history = useHistory();
   const location = useLocation();
@@ -172,6 +174,7 @@ const Jobs: React.FC = (): ReactElement => {
   const [orderDirection, setOrderDirection] = useState<'asc' | 'desc'>('desc');
   const [orderBy, setOrderBy] = useState<string>('run_start');
   const [filtersOpen, setFiltersOpen] = React.useState<boolean>(false);
+  const showReductionHistoryTable = !isImat || imatView === 0;
 
   const getUserRole = (): 'staff' | 'user' | null => {
     const token = localStorage.getItem('scigateway:token');
@@ -380,6 +383,10 @@ const Jobs: React.FC = (): ReactElement => {
   }, [rowsPerPage]);
 
   React.useEffect(() => {
+    localStorage.setItem('asUser', JSON.stringify(asUser));
+  }, [asUser]);
+
+  React.useEffect(() => {
     if (isImat && imatView !== 0) return;
     updateQueryParams({ rowsPerPage });
   }, [imatView, isImat, rowsPerPage, updateQueryParams]);
@@ -434,22 +441,35 @@ const Jobs: React.FC = (): ReactElement => {
   ];
 
   return (
-    <>
+    <Box
+      ref={reductionHistoryRootRef}
+      data-testid="reduction-history-page"
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: reductionHistoryHeight,
+        maxHeight: reductionHistoryHeight,
+        minHeight: 0,
+        overflow: 'hidden',
+      }}
+    >
       <Box
+        data-testid="reduction-history-page-header"
         sx={{
           display: 'flex',
           alignItems: 'flex-start',
           justifyContent: 'space-between',
           gap: 2,
-          flexWrap: { xs: 'wrap', md: 'nowrap' },
-          mb: 2,
+          flexShrink: 0,
           pr: { xs: 2, sm: 3 },
+          pb: 1,
         }}
       >
         <Box
           sx={{
             flex: '1 1 auto',
             minWidth: 0,
+            overflowX: 'auto',
           }}
         >
           <NavArrows
@@ -457,18 +477,20 @@ const Jobs: React.FC = (): ReactElement => {
             replaceLastCrumbCount={isImat && imatView !== 0 ? 1 : undefined}
             labelOverrides={breadcrumbLabelOverrides}
           />
-          <Typography variant="h3" component="h1" sx={{ color: theme.palette.text.primary, px: '20px', pt: 2, pb: 1 }}>
-            {reductionHistoryHeading}
-          </Typography>
         </Box>
-        {selectedInstrument !== 'ALL' && (
-          <InstrumentConfigDrawer
-            drawerOpen={configDrawerOpen}
-            setDrawerOpen={setConfigDrawerOpen}
-            selectedInstrument={selectedInstrument}
-            disabled={!configAvailable}
-          />
-        )}
+        <Typography
+          variant="h4"
+          component="h1"
+          sx={{
+            color: theme.palette.text.primary,
+            flexShrink: 0,
+            mt: 2,
+            textAlign: 'right',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {reductionHistoryHeading}
+        </Typography>
       </Box>
       <FilterContainer
         showInstrumentFilter={selectedInstrument === 'ALL'}
@@ -477,34 +499,12 @@ const Jobs: React.FC = (): ReactElement => {
         handleFiltersChange={handleFiltersChange}
         appliedFilters={currentFilters}
         resetPageNumber={() => handlePageChange(0)}
+        showAsUserControl={userRole === 'staff'}
+        asUser={asUser}
+        setAsUser={setAsUser}
       />
-      {isImat ? (
-        <>
-          {imatView === 0 && (
-            <Box className="tour-red-his-tablehead" sx={{ padding: '0 20px 160px' }}>
-              <JobTable
-                selectedInstrument={selectedInstrument}
-                currentPage={currentPage}
-                handlePageChange={handlePageChange}
-                asUser={asUser}
-                rowsPerPage={rowsPerPage}
-                handleRowsPerPageChange={handleRowsPerPageChange}
-                setAsUser={setAsUser}
-                showAsUserControl={userRole === 'staff'}
-                filters={currentFilters}
-                orderBy={orderBy}
-                orderDirection={orderDirection}
-                handleSort={handleSort}
-                filtersApplied={hasFilters(currentFilters)}
-                openFilters={() => setFiltersOpen(true)}
-              />
-            </Box>
-          )}
-          {imatView === 1 && <IMATViewer mode="latest" showNav={false} />}
-          {imatView === 2 && <IMATViewer mode="stack" showNav={false} />}
-        </>
-      ) : (
-        <Box className="tour-red-his-tablehead" sx={{ padding: '0 20px 160px' }}>
+      {showReductionHistoryTable && (
+        <Box className="tour-red-his-tablehead" sx={{ display: 'flex', flex: '1 1 auto', minHeight: 0 }}>
           <JobTable
             selectedInstrument={selectedInstrument}
             currentPage={currentPage}
@@ -513,17 +513,30 @@ const Jobs: React.FC = (): ReactElement => {
             rowsPerPage={rowsPerPage}
             handleRowsPerPageChange={handleRowsPerPageChange}
             setAsUser={setAsUser}
-            showAsUserControl={userRole === 'staff'}
             filters={currentFilters}
             orderBy={orderBy}
             orderDirection={orderDirection}
             handleSort={handleSort}
-            filtersApplied={hasFilters(currentFilters)}
+            filtersApplied={hasFilters(currentFilters) || asUser}
             openFilters={() => setFiltersOpen(true)}
+            handleFiltersChange={handleFiltersChange}
+            configControl={
+              selectedInstrument !== 'ALL' ? (
+                <InstrumentConfigDrawer
+                  drawerOpen={configDrawerOpen}
+                  setDrawerOpen={setConfigDrawerOpen}
+                  selectedInstrument={selectedInstrument}
+                  disabled={!configAvailable}
+                  buttonPlacement="toolbar"
+                />
+              ) : undefined
+            }
           />
         </Box>
       )}
-    </>
+      {isImat && imatView === 1 && <IMATViewer mode="latest" showNav={false} />}
+      {isImat && imatView === 2 && <IMATViewer mode="stack" showNav={false} />}
+    </Box>
   );
 };
 

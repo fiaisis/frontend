@@ -554,9 +554,20 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
   return (
     <>
       {showNav && <NavArrows />}
-      <Box sx={{ px: '20px', pb: 2, height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <Box
+        sx={{
+          px: '20px',
+          pb: 2,
+          display: 'flex',
+          flex: '1 1 auto',
+          flexDirection: 'column',
+          minHeight: 0,
+          boxSizing: 'border-box',
+          overflow: 'hidden',
+        }}
+      >
         {mode === 'latest' && (
-          <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2, minHeight: 0 }}>
             {latestLoading && !latestDataset ? (
               <Box sx={{ display: 'flex', justifyContent: 'center', p: 8 }}>
                 <CircularProgress />
@@ -583,7 +594,7 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
                               ? latestImageWidth * 0.75
                               : latestImageWidth,
                     aspectRatio: latestAspectRatio,
-                    maxHeight: viewerSize === 'fit' ? 'calc(100vh - 250px)' : 'none',
+                    maxHeight: viewerSize === 'fit' ? '100%' : 'none',
                     position: 'relative',
                     border: '1px solid #ccc',
                     borderRadius: 1,
@@ -777,7 +788,7 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
                                     : '100%'
                                   : stackDisplayWidth || '100%',
                         aspectRatio: stackAspectRatio,
-                        maxHeight: viewerSize === 'fit' ? 'calc(100vh - 350px)' : 'none',
+                        maxHeight: viewerSize === 'fit' ? '100%' : 'none',
                         position: 'relative',
                         border: '1px solid #ccc',
                         borderRadius: 1,

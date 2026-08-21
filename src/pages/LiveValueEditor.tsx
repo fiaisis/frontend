@@ -10,8 +10,10 @@ import NavArrows from '../components/navigation/NavArrows';
 import { fiaApi } from '../lib/api';
 import { instruments as allInstruments } from '../lib/instrumentData';
 import { fetchLiveDataInstruments } from '../lib/plottingServiceAPI';
+import { useAvailablePluginHeight } from '../lib/useAvailablePluginHeight';
 
 const LiveValueEditor: React.FC = () => {
+  const { rootRef, availableHeight } = useAvailablePluginHeight();
   const theme = useTheme();
   const { instrumentName } = useParams<{ instrumentName: string }>();
   const history = useHistory();
@@ -136,18 +138,31 @@ const LiveValueEditor: React.FC = () => {
   };
 
   return (
-    <>
-      <NavArrows trailingCrumb={breadcrumbTrailingCrumbs} replaceLastCrumbCount={2} />
+    <Box
+      ref={rootRef}
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: availableHeight,
+        maxHeight: availableHeight,
+        minHeight: 0,
+        overflow: 'hidden',
+      }}
+    >
+      <Box sx={{ flexShrink: 0 }}>
+        <NavArrows trailingCrumb={breadcrumbTrailingCrumbs} replaceLastCrumbCount={2} />
+      </Box>
       <Box
         sx={{
           width: '100%',
-          height: 'calc(100vh - 64px)',
+          flex: '1 1 auto',
+          minHeight: 0,
           overflow: 'hidden',
           display: 'flex',
           flexDirection: 'column',
         }}
       >
-        <Box sx={{ p: 2, backgroundColor: theme.palette.background.default }}>
+        <Box sx={{ flexShrink: 0, p: 2, backgroundColor: theme.palette.background.default }}>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
             <Typography variant="h3" component="h1" style={{ color: theme.palette.text.primary }}>
               {instrumentName} Live data script
@@ -197,7 +212,7 @@ const LiveValueEditor: React.FC = () => {
           </Snackbar>
         </Box>
 
-        <Box sx={{ flex: 1, borderTop: 3, borderColor: 'divider', display: 'flex', overflow: 'hidden' }}>
+        <Box sx={{ flex: 1, minHeight: 0, borderTop: 3, borderColor: 'divider', display: 'flex', overflow: 'hidden' }}>
           {loading ? (
             <Box
               sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', width: '100%' }}
@@ -229,7 +244,7 @@ const LiveValueEditor: React.FC = () => {
           )}
         </Box>
       </Box>
-    </>
+    </Box>
   );
 };
 

@@ -3,8 +3,10 @@ import { useParams } from 'react-router-dom';
 
 import NexusViewer from '../components/data-viewer/NexusViewer';
 import TextViewer from '../components/data-viewer/TextViewer';
+import { useAvailablePluginHeight } from '../lib/useAvailablePluginHeight';
 
 export default function DataViewer(): JSX.Element {
+  const { rootRef, availableHeight } = useAvailablePluginHeight<HTMLElement>();
   const params = useParams<{
     instrument?: string;
     experimentNumber?: string;
@@ -27,15 +29,14 @@ export default function DataViewer(): JSX.Element {
   return (
     <main
       className="h5-container"
+      ref={rootRef}
       style={{
-        position: 'fixed', // Key: Breaks out of scigateways layout containers
-        top: 0,
-        left: 0,
-        height: '100vh',
-        width: '100vw',
-        zIndex: 9999, // Ensure this is higher than the scigateway navbar z-index
+        height: availableHeight,
+        maxHeight: availableHeight,
+        minHeight: 0,
+        width: '100%',
         backgroundColor: '#000',
-        overflow: 'auto', // Keeps the internal viewers responsive/scrollable
+        overflow: 'auto',
       }}
     >
       {textFiles.includes(fileExtension) ? (

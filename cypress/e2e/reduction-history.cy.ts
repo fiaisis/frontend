@@ -89,6 +89,28 @@ const imatJobsResponse = [
 ];
 
 const tableContainerSelector = '[data-testid="reduction-history-table-container"]';
+const tableScrollSelector = '[data-testid="reduction-history-table-scroll"]';
+const paginationFooterSelector = '[data-testid="reduction-history-pagination-footer"]';
+const scrollableOverflowValues = new Set(['auto', 'scroll', 'overlay']);
+
+const findScrollableAncestor = (element: HTMLElement | null): HTMLElement | null => {
+  let currentElement = element;
+  const ownerDocument = element?.ownerDocument;
+
+  while (
+    currentElement &&
+    currentElement !== ownerDocument?.body &&
+    currentElement !== ownerDocument?.documentElement
+  ) {
+    if (scrollableOverflowValues.has(getComputedStyle(currentElement).overflowY)) {
+      return currentElement;
+    }
+
+    currentElement = currentElement.parentElement;
+  }
+
+  return null;
+};
 
 describe('Reduction history page', () => {
   beforeEach(() => {
@@ -202,19 +224,30 @@ describe('Reduction history page', () => {
 
     cy.get(tableContainerSelector).scrollTo('right');
     cy.get('[data-testid="rows-per-page-controls"]').within(() => {
-      cy.contains('button', '10').should('be.visible').click();
+      cy.contains('button', '50').should('be.visible').click();
     });
 
     cy.wait('@getAllCount');
     cy.wait('@getAllJobs');
 
     cy.get(tableContainerSelector).scrollTo('right');
-    cy.contains('Showing 1-10 of 74082 reductions').should('be.visible');
+    cy.contains('Showing 1-50 of 74082 reductions').should('be.visible');
 
     cy.get(tableContainerSelector).should(($container) => {
       const container = $container[0];
 
       expect(container.scrollWidth).to.be.greaterThan(container.clientWidth);
+    });
+
+    cy.get('[data-testid="reduction-history-page"]').then(($page) => {
+      const pageRect = $page[0].getBoundingClientRect();
+
+      cy.get(tableContainerSelector).should(($container) => {
+        const containerRect = $container[0].getBoundingClientRect();
+
+        expect(containerRect.left).to.be.closeTo(pageRect.left, 1);
+        expect(containerRect.right).to.be.closeTo(pageRect.right, 1);
+      });
     });
 
     cy.get('[data-testid="reduction-history-table-toolbar"]').should(($toolbar) => {
@@ -235,8 +268,50 @@ describe('Reduction history page', () => {
         expect(getComputedStyle(tableControls).flexWrap).to.equal('wrap');
       });
 
-    cy.get('[data-testid="reduction-history-table-toolbar"] .MuiTablePagination-toolbar').should(($pagination) => {
-      expect(getComputedStyle($pagination[0]).flexWrap).to.equal('wrap');
+    cy.get(paginationFooterSelector).within(() => {
+      cy.get('[data-testid="rows-per-page-controls"]').should('be.visible');
+      cy.get('[data-testid="reduction-history-page-selector"]').should('be.visible');
+      cy.get('[data-testid="reduction-history-displayed-rows"]').should('be.visible');
+      cy.get('nav[aria-label="Reduction history pages"]').should('exist');
+    });
+
+    cy.get('[data-testid="reduction-history-table-toolbar"] [data-testid="rows-per-page-controls"]').should(
+      'not.exist'
+    );
+
+    cy.get(tableContainerSelector).should(($container) => {
+      expect(getComputedStyle($container[0]).overflowX).to.equal('auto');
+      expect(getComputedStyle($container[0]).overflowY).to.equal('hidden');
+    });
+
+    cy.get(tableScrollSelector).should(($tableScroll) => {
+      expect(getComputedStyle($tableScroll[0]).overflowY).to.equal('scroll');
+      expect($tableScroll.find('thead')).to.have.length(0);
+    });
+
+    cy.get('[data-testid="reduction-history-table-header"]').should(($tableHeader) => {
+      expect($tableHeader.find('thead')).to.have.length(1);
+    });
+
+    cy.get('[data-testid="reduction-history-table-toolbar"]').should(($toolbar) => {
+      const styles = getComputedStyle($toolbar[0]);
+
+      expect(styles.position).to.equal('sticky');
+      expect(styles.top).to.equal('0px');
+    });
+
+    cy.get(paginationFooterSelector).should(($footer) => {
+      const footer = $footer[0];
+      const viewportWindow = footer.ownerDocument.defaultView;
+      expect(viewportWindow).not.to.equal(null);
+
+      const viewportHeight = viewportWindow?.innerHeight ?? 0;
+      const scrollContainer = findScrollableAncestor(footer.parentElement);
+      const contentBottom = scrollContainer
+        ? Math.min(scrollContainer.getBoundingClientRect().bottom, viewportHeight)
+        : viewportHeight;
+
+      expect(footer.getBoundingClientRect().bottom).to.be.closeTo(contentBottom, 1);
     });
 
     cy.get('.tour-job-table-adv-filters').should(($toolbarControls) => {
@@ -250,7 +325,8 @@ describe('Reduction history page', () => {
       JOB_ROWS_PER_PAGE_OPTIONS.forEach((option) => {
         cy.contains('button', option.toString()).should('be.visible');
       });
-      cy.get('button[aria-pressed="true"]').should('have.length', 1).and('have.text', '10');
+      cy.contains('button', /^10$/).should('not.exist');
+      cy.get('button[aria-pressed="true"]').should('have.length', 1).and('have.text', '50');
       cy.get('[role="combobox"]').should('not.exist');
     });
 

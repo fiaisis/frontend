@@ -20,16 +20,18 @@ const InstrumentConfigDrawer: React.FC<{
   drawerOpen: boolean;
   setDrawerOpen: (open: boolean) => void;
   disabled?: boolean;
-}> = ({ selectedInstrument, drawerOpen, setDrawerOpen, disabled = false }) => {
+  buttonPlacement?: 'page' | 'toolbar';
+}> = ({ selectedInstrument, drawerOpen, setDrawerOpen, disabled = false, buttonPlacement = 'page' }) => {
   const theme = useTheme();
   const buttonDisabled = disabled && !drawerOpen;
+  const isToolbarButton = buttonPlacement === 'toolbar';
 
   return (
     <>
       <Button
         type="button"
-        variant="contained"
-        color="primary"
+        variant={isToolbarButton ? 'outlined' : 'contained'}
+        color={isToolbarButton ? 'inherit' : 'primary'}
         aria-label={drawerOpen ? 'Close instrument config' : 'Open instrument config'}
         aria-controls="instrument-config-drawer"
         aria-expanded={drawerOpen}
@@ -38,13 +40,14 @@ const InstrumentConfigDrawer: React.FC<{
         startIcon={<Settings fontSize="small" />}
         sx={{
           minWidth: 0,
-          height: 40,
+          height: isToolbarButton ? 32 : 40,
           boxSizing: 'border-box',
-          mt: 2,
-          px: 2,
+          mt: isToolbarButton ? 0 : 2,
+          px: isToolbarButton ? 1.5 : 2,
           borderRadius: 1,
           flexShrink: 0,
-          boxShadow: theme.shadows[4],
+          borderColor: isToolbarButton ? 'currentColor' : undefined,
+          boxShadow: isToolbarButton ? 'none' : theme.shadows[4],
           textTransform: 'none',
           whiteSpace: 'nowrap',
           transition: theme.transitions.create(['box-shadow', 'background-color'], {
@@ -52,12 +55,21 @@ const InstrumentConfigDrawer: React.FC<{
             easing: theme.transitions.easing.easeOut,
           }),
           '&:hover': {
-            boxShadow: theme.shadows[6],
+            borderColor: isToolbarButton ? 'currentColor' : undefined,
+            backgroundColor: isToolbarButton ? theme.palette.action.hover : undefined,
+            boxShadow: isToolbarButton ? 'none' : theme.shadows[6],
           },
           '&.Mui-disabled': {
-            color: theme.palette.text.secondary,
-            backgroundColor: theme.palette.mode === 'dark' ? theme.palette.grey[800] : theme.palette.grey[300],
-            boxShadow: `${theme.shadows[1]}, 0 0 0 1px ${alpha(theme.palette.text.primary, 0.12)}`,
+            color: isToolbarButton ? theme.palette.action.disabled : theme.palette.text.secondary,
+            borderColor: isToolbarButton ? theme.palette.action.disabled : undefined,
+            backgroundColor: isToolbarButton
+              ? 'transparent'
+              : theme.palette.mode === 'dark'
+                ? theme.palette.grey[800]
+                : theme.palette.grey[300],
+            boxShadow: isToolbarButton
+              ? 'none'
+              : `${theme.shadows[1]}, 0 0 0 1px ${alpha(theme.palette.text.primary, 0.12)}`,
             opacity: 1,
           },
         }}

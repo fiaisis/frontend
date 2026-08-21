@@ -2,7 +2,7 @@ import { Box, CSSObject, SxProps, TableCell, TableHead, TableRow, TableSortLabel
 import { Theme } from '@mui/material/styles';
 import React from 'react';
 
-import { JOB_TABLE_HEADER_BORDER_COLOR } from './constants';
+import { getJobTableChromeColors, JOB_TABLE_HEADER_HEIGHT } from './constants';
 
 interface SortableHeaderCellProps {
   headerName: string; // Title of the column
@@ -14,13 +14,17 @@ interface SortableHeaderCellProps {
   sx?: SxProps<Theme>; // Additional styles
 }
 
-const headerStyles = (theme: Theme): CSSObject => ({
-  color: theme.palette.primary.contrastText,
-  backgroundColor: theme.palette.primary.main,
-  fontWeight: 'bold',
-  whiteSpace: 'nowrap',
-  borderRight: `2px solid ${JOB_TABLE_HEADER_BORDER_COLOR}`,
-});
+const headerStyles = (theme: Theme): CSSObject => {
+  const tableChrome = getJobTableChromeColors(theme.palette.mode);
+
+  return {
+    color: tableChrome.text,
+    backgroundColor: tableChrome.header,
+    fontWeight: 'bold',
+    whiteSpace: 'nowrap',
+    borderRight: `1px solid ${tableChrome.border}`,
+  };
+};
 
 const SortableHeaderCell: React.FC<SortableHeaderCellProps> = ({
   headerName,
@@ -32,10 +36,19 @@ const SortableHeaderCell: React.FC<SortableHeaderCellProps> = ({
   sx,
 }) => {
   const isActive = orderBy === sortKey; // Check if the column is actively sorted
+  const theme = useTheme();
+  const tableChrome = getJobTableChromeColors(theme.palette.mode);
 
   return (
     <TableCell align={align} sx={sx} onClick={() => onSort(sortKey)}>
-      <Box sx={{ display: 'flex', alignItems: 'center', whiteSpace: 'nowrap' }}>
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          color: isActive ? tableChrome.accent : tableChrome.text,
+          whiteSpace: 'nowrap',
+        }}
+      >
         {headerName}
         {isActive && (
           <TableSortLabel
@@ -43,7 +56,7 @@ const SortableHeaderCell: React.FC<SortableHeaderCellProps> = ({
             direction={orderDirection}
             sx={{
               '& .MuiTableSortLabel-icon': {
-                color: 'white !important', // Custom styling for active arrow
+                color: `${tableChrome.accent} !important`,
               },
             }}
           />
@@ -54,13 +67,10 @@ const SortableHeaderCell: React.FC<SortableHeaderCellProps> = ({
 };
 
 const highlightHover = (theme: Theme): React.CSSProperties => {
+  const tableChrome = getJobTableChromeColors(theme.palette.mode);
+
   return {
-    backgroundColor:
-      theme.palette.mode === 'light'
-        ? theme.palette.primary.dark // Light mode hover colour
-        : theme.palette.mode === 'dark'
-          ? theme.palette.primary.dark // Dark mode hover colour
-          : theme.palette.primary.dark, // High contrast mode hover colour
+    backgroundColor: tableChrome.hover,
   };
 };
 
@@ -75,18 +85,16 @@ interface JobTableHeadProps {
 
 const JobTableHead: React.FC<JobTableHeadProps> = ({ handleSort, orderBy, orderDirection }) => {
   const theme = useTheme();
+  const tableChrome = getJobTableChromeColors(theme.palette.mode);
   return (
     <TableHead
       sx={{
         '& th': {
-          py: 0.5,
-          borderTop: `2px solid ${JOB_TABLE_HEADER_BORDER_COLOR}`,
-          borderBottom: `2px solid ${JOB_TABLE_HEADER_BORDER_COLOR}`,
+          py: 0.25,
+          borderTop: `1px solid ${tableChrome.border}`,
+          borderBottom: `1px solid ${tableChrome.border}`,
         },
-        '& th:first-of-type': {
-          borderLeft: `2px solid ${JOB_TABLE_HEADER_BORDER_COLOR}`,
-        },
-        height: '54px',
+        height: JOB_TABLE_HEADER_HEIGHT,
       }}
     >
       <TableRow>
@@ -139,7 +147,12 @@ const JobTableHead: React.FC<JobTableHeadProps> = ({ handleSort, orderBy, orderD
           onSort={handleSort}
           sx={{ width: '12%', ...headerStyles(theme), '&:hover': highlightHover(theme) }}
         />
-        <TableCell sx={{ width: '28%', ...headerStyles(theme) }} align="left" colSpan={2}>
+        <TableCell
+          data-border-continuation="header-gutter"
+          sx={{ width: '28%', ...headerStyles(theme), borderRight: 0 }}
+          align="left"
+          colSpan={2}
+        >
           Title
         </TableCell>
       </TableRow>

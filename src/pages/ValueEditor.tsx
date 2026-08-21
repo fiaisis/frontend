@@ -7,6 +7,7 @@ import NavArrows from '../components/navigation/NavArrows';
 import { fiaApi } from '../lib/api';
 import { isValidInstrument } from '../lib/instrumentData';
 import { MantidVersionMap } from '../lib/types';
+import { useAvailablePluginHeight } from '../lib/useAvailablePluginHeight';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -18,8 +19,21 @@ const TabPanel = (props: TabPanelProps): JSX.Element => {
   const { children, value, index, ...other } = props;
 
   return (
-    <div role="tabpanel" hidden={value !== index} id={`tabpanel-${index}`} aria-labelledby={`tab-${index}`} {...other}>
-      {value === index && <Box sx={{ p: 3, height: 'calc(85vh - 48px - 48px - 24px)' }}>{children}</Box>}
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`tabpanel-${index}`}
+      aria-labelledby={`tab-${index}`}
+      style={{ flex: '1 1 auto', minHeight: 0 }}
+      {...other}
+    >
+      {value === index && (
+        <Box
+          sx={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, p: 3, boxSizing: 'border-box' }}
+        >
+          {children}
+        </Box>
+      )}
     </div>
   );
 };
@@ -32,6 +46,7 @@ const a11yProps = (index: number): { id: string; 'aria-controls': string } => {
 };
 
 const ValueEditor: React.FC = () => {
+  const { rootRef, availableHeight } = useAvailablePluginHeight();
   const theme = useTheme();
   const [value, setValue] = useState<number>(0);
   const [runnerVersion, setRunnerVersion] = useState<string>('');
@@ -132,10 +147,31 @@ const ValueEditor: React.FC = () => {
   };
 
   return (
-    <>
-      <NavArrows />
-      <Box sx={{ width: '100%', height: '85vh', overflow: 'hidden' }}>
-        <Box sx={{ p: 2, backgroundColor: theme.palette.background.default }}>
+    <Box
+      ref={rootRef}
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: availableHeight,
+        maxHeight: availableHeight,
+        minHeight: 0,
+        overflow: 'hidden',
+      }}
+    >
+      <Box sx={{ flexShrink: 0 }}>
+        <NavArrows />
+      </Box>
+      <Box
+        sx={{
+          display: 'flex',
+          flex: '1 1 auto',
+          flexDirection: 'column',
+          minHeight: 0,
+          width: '100%',
+          overflow: 'hidden',
+        }}
+      >
+        <Box sx={{ flexShrink: 0, p: 2, backgroundColor: theme.palette.background.default }}>
           <Typography variant="h3" component="h1" style={{ color: theme.palette.text.primary }}>
             {instrumentName} Job {jobId} values
           </Typography>
@@ -202,7 +238,7 @@ const ValueEditor: React.FC = () => {
           </Box>
         </Box>
 
-        <Box sx={{ borderTop: 3, borderColor: 'divider' }}>
+        <Box sx={{ flexShrink: 0, borderTop: 3, borderColor: 'divider' }}>
           <Tabs
             value={value}
             onChange={handleChange}
@@ -251,7 +287,7 @@ const ValueEditor: React.FC = () => {
           </Typography>
         </TabPanel>
       </Box>
-    </>
+    </Box>
   );
 };
 

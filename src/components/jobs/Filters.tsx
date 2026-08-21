@@ -8,12 +8,14 @@ import {
   DialogContent,
   DialogTitle,
   FormControl,
+  FormControlLabel,
   InputLabel,
   ListItemText,
   MenuItem,
   OutlinedInput,
   Select,
   SelectChangeEvent,
+  Switch,
   TextField,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers';
@@ -127,6 +129,9 @@ const FilterContainer: React.FC<{
   handleFiltersChange: (filters: JobQueryFilters) => void;
   resetPageNumber: () => void;
   appliedFilters: JobQueryFilters;
+  showAsUserControl: boolean;
+  asUser: boolean;
+  setAsUser: (asUser: boolean) => void;
 }> = ({
   visible,
   handleFiltersClose,
@@ -134,6 +139,9 @@ const FilterContainer: React.FC<{
   handleFiltersChange,
   resetPageNumber,
   appliedFilters,
+  showAsUserControl,
+  asUser,
+  setAsUser,
 }): ReactElement => {
   const [selectedInstruments, setSelectedInstruments, setSelectedInstrumentsSilently] = useFilterWithReset<string[]>(
     [],
@@ -199,6 +207,7 @@ const FilterContainer: React.FC<{
   const [debouncedExperimentNumberBefore, setDebouncedExperimentNumberBefore] = useState<number | null>(null);
 
   const previousAppliedFiltersRef = React.useRef<string>('');
+  const syncingFromAppliedFiltersRef = React.useRef(false);
 
   // Debounce filters so API isn't spammed while typing
   useEffect(() => {
@@ -229,6 +238,7 @@ const FilterContainer: React.FC<{
       return;
     }
 
+    syncingFromAppliedFiltersRef.current = true;
     previousAppliedFiltersRef.current = serializedFilters;
 
     const instruments = Array.isArray(appliedFilters.instrument_in) ? [...appliedFilters.instrument_in] : [];
@@ -284,6 +294,11 @@ const FilterContainer: React.FC<{
 
   // Build the payload for the API whenever any debounced field changes
   useEffect(() => {
+    if (syncingFromAppliedFiltersRef.current) {
+      syncingFromAppliedFiltersRef.current = false;
+      return;
+    }
+
     const filters: JobQueryFilters = Object();
     if (selectedInstruments) {
       filters.instrument_in = selectedInstruments.length !== 0 ? selectedInstruments : undefined;
@@ -331,6 +346,7 @@ const FilterContainer: React.FC<{
 
   const clearAndCloseFilters = (): void => {
     handleFiltersChange(Object());
+    setAsUser(false);
     setSelectedInstruments([]);
     setSelectedStates([]);
     setExperimentNumberIn([]);
@@ -364,6 +380,21 @@ const FilterContainer: React.FC<{
             <Box display={'flex'} flexDirection={'column'} gap={1}>
               <span>General</span>
               <Box display={'flex'} gap={1} sx={{ flexWrap: 'wrap' }}>
+                {showAsUserControl && (
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={asUser}
+                        onChange={(_event, checked) => {
+                          setAsUser(checked);
+                          resetPageNumber();
+                        }}
+                        inputProps={{ 'aria-label': 'View as user' }}
+                      />
+                    }
+                    label="View as user"
+                  />
+                )}
                 <MultipleSelectCheckmarks
                   name={'Reduction state'}
                   items={(reductionStates as unknown as string[]) ?? []}

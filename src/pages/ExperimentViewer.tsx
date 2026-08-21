@@ -3,7 +3,7 @@ import ArrowDropDown from '@mui/icons-material/ArrowDropDown';
 import CloseIcon from '@mui/icons-material/Close';
 import SearchIcon from '@mui/icons-material/Search';
 import { Alert, Box, Button, CircularProgress, Popover, TextField, Typography } from '@mui/material';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useHistory, useParams } from 'react-router-dom';
 
 import FileTree from '../components/experimentViewer/FileTree';
@@ -16,6 +16,7 @@ import { fiaApi } from '../lib/api';
 import { instruments, isValidInstrument } from '../lib/instrumentData';
 import { discoverFileStructure, fetchData1D, fetchErrorData, fetchFilePath } from '../lib/plottingServiceAPI';
 import { DatasetInfo, FileConfig, Job, JobQueryFilters, LinePlotData, outputFilter } from '../lib/types';
+import { useAvailablePluginHeight } from '../lib/useAvailablePluginHeight';
 
 import type { NumericType } from '@h5web/app';
 
@@ -26,7 +27,6 @@ interface RouteParams {
   jobId?: string;
 }
 
-const VIEWER_HEIGHT_BOTTOM_BUFFER_PX = 32;
 const EXPERIMENT_VIEWER_PAGE_SIZE = 10;
 const EXPERIMENT_NUMBER_BREADCRUMB_MENU_WIDTH = 280;
 const EXPERIMENT_NUMBER_BREADCRUMB_CLEAR_BUTTON_WIDTH = 40;
@@ -202,7 +202,7 @@ const ExperimentNumberBreadcrumb: React.FC<{
 const ExperimentViewer: React.FC = (): JSX.Element => {
   const { instrumentName, experimentNumber, experimentOnlyNumber, jobId } = useParams<RouteParams>();
   const history = useHistory();
-  const viewerRootRef = useRef<HTMLDivElement | null>(null);
+  const { rootRef: viewerRootRef, availableHeight: viewerHeight } = useAvailablePluginHeight();
   const routeExperimentNumber = parseExperimentNumber(experimentOnlyNumber ?? experimentNumber);
   const hasRouteExperimentNumber = experimentNumber !== undefined || experimentOnlyNumber !== undefined;
 
@@ -228,7 +228,6 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
   const [selected2DFilePath, setSelected2DFilePath] = useState<string | null>(null);
   const [loading2DPath, setLoading2DPath] = useState(false);
   const [viewer2DError, setViewer2DError] = useState<string | null>(null);
-  const [viewerHeight, setViewerHeight] = useState('100vh');
   const [currentPage, setCurrentPage] = useState(0);
   const [totalJobs, setTotalJobs] = useState(0);
 
@@ -259,23 +258,6 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
       setError(null);
     }
   }, [instrumentName, jobId, routeExperimentNumber]);
-
-  const updateViewerHeight = useCallback((): void => {
-    const topOffset = viewerRootRef.current?.getBoundingClientRect().top ?? 0;
-    const unavailableHeight = Math.max(0, Math.ceil(topOffset)) + VIEWER_HEIGHT_BOTTOM_BUFFER_PX;
-    const nextHeight = `calc(100vh - ${unavailableHeight}px)`;
-
-    setViewerHeight((currentHeight) => (currentHeight === nextHeight ? currentHeight : nextHeight));
-  }, []);
-
-  useEffect(() => {
-    updateViewerHeight();
-    window.addEventListener('resize', updateViewerHeight);
-
-    return () => {
-      window.removeEventListener('resize', updateViewerHeight);
-    };
-  }, [updateViewerHeight]);
 
   const clearViewerSelections = useCallback((): void => {
     setLinePlotData([]);
@@ -874,6 +856,7 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
           justifyContent: 'space-between',
           gap: 2,
           flexWrap: { xs: 'wrap', lg: 'nowrap' },
+          flexShrink: 0,
           mb: 2,
           pr: { xs: 2, sm: 8 },
         }}

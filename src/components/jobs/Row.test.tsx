@@ -5,6 +5,7 @@ import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
+import { JOB_TABLE_ROW_HEIGHT } from './constants';
 import Row from './Row';
 import { fiaApi } from '../../lib/api';
 import { Job } from '../../lib/types';
@@ -99,6 +100,7 @@ describe('Row', () => {
     expect(screen.getByText('LOQ00012345')).toBeInTheDocument();
     expect(screen.getByText('Polymer sample')).toBeInTheDocument();
     expect(screen.getByLabelText('Reduction state: SUCCESSFUL')).toBeInTheDocument();
+    expect(screen.getByText('12345').closest('tr')).toHaveStyle({ height: `${JOB_TABLE_ROW_HEIGHT}px` });
 
     const statusIcon = screen.getByLabelText('Reduction state: SUCCESSFUL');
     fireEvent.mouseEnter(statusIcon.parentElement as HTMLElement);
