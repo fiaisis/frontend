@@ -6,8 +6,10 @@ import {
   JOB_ROWS_PER_PAGE_OPTIONS,
   JOB_TABLE_CHROME_CONTROL_HEIGHT,
   JOB_TABLE_CHROME_ROW_MIN_HEIGHT,
+  JOB_TABLE_FOOTER_CONTROL_WIDTH,
   JOB_TABLE_HEADER_HEIGHT,
   JOB_TABLE_ROW_HEIGHT,
+  JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
 } from './constants';
 
 describe('job table pagination constants', () => {
@@ -25,7 +27,9 @@ describe('job table pagination constants', () => {
 
   test('uses a compact header without changing the body row height', () => {
     expect(JOB_TABLE_CHROME_CONTROL_HEIGHT).toBe(32);
+    expect(JOB_TABLE_FOOTER_CONTROL_WIDTH).toBe(44);
     expect(JOB_TABLE_CHROME_ROW_MIN_HEIGHT).toBe(40);
+    expect(JOB_TABLE_TOOLBAR_CONTROL_HEIGHT).toBe(40);
     expect(JOB_TABLE_HEADER_HEIGHT).toBe(42);
     expect(JOB_TABLE_ROW_HEIGHT).toBe(44);
   });

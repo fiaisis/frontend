@@ -104,7 +104,7 @@ const JobTableHead: React.FC<JobTableHeadProps> = ({ handleSort, orderBy, orderD
           orderBy={orderBy}
           orderDirection={orderDirection}
           onSort={handleSort}
-          sx={{ width: '14%', ...headerStyles(theme), '&:hover': highlightHover(theme) }}
+          sx={{ ...headerStyles(theme), '&:hover': highlightHover(theme) }}
         />
         <SortableHeaderCell
           headerName="Filename"
@@ -112,7 +112,7 @@ const JobTableHead: React.FC<JobTableHeadProps> = ({ handleSort, orderBy, orderD
           orderBy={orderBy}
           orderDirection={orderDirection}
           onSort={handleSort}
-          sx={{ width: '12%', ...headerStyles(theme), '&:hover': highlightHover(theme) }}
+          sx={{ ...headerStyles(theme), '&:hover': highlightHover(theme) }}
         />
         <SortableHeaderCell
           headerName="Run start"
@@ -120,7 +120,7 @@ const JobTableHead: React.FC<JobTableHeadProps> = ({ handleSort, orderBy, orderD
           orderBy={orderBy}
           orderDirection={orderDirection}
           onSort={handleSort}
-          sx={{ width: '12%', ...headerStyles(theme), '&:hover': highlightHover(theme) }}
+          sx={{ ...headerStyles(theme), '&:hover': highlightHover(theme) }}
         />
         <SortableHeaderCell
           align={'center'}
@@ -129,7 +129,7 @@ const JobTableHead: React.FC<JobTableHeadProps> = ({ handleSort, orderBy, orderD
           orderBy={orderBy}
           orderDirection={orderDirection}
           onSort={handleSort}
-          sx={{ width: '12%', ...headerStyles(theme), '&:hover': highlightHover(theme) }}
+          sx={{ ...headerStyles(theme), '&:hover': highlightHover(theme) }}
         />
         <SortableHeaderCell
           headerName="Job start"
@@ -137,7 +137,7 @@ const JobTableHead: React.FC<JobTableHeadProps> = ({ handleSort, orderBy, orderD
           orderBy={orderBy}
           orderDirection={orderDirection}
           onSort={handleSort}
-          sx={{ width: '12%', ...headerStyles(theme), '&:hover': highlightHover(theme) }}
+          sx={{ ...headerStyles(theme), '&:hover': highlightHover(theme) }}
         />
         <SortableHeaderCell
           headerName="Job end"
@@ -145,11 +145,11 @@ const JobTableHead: React.FC<JobTableHeadProps> = ({ handleSort, orderBy, orderD
           orderBy={orderBy}
           orderDirection={orderDirection}
           onSort={handleSort}
-          sx={{ width: '12%', ...headerStyles(theme), '&:hover': highlightHover(theme) }}
+          sx={{ ...headerStyles(theme), '&:hover': highlightHover(theme) }}
         />
         <TableCell
           data-border-continuation="header-gutter"
-          sx={{ width: '28%', ...headerStyles(theme), borderRight: 0 }}
+          sx={{ ...headerStyles(theme), borderRight: 0 }}
           align="left"
           colSpan={2}
         >

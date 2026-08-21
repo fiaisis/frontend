@@ -2,7 +2,7 @@ import '@h5web/lib/styles.css';
 import ArrowDropDown from '@mui/icons-material/ArrowDropDown';
 import CloseIcon from '@mui/icons-material/Close';
 import SearchIcon from '@mui/icons-material/Search';
-import { Alert, Box, Button, CircularProgress, Popover, TextField, Typography } from '@mui/material';
+import { Alert, Box, Button, CircularProgress, Popover, TextField } from '@mui/material';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useHistory, useParams } from 'react-router-dom';
 
@@ -851,26 +851,18 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
     >
       <Box
         sx={{
-          display: 'flex',
-          alignItems: 'flex-start',
-          justifyContent: 'space-between',
-          gap: 2,
-          flexWrap: { xs: 'wrap', lg: 'nowrap' },
           flexShrink: 0,
           mb: 2,
           pr: { xs: 2, sm: 8 },
+          minWidth: 0,
+          overflowX: 'auto',
         }}
       >
-        <Box sx={{ flex: '1 1 auto', minWidth: 0 }}>
-          <NavArrows
-            trailingCrumb={breadcrumbTrailingCrumb}
-            replaceLastCrumbCount={breadcrumbRouteCrumbCount}
-            labelOverrides={breadcrumbLabelOverrides}
-          />
-          <Typography variant="h3" component="h1" sx={{ color: 'text.primary', px: '20px', pt: 2, pb: 1 }}>
-            Experiment viewer
-          </Typography>
-        </Box>
+        <NavArrows
+          trailingCrumb={breadcrumbTrailingCrumb}
+          replaceLastCrumbCount={breadcrumbRouteCrumbCount}
+          labelOverrides={breadcrumbLabelOverrides}
+        />
       </Box>
       <Box
         sx={{

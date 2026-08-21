@@ -1,4 +1,4 @@
-import { Box, ToggleButton, ToggleButtonGroup, Typography, useTheme } from '@mui/material';
+import { Box, ToggleButton, ToggleButtonGroup } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { jwtDecode } from 'jwt-decode';
 import React, { ReactElement, useState } from 'react';
@@ -46,6 +46,11 @@ type ImatViewValue = (typeof IMAT_VIEW_OPTIONS)[number]['value'];
 
 const IMAT_STACK_QUERY_PARAMS = ['jobId', 'experiment', 'instrument', 'imageIndex', 'viewerSize'] as const;
 const JOB_TABLE_QUERY_PARAMS = ['page', 'rowsPerPage', 'filters', 'orderBy', 'orderDir'] as const;
+const REDUCTION_DETAILS_QUERY_PARAM = 'reductionId';
+
+interface ReductionHistoryLocationState {
+  reductionDetailsOpenedFromTable?: boolean;
+}
 
 const getImatViewPath = (value: ImatViewValue): string =>
   IMAT_VIEW_OPTIONS.find((option) => option.value === value)?.path ?? IMAT_VIEW_OPTIONS[0].path;
@@ -139,7 +144,7 @@ const Jobs: React.FC = (): ReactElement => {
   const { rootRef: reductionHistoryRootRef, availableHeight: reductionHistoryHeight } = useAvailablePluginHeight();
   const { instrumentName } = useParams<{ instrumentName?: string }>();
   const history = useHistory();
-  const location = useLocation();
+  const location = useLocation<ReductionHistoryLocationState>();
   const isImat = (instrumentName || '').toUpperCase() === 'IMAT';
   const isImatViewPath = location.pathname.endsWith('/latest-image') || location.pathname.endsWith('/stack-viewer');
   const imatView = React.useMemo(
@@ -150,18 +155,12 @@ const Jobs: React.FC = (): ReactElement => {
   const configAvailable = ['LOQ', 'MARI', 'SANS2D', 'VESUVIO', 'OSIRIS', 'IRIS', 'ENGINX'].includes(
     selectedInstrument.toUpperCase()
   );
-  const reductionHistoryHeading = React.useMemo(() => {
-    if (isImat && imatView === 1) return 'IMAT latest image';
-    if (isImat && imatView === 2) return 'IMAT stack viewer';
-    return selectedInstrument === 'ALL' ? 'Reduction history' : `${selectedInstrument} reduction history`;
-  }, [imatView, isImat, selectedInstrument]);
   // Redirect if an instrument is specified in the URL but it's not a valid instrument name
   React.useEffect(() => {
     if ((instrumentName && !isValidInstrument(instrumentName)) || (isImatViewPath && !isImat)) {
       window.location.replace('/404/');
     }
   }, [history, instrumentName, isImat, isImatViewPath]);
-  const theme = useTheme();
   const [currentPage, setCurrentPage] = React.useState<number>(0);
   const [rowsPerPage, setRowsPerPage] = React.useState<JobRowsPerPage>(getStoredRowsPerPage);
   const [currentFilters, setCurrentFilters] = React.useState<JobQueryFilters>({});
@@ -175,6 +174,26 @@ const Jobs: React.FC = (): ReactElement => {
   const [orderBy, setOrderBy] = useState<string>('run_start');
   const [filtersOpen, setFiltersOpen] = React.useState<boolean>(false);
   const showReductionHistoryTable = !isImat || imatView === 0;
+  const rawReductionId = React.useMemo(
+    () => new URLSearchParams(location.search).get(REDUCTION_DETAILS_QUERY_PARAM),
+    [location.search]
+  );
+  const parsedReductionId = rawReductionId === null ? Number.NaN : Number(rawReductionId);
+  const selectedReductionId =
+    Number.isSafeInteger(parsedReductionId) && parsedReductionId > 0 ? parsedReductionId : null;
+
+  React.useEffect(() => {
+    if (rawReductionId === null || selectedReductionId !== null) return;
+
+    const params = new URLSearchParams(location.search);
+    params.delete(REDUCTION_DETAILS_QUERY_PARAM);
+    const search = params.toString();
+    history.replace({
+      pathname: location.pathname,
+      search: search ? `?${search}` : '',
+      state: location.state,
+    });
+  }, [history, location.pathname, location.search, location.state, rawReductionId, selectedReductionId]);
 
   const getUserRole = (): 'staff' | 'user' | null => {
     const token = localStorage.getItem('scigateway:token');
@@ -251,10 +270,10 @@ const Jobs: React.FC = (): ReactElement => {
       const newSearch = params.toString();
       const searchString = newSearch ? `?${newSearch}` : '';
       if (searchString !== location.search) {
-        history.replace({ pathname: location.pathname, search: searchString });
+        history.replace({ pathname: location.pathname, search: searchString, state: location.state });
       }
     },
-    [history, imatView, isImat, location.pathname, location.search]
+    [history, imatView, isImat, location.pathname, location.search, location.state]
   );
 
   React.useEffect(() => {
@@ -267,6 +286,7 @@ const Jobs: React.FC = (): ReactElement => {
     const params = new URLSearchParams(location.search);
     params.delete('page');
     params.delete('tab');
+    params.delete(REDUCTION_DETAILS_QUERY_PARAM);
     if (newInstrument.toUpperCase() !== 'IMAT') {
       clearImatStackQueryParams(params);
     }
@@ -418,6 +438,7 @@ const Jobs: React.FC = (): ReactElement => {
   const handleImatViewChange = (newValue: ImatViewValue): void => {
     const params = new URLSearchParams(location.search);
     params.delete('tab');
+    params.delete(REDUCTION_DETAILS_QUERY_PARAM);
     if (newValue !== 0) clearJobTableQueryParams(params);
     if (newValue !== 2) clearImatStackQueryParams(params);
 
@@ -427,6 +448,38 @@ const Jobs: React.FC = (): ReactElement => {
       search: search ? `?${search}` : '',
     });
   };
+
+  const handleOpenReductionDetails = React.useCallback(
+    (jobId: number): void => {
+      const params = new URLSearchParams(location.search);
+      params.set(REDUCTION_DETAILS_QUERY_PARAM, jobId.toString());
+      history.push({
+        pathname: location.pathname,
+        search: `?${params.toString()}`,
+        state: {
+          ...(location.state ?? {}),
+          reductionDetailsOpenedFromTable: true,
+        },
+      });
+    },
+    [history, location.pathname, location.search, location.state]
+  );
+
+  const handleCloseReductionDetails = React.useCallback((): void => {
+    if (location.state?.reductionDetailsOpenedFromTable) {
+      history.goBack();
+      return;
+    }
+
+    const params = new URLSearchParams(location.search);
+    params.delete(REDUCTION_DETAILS_QUERY_PARAM);
+    const search = params.toString();
+    history.replace({
+      pathname: location.pathname,
+      search: search ? `?${search}` : '',
+      state: location.state,
+    });
+  }, [history, location.pathname, location.search, location.state]);
 
   const breadcrumbTrailingCrumbs = [
     <InstrumentSelector
@@ -451,46 +504,24 @@ const Jobs: React.FC = (): ReactElement => {
         maxHeight: reductionHistoryHeight,
         minHeight: 0,
         overflow: 'hidden',
+        position: 'relative',
       }}
     >
       <Box
         data-testid="reduction-history-page-header"
         sx={{
-          display: 'flex',
-          alignItems: 'flex-start',
-          justifyContent: 'space-between',
-          gap: 2,
           flexShrink: 0,
+          minWidth: 0,
+          overflowX: 'auto',
           pr: { xs: 2, sm: 3 },
           pb: 1,
         }}
       >
-        <Box
-          sx={{
-            flex: '1 1 auto',
-            minWidth: 0,
-            overflowX: 'auto',
-          }}
-        >
-          <NavArrows
-            trailingCrumb={breadcrumbTrailingCrumbs}
-            replaceLastCrumbCount={isImat && imatView !== 0 ? 1 : undefined}
-            labelOverrides={breadcrumbLabelOverrides}
-          />
-        </Box>
-        <Typography
-          variant="h4"
-          component="h1"
-          sx={{
-            color: theme.palette.text.primary,
-            flexShrink: 0,
-            mt: 2,
-            textAlign: 'right',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {reductionHistoryHeading}
-        </Typography>
+        <NavArrows
+          trailingCrumb={breadcrumbTrailingCrumbs}
+          replaceLastCrumbCount={isImat && imatView !== 0 ? 1 : undefined}
+          labelOverrides={breadcrumbLabelOverrides}
+        />
       </Box>
       <FilterContainer
         showInstrumentFilter={selectedInstrument === 'ALL'}
@@ -520,6 +551,10 @@ const Jobs: React.FC = (): ReactElement => {
             filtersApplied={hasFilters(currentFilters) || asUser}
             openFilters={() => setFiltersOpen(true)}
             handleFiltersChange={handleFiltersChange}
+            selectedReductionId={selectedReductionId}
+            openReductionDetails={handleOpenReductionDetails}
+            closeReductionDetails={handleCloseReductionDetails}
+            detailsContainer={() => reductionHistoryRootRef.current}
             configControl={
               selectedInstrument !== 'ALL' ? (
                 <InstrumentConfigDrawer

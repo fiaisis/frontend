@@ -164,7 +164,7 @@ const LiveValueEditor: React.FC = () => {
       >
         <Box sx={{ flexShrink: 0, p: 2, backgroundColor: theme.palette.background.default }}>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-            <Typography variant="h3" component="h1" style={{ color: theme.palette.text.primary }}>
+            <Typography variant="body1" component="p" sx={{ color: theme.palette.text.primary, fontWeight: 600, m: 0 }}>
               {instrumentName} Live data script
             </Typography>
             <Box sx={{ display: 'flex', gap: 1 }}>

@@ -162,7 +162,7 @@ describe('Reduction history page', () => {
     cy.wait('@getAllCount');
     cy.wait('@getAllJobs');
 
-    cy.contains('h1', 'Reduction history').should('be.visible');
+    cy.get('[data-testid="reduction-history-page-header"]').find('[aria-label="breadcrumb"]').should('be.visible');
     cy.contains('All instruments reduction').should('be.visible');
 
     cy.get('[aria-label="breadcrumb"]').within(() => {
@@ -180,19 +180,29 @@ describe('Reduction history page', () => {
       cy.contains('a', 'LOQ').should('be.visible');
       cy.get('#instrument-selector-button').should('contain', 'Browse instruments').and('not.contain', 'LOQ');
     });
-    cy.contains('h1', 'LOQ reduction history').should('be.visible');
+    cy.get('[data-testid="reduction-history-page-header"]').find('[aria-label="breadcrumb"]').should('be.visible');
     cy.contains('LOQ scoped reduction').should('be.visible');
 
     cy.get(tableContainerSelector).scrollTo('right');
     cy.contains('LOQ scoped reduction').should('be.visible').click();
-    cy.get(tableContainerSelector).scrollTo('right');
-    cy.contains('a', 'Experiment viewer').scrollIntoView();
-    cy.contains('a', 'Experiment viewer')
+    cy.location('search').should('include', 'reductionId=202');
+    cy.get('[data-testid="reduction-details-modal"]')
       .should('be.visible')
       .within(() => {
-        cy.get('[data-testid="VisibilityIcon"]').should('exist');
-        cy.get('[data-testid="OpenInNewIcon"]').should('not.exist');
+        cy.contains('[role="tab"]', 'Reduction outputs').click();
+        cy.contains('a', 'Experiment viewer')
+          .should('be.visible')
+          .within(() => {
+            cy.get('[data-testid="VisibilityIcon"]').should('exist');
+            cy.get('[data-testid="OpenInNewIcon"]').should('not.exist');
+          });
       });
+
+    cy.contains('LOQ scoped reduction').should('exist');
+    cy.get('[aria-label="Close reduction details"]').click();
+    cy.get('[data-testid="reduction-details-modal"]').should('not.exist');
+    cy.location('search').should('not.include', 'reductionId');
+    cy.contains('LOQ scoped reduction').should('be.visible');
   });
 
   it('wraps table controls while keeping column headers horizontally scrollable on narrow screens', () => {

@@ -37,32 +37,62 @@ export const useAvailablePluginHeight = <T extends HTMLElement = HTMLDivElement>
 
     const viewportBottom = getViewportBottom();
     const scrollContainer = findScrollableAncestor(root.parentElement);
+    const rootTopAtScrollOrigin =
+      root.getBoundingClientRect().top + (scrollContainer ? scrollContainer.scrollTop : window.scrollY);
     const contentBottom = scrollContainer
       ? Math.min(scrollContainer.getBoundingClientRect().bottom, viewportBottom)
       : viewportBottom;
-    const nextHeight = `${Math.max(0, Math.floor(contentBottom - root.getBoundingClientRect().top))}px`;
+    const nextHeight = `${Math.max(0, Math.floor(contentBottom - rootTopAtScrollOrigin))}px`;
 
     setAvailableHeight((currentHeight) => (currentHeight === nextHeight ? currentHeight : nextHeight));
   }, []);
 
   React.useLayoutEffect(() => {
-    updateAvailableHeight();
+    let observedScrollContainer: HTMLElement | null = null;
+    let firstResizeFrame: number | undefined;
+    let secondResizeFrame: number | undefined;
+    let settledResizeTimer: number | undefined;
 
-    const scrollContainer = findScrollableAncestor(rootRef.current?.parentElement ?? null);
-    const resizeObserver =
-      scrollContainer && typeof ResizeObserver !== 'undefined' ? new ResizeObserver(updateAvailableHeight) : undefined;
+    const measureAndObserve = (): void => {
+      updateAvailableHeight();
 
-    if (scrollContainer && resizeObserver) {
-      resizeObserver.observe(scrollContainer);
-    }
+      const nextScrollContainer = findScrollableAncestor(rootRef.current?.parentElement ?? null);
+      if (nextScrollContainer === observedScrollContainer) return;
 
-    window.addEventListener('resize', updateAvailableHeight);
-    window.visualViewport?.addEventListener('resize', updateAvailableHeight);
+      resizeObserver?.disconnect();
+      observedScrollContainer = nextScrollContainer;
+      if (observedScrollContainer) {
+        resizeObserver?.observe(observedScrollContainer);
+      }
+    };
+
+    const cancelScheduledMeasurements = (): void => {
+      if (firstResizeFrame !== undefined) window.cancelAnimationFrame(firstResizeFrame);
+      if (secondResizeFrame !== undefined) window.cancelAnimationFrame(secondResizeFrame);
+      if (settledResizeTimer !== undefined) window.clearTimeout(settledResizeTimer);
+    };
+
+    const handleViewportResize = (): void => {
+      measureAndObserve();
+      cancelScheduledMeasurements();
+      firstResizeFrame = window.requestAnimationFrame(() => {
+        measureAndObserve();
+        secondResizeFrame = window.requestAnimationFrame(measureAndObserve);
+      });
+      settledResizeTimer = window.setTimeout(measureAndObserve, 100);
+    };
+
+    const resizeObserver = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(measureAndObserve) : undefined;
+    measureAndObserve();
+
+    window.addEventListener('resize', handleViewportResize);
+    window.visualViewport?.addEventListener('resize', handleViewportResize);
 
     return () => {
+      cancelScheduledMeasurements();
       resizeObserver?.disconnect();
-      window.removeEventListener('resize', updateAvailableHeight);
-      window.visualViewport?.removeEventListener('resize', updateAvailableHeight);
+      window.removeEventListener('resize', handleViewportResize);
+      window.visualViewport?.removeEventListener('resize', handleViewportResize);
     };
   }, [updateAvailableHeight]);
 

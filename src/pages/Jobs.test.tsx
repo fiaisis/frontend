@@ -1,14 +1,33 @@
-import { cleanup, render, screen, within } from '@testing-library/react';
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
-import { MemoryRouter, Route } from 'react-router-dom';
+import { MemoryRouter, Route, useLocation } from 'react-router-dom';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 
 import Jobs from './Jobs';
 
 vi.mock('../components/jobs/JobTable', () => ({
-  default: ({ configControl }: { configControl?: React.ReactNode }) => (
-    <div data-testid="job-table">{configControl}</div>
+  default: ({
+    configControl,
+    selectedReductionId,
+    openReductionDetails,
+    closeReductionDetails,
+  }: {
+    configControl?: React.ReactNode;
+    selectedReductionId: number | null;
+    openReductionDetails: (jobId: number) => void;
+    closeReductionDetails: () => void;
+  }) => (
+    <div data-testid="job-table">
+      {configControl}
+      <span data-testid="selected-reduction">{selectedReductionId ?? 'none'}</span>
+      <button type="button" onClick={() => openReductionDetails(42)}>
+        Open reduction 42
+      </button>
+      <button type="button" onClick={closeReductionDetails}>
+        Close reduction details
+      </button>
+    </div>
   ),
 }));
 
@@ -28,9 +47,15 @@ vi.mock('./IMATViewer', () => ({
   default: () => <div data-testid="imat-viewer" />,
 }));
 
+const LocationSearch = (): React.ReactElement => {
+  const location = useLocation();
+  return <span data-testid="location-search">{location.search}</span>;
+};
+
 const renderJobs = (initialPath: string): void => {
   render(
     <MemoryRouter initialEntries={[initialPath]}>
+      <LocationSearch />
       <Route
         path={[
           '/reduction-history/:instrumentName/latest-image',
@@ -64,9 +89,8 @@ describe('Jobs', () => {
     expect(screen.getByTestId('reduction-history-page')).toContainElement(screen.getByTestId('job-table'));
 
     const pageHeader = screen.getByTestId('reduction-history-page-header');
-    const title = within(pageHeader).getByRole('heading', { name: 'LOQ reduction history' });
     expect(pageHeader).toContainElement(breadcrumb);
-    expect(title).toHaveStyle({ textAlign: 'right' });
+    expect(within(pageHeader).queryByRole('heading', { name: 'LOQ reduction history' })).not.toBeInTheDocument();
     expect(screen.getByTestId('job-table')).toContainElement(screen.getByRole('button', { name: 'Edit config' }));
     expect(screen.getByRole('button', { name: 'Edit config' })).toHaveAttribute('data-placement', 'toolbar');
   });
@@ -80,6 +104,54 @@ describe('Jobs', () => {
 
     expect(screen.getByRole('button', { name: 'Clear filters' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'View all reductions' })).not.toBeInTheDocument();
+  });
+
+  test('opens linkable reduction details and closes them through browser history', async () => {
+    const user = userEvent.setup();
+
+    renderJobs('/reduction-history/LOQ?page=2');
+    await user.click(screen.getByRole('button', { name: 'Open reduction 42' }));
+
+    expect(screen.getByTestId('selected-reduction')).toHaveTextContent('42');
+    expect(screen.getByTestId('location-search')).toHaveTextContent('reductionId=42');
+    expect(screen.getByTestId('location-search')).toHaveTextContent('page=2');
+
+    await user.click(screen.getByRole('button', { name: 'Close reduction details' }));
+
+    await waitFor(() => expect(screen.getByTestId('selected-reduction')).toHaveTextContent('none'));
+    expect(screen.getByTestId('location-search')).not.toHaveTextContent('reductionId');
+    expect(screen.getByTestId('location-search')).toHaveTextContent('page=2');
+  });
+
+  test('sanitizes invalid direct reduction detail links', async () => {
+    renderJobs('/reduction-history/LOQ?reductionId=invalid');
+
+    expect(screen.getByTestId('selected-reduction')).toHaveTextContent('none');
+    await waitFor(() => expect(screen.getByTestId('location-search')).not.toHaveTextContent('reductionId'));
+  });
+
+  test('closes a directly loaded detail link by replacing only the reduction parameter', async () => {
+    const user = userEvent.setup();
+    renderJobs('/reduction-history/LOQ?page=2&reductionId=42');
+
+    expect(screen.getByTestId('selected-reduction')).toHaveTextContent('42');
+    await user.click(screen.getByRole('button', { name: 'Close reduction details' }));
+
+    await waitFor(() => expect(screen.getByTestId('selected-reduction')).toHaveTextContent('none'));
+    expect(screen.getByTestId('location-search')).not.toHaveTextContent('reductionId');
+    expect(screen.getByTestId('location-search')).toHaveTextContent('page=2');
+  });
+
+  test('clears open reduction details when changing IMAT views', async () => {
+    const user = userEvent.setup();
+    renderJobs('/reduction-history/IMAT?reductionId=42');
+
+    expect(screen.getByTestId('selected-reduction')).toHaveTextContent('42');
+    const imatViewGroup = within(screen.getByLabelText('breadcrumb')).getByRole('group', { name: 'IMAT view' });
+    await user.click(within(imatViewGroup).getByRole('button', { name: 'Latest image' }));
+
+    await waitFor(() => expect(screen.getByTestId('location-search')).not.toHaveTextContent('reductionId'));
+    expect(screen.getByTestId('imat-viewer')).toBeInTheDocument();
   });
 
   test('keeps the selected IMAT instrument before browse instruments on image views', () => {
@@ -117,7 +189,8 @@ describe('Jobs', () => {
 
     await user.click(within(imatViewGroup).getByRole('button', { name: 'Stack viewer' }));
 
-    expect(await screen.findByRole('heading', { name: 'IMAT stack viewer' })).toBeInTheDocument();
+    expect(await screen.findByTestId('imat-viewer')).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'IMAT stack viewer' })).not.toBeInTheDocument();
     expect(within(imatViewGroup).getByRole('button', { name: 'Reduction history' })).toHaveAttribute(
       'aria-pressed',
       'false'

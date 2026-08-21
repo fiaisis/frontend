@@ -247,7 +247,7 @@ const LiveData: React.FC = (): JSX.Element => {
       <Box
         sx={{
           display: 'flex',
-          alignItems: 'flex-start',
+          alignItems: 'center',
           justifyContent: 'space-between',
           gap: 2,
           flexWrap: { xs: 'wrap', lg: 'nowrap' },
@@ -258,9 +258,6 @@ const LiveData: React.FC = (): JSX.Element => {
       >
         <Box sx={{ flex: '1 1 auto', minWidth: 0 }}>
           <NavArrows trailingCrumb={breadcrumbTrailingCrumb} replaceLastCrumb={Boolean(instrumentName)} />
-          <Typography variant="h3" component="h1" sx={{ color: 'text.primary', px: '20px', pt: 2, pb: 1 }}>
-            Live data
-          </Typography>
         </Box>
         <Chip
           label={isConnected ? 'Connected' : 'Disconnected'}
@@ -269,7 +266,6 @@ const LiveData: React.FC = (): JSX.Element => {
           variant="outlined"
           sx={{
             flex: '0 0 auto',
-            mt: 2,
             ml: 'auto',
           }}
         />

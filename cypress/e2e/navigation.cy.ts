@@ -12,6 +12,9 @@ describe('FIA plugin navigation', () => {
     cy.get('a[href="/fia/isis-instruments"]').first().click();
 
     cy.location('pathname').should('eq', '/fia/isis-instruments');
-    cy.contains('h1', 'ISIS instruments').should('be.visible');
+    cy.get('[aria-label="breadcrumb"]')
+      .find('[aria-label^="Instrument search:"]')
+      .should('be.visible')
+      .and('contain', 'Browse instruments');
   });
 });

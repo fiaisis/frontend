@@ -172,7 +172,11 @@ const ValueEditor: React.FC = () => {
         }}
       >
         <Box sx={{ flexShrink: 0, p: 2, backgroundColor: theme.palette.background.default }}>
-          <Typography variant="h3" component="h1" style={{ color: theme.palette.text.primary }}>
+          <Typography
+            variant="body1"
+            component="p"
+            sx={{ color: theme.palette.text.primary, fontWeight: 600, mb: 1.5 }}
+          >
             {instrumentName} Job {jobId} values
           </Typography>
 

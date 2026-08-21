@@ -27,6 +27,7 @@ const TestPage = (): React.ReactElement => {
 
 afterEach(() => {
   cleanup();
+  vi.useRealTimers();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
   Object.defineProperty(window, 'innerHeight', { configurable: true, value: originalInnerHeight });
@@ -103,5 +104,70 @@ describe('useAvailablePluginHeight', () => {
     hostBottom = 850;
     act(() => window.dispatchEvent(new Event('resize')));
     expect(screen.getByTestId('plugin-page')).toHaveStyle({ height: '686px' });
+  });
+
+  test('does not grow after a shrink and restore leaves the host scrolled', () => {
+    let hostBottom = 968;
+    let rootTop = 164;
+
+    Object.defineProperty(window, 'innerHeight', { configurable: true, value: 1000 });
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+      if (this.dataset.testid === 'plugin-host') return createRect(64, hostBottom);
+      if (this.dataset.testid === 'plugin-page') return createRect(rootTop, rootTop);
+      return createRect(0, 0);
+    });
+
+    render(
+      <div data-testid="plugin-host" style={{ overflowY: 'auto' }}>
+        <TestPage />
+      </div>
+    );
+
+    const host = screen.getByTestId('plugin-host');
+    expect(screen.getByTestId('plugin-page')).toHaveStyle({ height: '804px' });
+
+    hostBottom = 700;
+    rootTop = -76;
+    host.scrollTop = 240;
+    act(() => window.dispatchEvent(new Event('resize')));
+    expect(screen.getByTestId('plugin-page')).toHaveStyle({ height: '536px' });
+
+    hostBottom = 968;
+    act(() => window.dispatchEvent(new Event('resize')));
+    expect(screen.getByTestId('plugin-page')).toHaveStyle({ height: '804px' });
+  });
+
+  test('remeasures after the SciGateway footer breakpoint layout settles', () => {
+    vi.useFakeTimers();
+    let hostBottom = 968;
+
+    Object.defineProperty(window, 'innerHeight', { configurable: true, value: 1000 });
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+      if (this.dataset.testid === 'plugin-host') return createRect(64, hostBottom);
+      if (this.dataset.testid === 'plugin-page') return createRect(164, 164);
+      return createRect(0, 0);
+    });
+
+    render(
+      <div data-testid="plugin-host" style={{ overflowY: 'auto' }}>
+        <TestPage />
+      </div>
+    );
+
+    const host = screen.getByTestId('plugin-host');
+    expect(screen.getByTestId('plugin-page')).toHaveStyle({ height: '804px' });
+
+    host.style.overflowY = 'visible';
+    hostBottom = 1000;
+    act(() => window.dispatchEvent(new Event('resize')));
+    act(() => vi.advanceTimersByTime(32));
+    expect(screen.getByTestId('plugin-page')).toHaveStyle({ height: '836px' });
+
+    host.style.overflowY = 'auto';
+    hostBottom = 968;
+    act(() => vi.advanceTimersByTime(68));
+    expect(screen.getByTestId('plugin-page')).toHaveStyle({ height: '804px' });
+
+    vi.useRealTimers();
   });
 });

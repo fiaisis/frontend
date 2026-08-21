@@ -9,11 +9,13 @@ import {
 } from '@mui/icons-material';
 import {
   Alert,
+  Badge,
   Box,
   Button,
   Chip,
   CircularProgress,
   Pagination,
+  PaginationItem,
   Paper,
   Snackbar,
   Table,
@@ -36,13 +38,15 @@ import {
   JOB_ROWS_PER_PAGE_OPTIONS,
   JOB_TABLE_CHROME_CONTROL_HEIGHT,
   JOB_TABLE_CHROME_ROW_MIN_HEIGHT,
+  JOB_TABLE_FOOTER_CONTROL_WIDTH,
   JOB_TABLE_MIN_WIDTH,
   JOB_TABLE_ROW_HEIGHT,
   JOB_TABLE_SCROLLBAR_WIDTH,
+  JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
   JobRowsPerPage,
 } from './constants';
 import JobTableHead from './JobTableHead';
-import Row from './Row';
+import Row, { ReductionDetailsModal } from './Row';
 import { fiaApi } from '../../lib/api';
 import { useFetchJobs, useFetchTotalCount } from '../../lib/hooks';
 import { parseJobOutputs } from '../../lib/hooks';
@@ -54,6 +58,7 @@ const formatDisplayedRows = ({ from, to, count }: { from: number; to: number; co
 };
 
 const JOB_TABLE_COLUMN_WIDTHS = ['14%', '12%', '12%', '12%', '12%', '12%', '22%', '4%'] as const;
+const JOB_FILTER_CHIP_HEIGHT = 28;
 
 const JOB_FILTER_LABELS: Record<keyof JobQueryFilters, string> = {
   experiment_number_in: 'Experiment',
@@ -109,6 +114,10 @@ const JobTable: React.FC<{
   filtersApplied: boolean;
   openFilters: () => void;
   handleFiltersChange: (filters: JobQueryFilters) => void;
+  selectedReductionId: number | null;
+  openReductionDetails: (jobId: number) => void;
+  closeReductionDetails: () => void;
+  detailsContainer: () => HTMLElement | null;
   configControl?: React.ReactNode;
 }> = ({
   selectedInstrument,
@@ -125,6 +134,10 @@ const JobTable: React.FC<{
   filtersApplied,
   openFilters,
   handleFiltersChange,
+  selectedReductionId,
+  openReductionDetails,
+  closeReductionDetails,
+  detailsContainer,
   configControl,
 }) => {
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -156,6 +169,59 @@ const JobTable: React.FC<{
   const [downloadErrorMessage, setDownloadErrorMessage] = useState('');
   const [downloadingBulk, setDownloadingBulk] = useState(false);
   const [mantidVersions, setMantidVersions] = useState<MantidVersionMap>({});
+  const [loadedDetailJob, setLoadedDetailJob] = useState<Job | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState<string | null>(null);
+  const [detailReloadToken, setDetailReloadToken] = useState(0);
+  const [hasLoadedCounts, setHasLoadedCounts] = useState(false);
+  const selectedTableJob =
+    selectedReductionId === null ? null : (jobs.find((job) => job.id === selectedReductionId) ?? null);
+  const detailJob = selectedTableJob ?? (loadedDetailJob?.id === selectedReductionId ? loadedDetailJob : null);
+
+  useEffect(() => {
+    if (selectedReductionId === null) {
+      setLoadedDetailJob(null);
+      setDetailLoading(false);
+      setDetailError(null);
+      return undefined;
+    }
+
+    if (!hasLoadedCounts) {
+      setDetailLoading(true);
+      setDetailError(null);
+      return undefined;
+    }
+
+    if (selectedTableJob) {
+      setLoadedDetailJob(null);
+      setDetailLoading(false);
+      setDetailError(null);
+      return undefined;
+    }
+
+    const controller = new AbortController();
+    setDetailLoading(true);
+    setDetailError(null);
+
+    fiaApi
+      .get<Job>(`/job/${selectedReductionId}`, { signal: controller.signal })
+      .then(({ data }) => {
+        setLoadedDetailJob(data);
+      })
+      .catch((error) => {
+        if (!controller.signal.aborted) {
+          console.error(`Failed to load reduction ${selectedReductionId}`, error);
+          setDetailError('The reduction details could not be loaded.');
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setDetailLoading(false);
+        }
+      });
+
+    return () => controller.abort();
+  }, [detailReloadToken, hasLoadedCounts, selectedReductionId, selectedTableJob]);
 
   useEffect(() => {
     // Keep async response from touching state once the component unmounts.
@@ -184,8 +250,6 @@ const JobTable: React.FC<{
       isMounted = false;
     };
   }, []);
-
-  const [hasLoadedCounts, setHasLoadedCounts] = useState(false);
 
   // Highest index allowed for the pagination control
   const maxPageIndex = Math.max(0, Math.ceil(totalRows / rowsPerPage) - 1);
@@ -384,37 +448,48 @@ const JobTable: React.FC<{
   const theme = useTheme();
   const tableChrome = getJobTableChromeColors(theme.palette.mode);
   const toolbarTextColor = tableChrome.text;
+  const selectedFooterControlStyle: React.CSSProperties = {
+    borderColor: alpha(tableChrome.accent, 0.42),
+    backgroundColor: alpha(tableChrome.accent, theme.palette.mode === 'dark' ? 0.18 : 0.1),
+    color: tableChrome.accent,
+    fontWeight: 700,
+  };
   const toolbarButtonSx = {
-    height: JOB_TABLE_CHROME_CONTROL_HEIGHT,
-    borderColor: tableChrome.border,
+    height: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
+    boxSizing: 'border-box',
+    borderRadius: 0,
+    border: 0,
     color: toolbarTextColor,
     '&:hover': {
-      borderColor: tableChrome.border,
+      border: 0,
       backgroundColor: tableChrome.hover,
     },
     '&.Mui-disabled': {
-      borderColor: alpha(tableChrome.border, 0.6),
+      border: 0,
       color: alpha(toolbarTextColor, 0.42),
     },
   };
-  const toolbarContainedButtonSx = {
-    height: JOB_TABLE_CHROME_CONTROL_HEIGHT,
-    border: `1px solid ${tableChrome.accent}`,
-    backgroundColor: tableChrome.accent,
-    color: tableChrome.accentContrast,
-    '&:hover': {
-      borderColor: tableChrome.accent,
-      backgroundColor: alpha(tableChrome.accent, 0.84),
-    },
+  const selectionActionButtonSx = {
+    ...toolbarButtonSx,
+    backgroundColor: 'transparent',
     '&.Mui-disabled': {
-      borderColor: alpha(tableChrome.border, 0.6),
-      backgroundColor: alpha(tableChrome.text, 0.12),
-      color: alpha(tableChrome.text, 0.42),
+      border: 0,
+      color: alpha(toolbarTextColor, 0.42),
+    },
+  };
+  const adjacentSelectionActionButtonSx = {
+    ...selectionActionButtonSx,
+    borderLeft: `1px solid ${tableChrome.border}`,
+    '&.Mui-disabled': {
+      border: 0,
+      borderLeft: `1px solid ${tableChrome.border}`,
+      color: alpha(toolbarTextColor, 0.42),
     },
   };
   const allCurrentJobsSelected = jobs.length > 0 && selectedJobIds.length === jobs.length;
   const someCurrentJobsSelected = selectedJobIds.length > 0 && selectedJobIds.length < jobs.length;
   const activeFilterLabels = getActiveFilterLabels(filters);
+  const activeFilterCount = activeFilterLabels.length + (asUser ? 1 : 0);
   const emptyStateMessage = filtersApplied
     ? 'Try adjusting or clearing your filters.'
     : selectedInstrument === 'ALL'
@@ -512,6 +587,7 @@ const JobTable: React.FC<{
             height: '100%',
             minHeight: 0,
             overflow: 'hidden',
+            position: 'relative',
             backgroundColor: tableChrome.surface,
           }}
         >
@@ -543,21 +619,36 @@ const JobTable: React.FC<{
                 width: '100%',
                 boxSizing: 'border-box',
                 minHeight: JOB_TABLE_CHROME_ROW_MIN_HEIGHT,
-                px: 1,
-                py: 0.5,
+                pl: 0,
+                pr: 0,
+                py: 0,
                 backgroundColor: tableChrome.surface,
                 color: toolbarTextColor,
-                borderTop: `1px solid ${tableChrome.border}`,
+                boxShadow: `inset 0 1px 0 ${tableChrome.border}`,
               }}
             >
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'nowrap', whiteSpace: 'nowrap' }}>
+              <Box
+                data-testid="reduction-history-selection-actions"
+                sx={{
+                  display: 'flex',
+                  alignItems: 'stretch',
+                  gap: 0,
+                  height: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
+                  flexWrap: 'nowrap',
+                  whiteSpace: 'nowrap',
+                  borderRight: `1px solid ${tableChrome.border}`,
+                }}
+              >
                 <Button
                   className="tour-red-his-select-all"
-                  variant={allCurrentJobsSelected ? 'contained' : 'outlined'}
+                  variant="outlined"
                   size="small"
                   onClick={toggleSelectAll}
                   disabled={jobs.length === 0}
-                  sx={{ width: 140, ...(allCurrentJobsSelected ? toolbarContainedButtonSx : toolbarButtonSx) }}
+                  sx={{
+                    width: 140,
+                    ...selectionActionButtonSx,
+                  }}
                   startIcon={
                     allCurrentJobsSelected ? (
                       <CheckBox />
@@ -574,12 +665,11 @@ const JobTable: React.FC<{
                 {selectedJobIds.length > 0 && (
                   <>
                     <Button
-                      variant="contained"
-                      color="primary"
+                      variant="outlined"
                       disabled={isBulkResubmitting}
                       onClick={handleBulkResubmit}
                       startIcon={!isBulkResubmitting && <Replay />}
-                      sx={{ minWidth: 154, whiteSpace: 'nowrap', ...toolbarContainedButtonSx }}
+                      sx={{ minWidth: 154, whiteSpace: 'nowrap', ...adjacentSelectionActionButtonSx }}
                     >
                       {isBulkResubmitting ? (
                         <CircularProgress size={24} color="inherit" />
@@ -588,10 +678,9 @@ const JobTable: React.FC<{
                       )}
                     </Button>
                     <Button
-                      variant="contained"
-                      color="primary"
+                      variant="outlined"
                       onClick={handleBulkDownload}
-                      sx={{ width: 200, ...toolbarContainedButtonSx }}
+                      sx={{ width: 200, ...adjacentSelectionActionButtonSx }}
                       startIcon={!downloadingBulk && <Download />}
                       disabled={totalDownloadableFiles === 0 || downloadingBulk}
                     >
@@ -622,7 +711,14 @@ const JobTable: React.FC<{
                 {(activeFilterLabels.length > 0 || asUser) && (
                   <Box
                     data-testid="active-filter-chips"
-                    sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flexWrap: 'wrap' }}
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 0.75,
+                      minHeight: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
+                      alignContent: 'center',
+                      flexWrap: 'wrap',
+                    }}
                   >
                     {activeFilterLabels.map((filter) => (
                       <Chip
@@ -633,16 +729,24 @@ const JobTable: React.FC<{
                         onDelete={() => removeFilter(filter.key)}
                         deleteIcon={<Close aria-label={`Remove filter ${filter.label}`} />}
                         sx={{
-                          maxWidth: 260,
-                          height: 28,
+                          maxWidth: 220,
+                          height: JOB_FILTER_CHIP_HEIGHT,
+                          boxSizing: 'border-box',
+                          borderRadius: 0,
                           color: tableChrome.accent,
                           borderColor: alpha(tableChrome.accent, 0.5),
                           backgroundColor: alpha(tableChrome.accent, 0.08),
+                          fontSize: '0.75rem',
                           '& .MuiChip-label': {
+                            px: 0.75,
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
                           },
                           '& .MuiChip-deleteIcon': {
+                            width: 16,
+                            height: 16,
+                            ml: 0,
+                            mr: 0.5,
                             color: alpha(tableChrome.accent, 0.76),
                             '&:hover': { color: tableChrome.accent },
                           },
@@ -660,11 +764,19 @@ const JobTable: React.FC<{
                         }}
                         deleteIcon={<Close aria-label="Remove filter View as user" />}
                         sx={{
-                          height: 28,
+                          height: JOB_FILTER_CHIP_HEIGHT,
+                          boxSizing: 'border-box',
+                          borderRadius: 0,
                           color: tableChrome.accent,
                           borderColor: alpha(tableChrome.accent, 0.5),
                           backgroundColor: alpha(tableChrome.accent, 0.08),
+                          fontSize: '0.75rem',
+                          '& .MuiChip-label': { px: 0.75 },
                           '& .MuiChip-deleteIcon': {
+                            width: 16,
+                            height: 16,
+                            ml: 0,
+                            mr: 0.5,
                             color: alpha(tableChrome.accent, 0.76),
                             '&:hover': { color: tableChrome.accent },
                           },
@@ -685,16 +797,78 @@ const JobTable: React.FC<{
                     </Button>
                   </Box>
                 )}
-                <Button
-                  variant={filtersApplied ? 'contained' : 'outlined'}
-                  size="small"
-                  startIcon={<FilterList />}
-                  onClick={openFilters}
-                  sx={filtersApplied ? toolbarContainedButtonSx : toolbarButtonSx}
+                <Box
+                  data-testid="reduction-history-toolbar-actions"
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'stretch',
+                    gap: 0,
+                    height: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
+                    borderLeft: `1px solid ${tableChrome.border}`,
+                  }}
                 >
-                  Filters
-                </Button>
-                {configControl}
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    aria-label={activeFilterCount > 0 ? `Filters (${activeFilterCount} applied)` : 'Filters'}
+                    startIcon={
+                      <Box component="span" aria-hidden="true" sx={{ display: 'inline-flex' }}>
+                        <Badge
+                          badgeContent={activeFilterCount}
+                          invisible={activeFilterCount === 0}
+                          sx={{
+                            '& .MuiBadge-badge': {
+                              minWidth: 16,
+                              height: 16,
+                              px: 0.375,
+                              right: -3,
+                              top: 1,
+                              border: `1px solid ${tableChrome.surface}`,
+                              borderRadius: '8px',
+                              backgroundColor: tableChrome.accent,
+                              color: tableChrome.accentContrast,
+                              fontSize: '0.625rem',
+                              fontWeight: 700,
+                            },
+                          }}
+                        >
+                          <FilterList />
+                        </Badge>
+                      </Box>
+                    }
+                    onClick={openFilters}
+                    sx={toolbarButtonSx}
+                  >
+                    Filters
+                  </Button>
+                  {configControl && (
+                    <Box
+                      data-testid="reduction-history-config-control"
+                      sx={{
+                        display: 'flex',
+                        height: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
+                        alignItems: 'stretch',
+                        '& .MuiButtonBase-root, & > button': {
+                          height: '100%',
+                          boxSizing: 'border-box',
+                          borderRadius: 0,
+                          border: 0,
+                          borderLeft: `1px solid ${tableChrome.border}`,
+                          '&:hover': {
+                            border: 0,
+                            borderLeft: `1px solid ${tableChrome.border}`,
+                          },
+                          '&.Mui-disabled, &:disabled': {
+                            border: 0,
+                            borderLeft: `1px solid ${tableChrome.border}`,
+                          },
+                        },
+                      }}
+                    >
+                      {configControl}
+                    </Box>
+                  )}
+                </Box>
               </Box>
             </Box>
 
@@ -849,11 +1023,9 @@ const JobTable: React.FC<{
                         key={index}
                         index={index}
                         job={job}
-                        resubmitJob={resubmitJob}
-                        refreshJobs={refreshJobs}
                         isSelected={selectedJobIds.includes(job.id)}
                         toggleSelection={toggleJobSelection}
-                        mantidVersions={mantidVersions}
+                        onOpenDetails={() => openReductionDetails(job.id)}
                       />
                     ))
                   )}
@@ -917,8 +1089,9 @@ const JobTable: React.FC<{
                   height: JOB_TABLE_CHROME_CONTROL_HEIGHT,
                   '& .MuiToggleButton-root': {
                     height: JOB_TABLE_CHROME_CONTROL_HEIGHT,
-                    minWidth: 40,
-                    px: 1.5,
+                    width: JOB_TABLE_FOOTER_CONTROL_WIDTH,
+                    minWidth: JOB_TABLE_FOOTER_CONTROL_WIDTH,
+                    px: 0.5,
                     borderColor: tableChrome.border,
                     color: toolbarTextColor,
                     '&:hover': {
@@ -926,17 +1099,18 @@ const JobTable: React.FC<{
                       backgroundColor: tableChrome.hover,
                     },
                   },
-                  '& .MuiToggleButton-root.Mui-selected': {
-                    backgroundColor: tableChrome.accent,
-                    color: tableChrome.accentContrast,
-                    '&:hover': {
-                      backgroundColor: alpha(tableChrome.accent, 0.84),
-                    },
-                  },
                 }}
               >
                 {JOB_ROWS_PER_PAGE_OPTIONS.map((option) => (
-                  <ToggleButton key={option} value={option} aria-label={`${option} rows per page`}>
+                  <ToggleButton
+                    key={option}
+                    value={option}
+                    aria-label={`${option} rows per page`}
+                    style={{
+                      borderRadius: '0px',
+                      ...(option === rowsPerPage ? selectedFooterControlStyle : {}),
+                    }}
+                  >
                     {option}
                   </ToggleButton>
                 ))}
@@ -958,30 +1132,32 @@ const JobTable: React.FC<{
 
                   handlePageChange(Math.min(newPage, maxPageIndex));
                 }}
-                shape="rounded"
                 variant="outlined"
+                renderItem={(item) => (
+                  <PaginationItem
+                    {...item}
+                    style={{
+                      borderRadius: '0px',
+                      ...(item.selected ? selectedFooterControlStyle : {}),
+                    }}
+                  />
+                )}
                 sx={{
                   '& .MuiPagination-ul': {
                     flexWrap: 'nowrap',
                     justifyContent: 'center',
                   },
                   '& .MuiPaginationItem-root': {
-                    width: JOB_TABLE_CHROME_CONTROL_HEIGHT,
+                    width: JOB_TABLE_FOOTER_CONTROL_WIDTH,
                     height: JOB_TABLE_CHROME_CONTROL_HEIGHT,
-                    minWidth: JOB_TABLE_CHROME_CONTROL_HEIGHT,
+                    minWidth: JOB_TABLE_FOOTER_CONTROL_WIDTH,
+                    px: 0.5,
                     m: 0.125,
                     color: toolbarTextColor,
                     borderColor: tableChrome.border,
                     '&:hover': {
                       borderColor: tableChrome.border,
                       backgroundColor: tableChrome.hover,
-                    },
-                  },
-                  '& .MuiPaginationItem-root.Mui-selected': {
-                    backgroundColor: tableChrome.accent,
-                    color: tableChrome.accentContrast,
-                    '&:hover': {
-                      backgroundColor: alpha(tableChrome.accent, 0.84),
                     },
                   },
                   '& .MuiPaginationItem-root.Mui-disabled': {
@@ -1000,6 +1176,19 @@ const JobTable: React.FC<{
               {displayedRowsLabel}
             </Typography>
           </Box>
+          <ReductionDetailsModal
+            open={selectedReductionId !== null}
+            container={detailsContainer}
+            jobId={selectedReductionId}
+            job={detailJob}
+            loading={detailLoading}
+            error={detailError}
+            onRetry={() => setDetailReloadToken((token) => token + 1)}
+            onClose={closeReductionDetails}
+            resubmitJob={resubmitJob}
+            refreshJobs={refreshJobs}
+            mantidVersions={mantidVersions}
+          />
         </Paper>
       </Box>
     </>

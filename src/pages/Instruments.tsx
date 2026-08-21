@@ -540,25 +540,9 @@ const Instruments: React.FC = () => {
         onToggleFavorite={handleToggleFavorite}
       />
       <Box className="tour-instruments" sx={{ px: { xs: 2, md: 3 }, py: 2, pb: 4 }}>
-        <Box
-          sx={{
-            display: 'flex',
-            flexDirection: { xs: 'column', md: 'row' },
-            alignItems: { xs: 'flex-start', md: 'flex-end' },
-            justifyContent: 'space-between',
-            gap: 1,
-            mb: 2,
-          }}
-        >
-          <Box>
-            <Typography variant="h3" component="h1" sx={{ color: 'text.primary' }}>
-              ISIS instruments
-            </Typography>
-            <Typography variant="body1" color="text.secondary">
-              {instruments.length} instruments across {instrumentTypes.length} techniques
-            </Typography>
-          </Box>
-        </Box>
+        <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
+          {instruments.length} instruments across {instrumentTypes.length} techniques
+        </Typography>
 
         {visibleInstruments.length === 0 ? (
           <Paper variant="outlined" sx={{ p: 4, borderRadius: 1, textAlign: 'center' }}>
