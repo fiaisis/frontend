@@ -1,6 +1,9 @@
+import { HomeOutlined, NavigateNext } from '@mui/icons-material';
 import { Breadcrumbs, Typography, Link as MuiLink, breadcrumbsClasses, Theme } from '@mui/material';
 import React from 'react';
 import { useLocation, Link as RouterLink } from 'react-router-dom';
+
+import { getJobTableChromeColors } from '../jobs/constants';
 
 interface NavArrowsProps {
   trailingCrumb?: React.ReactNode;
@@ -32,101 +35,98 @@ const NavArrows: React.FC<NavArrowsProps> = ({
     <>
       <Breadcrumbs
         aria-label="breadcrumb"
-        separator=""
-        sx={(theme: Theme) => ({
-          marginTop: theme.spacing(2),
-          marginLeft: theme.spacing(2),
-          backgroundColor: theme.palette.background.default,
-          '& li': {
-            '& a, p, .breadcrumb-control': {
-              '--breadcrumb-background-color': theme.palette.primary.light,
-              color: theme.palette.primary.contrastText,
-              backgroundColor: 'var(--breadcrumb-background-color)',
-              display: 'block',
+        separator={<NavigateNext aria-hidden="true" fontSize="small" />}
+        sx={(theme: Theme) => {
+          const tableChrome = getJobTableChromeColors(theme.palette.mode);
+          const breadcrumbItemSelector = `& .${breadcrumbsClasses.li} > a, & .${breadcrumbsClasses.li} > p, & .${breadcrumbsClasses.li} > .breadcrumb-control`;
+
+          return {
+            display: 'inline-flex',
+            width: 'max-content',
+            minWidth: 'min-content',
+            minHeight: 40,
+            marginTop: theme.spacing(2),
+            marginLeft: theme.spacing(2),
+            border: `1px solid ${tableChrome.border}`,
+            borderRadius: 0,
+            backgroundColor: tableChrome.surface,
+            color: tableChrome.text,
+            boxShadow: `inset 0 1px 0 ${tableChrome.border}`,
+            [`& .${breadcrumbsClasses.ol}`]: {
+              flexWrap: 'nowrap',
+              alignItems: 'stretch',
+            },
+            [`& .${breadcrumbsClasses.li}`]: {
+              display: 'flex',
+              alignItems: 'stretch',
+            },
+            [breadcrumbItemSelector]: {
+              display: 'inline-flex',
+              minWidth: 0,
+              minHeight: 40,
+              boxSizing: 'border-box',
+              alignItems: 'center',
+              gap: 0.75,
+              padding: theme.spacing(0.5, 1.5),
+              border: 0,
+              borderRadius: 0,
+              color: tableChrome.text,
+              backgroundColor: tableChrome.surface,
+              font: 'inherit',
+              fontSize: theme.typography.pxToRem(14),
+              fontWeight: 500,
+              lineHeight: 1.25,
+              textAlign: 'left',
               textDecoration: 'none',
-              position: 'relative',
-
-              /* Positions breadcrumb */
-              lineHeight: '32px',
-              padding: '4px 10px 4px 20px',
-              textAlign: 'center',
-
-              /* Add the arrow between breadcrumbs */
-              '&:after': {
-                content: '""',
-                position: 'absolute',
-                top: '6px',
-                right: '-14px',
-                height: '28px',
-                width: '28px',
-                transform: 'scale(0.707) rotate(45deg) skew(15deg,15deg)',
-                zIndex: 1,
-                boxShadow: `2px -2px 0 2px ${theme.palette.background.default}`,
-                borderRadius: ' 0 5px 0 50px',
-                backgroundColor: 'var(--breadcrumb-background-color)',
-              },
+              textTransform: 'none',
+              whiteSpace: 'nowrap',
+              transition: theme.transitions.create(['background-color', 'color', 'box-shadow'], {
+                duration: theme.transitions.duration.shortest,
+              }),
+            },
+            [`& .${breadcrumbsClasses.li} > a, & .${breadcrumbsClasses.li} > button.breadcrumb-control`]: {
+              color: tableChrome.accent,
               '&:hover': {
-                backgroundColor: `${theme.palette.primary.light} !important`,
-                '&:after': {
-                  backgroundColor: `${theme.palette.primary.light} !important`,
-                },
+                backgroundColor: tableChrome.hover,
+                color: tableChrome.accent,
+                textDecoration: 'none',
               },
               '&:active': {
-                backgroundColor: `${theme.palette.grey[600]} !important`,
-                '&:after': {
-                  backgroundColor: `${theme.palette.grey[600]} !important`,
-                },
+                backgroundColor: tableChrome.header,
               },
-              '&.breadcrumb-control-preserve-hover-background:hover': {
-                backgroundColor: 'var(--breadcrumb-background-color) !important',
-                '&:after': {
-                  backgroundColor: 'var(--breadcrumb-background-color) !important',
-                },
+              '&:focus-visible': {
+                outline: `2px solid ${tableChrome.accent}`,
+                outlineOffset: -2,
               },
             },
-          },
-          /* Every even breadcrumb has a darker background */
-          '& li:nth-of-type(4n + 3)': {
-            '& a, p, .breadcrumb-control': {
-              '--breadcrumb-background-color': theme.palette.primary.main,
-              '&:after': {
-                backgroundColor: 'var(--breadcrumb-background-color)',
+            [`& .${breadcrumbsClasses.li} > .breadcrumb-current`]: {
+              backgroundColor: tableChrome.header,
+              color: tableChrome.text,
+              fontWeight: 700,
+              boxShadow: `inset 0 -3px 0 ${tableChrome.accent}`,
+            },
+            [`& .${breadcrumbsClasses.li} > .breadcrumb-control`]: {
+              '& .MuiButton-endIcon': {
+                color: tableChrome.accent,
               },
             },
-          },
-          '& li:first-of-type': {
-            '& a, p, .breadcrumb-control': {
-              paddingLeft: '18px',
-            },
-          },
-          '& li:last-of-type': {
-            '& a, p, .breadcrumb-control': {
-              /* Curve the last breadcrumb border */
-              borderRadius: '0 5px 5px 0',
-              paddingLeft: '18px',
-              '&:after': {
-                content: 'none',
+            [`& .${breadcrumbsClasses.separator}`]: {
+              display: 'flex',
+              minWidth: 28,
+              margin: 0,
+              padding: theme.spacing(0, 0.5),
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderLeft: `1px solid ${tableChrome.border}`,
+              borderRight: `1px solid ${tableChrome.border}`,
+              backgroundColor: tableChrome.header,
+              color: tableChrome.border,
+              '& svg': {
+                fontSize: 18,
               },
             },
-          },
-          '& li .breadcrumb-control': {
-            display: 'inline-flex',
-            alignItems: 'center',
-          },
-
-          /* Control the width and shortening of text */
-          '& a span, & p span, & .breadcrumb-control > span:not(.MuiButton-endIcon)': {
-            display: 'block',
-            whiteSpace: 'nowrap',
-            maxWidth: '20vw',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-          },
-          [`& .${breadcrumbsClasses.separator}`]: {
-            marginLeft: 0,
-            marginRight: 0,
-          },
-        })}
+          };
+        }}
       >
         {displayPathsList.map((label, index) => {
           const isLast = index === displayPathsList.length - 1 && !trailingCrumb;
@@ -152,7 +152,7 @@ const NavArrows: React.FC<NavArrowsProps> = ({
           }
           if (isLast) {
             return (
-              <Typography color="text.primary" key={index}>
+              <Typography className="breadcrumb-current" aria-current="page" key={index}>
                 {label}
               </Typography>
             );
@@ -166,7 +166,8 @@ const NavArrows: React.FC<NavArrowsProps> = ({
               onClick={() => onCrumbClick?.(destination)}
               key={index}
             >
-              {label}
+              {index === 0 && <HomeOutlined aria-hidden="true" sx={{ flexShrink: 0, fontSize: 18 }} />}
+              <span>{label}</span>
             </MuiLink>
           );
         })}

@@ -6,7 +6,12 @@ import { useHistory, useLocation, useParams } from 'react-router-dom';
 
 import IMATViewer from './IMATViewer';
 import InstrumentConfigDrawer from '../components/configsettings/InstrumentConfigDrawer';
-import { JOB_ROWS_PER_PAGE_OPTIONS, JobRowsPerPage, isJobRowsPerPage } from '../components/jobs/constants';
+import {
+  getJobTableChromeColors,
+  JOB_ROWS_PER_PAGE_OPTIONS,
+  JobRowsPerPage,
+  isJobRowsPerPage,
+} from '../components/jobs/constants';
 import FilterContainer from '../components/jobs/Filters';
 import InstrumentSelector from '../components/jobs/InstrumentSelector';
 import JobTable from '../components/jobs/JobTable';
@@ -84,13 +89,12 @@ const ImatViewButtons: React.FC<{
 
   return (
     <Box
-      className="breadcrumb-control breadcrumb-control-preserve-hover-background"
+      className="breadcrumb-control"
       sx={{
         gap: 0.5,
         alignItems: 'center',
         boxSizing: 'border-box',
         height: 40,
-        lineHeight: '32px !important',
       }}
     >
       <ToggleButtonGroup
@@ -99,36 +103,46 @@ const ImatViewButtons: React.FC<{
         value={value}
         onChange={handleChange}
         aria-label="IMAT view"
-        sx={(theme) => ({
-          gap: 0.5,
-          '& .MuiToggleButtonGroup-grouped': {
-            border: 0,
-            margin: 0,
-          },
-          '& .MuiToggleButton-root': {
-            minWidth: 0,
-            border: 0,
-            borderRadius: '3px !important',
-            px: 1,
-            py: 0.25,
-            color: 'inherit',
-            font: 'inherit',
-            lineHeight: '24px',
-            textTransform: 'none',
-            whiteSpace: 'nowrap',
-            '&:hover': {
-              backgroundColor: alpha(theme.palette.common.white, 0.16),
+        sx={(theme) => {
+          const tableChrome = getJobTableChromeColors(theme.palette.mode);
+
+          return {
+            gap: 0.5,
+            '& .MuiToggleButtonGroup-grouped': {
+              border: 0,
+              margin: 0,
             },
-            '&.Mui-selected': {
-              color: theme.palette.primary.main,
-              backgroundColor: theme.palette.primary.contrastText,
-              fontWeight: 700,
+            '& .MuiToggleButton-root': {
+              minWidth: 0,
+              border: 0,
+              borderRadius: '0 !important',
+              px: 1,
+              py: 0.25,
+              color: tableChrome.text,
+              font: 'inherit',
+              lineHeight: '24px',
+              textTransform: 'none',
+              whiteSpace: 'nowrap',
+              '&:hover': {
+                backgroundColor: tableChrome.hover,
+                color: tableChrome.accent,
+              },
+              '&:focus-visible': {
+                outline: `2px solid ${tableChrome.accent}`,
+                outlineOffset: -2,
+              },
+              '&.Mui-selected': {
+                color: tableChrome.accent,
+                backgroundColor: alpha(tableChrome.accent, 0.12),
+                boxShadow: `inset 0 -2px 0 ${tableChrome.accent}`,
+                fontWeight: 700,
+              },
+              '&.Mui-selected:hover': {
+                backgroundColor: alpha(tableChrome.accent, 0.18),
+              },
             },
-            '&.Mui-selected:hover': {
-              backgroundColor: alpha(theme.palette.primary.contrastText, 0.9),
-            },
-          },
-        })}
+          };
+        }}
       >
         {IMAT_VIEW_OPTIONS.map((option) => (
           <ToggleButton key={option.value} value={option.value} aria-label={option.label}>

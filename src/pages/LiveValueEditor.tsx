@@ -89,7 +89,7 @@ const LiveValueEditor: React.FC = () => {
       showAllInstrumentsOption={false}
       disabled={loadingInstruments || liveDataInstrumentOptions.length === 0}
     />,
-    <Typography key="edit-script" color="text.primary">
+    <Typography key="edit-script" className="breadcrumb-current" aria-current="page">
       Edit script
     </Typography>,
   ];
