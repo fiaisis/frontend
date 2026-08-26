@@ -15,7 +15,11 @@ vi.mock('../components/jobs/Filters', () => ({
 }));
 
 vi.mock('../components/configsettings/InstrumentConfigDrawer', () => ({
-  default: () => null,
+  default: ({ disabled }: { disabled?: boolean }) => (
+    <button type="button" disabled={disabled}>
+      Edit config
+    </button>
+  ),
 }));
 
 vi.mock('./IMATViewer', () => ({
@@ -66,6 +70,12 @@ describe('Jobs', () => {
 
     expect(screen.getByRole('button', { name: 'Clear filters' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'View all reductions' })).not.toBeInTheDocument();
+  });
+
+  test('enables the GEM instrument config', () => {
+    renderJobs('/reduction-history/GEM');
+
+    expect(screen.getByRole('button', { name: 'Edit config' })).toBeEnabled();
   });
 
   test('keeps the selected IMAT instrument before browse instruments on image views', () => {

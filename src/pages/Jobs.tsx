@@ -145,7 +145,7 @@ const Jobs: React.FC = (): ReactElement => {
     [isImat, location.pathname]
   );
   const [selectedInstrument, setSelectedInstrument] = React.useState<string>(instrumentName || 'ALL');
-  const configAvailable = ['LOQ', 'MARI', 'SANS2D', 'VESUVIO', 'OSIRIS', 'IRIS', 'ENGINX'].includes(
+  const configAvailable = ['LOQ', 'MARI', 'SANS2D', 'VESUVIO', 'OSIRIS', 'IRIS', 'ENGINX', 'GEM'].includes(
     selectedInstrument.toUpperCase()
   );
   const reductionHistoryHeading = React.useMemo(() => {
