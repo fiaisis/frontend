@@ -4,6 +4,7 @@ import { alpha } from '@mui/material/styles';
 import React from 'react';
 
 import ConfigSettingsENGINX from './ConfigSettingsENGINX';
+import ConfigSettingsGEM from './ConfigSettingsGEM';
 import ConfigSettingsGeneral from './ConfigSettingsGeneral';
 import ConfigSettingsIRIS from './ConfigSettingsIRIS';
 import ConfigSettingsLOQ from './ConfigSettingsLOQ';
@@ -91,6 +92,8 @@ const InstrumentConfigDrawer: React.FC<{
           <ConfigSettingsIRIS />
         ) : selectedInstrument === 'ENGINX' ? (
           <ConfigSettingsENGINX />
+        ) : selectedInstrument === 'GEM' ? (
+          <ConfigSettingsGEM />
         ) : (
           <ConfigSettingsGeneral />
         )}
