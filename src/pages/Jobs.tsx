@@ -568,7 +568,6 @@ const Jobs: React.FC = (): ReactElement => {
             selectedReductionId={selectedReductionId}
             openReductionDetails={handleOpenReductionDetails}
             closeReductionDetails={handleCloseReductionDetails}
-            detailsContainer={() => reductionHistoryRootRef.current}
             configControl={
               selectedInstrument !== 'ALL' ? (
                 <InstrumentConfigDrawer

@@ -117,7 +117,6 @@ const JobTable: React.FC<{
   selectedReductionId: number | null;
   openReductionDetails: (jobId: number) => void;
   closeReductionDetails: () => void;
-  detailsContainer: () => HTMLElement | null;
   configControl?: React.ReactNode;
 }> = ({
   selectedInstrument,
@@ -137,7 +136,6 @@ const JobTable: React.FC<{
   selectedReductionId,
   openReductionDetails,
   closeReductionDetails,
-  detailsContainer,
   configControl,
 }) => {
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -1178,7 +1176,6 @@ const JobTable: React.FC<{
           </Box>
           <ReductionDetailsModal
             open={selectedReductionId !== null}
-            container={detailsContainer}
             jobId={selectedReductionId}
             job={detailJob}
             loading={detailLoading}

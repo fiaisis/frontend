@@ -146,7 +146,6 @@ const defaultProps = {
   selectedReductionId: null as number | null,
   openReductionDetails: vi.fn(),
   closeReductionDetails: vi.fn(),
-  detailsContainer: () => null,
   configControl: <button type="button">Edit config</button>,
 };
 

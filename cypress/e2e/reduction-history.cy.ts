@@ -197,6 +197,14 @@ describe('Reduction history page', () => {
             cy.get('[data-testid="OpenInNewIcon"]').should('not.exist');
           });
       });
+    cy.get('[data-testid="reduction-details-backdrop"]').should(($backdrop) => {
+      const bounds = $backdrop[0].getBoundingClientRect();
+
+      expect(bounds.top).to.equal(0);
+      expect(bounds.left).to.equal(0);
+      expect(bounds.right).to.equal(Cypress.config('viewportWidth'));
+      expect(bounds.bottom).to.equal(Cypress.config('viewportHeight'));
+    });
 
     cy.contains('LOQ scoped reduction').should('exist');
     cy.get('[aria-label="Close reduction details"]').click();

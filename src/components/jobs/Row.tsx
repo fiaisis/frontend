@@ -37,6 +37,7 @@ import {
   Theme,
   Tooltip,
   Typography,
+  useMediaQuery,
   useTheme,
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
@@ -231,6 +232,15 @@ const detailActionBarSx: SxProps<Theme> = (theme) => ({
   borderTopColor: theme.palette.mode === 'dark' ? '#33414e' : '#dce3ea',
   backgroundColor: theme.palette.mode === 'dark' ? '#151e27' : '#f7f9fc',
   boxShadow: theme.palette.mode === 'dark' ? '0 -8px 24px rgba(0, 0, 0, 0.16)' : '0 -8px 24px rgba(35, 55, 75, 0.06)',
+});
+
+const detailSectionHeaderSx: SxProps<Theme> = (theme) => ({
+  flexShrink: 0,
+  px: 2.5,
+  py: 1.5,
+  borderBottom: '1px solid',
+  borderBottomColor: theme.palette.mode === 'dark' ? '#33414e' : '#dce3ea',
+  backgroundColor: theme.palette.mode === 'dark' ? '#151e27' : '#f5f8fc',
 });
 
 const detailTableSx: SxProps<Theme> = {
@@ -436,6 +446,7 @@ const ReductionDetailsContent: React.FC<{
   mantidVersions: MantidVersionMap;
 }> = ({ job, resubmitJob, refreshJobs, mantidVersions }) => {
   const [activeTab, setActiveTab] = useState(0);
+  const isLargeScreen = useMediaQuery((theme: Theme) => theme.breakpoints.up('lg'));
   const [loading, setLoading] = useState(false);
   const resubmitJobId = useRef<number | null>(null);
   const resubmitSuccessful = useRef<boolean | null>(null);
@@ -689,226 +700,277 @@ const ReductionDetailsContent: React.FC<{
           backgroundColor: (theme: Theme) => (theme.palette.mode === 'dark' ? '#10171f' : '#ffffff'),
         }}
       >
-        <Tabs
-          value={activeTab}
-          onChange={(_event: React.SyntheticEvent, newValue: number) => setActiveTab(newValue)}
-          aria-label="Reduction details"
-          variant="fullWidth"
-          data-testid="reduction-details-tabs"
-          sx={(theme: Theme) => {
-            const accent = theme.palette.mode === 'dark' ? '#90caf9' : '#1565c0';
-            const mutedText = theme.palette.mode === 'dark' ? '#aebdca' : '#536170';
+        {!isLargeScreen && (
+          <Tabs
+            value={activeTab}
+            onChange={(_event: React.SyntheticEvent, newValue: number) => setActiveTab(newValue)}
+            aria-label="Reduction details"
+            variant="fullWidth"
+            data-testid="reduction-details-tabs"
+            sx={(theme: Theme) => {
+              const accent = theme.palette.mode === 'dark' ? '#90caf9' : '#1565c0';
+              const mutedText = theme.palette.mode === 'dark' ? '#aebdca' : '#536170';
 
-            return {
-              flexShrink: 0,
-              minHeight: 50,
-              px: { xs: 0.5, sm: 1.5 },
-              borderBottom: '1px solid',
-              borderBottomColor: theme.palette.mode === 'dark' ? '#33414e' : '#dce3ea',
-              backgroundColor: theme.palette.mode === 'dark' ? '#151e27' : '#f5f8fc',
-              '& .MuiTabs-indicator': {
-                height: 3,
-                borderRadius: '3px 3px 0 0',
-                backgroundColor: accent,
-              },
-              '& .MuiTab-root': {
-                flex: '1 1 0',
-                minWidth: 0,
-                maxWidth: 'none',
+              return {
+                flexShrink: 0,
                 minHeight: 50,
-                px: { xs: 1.5, sm: 2.25 },
-                color: mutedText,
-                fontSize: '0.9rem',
-                fontWeight: 650,
-                letterSpacing: '0.01em',
-                textTransform: 'none',
-                transition: 'color 120ms ease, background-color 120ms ease',
-                '&:hover': {
-                  color: accent,
-                  backgroundColor: alpha(accent, 0.07),
+                px: { xs: 0.5, sm: 1.5 },
+                borderBottom: '1px solid',
+                borderBottomColor: theme.palette.mode === 'dark' ? '#33414e' : '#dce3ea',
+                backgroundColor: theme.palette.mode === 'dark' ? '#151e27' : '#f5f8fc',
+                '& .MuiTabs-indicator': {
+                  height: 3,
+                  borderRadius: '3px 3px 0 0',
+                  backgroundColor: accent,
                 },
-                '&.Mui-selected': {
-                  color: accent,
-                  backgroundColor: alpha(accent, theme.palette.mode === 'dark' ? 0.13 : 0.08),
+                '& .MuiTab-root': {
+                  flex: '1 1 0',
+                  minWidth: 0,
+                  maxWidth: 'none',
+                  minHeight: 50,
+                  px: { xs: 1.5, sm: 2.25 },
+                  color: mutedText,
+                  fontSize: '0.9rem',
+                  fontWeight: 650,
+                  letterSpacing: '0.01em',
+                  textTransform: 'none',
+                  transition: 'color 120ms ease, background-color 120ms ease',
+                  '&:hover': {
+                    color: accent,
+                    backgroundColor: alpha(accent, 0.07),
+                  },
+                  '&.Mui-selected': {
+                    color: accent,
+                    backgroundColor: alpha(accent, theme.palette.mode === 'dark' ? 0.13 : 0.08),
+                  },
                 },
-              },
-              '& .MuiTabs-scrollButtons': {
-                color: mutedText,
-                '&.Mui-disabled': { opacity: 0.28 },
-              },
-            };
-          }}
-        >
-          <Tab id="reduction-tab-inputs" aria-controls="reduction-tabpanel-inputs" label="Reduction inputs" />
-          <Tab id="reduction-tab-run" aria-controls="reduction-tabpanel-run" label="Run details" />
-          <Tab id="reduction-tab-outputs" aria-controls="reduction-tabpanel-outputs" label="Reduction outputs" />
-        </Tabs>
+                '& .MuiTabs-scrollButtons': {
+                  color: mutedText,
+                  '&.Mui-disabled': { opacity: 0.28 },
+                },
+              };
+            }}
+          >
+            <Tab id="reduction-tab-inputs" aria-controls="reduction-tabpanel-inputs" label="Reduction inputs" />
+            <Tab id="reduction-tab-run" aria-controls="reduction-tabpanel-run" label="Run details" />
+            <Tab id="reduction-tab-outputs" aria-controls="reduction-tabpanel-outputs" label="Reduction outputs" />
+          </Tabs>
+        )}
 
         <Box
-          id="reduction-tabpanel-inputs"
-          role="tabpanel"
-          aria-labelledby="reduction-tab-inputs"
-          hidden={activeTab !== 0}
-          sx={{ display: activeTab === 0 ? 'flex' : 'none', flex: 1, minHeight: 0, flexDirection: 'column' }}
-        >
-          {activeTab === 0 && (
-            <>
-              <Box sx={detailScrollableContentSx}>
-                <JobInput job={job} />
-              </Box>
-              <Box data-testid="reduction-input-actions" sx={detailActionBarSx}>
-                <Button
-                  variant="outlined"
-                  size="small"
-                  component={Link}
-                  to={`/reduction-history/${job.run.instrument_name}/value-editor-${job.id}`}
-                  startIcon={<Edit />}
-                  onClick={() =>
-                    ReactGA.event({
-                      category: 'Button',
-                      action: 'Click',
-                      label: 'Value editor button',
-                      value: job.id,
-                    })
-                  }
-                  sx={panelActionButtonSx}
-                >
-                  Value editor
-                </Button>
-                <Button
-                  variant="contained"
-                  size="small"
-                  startIcon={loading ? undefined : <Replay />}
-                  disabled={loading}
-                  onClick={handleResubmit}
-                  sx={[panelActionButtonSx, { width: 116 }]}
-                >
-                  {loading ? <CircularProgress size={22} color="inherit" /> : 'Resubmit'}
-                </Button>
-              </Box>
-            </>
-          )}
-        </Box>
-
-        <Box
-          id="reduction-tabpanel-run"
-          role="tabpanel"
-          aria-labelledby="reduction-tab-run"
-          hidden={activeTab !== 1}
+          data-testid="reduction-details-content"
           sx={{
-            display: activeTab === 1 ? 'flex' : 'none',
+            display: isLargeScreen ? 'grid' : 'flex',
+            gridTemplateColumns: isLargeScreen ? 'repeat(3, minmax(0, 1fr))' : undefined,
             flex: 1,
             minHeight: 0,
-            flexDirection: 'column',
+            overflow: 'hidden',
           }}
         >
-          {activeTab === 1 && (
-            <>
-              <Box sx={detailScrollableContentSx}>
-                <Table size="small" aria-label="Run details" sx={detailTableSx}>
-                  <TableBody>
-                    {runDetails.map(({ icon, label, value }, index) => (
-                      <DetailItem key={index} icon={icon} label={label} value={value} />
-                    ))}
-                  </TableBody>
-                </Table>
-              </Box>
-              <Box data-testid="reduction-run-actions" aria-hidden="true" sx={detailActionBarSx} />
-            </>
-          )}
-        </Box>
-
-        <Box
-          id="reduction-tabpanel-outputs"
-          role="tabpanel"
-          aria-labelledby="reduction-tab-outputs"
-          hidden={activeTab !== 2}
-          sx={{ display: activeTab === 2 ? 'flex' : 'none', flex: 1, minHeight: 0, flexDirection: 'column' }}
-        >
-          {activeTab === 2 && (
-            <>
-              <Box sx={detailScrollableContentSx}>
-                {showStackViewer && (
-                  <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 2 }}>
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      component={Link}
-                      to={`/reduction-history/IMAT/stack-viewer?jobId=${job.id}&experiment=${job.run?.experiment_number}&instrument=${job.run?.instrument_name}`}
-                      startIcon={<StackedBarChart />}
-                      sx={panelActionButtonSx}
-                    >
-                      Stack viewer
-                    </Button>
-                  </Box>
-                )}
-                {job.state === 'UNSUCCESSFUL' || job.state === 'ERROR' ? (
-                  <Box
-                    sx={{
-                      p: 2,
-                      border: '1px solid',
-                      borderColor: (theme: Theme) => alpha(theme.palette.error.main, 0.35),
-                      borderRadius: 1,
-                      backgroundColor: (theme: Theme) => alpha(theme.palette.error.main, 0.06),
-                    }}
-                  >
-                    <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>
-                      Stacktrace output
-                    </Typography>
-                    <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
-                      {job.stacktrace ? job.stacktrace : 'No detailed stacktrace to show'}
-                    </Typography>
-                  </Box>
-                ) : (
-                  <JobOutput
-                    job={job}
-                    outputs={jobOutputs}
-                    downloadingSingle={downloadingSingle}
-                    handleDownload={handleDownload}
-                  />
-                )}
-              </Box>
-              <Box data-testid="reduction-output-actions" sx={[detailActionBarSx, { justifyContent: 'space-between' }]}>
-                <Typography variant="body2" color="text.secondary">
-                  {jobOutputs.length} {jobOutputs.length === 1 ? 'output file' : 'output files'}
+          <Box
+            id="reduction-tabpanel-inputs"
+            role={isLargeScreen ? 'region' : 'tabpanel'}
+            aria-labelledby={isLargeScreen ? 'reduction-section-inputs-heading' : 'reduction-tab-inputs'}
+            hidden={!isLargeScreen && activeTab !== 0}
+            sx={{
+              display: isLargeScreen || activeTab === 0 ? 'flex' : 'none',
+              minWidth: 0,
+              minHeight: 0,
+              flexDirection: 'column',
+              borderRight: isLargeScreen ? '1px solid' : 0,
+              borderRightColor: (theme: Theme) => (theme.palette.mode === 'dark' ? '#33414e' : '#dce3ea'),
+            }}
+          >
+            {isLargeScreen && (
+              <Box sx={detailSectionHeaderSx}>
+                <Typography id="reduction-section-inputs-heading" component="h3" variant="subtitle1" fontWeight={700}>
+                  Reduction inputs
                 </Typography>
-                <Box
-                  sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 1, flexWrap: 'wrap' }}
-                >
-                  {showExperimentViewer && (
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      component={Link}
-                      to={`/experiment-viewer/${job.run.instrument_name}/${job.run.experiment_number}`}
-                      startIcon={<Visibility />}
-                      onClick={() =>
-                        ReactGA.event({
-                          category: 'Button',
-                          action: 'Click',
-                          label: 'Experiment viewer button',
-                          value: job.id,
-                        })
-                      }
-                      sx={panelActionButtonSx}
-                    >
-                      Experiment viewer
-                    </Button>
-                  )}
+              </Box>
+            )}
+            {(isLargeScreen || activeTab === 0) && (
+              <>
+                <Box sx={detailScrollableContentSx}>
+                  <JobInput job={job} />
+                </Box>
+                <Box data-testid="reduction-input-actions" sx={detailActionBarSx}>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    component={Link}
+                    to={`/reduction-history/${job.run.instrument_name}/value-editor-${job.id}`}
+                    startIcon={<Edit />}
+                    onClick={() =>
+                      ReactGA.event({
+                        category: 'Button',
+                        action: 'Click',
+                        label: 'Value editor button',
+                        value: job.id,
+                      })
+                    }
+                    sx={panelActionButtonSx}
+                  >
+                    Value editor
+                  </Button>
                   <Button
                     variant="contained"
                     size="small"
-                    startIcon={downloadingAll ? undefined : <Download />}
-                    onClick={handleDownloadAll}
-                    disabled={jobOutputs.length === 0 || downloadingAll}
-                    sx={[panelActionButtonSx, { width: 140 }]}
+                    startIcon={loading ? undefined : <Replay />}
+                    disabled={loading}
+                    onClick={handleResubmit}
+                    sx={[panelActionButtonSx, { width: 116 }]}
                   >
-                    {downloadingAll ? <CircularProgress size={22} color="inherit" /> : 'Download all'}
+                    {loading ? <CircularProgress size={22} color="inherit" /> : 'Resubmit'}
                   </Button>
                 </Box>
+              </>
+            )}
+          </Box>
+
+          <Box
+            id="reduction-tabpanel-run"
+            role={isLargeScreen ? 'region' : 'tabpanel'}
+            aria-labelledby={isLargeScreen ? 'reduction-section-run-heading' : 'reduction-tab-run'}
+            hidden={!isLargeScreen && activeTab !== 1}
+            sx={{
+              display: isLargeScreen || activeTab === 1 ? 'flex' : 'none',
+              minWidth: 0,
+              minHeight: 0,
+              flexDirection: 'column',
+              borderRight: isLargeScreen ? '1px solid' : 0,
+              borderRightColor: (theme: Theme) => (theme.palette.mode === 'dark' ? '#33414e' : '#dce3ea'),
+            }}
+          >
+            {isLargeScreen && (
+              <Box sx={detailSectionHeaderSx}>
+                <Typography id="reduction-section-run-heading" component="h3" variant="subtitle1" fontWeight={700}>
+                  Run details
+                </Typography>
               </Box>
-            </>
-          )}
+            )}
+            {(isLargeScreen || activeTab === 1) && (
+              <>
+                <Box sx={detailScrollableContentSx}>
+                  <Table size="small" aria-label="Run details" sx={detailTableSx}>
+                    <TableBody>
+                      {runDetails.map(({ icon, label, value }, index) => (
+                        <DetailItem key={index} icon={icon} label={label} value={value} />
+                      ))}
+                    </TableBody>
+                  </Table>
+                </Box>
+                <Box data-testid="reduction-run-actions" aria-hidden="true" sx={detailActionBarSx} />
+              </>
+            )}
+          </Box>
+
+          <Box
+            id="reduction-tabpanel-outputs"
+            role={isLargeScreen ? 'region' : 'tabpanel'}
+            aria-labelledby={isLargeScreen ? 'reduction-section-outputs-heading' : 'reduction-tab-outputs'}
+            hidden={!isLargeScreen && activeTab !== 2}
+            sx={{
+              display: isLargeScreen || activeTab === 2 ? 'flex' : 'none',
+              minWidth: 0,
+              minHeight: 0,
+              flexDirection: 'column',
+            }}
+          >
+            {isLargeScreen && (
+              <Box sx={detailSectionHeaderSx}>
+                <Typography id="reduction-section-outputs-heading" component="h3" variant="subtitle1" fontWeight={700}>
+                  Reduction outputs
+                </Typography>
+              </Box>
+            )}
+            {(isLargeScreen || activeTab === 2) && (
+              <>
+                <Box sx={detailScrollableContentSx}>
+                  {showStackViewer && (
+                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 2 }}>
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        component={Link}
+                        to={`/reduction-history/IMAT/stack-viewer?jobId=${job.id}&experiment=${job.run?.experiment_number}&instrument=${job.run?.instrument_name}`}
+                        startIcon={<StackedBarChart />}
+                        sx={panelActionButtonSx}
+                      >
+                        Stack viewer
+                      </Button>
+                    </Box>
+                  )}
+                  {job.state === 'UNSUCCESSFUL' || job.state === 'ERROR' ? (
+                    <Box
+                      sx={{
+                        p: 2,
+                        border: '1px solid',
+                        borderColor: (theme: Theme) => alpha(theme.palette.error.main, 0.35),
+                        borderRadius: 1,
+                        backgroundColor: (theme: Theme) => alpha(theme.palette.error.main, 0.06),
+                      }}
+                    >
+                      <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>
+                        Stacktrace output
+                      </Typography>
+                      <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
+                        {job.stacktrace ? job.stacktrace : 'No detailed stacktrace to show'}
+                      </Typography>
+                    </Box>
+                  ) : (
+                    <JobOutput
+                      job={job}
+                      outputs={jobOutputs}
+                      downloadingSingle={downloadingSingle}
+                      handleDownload={handleDownload}
+                    />
+                  )}
+                </Box>
+                <Box
+                  data-testid="reduction-output-actions"
+                  sx={[detailActionBarSx, { justifyContent: 'space-between', flexWrap: 'wrap' }]}
+                >
+                  <Typography variant="body2" color="text.secondary">
+                    {jobOutputs.length} {jobOutputs.length === 1 ? 'output file' : 'output files'}
+                  </Typography>
+                  <Box
+                    sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 1, flexWrap: 'wrap' }}
+                  >
+                    {showExperimentViewer && (
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        component={Link}
+                        to={`/experiment-viewer/${job.run.instrument_name}/${job.run.experiment_number}`}
+                        startIcon={<Visibility />}
+                        onClick={() =>
+                          ReactGA.event({
+                            category: 'Button',
+                            action: 'Click',
+                            label: 'Experiment viewer button',
+                            value: job.id,
+                          })
+                        }
+                        sx={panelActionButtonSx}
+                      >
+                        Experiment viewer
+                      </Button>
+                    )}
+                    <Button
+                      variant="contained"
+                      size="small"
+                      startIcon={downloadingAll ? undefined : <Download />}
+                      onClick={handleDownloadAll}
+                      disabled={jobOutputs.length === 0 || downloadingAll}
+                      sx={[panelActionButtonSx, { width: 140 }]}
+                    >
+                      {downloadingAll ? <CircularProgress size={22} color="inherit" /> : 'Download all'}
+                    </Button>
+                  </Box>
+                </Box>
+              </>
+            )}
+          </Box>
         </Box>
       </Box>
     </>
@@ -917,7 +979,6 @@ const ReductionDetailsContent: React.FC<{
 
 export const ReductionDetailsModal: React.FC<{
   open: boolean;
-  container: () => HTMLElement | null;
   jobId: number | null;
   job: Job | null;
   loading: boolean;
@@ -927,26 +988,25 @@ export const ReductionDetailsModal: React.FC<{
   resubmitJob: (job: Job) => Promise<void>;
   refreshJobs: () => void;
   mantidVersions: MantidVersionMap;
-}> = ({ open, container, jobId, job, loading, error, onRetry, onClose, resubmitJob, refreshJobs, mantidVersions }) => (
+}> = ({ open, jobId, job, loading, error, onRetry, onClose, resubmitJob, refreshJobs, mantidVersions }) => (
   <Modal
     open={open}
     onClose={onClose}
-    container={container}
     disableScrollLock
     aria-labelledby="reduction-details-title"
-    sx={{
-      position: 'absolute',
+    sx={(theme: Theme) => ({
+      position: 'fixed',
       inset: 0,
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      zIndex: 10,
+      zIndex: theme.zIndex.modal,
       pointerEvents: 'auto',
-    }}
+    })}
     BackdropProps={{
       'data-testid': 'reduction-details-backdrop',
       sx: {
-        position: 'absolute',
+        position: 'fixed',
         backgroundColor: 'rgba(5, 10, 16, 0.58)',
         backdropFilter: 'blur(5px)',
         WebkitBackdropFilter: 'blur(5px)',
@@ -961,7 +1021,7 @@ export const ReductionDetailsModal: React.FC<{
         display: 'flex',
         flexDirection: 'column',
         width: 'calc(100% - 32px)',
-        maxWidth: 1120,
+        maxWidth: 1600,
         height: 'calc(100% - 32px)',
         maxHeight: 720,
         minHeight: 0,

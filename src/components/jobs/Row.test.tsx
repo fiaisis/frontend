@@ -67,7 +67,6 @@ const renderRow = (job: Job = makeJob(), overrides: Partial<typeof defaultRowPro
 
 const defaultModalProps: React.ComponentProps<typeof ReductionDetailsModal> = {
   open: true,
-  container: () => null,
   jobId: 42,
   job: makeJob(),
   loading: false,
@@ -82,24 +81,38 @@ const defaultModalProps: React.ComponentProps<typeof ReductionDetailsModal> = {
 const lightTestTheme = createTheme();
 const darkTestTheme = createTheme({ palette: { mode: 'dark' } });
 
+const setMediaQueryMatches = (matches: boolean): void => {
+  vi.stubGlobal(
+    'matchMedia',
+    vi.fn().mockImplementation(
+      (query: string): MediaQueryList =>
+        ({
+          matches,
+          media: query,
+          onchange: null,
+          addListener: vi.fn(),
+          removeListener: vi.fn(),
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+          dispatchEvent: vi.fn(() => false),
+        }) as MediaQueryList
+    )
+  );
+};
+
 const ModalHarness: React.FC<{
   overrides: Partial<React.ComponentProps<typeof ReductionDetailsModal>>;
   mode: 'light' | 'dark';
 }> = ({ overrides, mode }) => {
-  const [containerElement, setContainerElement] = React.useState<HTMLDivElement | null>(null);
-
   return (
     <ThemeProvider theme={mode === 'dark' ? darkTestTheme : lightTestTheme}>
-      <div
-        ref={setContainerElement}
-        data-testid="reduction-details-page-container"
-        style={{ position: 'relative', width: 1200, height: 800 }}
-      >
+      <header data-testid="scigateway-topbar-underlay">SciGateway top bar</header>
+      <aside data-testid="scigateway-sidemenu-underlay">SciGateway side menu</aside>
+      <main data-testid="reduction-details-page-container">
         <div data-testid="reduction-details-breadcrumb-underlay">Reduction history breadcrumbs</div>
-        {containerElement && (
-          <ReductionDetailsModal {...defaultModalProps} {...overrides} container={() => containerElement} />
-        )}
-      </div>
+        <ReductionDetailsModal {...defaultModalProps} {...overrides} />
+      </main>
+      <footer data-testid="scigateway-footer-underlay">SciGateway footer</footer>
     </ThemeProvider>
   );
 };
@@ -117,6 +130,7 @@ const renderModal = (
 describe('Row and reduction details modal', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    setMediaQueryMatches(false);
     vi.mocked(fiaApi.get).mockResolvedValue({ status: 200, data: 'file-content' });
     vi.mocked(fiaApi.post).mockResolvedValue({ status: 200, data: 'zip-content' });
     vi.spyOn(window, 'open').mockImplementation(() => null);
@@ -127,6 +141,7 @@ describe('Row and reduction details modal', () => {
     cleanup();
     vi.useRealTimers();
     vi.restoreAllMocks();
+    vi.unstubAllGlobals();
   });
 
   test('opens details from the summary row without expanding it or intercepting selection', async () => {
@@ -162,9 +177,13 @@ describe('Row and reduction details modal', () => {
     renderModal();
 
     const modal = screen.getByTestId('reduction-details-modal');
-    expect(modal).toHaveStyle({ maxWidth: '1120px', maxHeight: '720px' });
-    expect(modal.parentElement?.parentElement).toBe(screen.getByTestId('reduction-details-page-container'));
-    expect(screen.getByTestId('reduction-details-backdrop')).toHaveStyle({ position: 'absolute' });
+    expect(modal).toHaveStyle({ maxWidth: '1600px', maxHeight: '720px' });
+    expect(modal.parentElement?.parentElement).toBe(document.body);
+    expect(screen.getByTestId('reduction-details-backdrop')).toHaveStyle({ position: 'fixed' });
+    expect(modal.parentElement).toHaveStyle({ position: 'fixed', inset: '0', zIndex: '1300' });
+    expect(screen.getByTestId('scigateway-topbar-underlay')).toBeInTheDocument();
+    expect(screen.getByTestId('scigateway-sidemenu-underlay')).toBeInTheDocument();
+    expect(screen.getByTestId('scigateway-footer-underlay')).toBeInTheDocument();
     expect(screen.getByTestId('reduction-details-breadcrumb-underlay')).toBeInTheDocument();
     expect(screen.getByText('[SUCCESS] Reduction performed successfully')).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Reduction inputs' })).toHaveAttribute('aria-selected', 'true');
@@ -214,6 +233,25 @@ describe('Row and reduction details modal', () => {
         expect.objectContaining({ responseType: 'blob' })
       )
     );
+  });
+
+  test('shows all three detail sections together instead of tabs on large screens', () => {
+    setMediaQueryMatches(true);
+    renderModal();
+
+    expect(screen.queryByTestId('reduction-details-tabs')).not.toBeInTheDocument();
+    expect(screen.queryByRole('tab')).not.toBeInTheDocument();
+
+    const inputs = screen.getByRole('region', { name: 'Reduction inputs' });
+    const runDetails = screen.getByRole('region', { name: 'Run details' });
+    const outputs = screen.getByRole('region', { name: 'Reduction outputs' });
+
+    expect(inputs).toBeVisible();
+    expect(runDetails).toBeVisible();
+    expect(outputs).toBeVisible();
+    expect(within(inputs).getByRole('table', { name: 'Reduction inputs' })).toBeInTheDocument();
+    expect(within(runDetails).getByRole('table', { name: 'Run details' })).toBeInTheDocument();
+    expect(within(outputs).getByText('result.nxs')).toBeInTheDocument();
   });
 
   test('uses high-contrast dark surfaces, tabs, and action buttons', async () => {
@@ -306,7 +344,7 @@ describe('Row and reduction details modal', () => {
     expect(screen.queryByRole('link', { name: /Experiment viewer/ })).not.toBeInTheDocument();
   });
 
-  test('closes from the close button, Escape, and the page-contained backdrop', async () => {
+  test('closes from the close button, Escape, and the viewport backdrop', async () => {
     const user = userEvent.setup();
     const onClose = vi.fn();
 
