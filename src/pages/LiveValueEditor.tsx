@@ -1,13 +1,15 @@
 import Editor from '@monaco-editor/react';
-import { Save } from '@mui/icons-material';
+import { DescriptionOutlined, Save } from '@mui/icons-material';
 import { Alert, Box, Button, CircularProgress, Snackbar, Typography, useTheme } from '@mui/material';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useHistory, useParams } from 'react-router-dom';
 
 import { LiveLogViewer } from '../components/experimentViewer/LiveLogViewer';
+import { getJobTableChromeColors } from '../components/jobs/constants';
 import InstrumentSelector from '../components/jobs/InstrumentSelector';
 import NavArrows from '../components/navigation/NavArrows';
 import PageHeader from '../components/navigation/PageHeader';
+import { getPageHeaderControlSx } from '../components/navigation/pageHeaderStyles';
 import { fiaApi } from '../lib/api';
 import { instruments as allInstruments } from '../lib/instrumentData';
 import { fetchLiveDataInstruments } from '../lib/plottingServiceAPI';
@@ -16,6 +18,11 @@ import { useAvailablePluginHeight } from '../lib/useAvailablePluginHeight';
 const LiveValueEditor: React.FC = () => {
   const { rootRef, availableHeight } = useAvailablePluginHeight();
   const theme = useTheme();
+  const editorChrome = getJobTableChromeColors(theme.palette.mode);
+  const actionButtonSx = {
+    ...getPageHeaderControlSx(theme),
+    '& .MuiButton-startIcon': { m: 0 },
+  };
   const { instrumentName } = useParams<{ instrumentName: string }>();
   const history = useHistory();
   const [scriptValue, setScriptValue] = useState<string>('');
@@ -145,7 +152,10 @@ const LiveValueEditor: React.FC = () => {
         height: availableHeight,
         maxHeight: availableHeight,
         minHeight: 0,
+        minWidth: 0,
+        width: '100%',
         overflow: 'hidden',
+        color: editorChrome.text,
       }}
     >
       <PageHeader breadcrumbs={<NavArrows />} controls={pageControls} />
@@ -154,70 +164,98 @@ const LiveValueEditor: React.FC = () => {
           width: '100%',
           flex: '1 1 auto',
           minHeight: 0,
+          minWidth: 0,
           overflow: 'hidden',
           display: 'flex',
           flexDirection: 'column',
+          boxSizing: 'border-box',
+          px: 2,
+          pb: 2,
         }}
       >
-        <Box sx={{ flexShrink: 0, p: 2, backgroundColor: theme.palette.background.default }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-            <Typography variant="body1" component="p" sx={{ color: theme.palette.text.primary, fontWeight: 600, m: 0 }}>
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            flex: '1 1 auto',
+            minHeight: 0,
+            minWidth: 0,
+            overflow: 'hidden',
+            border: `1px solid ${editorChrome.border}`,
+            borderRadius: 0,
+            backgroundColor: editorChrome.surface,
+          }}
+        >
+          <Box
+            sx={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              alignItems: 'center',
+              gap: 1,
+              flexShrink: 0,
+              p: 1.5,
+              borderBottom: `1px solid ${editorChrome.border}`,
+              backgroundColor: editorChrome.header,
+            }}
+          >
+            <Typography
+              variant="body2"
+              component="p"
+              noWrap
+              title={`${instrumentName} Live data script`}
+              sx={{ flex: '1 1 180px', minWidth: 0, fontWeight: 700, m: 0 }}
+            >
               {instrumentName} Live data script
             </Typography>
-            <Box sx={{ display: 'flex', gap: 1 }}>
-              {/* View Logs Button */}
-              <Button variant="contained" size="small" onClick={() => setShowLiveLogViewer(true)} sx={{ ml: 'auto' }}>
-                View Logs
-              </Button>
-              <LiveLogViewer
-                open={showLiveLogViewer}
-                onClose={() => setShowLiveLogViewer(false)}
-                instrumentName={instrumentName.toUpperCase() ?? 'null'}
-              />
+            <Box
+              role="group"
+              aria-label="Script actions"
+              sx={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: '1px',
+                ml: 'auto',
+                maxWidth: '100%',
+                border: `1px solid ${editorChrome.border}`,
+                backgroundColor: editorChrome.border,
+              }}
+            >
               <Button
-                variant="contained"
-                color="primary"
-                startIcon={saving ? <CircularProgress size={20} color="inherit" /> : <Save />}
+                variant="text"
+                startIcon={<DescriptionOutlined fontSize="small" />}
+                onClick={() => setShowLiveLogViewer(true)}
+                sx={actionButtonSx}
+              >
+                View logs
+              </Button>
+              <Button
+                variant="text"
+                startIcon={saving ? <CircularProgress size={20} color="inherit" /> : <Save fontSize="small" />}
                 onClick={handleSave}
                 disabled={loading || saving}
-                sx={{ minWidth: 120 }}
+                sx={actionButtonSx}
               >
-                {saving ? 'Saving...' : 'Save Script'}
+                {saving ? 'Saving...' : 'Save script'}
               </Button>
             </Box>
           </Box>
-
-          <Snackbar
-            open={snackbarOpen}
-            autoHideDuration={5000}
-            onClose={(event, reason) => {
-              if (reason !== 'clickaway') {
-                setSnackbarOpen(false);
-              }
+          <Box
+            sx={{
+              flex: '1 1 auto',
+              minHeight: 0,
+              minWidth: 0,
+              display: 'flex',
+              overflow: 'hidden',
+              '& .MuiCircularProgress-root': { color: editorChrome.accent },
             }}
-            anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
           >
-            {saveResult ? (
-              <Alert
-                onClose={() => setSnackbarOpen(false)}
-                severity={saveResult.success ? 'success' : 'error'}
-                sx={{ width: '100%' }}
+            {loading ? (
+              <Box
+                sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', width: '100%' }}
               >
-                {saveResult.message}
-              </Alert>
-            ) : undefined}
-          </Snackbar>
-        </Box>
-
-        <Box sx={{ flex: 1, minHeight: 0, borderTop: 3, borderColor: 'divider', display: 'flex', overflow: 'hidden' }}>
-          {loading ? (
-            <Box
-              sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', width: '100%' }}
-            >
-              <CircularProgress />
-            </Box>
-          ) : (
-            <>
+                <CircularProgress aria-label="Loading live data script" />
+              </Box>
+            ) : (
               <Box sx={{ flex: 1, height: '100%', minWidth: 0 }}>
                 <Editor
                   onChange={(newValue) => {
@@ -234,13 +272,40 @@ const LiveValueEditor: React.FC = () => {
                     minimap: { enabled: true },
                     fontSize: 14,
                     automaticLayout: true,
+                    padding: { top: 12, bottom: 12 },
+                    ariaLabel: `${instrumentName} live data script editor`,
                   }}
                 />
               </Box>
-            </>
-          )}
+            )}
+          </Box>
         </Box>
       </Box>
+      <LiveLogViewer
+        open={showLiveLogViewer}
+        onClose={() => setShowLiveLogViewer(false)}
+        instrumentName={instrumentName.toUpperCase() ?? 'null'}
+      />
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={5000}
+        onClose={(event, reason) => {
+          if (reason !== 'clickaway') {
+            setSnackbarOpen(false);
+          }
+        }}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        {saveResult ? (
+          <Alert
+            onClose={() => setSnackbarOpen(false)}
+            severity={saveResult.success ? 'success' : 'error'}
+            sx={{ width: '100%', borderRadius: 0, border: '1px solid', borderColor: 'currentColor', boxShadow: 'none' }}
+          >
+            {saveResult.message}
+          </Alert>
+        ) : undefined}
+      </Snackbar>
     </Box>
   );
 };
