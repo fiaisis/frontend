@@ -19,9 +19,9 @@ import ndarray from 'ndarray';
 import React, { useMemo, useState } from 'react';
 import { MdAutoGraph, MdGridOn } from 'react-icons/md';
 
+import { getViewerPlotSx } from './styles';
 import ErrorsIcon from '../../h5web/packages/app/src/vis-packs/core/line/ErrorsIcon';
-import resetZoomButtonStyles from '../../h5web/packages/lib/src/toolbar/floating/ResetZoomButton.module.css';
-import tooltipStyles from '../../h5web/packages/lib/src/vis/shared/Tooltip.module.css';
+import { getJobTableChromeColors } from '../jobs/constants';
 
 import type { LinePlotData } from '../../lib/types';
 import type { AxisScaleType, CustomDomain, Domain } from '@h5web/lib';
@@ -56,6 +56,7 @@ const PlotViewer: React.FC<PlotViewerProps> = ({
   emptyMessage = 'Choose a file from the File tree to plot its available 1D datasets.',
 }): JSX.Element => {
   const theme = useTheme();
+  const viewerChrome = getJobTableChromeColors(theme.palette.mode);
   const hasData = linePlotData.length > 0;
 
   // State for line plot controls
@@ -128,133 +129,29 @@ const PlotViewer: React.FC<PlotViewerProps> = ({
   );
   const [safeYDomain] = useSafeDomain(effectiveYDomain, autoDomain, yScaleType);
 
-  // Handle empty state
-  if (!primaryData) {
-    return (
-      <Box
-        sx={{
-          height: '100%',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: theme.palette.background.default,
-        }}
-      >
-        <Box sx={{ textAlign: 'center' }}>
-          <Typography variant="h5" color="text.secondary" sx={{ mb: 1 }}>
-            {emptyTitle}
-          </Typography>
-          <Typography variant="body2" color="text.disabled">
-            {emptyMessage}
-          </Typography>
-        </Box>
-      </Box>
-    );
-  }
-
-  const tooltipBackground =
-    theme.palette.mode === 'dark' ? alpha(theme.palette.grey[900], 0.94) : alpha(theme.palette.background.paper, 0.97);
-  const tooltipBorderColor =
-    theme.palette.mode === 'dark' ? alpha(theme.palette.common.white, 0.12) : alpha(theme.palette.text.primary, 0.12);
-  const floatingControlBackground =
-    theme.palette.mode === 'dark' ? alpha(theme.palette.grey[800], 0.96) : alpha(theme.palette.background.paper, 0.9);
-  const floatingControlHoverBackground =
-    theme.palette.mode === 'dark' ? alpha(theme.palette.grey[700], 0.98) : alpha(theme.palette.background.paper, 0.98);
-  const floatingControlTextColor =
-    theme.palette.mode === 'dark' ? theme.palette.common.white : theme.palette.text.primary;
-  const floatingControlBorderColor =
-    theme.palette.mode === 'dark' ? alpha(theme.palette.common.white, 0.24) : alpha(theme.palette.text.primary, 0.12);
-  const floatingControlHoverBorderColor =
-    theme.palette.mode === 'dark' ? alpha(theme.palette.common.white, 0.34) : alpha(theme.palette.text.primary, 0.18);
-
-  const toolbarThemeTokens = {
-    color: theme.palette.text.primary,
-    backgroundColor: theme.palette.background.paper,
-    '--h5w-btn-hover--bgColor': theme.palette.action.hover,
-    '--h5w-btn-hover--shadowColor': alpha(theme.palette.text.primary, theme.palette.mode === 'dark' ? 0.28 : 0.16),
-    '--h5w-btnRaised--bgColor': theme.palette.background.default,
-    '--h5w-btnRaised--shadowColor': alpha(theme.palette.text.primary, theme.palette.mode === 'dark' ? 0.3 : 0.18),
-    '--h5w-btnRaised-hover--shadowColor': alpha(
-      theme.palette.text.primary,
-      theme.palette.mode === 'dark' ? 0.42 : 0.24
-    ),
-    '--h5w-btnPressed--bgColor': alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.32 : 0.18),
-    '--h5w-btnPressed--shadowColor': alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.5 : 0.32),
-    '--h5w-btnPressed-hover--shadowColor': alpha(
-      theme.palette.primary.main,
-      theme.palette.mode === 'dark' ? 0.62 : 0.4
-    ),
-    '--h5w-toolbar--bgColor': theme.palette.background.paper,
-    '--h5w-toolbar-label--color': theme.palette.text.secondary,
-    '--h5w-toolbar-separator--color': alpha(theme.palette.text.primary, theme.palette.mode === 'dark' ? 0.2 : 0.14),
-    '--h5w-toolbar-popup--bgColor': theme.palette.background.paper,
-    '--h5w-toolbar-input-focus--shadowColor': theme.palette.primary.main,
-    '--h5w-selector-arrowIcon--color': theme.palette.text.secondary,
-    '--h5w-selector-label--color': theme.palette.text.secondary,
-    '--h5w-selector-groupLabel--color': theme.palette.text.secondary,
-    '--h5w-selector-menu--bgColor': theme.palette.background.paper,
-    '--h5w-selector-option-hover--bgColor': theme.palette.action.hover,
-    '--h5w-selector-option-selected--bgColor': alpha(
-      theme.palette.primary.main,
-      theme.palette.mode === 'dark' ? 0.3 : 0.16
-    ),
-    '--h5w-selector-option-focus--outlineColor': theme.palette.primary.main,
-    '--h5w-domainWidget-popup--bgColor': theme.palette.background.paper,
-    '--h5w-domainControls--colorAlt': theme.palette.text.primary,
-    '--h5w-domainControls-boundInput--shadowColor': alpha(
-      theme.palette.text.primary,
-      theme.palette.mode === 'dark' ? 0.3 : 0.16
-    ),
-    '--h5w-domainControls-boundInput-focus--shadowColor': theme.palette.primary.main,
-    '--h5w-domainControls-boundInput-editing--bgColor': theme.palette.background.default,
-    '--h5w-domainControls-boundInput-editing--borderColor': theme.palette.primary.main,
-    '--h5w-error--color': theme.palette.error.main,
-  };
-
-  const lineVisStyles = {
-    '--h5w-tooltip-guide--color': alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.82 : 0.6),
-    '--h5w-tooltip-guide--opacity': theme.palette.mode === 'dark' ? 0.9 : 0.72,
-    [`& .${tooltipStyles.tooltip}`]: {
-      backgroundColor: tooltipBackground,
-      color: theme.palette.text.primary,
-      border: `1px solid ${tooltipBorderColor}`,
-      boxShadow: `0 0 0 1px ${tooltipBorderColor}, 0 12px 28px ${alpha(
-        theme.palette.common.black,
-        theme.palette.mode === 'dark' ? 0.5 : 0.16
-      )}`,
-      backdropFilter: 'blur(8px)',
-    },
-    [`& .${resetZoomButtonStyles.btnLike}`]: {
-      color: floatingControlTextColor,
-      backgroundColor: floatingControlBackground,
-      border: `1px solid ${floatingControlBorderColor}`,
-      boxShadow: `0 0 0 1px ${floatingControlBorderColor}, 0 10px 24px ${alpha(
-        theme.palette.common.black,
-        theme.palette.mode === 'dark' ? 0.42 : 0.14
-      )}`,
-      backdropFilter: 'blur(8px)',
-      fontWeight: 500,
-    },
-    [`& .${resetZoomButtonStyles.btn}:hover > .${resetZoomButtonStyles.btnLike}, & .${resetZoomButtonStyles.btn}:focus-visible > .${resetZoomButtonStyles.btnLike}`]:
-      {
-        backgroundColor: floatingControlHoverBackground,
-        borderColor: floatingControlHoverBorderColor,
-        boxShadow: `0 0 0 1px ${floatingControlHoverBorderColor}, 0 12px 28px ${alpha(
-          theme.palette.common.black,
-          theme.palette.mode === 'dark' ? 0.5 : 0.16
-        )}`,
-      },
-    [`& .${resetZoomButtonStyles.btn}:focus-visible`]: {
-      outline: 'none',
-    },
-  };
-
   return (
     <Box
-      sx={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, width: '100%', overflow: 'hidden' }}
+      sx={{
+        ...getViewerPlotSx(theme),
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+        minHeight: 0,
+        width: '100%',
+        overflow: 'hidden',
+      }}
     >
-      <Paper elevation={1} sx={toolbarThemeTokens}>
-        <Box sx={{ display: 'flex' }} className={'toolbar'}>
+      <Paper
+        elevation={0}
+        sx={{ borderRadius: 0, flexShrink: 0, backgroundColor: viewerChrome.header, color: viewerChrome.text }}
+      >
+        <Box
+          component="fieldset"
+          disabled={!hasData}
+          aria-label="1D plot controls"
+          sx={{ display: 'flex', border: 0, p: 0, m: 0, minWidth: 0 }}
+          className="toolbar"
+        >
           <Toolbar>
             <DomainWidget
               dataDomain={autoDomain}
@@ -315,19 +212,32 @@ const PlotViewer: React.FC<PlotViewerProps> = ({
           </Toolbar>
         </Box>
       </Paper>
-      <Box sx={{ flex: 1, minHeight: 0, display: 'flex', overflow: 'hidden', ...lineVisStyles }}>
-        <LineVis
-          dataArray={primaryArray}
-          domain={safeYDomain}
-          errorsArray={primaryErrorsArray}
-          showErrors={showErrors}
-          auxiliaries={auxiliaries.length > 0 ? auxiliaries : undefined}
-          showGrid={lineShowGrid}
-          scaleType={yScaleType}
-          curveType={curveType}
-          interpolation={interpolation}
-          abscissaParams={{ label: 'Index', scaleType: xScaleType }}
-        />
+      <Box sx={{ flex: 1, minHeight: 0, display: 'flex', overflow: 'hidden' }}>
+        {primaryData ? (
+          <LineVis
+            dataArray={primaryArray}
+            domain={safeYDomain}
+            errorsArray={primaryErrorsArray}
+            showErrors={showErrors}
+            auxiliaries={auxiliaries.length > 0 ? auxiliaries : undefined}
+            showGrid={lineShowGrid}
+            scaleType={yScaleType}
+            curveType={curveType}
+            interpolation={interpolation}
+            abscissaParams={{ label: 'Index', scaleType: xScaleType }}
+          />
+        ) : (
+          <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', p: 3 }}>
+            <Box sx={{ textAlign: 'center' }}>
+              <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 1 }}>
+                {emptyTitle}
+              </Typography>
+              <Typography variant="body2" sx={{ color: alpha(viewerChrome.text, 0.75) }}>
+                {emptyMessage}
+              </Typography>
+            </Box>
+          </Box>
+        )}
       </Box>
     </Box>
   );
