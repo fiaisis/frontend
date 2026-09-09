@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, render, screen, within } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter, Route } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
@@ -38,15 +38,7 @@ vi.mock('../lib/useAvailablePluginHeight', () => ({
   useAvailablePluginHeight: () => ({ rootRef: { current: null }, availableHeight: '800px' }),
 }));
 
-vi.mock('../components/navigation/NavArrows', () => ({
-  default: () => <nav aria-label="breadcrumb" />,
-}));
-
 vi.mock('../components/jobs/InstrumentSelector', () => ({
-  ALL_FILTER: 'All',
-  FAVORITES_FILTER: 'Favourites',
-  SELECTOR_MENU_WIDTH: 540,
-  TechniqueFilterButton: ({ label }: { label: string }) => <button type="button">{label}</button>,
   default: () => <button type="button">Browse instruments</button>,
 }));
 
@@ -87,18 +79,24 @@ describe('page chrome titles', () => {
     expect(screen.getByLabelText('breadcrumb')).toBeInTheDocument();
   });
 
-  test('removes the Live Data page heading while retaining connection status', async () => {
-    renderPage('/live-data', '/live-data', <LiveData />);
+  test('removes the Live data viewer page heading while retaining connection status', async () => {
+    renderPage('/live-data/LOQ', '/live-data/:instrumentName', <LiveData />);
 
-    expect(screen.queryByRole('heading', { name: 'Live data' })).not.toBeInTheDocument();
-    expect(screen.getByText('Disconnected')).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Live data viewer' })).not.toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('Disconnected');
+    expect(screen.getByRole('status')).not.toContainElement(screen.getByRole('group', { name: 'Page controls' }));
   });
 
-  test('removes the Instruments page heading while retaining its summary', () => {
+  test('removes the Instruments page heading while retaining its cards', () => {
     renderPage('/isis-instruments', '/isis-instruments', <Instruments />);
 
     expect(screen.queryByRole('heading', { name: 'ISIS instruments' })).not.toBeInTheDocument();
-    expect(screen.getByText(/instruments across \d+ techniques/)).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Instrument cards' })).toBeInTheDocument();
+    expect(
+      within(screen.getByRole('group', { name: 'Page controls' })).getByRole('textbox', {
+        name: 'Search for instrument, technique, or scientist',
+      })
+    ).toBeInTheDocument();
   });
 
   test('renders the reduction editor label as paragraph text', async () => {
@@ -119,5 +117,16 @@ describe('page chrome titles', () => {
     const label = screen.getByText('LOQ Live data script');
     expect(label.tagName).toBe('P');
     expect(screen.queryByRole('heading', { name: 'LOQ Live data script' })).not.toBeInTheDocument();
+    expect(within(screen.getByLabelText('breadcrumb')).getByText('Edit script')).toHaveAttribute(
+      'aria-current',
+      'page'
+    );
+    expect(within(screen.getByLabelText('breadcrumb')).getByRole('link', { name: 'LOQ' })).toHaveAttribute(
+      'href',
+      '/live-data/LOQ'
+    );
+    expect(
+      within(screen.getByRole('group', { name: 'Page controls' })).getByRole('button', { name: 'Browse instruments' })
+    ).toBeInTheDocument();
   });
 });

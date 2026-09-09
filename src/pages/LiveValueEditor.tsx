@@ -7,6 +7,7 @@ import { useHistory, useParams } from 'react-router-dom';
 import { LiveLogViewer } from '../components/experimentViewer/LiveLogViewer';
 import InstrumentSelector from '../components/jobs/InstrumentSelector';
 import NavArrows from '../components/navigation/NavArrows';
+import PageHeader from '../components/navigation/PageHeader';
 import { fiaApi } from '../lib/api';
 import { instruments as allInstruments } from '../lib/instrumentData';
 import { fetchLiveDataInstruments } from '../lib/plottingServiceAPI';
@@ -79,19 +80,17 @@ const LiveValueEditor: React.FC = () => {
     history.push(`/live-data/${instrument}/edit-script`);
   };
 
-  const breadcrumbTrailingCrumbs = [
+  const pageControls = [
     <InstrumentSelector
       key="instrument"
       selectedInstrument={instrumentName}
       handleInstrumentChange={handleInstrumentChange}
-      variant="breadcrumb"
+      variant="compact"
+      compactLabel="Browse instruments"
       instrumentOptions={liveDataInstrumentOptions}
       showAllInstrumentsOption={false}
       disabled={loadingInstruments || liveDataInstrumentOptions.length === 0}
     />,
-    <Typography key="edit-script" className="breadcrumb-current" aria-current="page">
-      Edit script
-    </Typography>,
   ];
 
   const fetchScript = useCallback(async (): Promise<void> => {
@@ -149,9 +148,7 @@ const LiveValueEditor: React.FC = () => {
         overflow: 'hidden',
       }}
     >
-      <Box sx={{ flexShrink: 0 }}>
-        <NavArrows trailingCrumb={breadcrumbTrailingCrumbs} replaceLastCrumbCount={2} />
-      </Box>
+      <PageHeader breadcrumbs={<NavArrows />} controls={pageControls} />
       <Box
         sx={{
           width: '100%',

@@ -6,19 +6,17 @@ import { useLocation, Link as RouterLink } from 'react-router-dom';
 import { getJobTableChromeColors } from '../jobs/constants';
 
 interface NavArrowsProps {
-  trailingCrumb?: React.ReactNode;
-  replaceLastCrumb?: boolean;
-  replaceLastCrumbCount?: number;
+  omitLastCrumbCount?: number;
   labelOverrides?: Record<string, string>;
   onCrumbClick?: (destination: string) => void;
+  trailingCrumb?: React.ReactNode;
 }
 
 const NavArrows: React.FC<NavArrowsProps> = ({
-  trailingCrumb,
-  replaceLastCrumb = false,
-  replaceLastCrumbCount,
+  omitLastCrumbCount = 0,
   labelOverrides,
   onCrumbClick,
+  trailingCrumb,
 }) => {
   const url = useLocation();
   const path = url.pathname;
@@ -27,9 +25,7 @@ const NavArrows: React.FC<NavArrowsProps> = ({
 
   const pathSegments = path.split('/').filter(Boolean);
   const pathsList = ['FIA', ...pathSegments.map((s) => decodeURIComponent(s))];
-  const crumbsToReplace = trailingCrumb ? (replaceLastCrumbCount ?? (replaceLastCrumb ? 1 : 0)) : 0;
-  const displayPathsList = crumbsToReplace > 0 ? pathsList.slice(0, -crumbsToReplace) : pathsList;
-  const trailingCrumbs = React.Children.toArray(trailingCrumb);
+  const displayPathsList = omitLastCrumbCount > 0 ? pathsList.slice(0, -omitLastCrumbCount) : pathsList;
 
   return (
     <>
@@ -38,15 +34,13 @@ const NavArrows: React.FC<NavArrowsProps> = ({
         separator={<NavigateNext aria-hidden="true" fontSize="small" />}
         sx={(theme: Theme) => {
           const tableChrome = getJobTableChromeColors(theme.palette.mode);
-          const breadcrumbItemSelector = `& .${breadcrumbsClasses.li} > a, & .${breadcrumbsClasses.li} > p, & .${breadcrumbsClasses.li} > .breadcrumb-control`;
+          const breadcrumbItemSelector = `& .${breadcrumbsClasses.li} > a, & .${breadcrumbsClasses.li} > p`;
 
           return {
             display: 'inline-flex',
             width: 'max-content',
             minWidth: 'min-content',
             minHeight: 40,
-            marginTop: theme.spacing(2),
-            marginLeft: theme.spacing(2),
             border: `1px solid ${tableChrome.border}`,
             borderRadius: 0,
             backgroundColor: tableChrome.surface,
@@ -84,7 +78,7 @@ const NavArrows: React.FC<NavArrowsProps> = ({
                 duration: theme.transitions.duration.shortest,
               }),
             },
-            [`& .${breadcrumbsClasses.li} > a, & .${breadcrumbsClasses.li} > button.breadcrumb-control`]: {
+            [`& .${breadcrumbsClasses.li} > a`]: {
               color: tableChrome.accent,
               '&:hover': {
                 backgroundColor: tableChrome.hover,
@@ -105,11 +99,6 @@ const NavArrows: React.FC<NavArrowsProps> = ({
               fontWeight: 700,
               boxShadow: `inset 0 -3px 0 ${tableChrome.accent}`,
             },
-            [`& .${breadcrumbsClasses.li} > .breadcrumb-control`]: {
-              '& .MuiButton-endIcon': {
-                color: tableChrome.accent,
-              },
-            },
             [`& .${breadcrumbsClasses.separator}`]: {
               display: 'flex',
               minWidth: 28,
@@ -129,7 +118,7 @@ const NavArrows: React.FC<NavArrowsProps> = ({
         }}
       >
         {displayPathsList.map((label, index) => {
-          const isLast = index === displayPathsList.length - 1 && !trailingCrumb;
+          const isLast = index === pathsList.length - 1 && !trailingCrumb;
           label = labelOverrides?.[label] ?? labelOverrides?.[label.toLowerCase()] ?? label;
           if (label === 'isis-instruments' || label === 'instruments') {
             label = 'ISIS instruments';
@@ -141,7 +130,7 @@ const NavArrows: React.FC<NavArrowsProps> = ({
             label = 'Experiment viewer';
           }
           if (label === 'live-data') {
-            label = 'Live data';
+            label = 'Live data viewer';
           }
           if (label === 'edit-script') {
             label = 'Edit script';
@@ -171,7 +160,7 @@ const NavArrows: React.FC<NavArrowsProps> = ({
             </MuiLink>
           );
         })}
-        {trailingCrumbs}
+        {trailingCrumb}
       </Breadcrumbs>
     </>
   );

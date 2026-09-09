@@ -12,8 +12,11 @@ import Viewer2D from '../components/experimentViewer/Viewer2D';
 import ViewerTabs from '../components/experimentViewer/ViewerTabs';
 import InstrumentSelector from '../components/jobs/InstrumentSelector';
 import NavArrows from '../components/navigation/NavArrows';
+import PageHeader from '../components/navigation/PageHeader';
+import { getPageHeaderControlSx } from '../components/navigation/pageHeaderStyles';
 import { fiaApi } from '../lib/api';
 import { instruments, isValidInstrument } from '../lib/instrumentData';
+import { REDUCTION_SUPPORTED_INSTRUMENTS } from '../lib/instrumentSupport';
 import { discoverFileStructure, fetchData1D, fetchErrorData, fetchFilePath } from '../lib/plottingServiceAPI';
 import { DatasetInfo, FileConfig, Job, JobQueryFilters, LinePlotData, outputFilter } from '../lib/types';
 import { useAvailablePluginHeight } from '../lib/useAvailablePluginHeight';
@@ -107,7 +110,6 @@ const ExperimentNumberBreadcrumb: React.FC<{
   return (
     <>
       <Button
-        className="breadcrumb-control"
         variant="text"
         aria-haspopup="dialog"
         aria-controls={open ? 'experiment-number-breadcrumb-editor' : undefined}
@@ -117,15 +119,7 @@ const ExperimentNumberBreadcrumb: React.FC<{
         }
         endIcon={<ArrowDropDown />}
         onClick={(event: React.MouseEvent<HTMLButtonElement>) => setAnchorEl(event.currentTarget)}
-        sx={{
-          minWidth: 0,
-          border: 0,
-          borderRadius: 0,
-          boxShadow: 'none',
-          font: 'inherit',
-          textTransform: 'none',
-          '& .MuiButton-endIcon': { ml: 0.75, mr: 0, color: 'inherit' },
-        }}
+        sx={getPageHeaderControlSx}
       >
         <Box component="span">
           {experimentNumber === null ? 'Search experiment number' : `Experiment ${experimentNumber}`}
@@ -817,15 +811,16 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
   const breadcrumbLabelOverrides = selectedRouteInstrumentName
     ? { [instrumentName ?? selectedRouteInstrumentName]: selectedRouteInstrumentName }
     : undefined;
-  const breadcrumbTrailingCrumb = showBreadcrumbFilters
+  const pageControls = showBreadcrumbFilters
     ? [
         <InstrumentSelector
           key="instrument-selector"
           selectedInstrument={searchInstrument || 'ALL'}
           handleInstrumentChange={handleBreadcrumbInstrumentChange}
-          variant="breadcrumb"
+          variant="compact"
           allInstrumentsLabel="Clear filters"
-          breadcrumbLabel="Browse instruments"
+          compactLabel="Browse instruments"
+          support={{ page: 'experiment-viewer', instruments: REDUCTION_SUPPORTED_INSTRUMENTS }}
         />,
         <ExperimentNumberBreadcrumb
           key="experiment-number"
@@ -849,21 +844,15 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
         overflow: 'hidden',
       }}
     >
-      <Box
-        sx={{
-          flexShrink: 0,
-          mb: 2,
-          pr: { xs: 2, sm: 8 },
-          minWidth: 0,
-          overflowX: 'auto',
-        }}
-      >
-        <NavArrows
-          trailingCrumb={breadcrumbTrailingCrumb}
-          replaceLastCrumbCount={breadcrumbRouteCrumbCount}
-          labelOverrides={breadcrumbLabelOverrides}
-        />
-      </Box>
+      <PageHeader
+        breadcrumbs={
+          <NavArrows
+            omitLastCrumbCount={showBreadcrumbFilters ? breadcrumbRouteCrumbCount : 0}
+            labelOverrides={breadcrumbLabelOverrides}
+          />
+        }
+        controls={pageControls}
+      />
       <Box
         sx={{
           display: 'flex',

@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useHistory, useParams } from 'react-router-dom';
 
 import NavArrows from '../components/navigation/NavArrows';
+import PageHeader from '../components/navigation/PageHeader';
 import { fiaApi } from '../lib/api';
 import { isValidInstrument } from '../lib/instrumentData';
 import { MantidVersionMap } from '../lib/types';
@@ -158,9 +159,7 @@ const ValueEditor: React.FC = () => {
         overflow: 'hidden',
       }}
     >
-      <Box sx={{ flexShrink: 0 }}>
-        <NavArrows />
-      </Box>
+      <PageHeader breadcrumbs={<NavArrows />} />
       <Box
         sx={{
           display: 'flex',

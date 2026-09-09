@@ -100,7 +100,7 @@ createRoute(
   'View IMAT image stacks.',
   false
 );
-createRoute('Viewers', 'Live data', '/fia/live-data', 6, 'View live data from instruments in real-time.', false);
+createRoute('Viewers', 'Live data viewer', '/fia/live-data', 6, 'View live data from instruments in real-time.', false);
 
 // Single-SPA bootstrap methods have no idea what type of inputs may be
 // pushed down from the parent app

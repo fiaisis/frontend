@@ -1,4 +1,5 @@
 import '@h5web/lib/styles.css';
+import Edit from '@mui/icons-material/Edit';
 import {
   Alert,
   Box,
@@ -11,24 +12,32 @@ import {
   Paper,
   Typography,
 } from '@mui/material';
+import { alpha, useTheme } from '@mui/material/styles';
 import { jwtDecode } from 'jwt-decode';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Link as RouterLink, useHistory, useParams } from 'react-router-dom';
 
 import Viewer2D from '../components/experimentViewer/Viewer2D';
+import { getJobTableChromeColors, JOB_TABLE_TOOLBAR_CONTROL_HEIGHT } from '../components/jobs/constants';
 import InstrumentSelector from '../components/jobs/InstrumentSelector';
 import NavArrows from '../components/navigation/NavArrows';
-import { instruments as allInstruments } from '../lib/instrumentData';
+import PageHeader from '../components/navigation/PageHeader';
+import { getPageHeaderControlSx } from '../components/navigation/pageHeaderStyles';
+import { LIVE_SUPPORTED_INSTRUMENTS_FALLBACK } from '../lib/instrumentSupport';
 import { fetchLiveDataFiles, fetchLiveDataInstruments } from '../lib/plottingServiceAPI';
 import { outputFilter } from '../lib/types';
 import { useAvailablePluginHeight } from '../lib/useAvailablePluginHeight';
 import { useLiveDataSSE } from '../lib/useLiveDataSSE';
 
 const LiveData: React.FC = (): JSX.Element => {
+  const theme = useTheme();
+  const viewerChrome = getJobTableChromeColors(theme.palette.mode);
+  const connectedColor = theme.palette.mode === 'dark' ? theme.palette.success.light : theme.palette.success.dark;
+
   const { rootRef, availableHeight } = useAvailablePluginHeight();
   const { instrumentName } = useParams<{ instrumentName?: string }>();
   // Instrument selection
-  const [instruments, setInstruments] = useState<string[]>([]);
+  const [instruments, setInstruments] = useState<string[]>([...LIVE_SUPPORTED_INSTRUMENTS_FALLBACK]);
   const [selectedInstrument, setSelectedInstrument] = useState<string | null>(() => instrumentName ?? null);
   const [loadingInstruments, setLoadingInstruments] = useState(true);
 
@@ -60,25 +69,6 @@ const LiveData: React.FC = (): JSX.Element => {
 
   // Build full file path using directory from SSE and selected file
   const selectedFilePath = directory && selectedFile ? `${directory}/${selectedFile}` : null;
-  const liveDataInstrumentOptions = useMemo(() => {
-    const instrumentMetadataByName = new Map(
-      allInstruments.map((instrument) => [instrument.name.toLowerCase(), instrument])
-    );
-
-    return instruments.map((instrument, index) => {
-      return (
-        instrumentMetadataByName.get(instrument.toLowerCase()) ?? {
-          id: -(index + 1),
-          name: instrument,
-          description: '',
-          type: 'Live data',
-          infoPage: '',
-          scientists: [],
-        }
-      );
-    });
-  }, [instruments]);
-
   // Fetch available instruments on mount
   useEffect(() => {
     const loadInstruments = async (): Promise<void> => {
@@ -207,16 +197,7 @@ const LiveData: React.FC = (): JSX.Element => {
     setViewerKey((prev) => prev + 1);
   };
 
-  const breadcrumbTrailingCrumb = [
-    <InstrumentSelector
-      key="instrument"
-      selectedInstrument={selectedInstrument || 'ALL'}
-      handleInstrumentChange={handleInstrumentChange}
-      variant="breadcrumb"
-      instrumentOptions={liveDataInstrumentOptions}
-      showAllInstrumentsOption={false}
-      disabled={loadingInstruments || liveDataInstrumentOptions.length === 0}
-    />,
+  const pageControls = [
     ...(userRole === 'staff' && selectedInstrument
       ? [
           <MuiLink
@@ -224,11 +205,22 @@ const LiveData: React.FC = (): JSX.Element => {
             component={RouterLink}
             underline="hover"
             to={`/live-data/${selectedInstrument}/edit-script`}
+            sx={getPageHeaderControlSx}
           >
-            Click to edit script
+            <Edit fontSize="small" />
+            Edit script
           </MuiLink>,
         ]
       : []),
+    <InstrumentSelector
+      key="instrument"
+      selectedInstrument={selectedInstrument || 'ALL'}
+      handleInstrumentChange={handleInstrumentChange}
+      variant="compact"
+      compactLabel="Browse instruments"
+      allInstrumentsLabel="Clear selection"
+      support={{ page: 'live-data', instruments }}
+    />,
   ];
 
   return (
@@ -244,32 +236,36 @@ const LiveData: React.FC = (): JSX.Element => {
         overflow: 'hidden',
       }}
     >
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 2,
-          flexWrap: { xs: 'wrap', lg: 'nowrap' },
-          flexShrink: 0,
-          mb: 2,
-          pr: { xs: 2, sm: 8 },
-        }}
-      >
-        <Box sx={{ flex: '1 1 auto', minWidth: 0 }}>
-          <NavArrows trailingCrumb={breadcrumbTrailingCrumb} replaceLastCrumb={Boolean(instrumentName)} />
-        </Box>
-        <Chip
-          label={isConnected ? 'Connected' : 'Disconnected'}
-          color={isConnected ? 'success' : 'default'}
-          size="small"
-          variant="outlined"
-          sx={{
-            flex: '0 0 auto',
-            ml: 'auto',
-          }}
-        />
-      </Box>
+      <PageHeader
+        breadcrumbs={
+          <NavArrows
+            labelOverrides={selectedInstrument && instrumentName ? { [instrumentName]: selectedInstrument } : undefined}
+          />
+        }
+        controls={pageControls}
+        separateControls
+        status={
+          selectedInstrument && (
+            <Chip
+              label={isConnected ? 'Connected' : 'Disconnected'}
+              color={isConnected ? 'success' : 'default'}
+              size="small"
+              variant="outlined"
+              role="status"
+              sx={{
+                flex: '0 0 auto',
+                minHeight: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
+                borderRadius: 0,
+                borderColor: isConnected ? alpha(connectedColor, 0.5) : viewerChrome.border,
+                backgroundColor: isConnected ? alpha(connectedColor, 0.08) : viewerChrome.header,
+                color: isConnected ? connectedColor : viewerChrome.text,
+                fontWeight: 500,
+                '& .MuiChip-label': { px: 1.5 },
+              }}
+            />
+          )
+        }
+      />
       <Box sx={{ display: 'flex', flexDirection: 'column', flex: '1 1 auto', minHeight: 0, width: '100%' }}>
         {/* Main content area */}
         <Box sx={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'hidden' }}>

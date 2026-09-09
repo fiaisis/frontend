@@ -1,5 +1,5 @@
-import { Box, ToggleButton, ToggleButtonGroup } from '@mui/material';
-import { alpha } from '@mui/material/styles';
+import { Box, MenuItem, Select } from '@mui/material';
+import { alpha, useTheme } from '@mui/material/styles';
 import { jwtDecode } from 'jwt-decode';
 import React, { ReactElement, useState } from 'react';
 import { useHistory, useLocation, useParams } from 'react-router-dom';
@@ -8,6 +8,7 @@ import IMATViewer from './IMATViewer';
 import InstrumentConfigDrawer from '../components/configsettings/InstrumentConfigDrawer';
 import {
   getJobTableChromeColors,
+  JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
   JOB_ROWS_PER_PAGE_OPTIONS,
   JobRowsPerPage,
   isJobRowsPerPage,
@@ -16,7 +17,9 @@ import FilterContainer from '../components/jobs/Filters';
 import InstrumentSelector from '../components/jobs/InstrumentSelector';
 import JobTable from '../components/jobs/JobTable';
 import NavArrows from '../components/navigation/NavArrows';
+import PageHeader from '../components/navigation/PageHeader';
 import { instruments, isValidInstrument } from '../lib/instrumentData';
+import { REDUCTION_SUPPORTED_INSTRUMENTS } from '../lib/instrumentSupport';
 import { JobQueryFilters } from '../lib/types';
 import { useAvailablePluginHeight } from '../lib/useAvailablePluginHeight';
 
@@ -77,80 +80,81 @@ const clearJobTableQueryParams = (params: URLSearchParams): void => {
 const getCanonicalInstrumentName = (name: string | undefined): string | undefined =>
   instruments.find((instrument) => instrument.name.toUpperCase() === name?.toUpperCase())?.name;
 
-const ImatViewButtons: React.FC<{
+const ImatViewSelect: React.FC<{
   value: ImatViewValue;
   onChange: (value: ImatViewValue) => void;
 }> = ({ value, onChange }) => {
-  const handleChange = (_event: React.MouseEvent<HTMLElement>, nextValue: ImatViewValue | null): void => {
-    if (nextValue !== null && nextValue !== value) {
-      onChange(nextValue);
-    }
-  };
+  const theme = useTheme();
+  const chrome = getJobTableChromeColors(theme.palette.mode);
 
   return (
-    <Box
-      className="breadcrumb-control"
+    <Select
+      value={value}
+      onChange={(event) => {
+        const nextValue = Number(event.target.value) as ImatViewValue;
+        if (nextValue !== value) onChange(nextValue);
+      }}
+      size="small"
+      SelectDisplayProps={{ 'aria-label': 'IMAT view', 'aria-current': 'page' }}
       sx={{
-        gap: 0.5,
-        alignItems: 'center',
-        boxSizing: 'border-box',
-        height: 40,
+        minWidth: 184,
+        height: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
+        borderRadius: 0,
+        backgroundColor: chrome.header,
+        color: chrome.text,
+        boxShadow: `inset 0 -3px 0 ${chrome.accent}`,
+        fontSize: '0.875rem',
+        fontWeight: 700,
+        '& .MuiOutlinedInput-notchedOutline': { border: 0 },
+        '& .MuiSelect-select': {
+          display: 'flex',
+          alignItems: 'center',
+          boxSizing: 'border-box',
+          height: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
+          py: 0,
+          pl: 1.5,
+          '&:focus': {
+            backgroundColor: chrome.hover,
+            outline: `2px solid ${chrome.accent}`,
+            outlineOffset: -2,
+          },
+        },
+        '&:hover': { backgroundColor: chrome.hover },
+        '& .MuiSelect-icon': { color: chrome.accent },
+      }}
+      MenuProps={{
+        MenuListProps: { 'aria-label': 'IMAT views' },
+        PaperProps: {
+          sx: {
+            borderRadius: 0,
+            border: `1px solid ${chrome.border}`,
+            backgroundColor: chrome.surface,
+            backgroundImage: 'none',
+            color: chrome.text,
+            boxShadow: 'none',
+            '& .MuiMenuItem-root': {
+              minHeight: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
+              fontSize: '0.875rem',
+              '&:hover, &.Mui-focusVisible': { backgroundColor: chrome.hover },
+              '&.Mui-selected': {
+                color: chrome.accent,
+                backgroundColor: alpha(chrome.accent, 0.12),
+              },
+              '&.Mui-selected:hover, &.Mui-selected.Mui-focusVisible': {
+                backgroundColor: alpha(chrome.accent, 0.18),
+              },
+              '&:focus-visible': { outline: `2px solid ${chrome.accent}`, outlineOffset: -2 },
+            },
+          },
+        },
       }}
     >
-      <ToggleButtonGroup
-        exclusive
-        size="small"
-        value={value}
-        onChange={handleChange}
-        aria-label="IMAT view"
-        sx={(theme) => {
-          const tableChrome = getJobTableChromeColors(theme.palette.mode);
-
-          return {
-            gap: 0.5,
-            '& .MuiToggleButtonGroup-grouped': {
-              border: 0,
-              margin: 0,
-            },
-            '& .MuiToggleButton-root': {
-              minWidth: 0,
-              border: 0,
-              borderRadius: '0 !important',
-              px: 1,
-              py: 0.25,
-              color: tableChrome.text,
-              font: 'inherit',
-              lineHeight: '24px',
-              textTransform: 'none',
-              whiteSpace: 'nowrap',
-              '&:hover': {
-                backgroundColor: tableChrome.hover,
-                color: tableChrome.accent,
-              },
-              '&:focus-visible': {
-                outline: `2px solid ${tableChrome.accent}`,
-                outlineOffset: -2,
-              },
-              '&.Mui-selected': {
-                color: tableChrome.accent,
-                backgroundColor: alpha(tableChrome.accent, 0.12),
-                boxShadow: `inset 0 -2px 0 ${tableChrome.accent}`,
-                fontWeight: 700,
-              },
-              '&.Mui-selected:hover': {
-                backgroundColor: alpha(tableChrome.accent, 0.18),
-              },
-            },
-          };
-        }}
-      >
-        {IMAT_VIEW_OPTIONS.map((option) => (
-          <ToggleButton key={option.value} value={option.value} aria-label={option.label}>
-            {option.label}
-          </ToggleButton>
-        ))}
-      </ToggleButtonGroup>
-    </Box>
+      {IMAT_VIEW_OPTIONS.map((option) => (
+        <MenuItem key={option.value} value={option.value}>
+          {option.label}
+        </MenuItem>
+      ))}
+    </Select>
   );
 };
 
@@ -495,16 +499,16 @@ const Jobs: React.FC = (): ReactElement => {
     });
   }, [history, location.pathname, location.search, location.state]);
 
-  const breadcrumbTrailingCrumbs = [
+  const pageControls = [
     <InstrumentSelector
       key="instrument"
       selectedInstrument={selectedInstrument}
       handleInstrumentChange={handleInstrumentChange}
-      variant="breadcrumb"
+      variant="compact"
       allInstrumentsLabel="Clear filters"
-      breadcrumbLabel="Browse instruments"
+      compactLabel="Browse instruments"
+      support={{ page: 'reduction-history', instruments: REDUCTION_SUPPORTED_INSTRUMENTS }}
     />,
-    ...(isImat ? [<ImatViewButtons key="imat-view" value={imatView} onChange={handleImatViewChange} />] : []),
   ];
 
   return (
@@ -521,22 +525,17 @@ const Jobs: React.FC = (): ReactElement => {
         position: 'relative',
       }}
     >
-      <Box
+      <PageHeader
         data-testid="reduction-history-page-header"
-        sx={{
-          flexShrink: 0,
-          minWidth: 0,
-          overflowX: 'auto',
-          pr: { xs: 2, sm: 3 },
-          pb: 1,
-        }}
-      >
-        <NavArrows
-          trailingCrumb={breadcrumbTrailingCrumbs}
-          replaceLastCrumbCount={isImat && imatView !== 0 ? 1 : undefined}
-          labelOverrides={breadcrumbLabelOverrides}
-        />
-      </Box>
+        breadcrumbs={
+          <NavArrows
+            omitLastCrumbCount={isImat && imatView !== 0 ? 1 : 0}
+            labelOverrides={breadcrumbLabelOverrides}
+            trailingCrumb={isImat ? <ImatViewSelect value={imatView} onChange={handleImatViewChange} /> : undefined}
+          />
+        }
+        controls={pageControls}
+      />
       <FilterContainer
         showInstrumentFilter={selectedInstrument === 'ALL'}
         visible={filtersOpen}

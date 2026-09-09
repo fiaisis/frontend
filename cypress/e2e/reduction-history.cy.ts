@@ -1,4 +1,8 @@
-import { JOB_ROWS_PER_PAGE_OPTIONS, JOB_TABLE_MIN_WIDTH } from '../../src/components/jobs/constants';
+import {
+  JOB_ROWS_PER_PAGE_OPTIONS,
+  JOB_TABLE_MIN_WIDTH,
+  JOB_TABLE_SCROLLBAR_WIDTH,
+} from '../../src/components/jobs/constants';
 
 const baseJob = {
   start: '2025-01-01T10:00:00Z',
@@ -165,11 +169,11 @@ describe('Reduction history page', () => {
     cy.get('[data-testid="reduction-history-page-header"]').find('[aria-label="breadcrumb"]').should('be.visible');
     cy.contains('All instruments reduction').should('be.visible');
 
-    cy.get('[aria-label="breadcrumb"]').within(() => {
+    cy.get('[role="group"][aria-label="Page controls"]').within(() => {
       cy.get('#instrument-selector-button').should('contain', 'Browse instruments').click();
     });
     cy.contains('[role="menuitem"]', 'View all reductions').should('not.exist');
-    cy.contains('button', 'Small-angle neutron scattering').click();
+    cy.get('input[aria-label="Search for instrument"]').type('LOQ');
     cy.contains('[role="menuitem"]', 'LOQ').click();
 
     cy.wait('@getLoqCount');
@@ -177,7 +181,9 @@ describe('Reduction history page', () => {
 
     cy.location('pathname').should('eq', '/fia/reduction-history/LOQ');
     cy.get('[aria-label="breadcrumb"]').within(() => {
-      cy.contains('a', 'LOQ').should('be.visible');
+      cy.contains('[aria-current="page"]', 'LOQ').should('be.visible');
+    });
+    cy.get('[role="group"][aria-label="Page controls"]').within(() => {
       cy.get('#instrument-selector-button').should('contain', 'Browse instruments').and('not.contain', 'LOQ');
     });
     cy.get('[data-testid="reduction-history-page-header"]').find('[aria-label="breadcrumb"]').should('be.visible');
@@ -349,7 +355,8 @@ describe('Reduction history page', () => {
     });
 
     cy.get(`${tableContainerSelector} table`).should(($table) => {
-      expect($table[0].getBoundingClientRect().width).to.be.at.least(JOB_TABLE_MIN_WIDTH);
+      // The table's scrollable frame also reserves space for the vertical scrollbar.
+      expect($table[0].getBoundingClientRect().width).to.be.at.least(JOB_TABLE_MIN_WIDTH - JOB_TABLE_SCROLLBAR_WIDTH);
     });
 
     cy.get(tableContainerSelector).scrollTo('left');
@@ -358,7 +365,12 @@ describe('Reduction history page', () => {
     });
   });
 
-  it('shows the IMAT image view breadcrumb buttons with one active option', () => {
+  it('switches IMAT views with a breadcrumb dropdown on desktop and mobile', () => {
+    cy.viewport(1280, 720);
+    cy.intercept('GET', '**/plottingapi/imat/latest-image', {
+      statusCode: 500,
+      body: 'No image in this navigation test',
+    });
     cy.intercept('GET', /\/api\/instrument\/IMAT\/jobs\/count\?.*$/, (req) => {
       expect(req.headers.authorization).to.match(/^Bearer(?: .+)?$/);
       req.reply({
@@ -382,14 +394,49 @@ describe('Reduction history page', () => {
     cy.wait('@getImatJobs');
 
     cy.get('[aria-label="breadcrumb"]').within(() => {
-      cy.contains('a', 'IMAT').should('be.visible');
-      cy.get('#instrument-selector-button').should('contain', 'Browse instruments');
-      cy.get('[role="group"][aria-label="IMAT view"]').within(() => {
-        cy.contains('button', 'Reduction history').should('have.attr', 'aria-pressed', 'true');
-        cy.contains('button', 'Latest image').should('have.attr', 'aria-pressed', 'false');
-        cy.contains('button', 'Stack viewer').should('have.attr', 'aria-pressed', 'false');
-      });
+      cy.contains('a', 'IMAT').should('have.attr', 'href', '/fia/reduction-history/IMAT');
+      cy.get('[role="combobox"][aria-label="IMAT view"]')
+        .should('contain', 'Reduction history')
+        .and('have.attr', 'aria-current', 'page');
     });
+    cy.get('[role="group"][aria-label="Page controls"]').within(() => {
+      cy.get('#instrument-selector-button').should('contain', 'Browse instruments');
+      cy.get('[aria-label="IMAT view"]').should('not.exist');
+    });
+
+    const viewSelect = '[role="combobox"][aria-label="IMAT view"]';
+    cy.screenshot('imat-header-desktop', { capture: 'viewport' });
+    cy.get(viewSelect).click();
+    cy.get('[role="option"]').should('have.length', 3);
+    cy.contains('[role="option"]', 'Reduction history').should('have.attr', 'aria-selected', 'true');
+    cy.screenshot('imat-view-menu-desktop', { capture: 'viewport' });
+    cy.contains('[role="option"]', 'Stack viewer').click();
+    cy.location('pathname').should('eq', '/fia/reduction-history/IMAT/stack-viewer');
+    cy.get(viewSelect).should('contain', 'Stack viewer').click();
+    cy.contains('[role="option"]', 'Latest image').click();
+    cy.location('pathname').should('eq', '/fia/reduction-history/IMAT/latest-image');
+    cy.get(viewSelect).should('contain', 'Latest image').click();
+    cy.contains('[role="option"]', 'Reduction history').click();
+    cy.location('pathname').should('eq', '/fia/reduction-history/IMAT');
+
+    cy.viewport(375, 812);
+    cy.get('[role="group"][aria-label="Page controls"]').should(($controls) => {
+      const controls = $controls[0];
+      const breadcrumb = controls.ownerDocument.querySelector('[aria-label="breadcrumb"]')!;
+      expect(controls.getBoundingClientRect().top).to.be.greaterThan(breadcrumb.getBoundingClientRect().bottom);
+      expect(controls.getBoundingClientRect().right).to.be.at.most(375);
+    });
+    cy.get(viewSelect).scrollIntoView();
+    cy.get(viewSelect).focus();
+    cy.get(viewSelect).should('have.focus').trigger('keydown', { key: 'ArrowDown' });
+    cy.get('[role="listbox"]').should('be.visible');
+    cy.get('[role="option"]').each(($option) => {
+      expect($option[0].getBoundingClientRect().right).to.be.at.most(375);
+      cy.wrap($option).should('be.visible');
+    });
+    cy.screenshot('imat-view-menu-mobile', { capture: 'viewport' });
+    cy.get('[role="listbox"]').trigger('keydown', { key: 'Escape' });
+    cy.get(viewSelect).should('have.focus');
   });
 
   it('selects different IMAT stacks from the job tree', () => {

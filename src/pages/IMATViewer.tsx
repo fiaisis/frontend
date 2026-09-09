@@ -19,6 +19,7 @@ import { useHistory, useLocation } from 'react-router-dom';
 
 import ImatStackJobTree from '../components/imat/ImatStackJobTree';
 import NavArrows from '../components/navigation/NavArrows';
+import PageHeader from '../components/navigation/PageHeader';
 import { fiaApi, h5Api } from '../lib/api';
 import { parseJobOutputs } from '../lib/hooks';
 
@@ -553,7 +554,7 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
 
   return (
     <>
-      {showNav && <NavArrows />}
+      {showNav && <PageHeader breadcrumbs={<NavArrows />} />}
       <Box
         sx={{
           px: '20px',

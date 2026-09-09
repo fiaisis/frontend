@@ -43,7 +43,7 @@ vi.mock('./pages/ExperimentViewer', () => ({
 }));
 
 vi.mock('./pages/LiveData', () => ({
-  default: () => <h1>Live data</h1>,
+  default: () => <h1>Live data viewer</h1>,
 }));
 
 vi.mock('./pages/LiveValueEditor', () => ({
@@ -142,6 +142,15 @@ describe('App', () => {
     expect(await screen.findByRole('heading', { name: 'ISIS instruments' })).toBeInTheDocument();
     expect(window.location.pathname).toBe('/fia/isis-instruments');
   });
+
+  test.each(['LOQ', 'small-angle-neutron-scattering'])(
+    'redirects the retired instruments subroute %s to the single instruments page',
+    async (segment) => {
+      renderAt(`/fia/isis-instruments/${segment}`);
+      expect(await screen.findByRole('heading', { name: 'ISIS instruments' })).toBeInTheDocument();
+      expect(window.location.pathname).toBe('/fia/isis-instruments');
+    }
+  );
 
   test('redirects unmatched FIA routes back to the homepage', async () => {
     renderAt('/fia/not-a-real-route');
