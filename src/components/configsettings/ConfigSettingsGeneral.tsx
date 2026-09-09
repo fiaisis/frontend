@@ -1,11 +1,12 @@
 import MonacoEditor from '@monaco-editor/react';
 import { Info } from '@mui/icons-material';
-import { Box, Button, IconButton, Tab, Tabs, Tooltip, Typography, useTheme } from '@mui/material';
-import Grid from '@mui/material/Grid2';
+import { Box, Button, IconButton, Tab, Tabs, TextField, Tooltip, Typography, useTheme } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
 import { fiaApi } from '../../lib/api';
+import { getJobTableChromeColors, JOB_TABLE_TOOLBAR_CONTROL_HEIGHT } from '../jobs/constants';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -15,7 +16,7 @@ interface TabPanelProps {
 const TabPanel: React.FC<TabPanelProps> = ({ children, value, index, ...other }): JSX.Element => {
   return (
     <div role="tabpanel" hidden={value !== index} id={`tabpanel-${index}`} aria-labelledby={`tab-${index}`} {...other}>
-      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
+      {value === index && <Box sx={{ p: 1.5 }}>{children}</Box>}
     </div>
   );
 };
@@ -30,6 +31,7 @@ interface ConfigSettingsGeneralProps {
 }
 const ConfigSettingsGeneral: React.FC<ConfigSettingsGeneralProps> = ({ children, onFileUpload }) => {
   const theme = useTheme();
+  const configChrome = getJobTableChromeColors(theme.palette.mode);
   const { instrumentName } = useParams<{ instrumentName: string }>();
   const [reductionStatus, setReductionStatus] = useState<'ON' | 'OFF'>('ON');
   const [jsonContent, setJsonContent] = useState<string>('{}');
@@ -38,6 +40,8 @@ const ConfigSettingsGeneral: React.FC<ConfigSettingsGeneralProps> = ({ children,
   const [tabValue, setTabValue] = useState(0);
   const [unsavedChanges, setUnsavedChanges] = useState(false); // State for tracking changes
   const [applyMessage, setApplyMessage] = useState<string>(''); // State for applying status messages
+  const statusPalette = reductionStatus === 'ON' ? theme.palette.success : theme.palette.error;
+  const statusColor = theme.palette.mode === 'dark' ? statusPalette.light : statusPalette.dark;
   // Fetch the current specification and set the reduction status
   useEffect(() => {
     const fetchSpecification = async (): Promise<void> => {
@@ -126,26 +130,47 @@ const ConfigSettingsGeneral: React.FC<ConfigSettingsGeneralProps> = ({ children,
       });
   };
   return (
-    <Box sx={{ width: '100%', height: '85vh', color: theme.palette.text.primary, overflowY: 'auto' }}>
-      <Box sx={{ m: 2, backgroundColor: theme.palette.background.default }}>
-        {/* Title */}
-        <Typography variant="h4" gutterBottom>
-          {instrumentName} config settings
-        </Typography>
+    <Box
+      sx={{ width: '100%', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', color: configChrome.text }}
+    >
+      <Box
+        sx={{
+          flex: 1,
+          minHeight: 0,
+          overflowY: 'auto',
+          p: { xs: 1.5, sm: 2 },
+          scrollbarWidth: 'thin',
+          scrollbarColor: `${configChrome.border} ${configChrome.header}`,
+        }}
+      >
         {/* Reduction status */}
-        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', mb: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-            <Typography variant="body1" sx={{ lineHeight: '1.5', mr: 1 }}>
+        <Box sx={{ border: `1px solid ${configChrome.border}` }}>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              p: 1.5,
+              backgroundColor: configChrome.header,
+              borderBottom: children ? `1px solid ${configChrome.border}` : 0,
+            }}
+          >
+            <Typography variant="body2" sx={{ flex: 1, fontWeight: 700 }}>
               Reduction status:
             </Typography>
             <Button
-              variant="contained"
+              variant="outlined"
+              aria-label="Enable reductions"
+              aria-pressed={enabledStatus}
               onClick={toggleEnabledStatus}
               sx={{
-                backgroundColor: reductionStatus === 'ON' ? 'green' : theme.palette.error.main,
-                color: 'white',
+                minWidth: 64,
+                borderColor: alpha(statusColor, 0.5),
+                backgroundColor: alpha(statusColor, 0.08),
+                color: statusColor,
                 '&:hover': {
-                  backgroundColor: reductionStatus === 'ON' ? 'darkgreen' : theme.palette.error.dark,
+                  borderColor: statusColor,
+                  backgroundColor: alpha(statusColor, 0.16),
                 },
               }}
             >
@@ -153,138 +178,190 @@ const ConfigSettingsGeneral: React.FC<ConfigSettingsGeneralProps> = ({ children,
             </Button>
             {/* Tooltip */}
             <Tooltip title="Click to toggle the reduction process on or off">
-              <IconButton sx={{ ml: 1 }}>
-                <Info sx={{ color: theme.palette.text.secondary }} />
+              <IconButton aria-label="About reduction status" size="small">
+                <Info fontSize="small" />
               </IconButton>
             </Tooltip>
           </Box>
           {/* Allow children to be passed for features specific to certain instruments */}
-          {children}
+          {children && <Box sx={{ p: 1.5 }}>{children}</Box>}
         </Box>
-      </Box>
-      {/* Specification editor subheading */}
-      <Typography variant="h6" gutterBottom sx={{ ml: 2, mt: 4 }}>
-        Specification editor
-      </Typography>
-      {/* Divider line */}
-      <Box
-        sx={{
-          borderTop: 3,
-          borderColor: 'divider',
-        }}
-      />
-      {/* Tabs */}
-      <Box>
-        <Tabs
-          value={tabValue}
-          onChange={handleTabChange}
-          aria-label="Config Settings Tabs"
-          sx={{
-            '& .MuiTab-root': {
-              color: theme.palette.mode === 'dark' ? theme.palette.common.white : undefined,
-              '&.Mui-selected': {
-                color: theme.palette.mode === 'dark' ? theme.palette.common.white : undefined,
-                backgroundColor: theme.palette.mode === 'dark' ? theme.palette.grey[800] : undefined,
-              },
-            },
-          }}
-        >
-          <Tab label="Simple" {...a11yProps(0)} />
-          <Tab label="Advanced" {...a11yProps(1)} />
-        </Tabs>
-      </Box>
-      {/* Simple panel */}
-      <TabPanel value={tabValue} index={0}>
-        <Grid container direction="column" spacing={2}>
-          {/* Dynamically generated form fields */}
-          {Object.entries(formFields).map(([key, value]) => {
-            if (typeof value === 'object' && value !== null) {
-              return (
-                <Grid key={key}>
-                  <Typography variant="subtitle1" sx={{ mt: 2 }}>
-                    {key}
-                  </Typography>
-                  <Box sx={{ pl: 2 }}>
-                    {Object.entries(value).map(([subKey, subValue]) => (
-                      <Box key={subKey} sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                        <Typography variant="body2" sx={{ width: '120px' }}>
-                          {subKey}:
-                        </Typography>
-                        <input
-                          value={subValue}
-                          onChange={(e) => {
-                            const updatedNested = {
-                              ...((formFields[key] as Record<string, string>) ?? {}),
-                              [subKey]: e.target.value,
-                            };
-                            handleFormInputChange(key, updatedNested);
-                          }}
-                          style={{ height: '20px', width: '160px' }}
-                        />
+        {/* Specification editor subheading */}
+        <Box sx={{ mt: 1.5, border: `1px solid ${configChrome.border}` }}>
+          <Typography
+            variant="body2"
+            component="h3"
+            sx={{
+              px: 1.5,
+              py: 1,
+              fontWeight: 700,
+              backgroundColor: configChrome.header,
+              borderBottom: `1px solid ${configChrome.border}`,
+            }}
+          >
+            Specification editor
+          </Typography>
+          {/* Tabs */}
+          <Box>
+            <Tabs
+              value={tabValue}
+              onChange={handleTabChange}
+              aria-label="Config Settings Tabs"
+              sx={{
+                minHeight: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
+                borderBottom: `1px solid ${configChrome.border}`,
+                '& .MuiTabs-indicator': { backgroundColor: configChrome.accent },
+                '& .MuiTab-root': {
+                  minHeight: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
+                  py: 0.75,
+                  px: 2,
+                  borderRight: `1px solid ${configChrome.border}`,
+                  color: configChrome.text,
+                  textTransform: 'none',
+                  '&:hover': { backgroundColor: configChrome.hover },
+                  '&:focus-visible': { outline: `2px solid ${configChrome.accent}`, outlineOffset: -2 },
+                  '&.Mui-selected': {
+                    color: configChrome.accent,
+                    backgroundColor: alpha(configChrome.accent, 0.12),
+                    fontWeight: 700,
+                  },
+                },
+              }}
+            >
+              <Tab label="Simple" {...a11yProps(0)} />
+              <Tab label="Advanced" {...a11yProps(1)} />
+            </Tabs>
+          </Box>
+          {/* Simple panel */}
+          <TabPanel value={tabValue} index={0}>
+            <Box sx={{ display: 'grid', gap: 1.5 }}>
+              {/* Dynamically generated form fields */}
+              {Object.entries(formFields).map(([key, value]) => {
+                if (typeof value === 'object' && value !== null) {
+                  return (
+                    <Box key={key} sx={{ minWidth: 0, border: `1px solid ${configChrome.border}` }}>
+                      <Typography
+                        variant="body2"
+                        component="h4"
+                        sx={{
+                          px: 1.5,
+                          py: 1,
+                          fontWeight: 700,
+                          overflowWrap: 'anywhere',
+                          backgroundColor: configChrome.header,
+                          borderBottom: `1px solid ${configChrome.border}`,
+                        }}
+                      >
+                        {key}
+                      </Typography>
+                      <Box sx={{ display: 'grid', gap: 1.5, p: 1.5 }}>
+                        {Object.entries(value).map(([subKey, subValue]) => (
+                          <TextField
+                            key={subKey}
+                            fullWidth
+                            size="small"
+                            label={subKey}
+                            inputProps={{ 'aria-label': `${key}: ${subKey}` }}
+                            value={subValue}
+                            onChange={(e) => {
+                              const updatedNested = {
+                                ...((formFields[key] as Record<string, string>) ?? {}),
+                                [subKey]: e.target.value,
+                              };
+                              handleFormInputChange(key, updatedNested);
+                            }}
+                          />
+                        ))}
                       </Box>
-                    ))}
-                  </Box>
-                </Grid>
-              );
-            } else {
-              return (
-                <Grid key={key}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                    <Typography variant="body1" sx={{ width: '150px' }}>
-                      {key}:
-                    </Typography>
-                    <input
+                    </Box>
+                  );
+                } else {
+                  return (
+                    <TextField
+                      key={key}
+                      fullWidth
+                      size="small"
+                      label={key}
                       value={value}
                       onChange={(e) => handleFormInputChange(key, e.target.value)}
-                      style={{ height: '20px', width: '160px' }}
                     />
-                  </Box>
-                </Grid>
-              );
-            }
-          })}
-        </Grid>
-      </TabPanel>
-      {/* Advanced panel */}
-      <TabPanel value={tabValue} index={1}>
-        <Box sx={{ height: '30vh' }}>
-          <MonacoEditor
-            height="100%"
-            defaultLanguage="json"
-            value={jsonContent}
-            theme={theme.palette.mode === 'dark' ? 'vs-dark' : 'vs-light'}
-            onChange={handleEditorChange}
-            options={{
-              wordWrap: 'on',
-              minimap: { enabled: false },
-            }}
-          />
+                  );
+                }
+              })}
+            </Box>
+          </TabPanel>
+          {/* Advanced panel */}
+          <TabPanel value={tabValue} index={1}>
+            <Box sx={{ height: '30vh', minHeight: 240, border: `1px solid ${configChrome.border}` }}>
+              <MonacoEditor
+                height="100%"
+                defaultLanguage="json"
+                value={jsonContent}
+                theme={theme.palette.mode === 'dark' ? 'vs-dark' : 'vs-light'}
+                onChange={handleEditorChange}
+                options={{
+                  wordWrap: 'on',
+                  minimap: { enabled: false },
+                }}
+              />
+            </Box>
+          </TabPanel>
         </Box>
-      </TabPanel>
-      {/* Apply settings button */}
-      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3, mb: 3 }}>
-        <Button variant="contained" onClick={handleApplySettings}>
-          Apply settings
-        </Button>
       </Box>
-      {/* Display unsaved changes message */}
-      {unsavedChanges && (
-        <Typography
-          variant="body2"
-          sx={{ textAlign: 'center', fontStyle: 'italic', color: theme.palette.warning.main }}
-        >
-          You have changes which haven&apos;t been applied yet
-        </Typography>
-      )}
-      {/* Display apply status message if no unsaved changes */}
-      {!unsavedChanges && applyMessage && (
-        <Typography
-          variant="body2"
-          sx={{ textAlign: 'center', fontStyle: 'italic', color: theme.palette.success.main }}
-        >
-          {applyMessage}
-        </Typography>
-      )}
+      {/* Apply settings button */}
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          flexShrink: 0,
+          borderTop: `1px solid ${configChrome.border}`,
+          backgroundColor: configChrome.surface,
+        }}
+      >
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <Button
+            variant="text"
+            onClick={handleApplySettings}
+            sx={{
+              px: 2,
+              borderLeft: `1px solid ${configChrome.border}`,
+              color: configChrome.accent,
+              '&:hover': { backgroundColor: configChrome.hover },
+            }}
+          >
+            Apply settings
+          </Button>
+        </Box>
+        {/* Display unsaved changes message */}
+        {unsavedChanges && (
+          <Typography
+            variant="body2"
+            sx={{
+              p: 1.5,
+              borderTop: `1px solid ${configChrome.border}`,
+              backgroundColor: configChrome.header,
+              color: theme.palette.mode === 'dark' ? theme.palette.warning.light : theme.palette.warning.dark,
+            }}
+          >
+            You have changes which haven&apos;t been applied yet
+          </Typography>
+        )}
+        {/* Display apply status message if no unsaved changes */}
+        {!unsavedChanges && applyMessage && (
+          <Typography
+            variant="body2"
+            role="status"
+            sx={{
+              p: 1.5,
+              borderTop: `1px solid ${configChrome.border}`,
+              backgroundColor: configChrome.header,
+              color: configChrome.text,
+            }}
+          >
+            {applyMessage}
+          </Typography>
+        )}
+      </Box>
     </Box>
   );
 };

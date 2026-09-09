@@ -1,5 +1,6 @@
+import Close from '@mui/icons-material/Close';
 import Settings from '@mui/icons-material/Settings';
-import { Button, Drawer, useTheme } from '@mui/material';
+import { Box, Button, Drawer, IconButton, Typography, useTheme } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import React from 'react';
 
@@ -10,6 +11,7 @@ import ConfigSettingsLOQ from './ConfigSettingsLOQ';
 import ConfigSettingsOSIRIS from './ConfigSettingsOSIRIS';
 import ConfigSettingsSANS2D from './ConfigSettingsSANS2D';
 import ConfigSettingsVESUVIO from './ConfigSettingsVESUVIO';
+import { getJobTableChromeColors, JOB_TABLE_TOOLBAR_CONTROL_HEIGHT } from '../jobs/constants';
 
 const CONFIG_DRAWER_WIDTH = 600;
 const CONFIG_DRAWER_EDGE_OFFSET = 32;
@@ -23,6 +25,7 @@ const InstrumentConfigDrawer: React.FC<{
   buttonPlacement?: 'page' | 'toolbar';
 }> = ({ selectedInstrument, drawerOpen, setDrawerOpen, disabled = false, buttonPlacement = 'page' }) => {
   const theme = useTheme();
+  const configChrome = getJobTableChromeColors(theme.palette.mode);
   const buttonDisabled = disabled && !drawerOpen;
   const isToolbarButton = buttonPlacement === 'toolbar';
 
@@ -30,8 +33,7 @@ const InstrumentConfigDrawer: React.FC<{
     <>
       <Button
         type="button"
-        variant={isToolbarButton ? 'outlined' : 'contained'}
-        color={isToolbarButton ? 'inherit' : 'primary'}
+        variant={isToolbarButton ? 'text' : 'outlined'}
         aria-label={drawerOpen ? 'Close instrument config' : 'Open instrument config'}
         aria-controls="instrument-config-drawer"
         aria-expanded={drawerOpen}
@@ -40,37 +42,27 @@ const InstrumentConfigDrawer: React.FC<{
         startIcon={<Settings fontSize="small" />}
         sx={{
           minWidth: 0,
-          height: isToolbarButton ? 32 : 40,
+          height: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
           boxSizing: 'border-box',
           mt: isToolbarButton ? 0 : 2,
           px: isToolbarButton ? 1.5 : 2,
-          borderRadius: 1,
+          borderRadius: 0,
           flexShrink: 0,
-          borderColor: isToolbarButton ? 'currentColor' : undefined,
-          boxShadow: isToolbarButton ? 'none' : theme.shadows[4],
+          borderColor: configChrome.border,
+          color: isToolbarButton ? configChrome.text : configChrome.accent,
+          boxShadow: 'none',
           textTransform: 'none',
           whiteSpace: 'nowrap',
-          transition: theme.transitions.create(['box-shadow', 'background-color'], {
-            duration: theme.transitions.duration.enteringScreen,
-            easing: theme.transitions.easing.easeOut,
-          }),
           '&:hover': {
-            borderColor: isToolbarButton ? 'currentColor' : undefined,
-            backgroundColor: isToolbarButton ? theme.palette.action.hover : undefined,
-            boxShadow: isToolbarButton ? 'none' : theme.shadows[6],
+            borderColor: configChrome.accent,
+            backgroundColor: configChrome.hover,
+            boxShadow: 'none',
           },
+          '&:focus-visible': { outline: `2px solid ${configChrome.accent}`, outlineOffset: -2 },
           '&.Mui-disabled': {
-            color: isToolbarButton ? theme.palette.action.disabled : theme.palette.text.secondary,
-            borderColor: isToolbarButton ? theme.palette.action.disabled : undefined,
-            backgroundColor: isToolbarButton
-              ? 'transparent'
-              : theme.palette.mode === 'dark'
-                ? theme.palette.grey[800]
-                : theme.palette.grey[300],
-            boxShadow: isToolbarButton
-              ? 'none'
-              : `${theme.shadows[1]}, 0 0 0 1px ${alpha(theme.palette.text.primary, 0.12)}`,
-            opacity: 1,
+            color: alpha(configChrome.text, 0.42),
+            borderColor: configChrome.border,
+            boxShadow: 'none',
           },
         }}
       >
@@ -80,17 +72,86 @@ const InstrumentConfigDrawer: React.FC<{
         anchor={'right'}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        PaperProps={{ id: 'instrument-config-drawer' }}
+        PaperProps={{
+          id: 'instrument-config-drawer',
+          role: 'dialog',
+          'aria-modal': true,
+          'aria-labelledby': 'instrument-config-title',
+        }}
         sx={{
           '& .MuiDrawer-paper': {
             width: { xs: CONFIG_DRAWER_MAX_WIDTH, sm: `${CONFIG_DRAWER_WIDTH}px` },
             maxWidth: CONFIG_DRAWER_MAX_WIDTH,
             boxSizing: 'border-box',
-            padding: '16px',
-            backgroundColor: theme.palette.background.default,
+            borderRadius: 0,
+            borderLeft: `1px solid ${configChrome.border}`,
+            backgroundColor: configChrome.surface,
+            backgroundImage: 'none',
+            color: configChrome.text,
+            overflow: 'hidden',
+            '& .MuiButton-root': {
+              minHeight: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
+              borderRadius: 0,
+              boxShadow: 'none',
+              textTransform: 'none',
+              '&:hover': { boxShadow: 'none' },
+              '&:focus-visible': { outline: `2px solid ${configChrome.accent}`, outlineOffset: -2 },
+              '&.Mui-disabled': { color: alpha(configChrome.text, 0.42), borderColor: configChrome.border },
+            },
+            '& .MuiIconButton-root': {
+              borderRadius: 0,
+              color: configChrome.accent,
+              '&:hover': { backgroundColor: configChrome.hover },
+              '&:focus-visible': { outline: `2px solid ${configChrome.accent}`, outlineOffset: -2 },
+            },
+            '& .MuiOutlinedInput-root': {
+              minHeight: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
+              borderRadius: 0,
+              fontSize: '0.875rem',
+              backgroundColor: configChrome.surface,
+              color: configChrome.text,
+              '&:not(.Mui-error) fieldset': { borderColor: configChrome.border },
+              '&:not(.Mui-error):hover fieldset, &.Mui-focused:not(.Mui-error) fieldset': {
+                borderColor: configChrome.accent,
+              },
+            },
+            '& .MuiInputLabel-root:not(.Mui-error)': {
+              color: alpha(configChrome.text, 0.75),
+              '&.Mui-focused': { color: configChrome.accent },
+            },
           },
         }}
       >
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            flexShrink: 0,
+            minHeight: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
+            backgroundColor: configChrome.header,
+            borderBottom: `1px solid ${configChrome.border}`,
+          }}
+        >
+          <Typography
+            id="instrument-config-title"
+            component="h2"
+            variant="subtitle1"
+            sx={{ flex: 1, minWidth: 0, px: 2, py: 1, fontWeight: 700 }}
+          >
+            {selectedInstrument} config settings
+          </Typography>
+          <IconButton
+            aria-label="Close instrument config"
+            onClick={() => setDrawerOpen(false)}
+            sx={{
+              alignSelf: 'stretch',
+              width: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
+              borderLeft: `1px solid ${configChrome.border}`,
+            }}
+          >
+            <Close fontSize="small" />
+          </IconButton>
+        </Box>
         {selectedInstrument === 'LOQ' ? (
           <ConfigSettingsLOQ />
         ) : selectedInstrument === 'SANS2D' ? (
