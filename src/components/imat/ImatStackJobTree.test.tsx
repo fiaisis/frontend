@@ -42,9 +42,7 @@ const makeJob = (id: number, experimentNumber: number, runStart: string, filenam
 const renderTree = (
   overrides: Partial<React.ComponentProps<typeof ImatStackJobTree>> = {}
 ): ReturnType<typeof render> =>
-  render(
-    <ImatStackJobTree autoSelect={false} selectedJobId={null} selectedJob={null} onSelectJob={vi.fn()} {...overrides} />
-  );
+  render(<ImatStackJobTree selectedJobId={null} selectedJob={null} onSelectJob={vi.fn()} {...overrides} />);
 
 describe('ImatStackJobTree', () => {
   beforeEach(() => {
@@ -74,14 +72,20 @@ describe('ImatStackJobTree', () => {
     expect(jobButtons[1]).toHaveTextContent('IMAT10');
   });
 
-  test('automatically selects the newest stack only when no URL selection exists', async () => {
+  test('waits for an explicit selection after loading the newest stacks', async () => {
+    const user = userEvent.setup();
     const onSelectJob = vi.fn();
     const newestJob = makeJob(22, 2000, '2026-02-02T10:00:00Z');
     vi.mocked(fiaApi.get).mockResolvedValue({ data: [newestJob, makeJob(21, 2000, '2026-02-01T10:00:00Z')] });
 
-    renderTree({ autoSelect: true, onSelectJob });
+    renderTree({ onSelectJob });
 
-    await waitFor(() => expect(onSelectJob).toHaveBeenCalledWith(newestJob, true));
+    const experiment = await screen.findByRole('button', { name: /Experiment 2000/ });
+    expect(experiment).toHaveAttribute('aria-expanded', 'false');
+    expect(onSelectJob).not.toHaveBeenCalled();
+    await user.click(experiment);
+    await user.click(screen.getByRole('button', { name: /IMAT22/ }));
+    expect(onSelectJob).toHaveBeenCalledExactlyOnceWith(newestJob);
   });
 
   test('queries full history by exact experiment number and filename', async () => {

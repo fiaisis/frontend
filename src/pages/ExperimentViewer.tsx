@@ -1,8 +1,7 @@
 import '@h5web/lib/styles.css';
-import ArrowDropDown from '@mui/icons-material/ArrowDropDown';
-import CloseIcon from '@mui/icons-material/Close';
 import SearchIcon from '@mui/icons-material/Search';
-import { Alert, Box, Button, CircularProgress, Popover, TextField } from '@mui/material';
+import { Alert, Box, Button, CircularProgress, TextField } from '@mui/material';
+import { alpha, useTheme } from '@mui/material/styles';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useHistory, useParams } from 'react-router-dom';
 
@@ -10,10 +9,11 @@ import FileTree from '../components/experimentViewer/FileTree';
 import PlotViewer from '../components/experimentViewer/Graph';
 import Viewer2D from '../components/experimentViewer/Viewer2D';
 import ViewerTabs from '../components/experimentViewer/ViewerTabs';
+import { getJobTableChromeColors, JOB_TABLE_TOOLBAR_CONTROL_HEIGHT } from '../components/jobs/constants';
 import InstrumentSelector from '../components/jobs/InstrumentSelector';
 import NavArrows from '../components/navigation/NavArrows';
 import PageHeader from '../components/navigation/PageHeader';
-import { getPageHeaderControlSx } from '../components/navigation/pageHeaderStyles';
+import { viewerColumnsSx, viewerContentSx, viewerSidebarSx } from '../components/viewer/layout';
 import { fiaApi } from '../lib/api';
 import { instruments, isValidInstrument } from '../lib/instrumentData';
 import { REDUCTION_SUPPORTED_INSTRUMENTS } from '../lib/instrumentSupport';
@@ -31,9 +31,6 @@ interface RouteParams {
 }
 
 const EXPERIMENT_VIEWER_PAGE_SIZE = 10;
-const EXPERIMENT_NUMBER_BREADCRUMB_MENU_WIDTH = 280;
-const EXPERIMENT_NUMBER_BREADCRUMB_CLEAR_BUTTON_WIDTH = 40;
-const EXPERIMENT_NUMBER_BREADCRUMB_MENU_GAP = 8;
 
 const parseExperimentNumber = (experimentNumber: string | undefined): number | null => {
   if (!experimentNumber) {
@@ -56,144 +53,102 @@ const getExperimentViewerPath = (instrument: string | null, experimentNumber: nu
 const getCanonicalInstrumentName = (name: string | undefined): string | undefined =>
   instruments.find((instrument) => instrument.name.toUpperCase() === name?.toUpperCase())?.name;
 
-const ExperimentNumberBreadcrumb: React.FC<{
+const ExperimentNumberSearch: React.FC<{
   experimentNumber: number | null;
   onExperimentNumberChange: (experimentNumber: number | null) => void;
 }> = ({ experimentNumber, onExperimentNumberChange }): JSX.Element => {
-  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
-  const [draftExperimentNumber, setDraftExperimentNumber] = useState('');
-  const open = Boolean(anchorEl);
-  const menuWidth =
-    experimentNumber === null
-      ? EXPERIMENT_NUMBER_BREADCRUMB_MENU_WIDTH
-      : EXPERIMENT_NUMBER_BREADCRUMB_MENU_WIDTH +
-        EXPERIMENT_NUMBER_BREADCRUMB_CLEAR_BUTTON_WIDTH +
-        EXPERIMENT_NUMBER_BREADCRUMB_MENU_GAP;
+  const theme = useTheme();
+  const viewerChrome = getJobTableChromeColors(theme.palette.mode);
+  const [draftExperimentNumber, setDraftExperimentNumber] = useState(experimentNumber?.toString() ?? '');
 
   useEffect(() => {
     setDraftExperimentNumber(experimentNumber?.toString() ?? '');
   }, [experimentNumber]);
 
-  const closeEditor = (): void => {
-    setAnchorEl(null);
-    setDraftExperimentNumber(experimentNumber?.toString() ?? '');
-  };
-
   const clearExperimentNumber = (): void => {
     setDraftExperimentNumber('');
-
     if (experimentNumber !== null) {
       onExperimentNumberChange(null);
-      setAnchorEl(null);
     }
   };
 
-  const applyExperimentNumber = (): void => {
+  const applyExperimentNumber = (event: React.FormEvent): void => {
+    event.preventDefault();
     const trimmedExperimentNumber = draftExperimentNumber.trim();
 
     if (trimmedExperimentNumber.length === 0) {
       onExperimentNumberChange(null);
-      setAnchorEl(null);
       return;
     }
 
     const parsedExperimentNumber = Number(trimmedExperimentNumber);
-
     if (!Number.isInteger(parsedExperimentNumber) || parsedExperimentNumber < 0) {
       return;
     }
 
     onExperimentNumberChange(parsedExperimentNumber);
-    setAnchorEl(null);
   };
 
   return (
-    <>
-      <Button
-        variant="text"
-        aria-haspopup="dialog"
-        aria-controls={open ? 'experiment-number-breadcrumb-editor' : undefined}
-        aria-expanded={open ? 'true' : undefined}
-        aria-label={
-          experimentNumber === null ? 'Search experiment number' : `Experiment number: ${experimentNumber.toString()}`
-        }
-        endIcon={<ArrowDropDown />}
-        onClick={(event: React.MouseEvent<HTMLButtonElement>) => setAnchorEl(event.currentTarget)}
-        sx={getPageHeaderControlSx}
-      >
-        <Box component="span">
-          {experimentNumber === null ? 'Search experiment number' : `Experiment ${experimentNumber}`}
-        </Box>
-      </Button>
-      <Popover
-        id="experiment-number-breadcrumb-editor"
-        anchorEl={anchorEl}
-        open={open}
-        onClose={closeEditor}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-        slotProps={{
-          paper: {
-            sx: { width: menuWidth, maxWidth: 'calc(100vw - 32px)' },
-          },
+    <Box
+      component="form"
+      aria-label="Search experiment number"
+      onSubmit={applyExperimentNumber}
+      sx={{ pt: 1.5, borderBottom: `1px solid ${viewerChrome.border}`, flexShrink: 0 }}
+    >
+      <Box sx={{ px: 1.5 }}>
+        <TextField
+          fullWidth
+          autoComplete="off"
+          size="small"
+          type="number"
+          label="Experiment number"
+          value={draftExperimentNumber}
+          onChange={(event) => setDraftExperimentNumber(event.target.value)}
+          inputProps={{ min: 0, step: 1, autoComplete: 'off' }}
+          sx={{
+            minWidth: 0,
+            '& .MuiOutlinedInput-root': {
+              height: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
+              fontSize: '0.875rem',
+            },
+          }}
+        />
+      </Box>
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          mt: 1.5,
+          borderTop: `1px solid ${viewerChrome.border}`,
         }}
       >
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, p: 1.5 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <TextField
-              autoFocus
-              autoComplete="off"
-              size="small"
-              type="number"
-              value={draftExperimentNumber}
-              onChange={(event) => setDraftExperimentNumber(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') {
-                  applyExperimentNumber();
-                }
-              }}
-              inputProps={{ min: 0, step: 1, autoComplete: 'off' }}
-              sx={{ flex: '1 1 auto', minWidth: 0 }}
-            />
-            <Button
-              size="small"
-              variant="contained"
-              startIcon={<SearchIcon fontSize="small" />}
-              onClick={applyExperimentNumber}
-              sx={{
-                flex: '0 0 auto',
-                height: 40,
-                textTransform: 'none',
-                '& .MuiButton-startIcon': { mr: 0.5 },
-              }}
-            >
-              Search
-            </Button>
-            {experimentNumber !== null && (
-              <Button
-                aria-label="Clear experiment number"
-                size="small"
-                variant="outlined"
-                onClick={clearExperimentNumber}
-                sx={{
-                  flex: '0 0 auto',
-                  minWidth: 40,
-                  width: 40,
-                  height: 40,
-                  px: 0,
-                }}
-              >
-                <CloseIcon fontSize="small" />
-              </Button>
-            )}
-          </Box>
-        </Box>
-      </Popover>
-    </>
+        <Button
+          type="submit"
+          size="small"
+          variant="text"
+          startIcon={<SearchIcon fontSize="small" />}
+          sx={{ borderRight: `1px solid ${viewerChrome.border}` }}
+        >
+          Search
+        </Button>
+        <Button
+          type="button"
+          size="small"
+          aria-label="Clear experiment number"
+          onClick={clearExperimentNumber}
+          disabled={experimentNumber === null && !draftExperimentNumber}
+        >
+          Clear
+        </Button>
+      </Box>
+    </Box>
   );
 };
 
 const ExperimentViewer: React.FC = (): JSX.Element => {
+  const theme = useTheme();
+  const viewerChrome = getJobTableChromeColors(theme.palette.mode);
   const { instrumentName, experimentNumber, experimentOnlyNumber, jobId } = useParams<RouteParams>();
   const history = useHistory();
   const { rootRef: viewerRootRef, availableHeight: viewerHeight } = useAvailablePluginHeight();
@@ -502,7 +457,7 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
     searchExperimentNumber,
   ]);
 
-  const handleBreadcrumbInstrumentChange = (instrument: string): void => {
+  const handleInstrumentChange = (instrument: string): void => {
     const nextInstrument = instrument === 'ALL' ? null : instrument;
     const nextExperimentNumber = nextInstrument ? searchExperimentNumber : null;
     const nextSearchActive = Boolean(nextInstrument || nextExperimentNumber);
@@ -524,7 +479,7 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
     history.push(getExperimentViewerPath(nextInstrument, nextExperimentNumber));
   };
 
-  const handleBreadcrumbExperimentNumberChange = (experimentNumber: number | null): void => {
+  const handleExperimentNumberChange = (experimentNumber: number | null): void => {
     const nextSearchActive = Boolean(searchInstrument || experimentNumber !== null);
 
     setSearchInstrument(searchInstrument);
@@ -799,7 +754,7 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
     fetchPath();
   }, [activeViewerTab, selected2DFile, files, jobs]);
 
-  const showBreadcrumbFilters = !jobId;
+  const showSearchControls = !jobId;
   const breadcrumbRouteCrumbCount = searchInstrument
     ? searchExperimentNumber === null
       ? 0
@@ -811,24 +766,16 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
   const breadcrumbLabelOverrides = selectedRouteInstrumentName
     ? { [instrumentName ?? selectedRouteInstrumentName]: selectedRouteInstrumentName }
     : undefined;
-  const pageControls = showBreadcrumbFilters
-    ? [
-        <InstrumentSelector
-          key="instrument-selector"
-          selectedInstrument={searchInstrument || 'ALL'}
-          handleInstrumentChange={handleBreadcrumbInstrumentChange}
-          variant="compact"
-          allInstrumentsLabel="Clear filters"
-          compactLabel="Browse instruments"
-          support={{ page: 'experiment-viewer', instruments: REDUCTION_SUPPORTED_INSTRUMENTS }}
-        />,
-        <ExperimentNumberBreadcrumb
-          key="experiment-number"
-          experimentNumber={searchExperimentNumber}
-          onExperimentNumberChange={handleBreadcrumbExperimentNumberChange}
-        />,
-      ]
-    : undefined;
+  const pageControls = showSearchControls ? (
+    <InstrumentSelector
+      selectedInstrument={searchInstrument || 'ALL'}
+      handleInstrumentChange={handleInstrumentChange}
+      variant="compact"
+      allInstrumentsLabel="Clear filters"
+      compactLabel="Browse instruments"
+      support={{ page: 'experiment-viewer', instruments: REDUCTION_SUPPORTED_INSTRUMENTS }}
+    />
+  ) : undefined;
   const hasViewableFiles = files.length > 0;
 
   return (
@@ -842,12 +789,14 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
         minHeight: 0,
         width: '100%',
         overflow: 'hidden',
+        color: viewerChrome.text,
+        '& .MuiCircularProgress-root': { color: viewerChrome.accent },
       }}
     >
       <PageHeader
         breadcrumbs={
           <NavArrows
-            omitLastCrumbCount={showBreadcrumbFilters ? breadcrumbRouteCrumbCount : 0}
+            omitLastCrumbCount={showSearchControls ? breadcrumbRouteCrumbCount : 0}
             labelOverrides={breadcrumbLabelOverrides}
           />
         }
@@ -861,32 +810,47 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
           minHeight: 0,
           width: '100%',
           boxSizing: 'border-box',
-          pt: showBreadcrumbFilters ? 0 : 2,
+          px: 2,
+          pb: 2,
         }}
       >
         {/* Main content area */}
-        <Box sx={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'hidden' }}>
+        <Box sx={viewerColumnsSx}>
           {/* Left panel - File tree */}
           <Box
+            component="aside"
+            aria-label="Experiment viewer files"
             sx={{
-              width: 320,
-              borderRight: 1,
-              borderColor: 'divider',
+              ...viewerSidebarSx,
+              height: { xs: 320, md: 'auto' },
+              border: `1px solid ${viewerChrome.border}`,
+              borderRadius: 0,
+              backgroundColor: viewerChrome.surface,
               display: 'flex',
               flexDirection: 'column',
               minHeight: 0,
               overflow: 'hidden',
             }}
           >
-            <ViewerTabs activeTab={activeViewerTab} onTabChange={setActiveViewerTab} disabled={!hasViewableFiles} />
             <FileTree
+              searchControls={
+                showSearchControls && (
+                  <ExperimentNumberSearch
+                    experimentNumber={searchExperimentNumber}
+                    onExperimentNumberChange={handleExperimentNumberChange}
+                  />
+                )
+              }
+              viewTabs={
+                <ViewerTabs activeTab={activeViewerTab} onTabChange={setActiveViewerTab} disabled={!hasViewableFiles} />
+              }
               jobs={jobs}
               files={files}
-              currentPage={showBreadcrumbFilters ? currentPage : undefined}
-              totalJobs={showBreadcrumbFilters ? totalJobs : undefined}
+              currentPage={showSearchControls ? currentPage : undefined}
+              totalJobs={showSearchControls ? totalJobs : undefined}
               pageSize={EXPERIMENT_VIEWER_PAGE_SIZE}
               isPaginationDisabled={loading}
-              onPageChange={showBreadcrumbFilters ? handlePageChange : undefined}
+              onPageChange={showSearchControls ? handlePageChange : undefined}
               onFileToggle={handleFileToggle}
               onDatasetChange={handleDatasetChange}
               onSelectionChange={handleSelectionChange}
@@ -901,13 +865,12 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
           {/* Right panel - Plot or 2D Viewer */}
           <Box
             sx={{
-              flex: 1,
-              minWidth: 0,
-              minHeight: 0,
-              display: 'flex',
-              flexDirection: 'column',
+              ...viewerContentSx,
               position: 'relative',
               overflow: 'hidden',
+              border: `1px solid ${viewerChrome.border}`,
+              borderRadius: 0,
+              backgroundColor: viewerChrome.surface,
             }}
           >
             {/* Loading indicator */}
@@ -916,14 +879,15 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
                 sx={{
                   position: 'absolute',
                   inset: 0,
+                  top: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  bgcolor: 'rgba(255, 255, 255, 0.8)',
+                  bgcolor: alpha(viewerChrome.surface, 0.85),
                   zIndex: 10,
                 }}
               >
-                <CircularProgress size={60} />
+                <CircularProgress size={40} aria-label="Loading experiment data" />
               </Box>
             )}
 
@@ -940,6 +904,7 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
               >
                 <Alert
                   severity="error"
+                  sx={{ borderRadius: 0 }}
                   onClose={() => {
                     setError(null);
                     setViewer2DError(null);
@@ -960,7 +925,7 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
                 emptyMessage={
                   hasViewableFiles
                     ? undefined
-                    : 'Use the breadcrumbs to select an instrument and search for an experiment number.'
+                    : 'Use Browse instruments or enter an experiment number in the search field.'
                 }
               />
             ) : (

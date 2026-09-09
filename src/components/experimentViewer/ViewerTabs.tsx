@@ -1,8 +1,10 @@
 import GridOnIcon from '@mui/icons-material/GridOn';
 import ShowChartIcon from '@mui/icons-material/ShowChart';
-import { Tabs, Tab, Box } from '@mui/material';
+import { Tabs, Tab } from '@mui/material';
 import { alpha, useTheme } from '@mui/material/styles';
 import React from 'react';
+
+import { getJobTableChromeColors, JOB_TABLE_TOOLBAR_CONTROL_HEIGHT } from '../jobs/constants';
 
 interface ViewerTabsProps {
   activeTab: '1d' | '2d';
@@ -12,112 +14,45 @@ interface ViewerTabsProps {
 
 const ViewerTabs: React.FC<ViewerTabsProps> = ({ activeTab, onTabChange, disabled = false }): JSX.Element => {
   const theme = useTheme();
+  const viewerChrome = getJobTableChromeColors(theme.palette.mode);
 
   return (
-    <Box
+    <Tabs
+      value={activeTab}
+      onChange={(_event: React.SyntheticEvent, newTab: '1d' | '2d') => {
+        if (!disabled) {
+          onTabChange(newTab);
+        }
+      }}
+      aria-label="Experiment data view"
+      variant="fullWidth"
       sx={{
-        borderBottom: 1,
-        borderColor: 'divider',
-        px: 1,
-        py: 1,
-        bgcolor: 'background.paper',
+        flexShrink: 0,
+        minHeight: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
+        borderBottom: `1px solid ${viewerChrome.border}`,
+        backgroundColor: viewerChrome.header,
+        '& .MuiTabs-indicator': { backgroundColor: viewerChrome.accent, height: 3 },
+        '& .MuiTab-root': {
+          minHeight: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
+          borderRadius: 0,
+          px: 1.5,
+          py: 0.75,
+          textTransform: 'none',
+          fontSize: '0.875rem',
+          fontWeight: 600,
+          color: viewerChrome.text,
+          '& + .MuiTab-root': { borderLeft: `1px solid ${viewerChrome.border}` },
+          '& .MuiSvgIcon-root': { color: 'inherit', fontSize: 18 },
+          '&:hover': { backgroundColor: viewerChrome.hover },
+          '&:focus-visible': { outline: `2px solid ${viewerChrome.accent}`, outlineOffset: -2 },
+          '&.Mui-selected': { color: viewerChrome.accent, backgroundColor: alpha(viewerChrome.accent, 0.12) },
+          '&.Mui-disabled': { color: alpha(viewerChrome.text, 0.42), backgroundColor: viewerChrome.header },
+        },
       }}
     >
-      <Tabs
-        value={activeTab}
-        onChange={(_event: React.SyntheticEvent, newTab: '1d' | '2d') => {
-          if (!disabled) {
-            onTabChange(newTab);
-          }
-        }}
-        variant="fullWidth"
-        sx={{
-          minHeight: 0,
-          p: 0.5,
-          borderRadius: 2,
-          bgcolor: alpha(theme.palette.text.primary, theme.palette.mode === 'dark' ? 0.12 : 0.05),
-          '& .MuiTabs-flexContainer': {
-            gap: 1,
-          },
-          '& .MuiTabs-indicator': {
-            display: 'none',
-          },
-        }}
-      >
-        <Tab
-          value="1d"
-          label="1D view"
-          icon={<ShowChartIcon />}
-          iconPosition="start"
-          disabled={disabled}
-          sx={{
-            minHeight: 42,
-            borderRadius: 1.5,
-            textTransform: 'none',
-            fontWeight: 600,
-            color: 'text.secondary',
-            transition: theme.transitions.create(['background-color', 'color', 'box-shadow'], {
-              duration: theme.transitions.duration.shorter,
-            }),
-            '& .MuiSvgIcon-root': {
-              color: 'inherit',
-            },
-            '&:hover': {
-              bgcolor: alpha(theme.palette.text.primary, theme.palette.mode === 'dark' ? 0.1 : 0.06),
-            },
-            '&.Mui-selected': {
-              color: theme.palette.primary.contrastText,
-              bgcolor: theme.palette.primary.main,
-              boxShadow: `0 0 0 1px ${alpha(theme.palette.primary.main, 0.24)}, 0 6px 16px ${alpha(
-                theme.palette.primary.main,
-                theme.palette.mode === 'dark' ? 0.4 : 0.18
-              )}`,
-            },
-            '&.Mui-disabled': {
-              color: 'text.disabled',
-              bgcolor: 'action.disabledBackground',
-              boxShadow: 'none',
-            },
-          }}
-        />
-        <Tab
-          value="2d"
-          label="MD view"
-          icon={<GridOnIcon />}
-          iconPosition="start"
-          disabled={disabled}
-          sx={{
-            minHeight: 42,
-            borderRadius: 1.5,
-            textTransform: 'none',
-            fontWeight: 600,
-            color: 'text.secondary',
-            transition: theme.transitions.create(['background-color', 'color', 'box-shadow'], {
-              duration: theme.transitions.duration.shorter,
-            }),
-            '& .MuiSvgIcon-root': {
-              color: 'inherit',
-            },
-            '&:hover': {
-              bgcolor: alpha(theme.palette.text.primary, theme.palette.mode === 'dark' ? 0.1 : 0.06),
-            },
-            '&.Mui-selected': {
-              color: theme.palette.primary.contrastText,
-              bgcolor: theme.palette.primary.main,
-              boxShadow: `0 0 0 1px ${alpha(theme.palette.primary.main, 0.24)}, 0 6px 16px ${alpha(
-                theme.palette.primary.main,
-                theme.palette.mode === 'dark' ? 0.4 : 0.18
-              )}`,
-            },
-            '&.Mui-disabled': {
-              color: 'text.disabled',
-              bgcolor: 'action.disabledBackground',
-              boxShadow: 'none',
-            },
-          }}
-        />
-      </Tabs>
-    </Box>
+      <Tab value="1d" label="1D view" icon={<ShowChartIcon />} iconPosition="start" disabled={disabled} />
+      <Tab value="2d" label="MD view" icon={<GridOnIcon />} iconPosition="start" disabled={disabled} />
+    </Tabs>
   );
 };
 

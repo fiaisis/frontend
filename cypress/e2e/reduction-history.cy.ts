@@ -439,7 +439,8 @@ describe('Reduction history page', () => {
     cy.get(viewSelect).should('have.focus');
   });
 
-  it('selects different IMAT stacks from the job tree', () => {
+  it('opens a generic IMAT stack viewer and loads stacks only after selection', () => {
+    cy.viewport(1280, 720);
     cy.intercept('GET', /\/api\/instrument\/IMAT\/jobs\?.*$/, {
       statusCode: 200,
       body: imatJobsResponse,
@@ -466,10 +467,26 @@ describe('Reduction history page', () => {
     cy.visitFia('/fia/reduction-history/IMAT/stack-viewer');
 
     cy.wait('@getImatStacks');
+    cy.get('[aria-label="Stack viewer controls"]')
+      .should('be.visible')
+      .within(() => {
+        cy.get('input[aria-label="Stack image"]').should('be.disabled');
+        cy.get('button[aria-label="fit"]').should('be.disabled');
+        cy.contains('Image 0 of 0').should('be.visible');
+        cy.contains('Colourbar intensity').should('be.visible');
+      });
+    cy.contains('Select a stack to view its images').should('be.visible');
+    cy.location('search').should('eq', '');
+    cy.get('@findImatStack.all').should('have.length', 0);
+    cy.get('@listImatImages.all').should('have.length', 0);
+    cy.screenshot('imat-stack-generic', { capture: 'viewport' });
+    cy.contains('[role="button"]', 'Experiment 24680').click();
+    cy.contains('[role="button"]', 'IMAT00000302').click();
     cy.location('search').should('include', 'jobId=302').and('include', 'experiment=24680');
     cy.wait('@findImatStack');
     cy.wait('@listImatImages');
     cy.contains('newest-frame.tif').should('be.visible');
+    cy.get('button[aria-label="fit"]').should('be.enabled');
 
     cy.contains('[role="button"]', 'Experiment 13579').click();
     cy.contains('[role="button"]', 'IMAT00000301').click();
@@ -478,5 +495,11 @@ describe('Reduction history page', () => {
     cy.wait('@findImatStack');
     cy.wait('@listImatImages');
     cy.contains('older-frame.tif').should('be.visible');
+    cy.go(-2);
+    cy.location('search').should('eq', '');
+    cy.contains('Select a stack to view its images').should('be.visible');
+    cy.get('[aria-label="Successful IMAT stacks"] [aria-current="true"]').should('not.exist');
+    cy.get('[aria-label="Stack viewer controls"]').should('be.visible');
+    cy.get('button[aria-label="fit"]').should('be.disabled');
   });
 });

@@ -8,6 +8,7 @@ import {
   Slider,
   ToggleButton,
   ToggleButtonGroup,
+  Tooltip,
   Typography,
   useTheme,
 } from '@mui/material';
@@ -18,8 +19,10 @@ import React from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 
 import ImatStackJobTree from '../components/imat/ImatStackJobTree';
+import { getJobTableChromeColors, JOB_TABLE_TOOLBAR_CONTROL_HEIGHT } from '../components/jobs/constants';
 import NavArrows from '../components/navigation/NavArrows';
 import PageHeader from '../components/navigation/PageHeader';
+import { viewerColumnsSx, viewerContentSx } from '../components/viewer/layout';
 import { fiaApi, h5Api } from '../lib/api';
 import { parseJobOutputs } from '../lib/hooks';
 
@@ -72,8 +75,47 @@ const getImageIndex = (value: string | null): number => {
 const isSuccessfulImatJob = (job: Job): boolean =>
   job.state === 'SUCCESSFUL' && job.run?.instrument_name?.toUpperCase() === 'IMAT';
 
+const StackImageValueLabel: React.FC<{
+  children: React.ReactElement;
+  open: boolean;
+  value: React.ReactNode;
+}> = ({ children, open, value }) => {
+  const theme = useTheme();
+  const viewerChrome = getJobTableChromeColors(theme.palette.mode);
+
+  return (
+    <Tooltip
+      open={open}
+      title={value}
+      placement="top"
+      arrow
+      describeChild
+      disableFocusListener
+      disableHoverListener
+      disableTouchListener
+      disableInteractive
+      slotProps={{
+        // Keep the label outside the viewer's clipped and scrollable containers.
+        popper: { disablePortal: false },
+        tooltip: {
+          sx: {
+            borderRadius: 0,
+            backgroundColor: viewerChrome.accent,
+            color: viewerChrome.accentContrast,
+            fontSize: '0.75rem',
+          },
+        },
+        arrow: { sx: { color: viewerChrome.accent } },
+      }}
+    >
+      {children}
+    </Tooltip>
+  );
+};
+
 const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
   const theme = useTheme();
+  const viewerChrome = getJobTableChromeColors(theme.palette.mode);
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
   const rawStackJobId = queryParams.get('jobId');
@@ -141,11 +183,11 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
   );
 
   const handleSelectJob = React.useCallback(
-    (job: Job, replace = false): void => {
+    (job: Job): void => {
       setSelectedJob(job);
       setSelectedJobError(null);
       setCurrentImageIndex(0);
-      writeSelectedJobToUrl(job, replace, true);
+      writeSelectedJobToUrl(job, false, true);
     },
     [writeSelectedJobToUrl]
   );
@@ -490,66 +532,60 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
     gap: 1,
     pl: 1.25,
     pr: 0.5,
-    color: 'text.primary',
-    backgroundColor: 'background.paper',
-    border: '1px solid',
-    borderColor:
-      theme.palette.mode === 'dark' ? alpha(theme.palette.common.white, 0.28) : alpha(theme.palette.text.primary, 0.16),
-    borderRadius: 1,
+    minHeight: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
+    boxSizing: 'border-box',
+    color: viewerChrome.text,
+    backgroundColor: viewerChrome.surface,
+    border: `1px solid ${viewerChrome.border}`,
+    borderRadius: 0,
     overflow: 'visible',
-    boxShadow: theme.palette.mode === 'dark' ? `0 0 0 1px ${alpha(theme.palette.common.black, 0.18)}` : undefined,
+    boxShadow: 'none',
     '--h5w-toolbar--height': '2.25rem',
-    '--h5w-toolbar--bgColor': theme.palette.background.paper,
-    '--h5w-toolbar-label--color': theme.palette.text.secondary,
-    '--h5w-toolbar-separator--color': alpha(theme.palette.text.primary, theme.palette.mode === 'dark' ? 0.22 : 0.14),
-    '--h5w-toolbar-popup--bgColor': theme.palette.background.paper,
-    '--h5w-toolbar-input-focus--shadowColor': theme.palette.primary.main,
-    '--h5w-btn-hover--bgColor': theme.palette.action.hover,
-    '--h5w-btn-hover--shadowColor': alpha(theme.palette.text.primary, theme.palette.mode === 'dark' ? 0.32 : 0.16),
-    '--h5w-btnRaised--bgColor': theme.palette.background.default,
-    '--h5w-btnRaised--shadowColor': alpha(theme.palette.text.primary, theme.palette.mode === 'dark' ? 0.34 : 0.18),
-    '--h5w-btnRaised-hover--shadowColor': alpha(
-      theme.palette.text.primary,
-      theme.palette.mode === 'dark' ? 0.46 : 0.24
-    ),
-    '--h5w-btnPressed--bgColor': alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.34 : 0.18),
-    '--h5w-btnPressed--shadowColor': alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.54 : 0.32),
-    '--h5w-btnPressed-hover--shadowColor': alpha(
-      theme.palette.primary.main,
-      theme.palette.mode === 'dark' ? 0.64 : 0.4
-    ),
-    '--h5w-domainWidget-popup--bgColor': theme.palette.background.paper,
-    '--h5w-domainControls--colorAlt': theme.palette.text.primary,
-    '--h5w-domainControls-boundInput--shadowColor': alpha(
-      theme.palette.text.primary,
-      theme.palette.mode === 'dark' ? 0.34 : 0.16
-    ),
-    '--h5w-domainControls-boundInput-focus--shadowColor': theme.palette.primary.main,
-    '--h5w-domainControls-boundInput-editing--bgColor': theme.palette.background.default,
-    '--h5w-domainControls-boundInput-editing--borderColor': theme.palette.primary.main,
-    '--h5w-domainSlider-track--bgColor': alpha(theme.palette.text.primary, theme.palette.mode === 'dark' ? 0.24 : 0.18),
-    '--h5w-domainSlider-track--shadowColor': alpha(
-      theme.palette.common.black,
-      theme.palette.mode === 'dark' ? 0.68 : 0.22
-    ),
-    '--h5w-domainSlider-dataTrack--bgColor':
-      theme.palette.mode === 'dark' ? theme.palette.primary.light : theme.palette.primary.main,
-    '--h5w-domainSlider-dataTrack--shadowColor': alpha(
-      theme.palette.primary.main,
-      theme.palette.mode === 'dark' ? 0.72 : 0.36
-    ),
-    '--h5w-domainSlider-thumb--bgColor':
-      theme.palette.mode === 'dark' ? theme.palette.primary.light : theme.palette.primary.main,
-    '--h5w-domainSlider-thumb-auto--bgColor':
-      theme.palette.mode === 'dark' ? theme.palette.grey[100] : theme.palette.background.paper,
+    '--h5w-toolbar--bgColor': viewerChrome.surface,
+    '--h5w-toolbar-label--color': viewerChrome.text,
+    '--h5w-toolbar-separator--color': viewerChrome.border,
+    '--h5w-toolbar-popup--bgColor': viewerChrome.surface,
+    '--h5w-toolbar-input-focus--shadowColor': viewerChrome.accent,
+    '--h5w-btn-hover--bgColor': viewerChrome.hover,
+    '--h5w-btn-hover--shadowColor': 'transparent',
+    '--h5w-btnRaised--bgColor': viewerChrome.header,
+    '--h5w-btnRaised--shadowColor': viewerChrome.border,
+    '--h5w-btnRaised-hover--shadowColor': viewerChrome.accent,
+    '--h5w-btnPressed--bgColor': alpha(viewerChrome.accent, 0.12),
+    '--h5w-btnPressed--shadowColor': viewerChrome.accent,
+    '--h5w-btnPressed-hover--shadowColor': viewerChrome.accent,
+    '--h5w-domainWidget-popup--bgColor': viewerChrome.surface,
+    '--h5w-domainControls--colorAlt': viewerChrome.text,
+    '--h5w-domainControls-boundInput--shadowColor': viewerChrome.border,
+    '--h5w-domainControls-boundInput-focus--shadowColor': viewerChrome.accent,
+    '--h5w-domainControls-boundInput-editing--bgColor': viewerChrome.header,
+    '--h5w-domainControls-boundInput-editing--borderColor': viewerChrome.accent,
+    '--h5w-domainSlider-track--bgColor': viewerChrome.border,
+    '--h5w-domainSlider-track--shadowColor': 'transparent',
+    '--h5w-domainSlider-dataTrack--bgColor': viewerChrome.accent,
+    '--h5w-domainSlider-dataTrack--shadowColor': 'transparent',
+    '--h5w-domainSlider-thumb--bgColor': viewerChrome.accent,
+    '--h5w-domainSlider-thumb-auto--bgColor': viewerChrome.surface,
+    '& button, & button > span': { borderRadius: 0 },
+    '& button:focus-visible': { outline: `2px solid ${viewerChrome.accent}`, outlineOffset: -2 },
+    '& [role="dialog"] > div': { border: `1px solid ${viewerChrome.border}`, boxShadow: 'none' },
     '& input[name="bound"]': {
-      color: theme.palette.text.primary,
-      backgroundColor: theme.palette.mode === 'dark' ? alpha(theme.palette.common.white, 0.1) : alpha('#ffffff', 0.72),
-      borderColor: alpha(theme.palette.text.primary, theme.palette.mode === 'dark' ? 0.24 : 0.12),
+      borderRadius: 0,
+      color: viewerChrome.text,
+      backgroundColor: viewerChrome.surface,
+      borderColor: viewerChrome.border,
     },
     '& button:disabled': {
-      color: alpha(theme.palette.text.primary, 0.36),
+      color: alpha(viewerChrome.text, 0.42),
     },
+  };
+
+  const panelSx = {
+    border: `1px solid ${viewerChrome.border}`,
+    borderRadius: 0,
+    backgroundColor: viewerChrome.surface,
+    color: viewerChrome.text,
+    boxShadow: 'none',
   };
 
   return (
@@ -557,7 +593,7 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
       {showNav && <PageHeader breadcrumbs={<NavArrows />} />}
       <Box
         sx={{
-          px: '20px',
+          px: 2,
           pb: 2,
           display: 'flex',
           flex: '1 1 auto',
@@ -565,12 +601,15 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
           minHeight: 0,
           boxSizing: 'border-box',
           overflow: 'hidden',
+          color: viewerChrome.text,
+          '& .MuiAlert-root': { borderRadius: 0 },
+          '& .MuiCircularProgress-root': { color: viewerChrome.accent },
         }}
       >
         {mode === 'latest' && (
-          <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2, minHeight: 0 }}>
+          <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 1.5, minHeight: 0 }}>
             {latestLoading && !latestDataset ? (
-              <Box sx={{ display: 'flex', justifyContent: 'center', p: 8 }}>
+              <Box sx={{ ...panelSx, display: 'flex', justifyContent: 'center', p: 4 }}>
                 <CircularProgress />
               </Box>
             ) : latestDataset ? (
@@ -597,8 +636,9 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
                     aspectRatio: latestAspectRatio,
                     maxHeight: viewerSize === 'fit' ? '100%' : 'none',
                     position: 'relative',
-                    border: '1px solid #ccc',
-                    borderRadius: 1,
+                    border: `1px solid ${viewerChrome.border}`,
+                    borderRadius: 0,
+                    boxSizing: 'border-box',
                     overflow: 'hidden',
                     backgroundColor: 'black',
                     mx: 'auto',
@@ -609,225 +649,281 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
                 </Box>
               </Box>
             ) : (
-              <Typography color="error">{latestError ?? 'No image available'}</Typography>
+              <Box sx={{ ...panelSx, p: 2 }}>
+                {latestError ? (
+                  <Alert severity="error">{latestError}</Alert>
+                ) : (
+                  <Typography variant="body2">No image available</Typography>
+                )}
+              </Box>
             )}
           </Box>
         )}
 
         {mode === 'stack' && (
-          <Box
-            sx={{
-              flex: 1,
-              display: 'flex',
-              flexDirection: { xs: 'column', md: 'row' },
-              gap: 2,
-              minHeight: 0,
-            }}
-          >
-            <ImatStackJobTree
-              autoSelect={rawStackJobId === null}
-              selectedJobId={stackJobId}
-              selectedJob={selectedJob}
-              onSelectJob={handleSelectJob}
-            />
+          <Box sx={viewerColumnsSx}>
+            <ImatStackJobTree selectedJobId={stackJobId} selectedJob={selectedJob} onSelectJob={handleSelectJob} />
 
-            <Box sx={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {selectedJobError ? (
-                <Alert severity="error">{selectedJobError}</Alert>
-              ) : selectedJobLoading ? (
-                <Box sx={{ display: 'flex', justifyContent: 'center', p: 8 }}>
-                  <CircularProgress aria-label="Loading selected IMAT stack" />
+            <Box sx={viewerContentSx}>
+              <Paper
+                square
+                elevation={0}
+                role="group"
+                aria-label="Stack viewer controls"
+                sx={{ ...panelSx, flexShrink: 0 }}
+              >
+                <Box
+                  sx={{
+                    px: 2,
+                    py: 0.5,
+                    backgroundColor: viewerChrome.header,
+                    borderBottom: `1px solid ${viewerChrome.border}`,
+                  }}
+                >
+                  <Slider
+                    aria-label="Stack image"
+                    disabled={!selectedJob || stackImages.length === 0}
+                    value={selectedJob && stackImages.length > 0 ? currentImageIndex : 0}
+                    min={0}
+                    max={Math.max(0, stackImages.length - 1)}
+                    onChange={handleSliderChange}
+                    onChangeCommitted={handleSliderChangeCommitted}
+                    valueLabelDisplay="auto"
+                    valueLabelFormat={(v: number) => `Index: ${v}`}
+                    slots={{ valueLabel: StackImageValueLabel }}
+                    sx={{
+                      color: viewerChrome.accent,
+                      '& .MuiSlider-thumb': { width: 14, height: 14, borderRadius: 0 },
+                      '& .MuiSlider-rail, & .MuiSlider-track': { borderRadius: 0 },
+                    }}
+                  />
                 </Box>
-              ) : !selectedJob ? (
-                <Typography sx={{ p: 4, textAlign: 'center' }}>Select a job to view its image stack.</Typography>
-              ) : (
-                <>
-                  <Paper sx={{ p: 2 }}>
-                    <Slider
-                      disabled={stackImages.length === 0}
-                      value={currentImageIndex}
-                      min={0}
-                      max={Math.max(0, stackImages.length - 1)}
-                      onChange={handleSliderChange}
-                      onChangeCommitted={handleSliderChangeCommitted}
-                      valueLabelDisplay="auto"
-                      valueLabelFormat={(v: number) => `Index: ${v}`}
-                    />
 
-                    <Box
-                      sx={{
-                        display: 'grid',
-                        gridTemplateColumns: {
-                          xs: 'minmax(0, 1fr)',
-                          md: 'minmax(0, 1fr) auto',
-                          xl: 'minmax(0, 1fr) auto minmax(0, 1fr)',
-                        },
-                        gridTemplateAreas: {
-                          xs: '"image" "size" "intensity"',
-                          md: '"image size" "intensity intensity"',
-                          xl: '"image size intensity"',
-                        },
-                        alignItems: 'center',
-                        gap: 2,
-                        mt: 2,
-                      }}
-                    >
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 2,
-                          flexWrap: 'wrap',
-                          minWidth: 0,
-                          gridArea: 'image',
-                        }}
-                      >
-                        <Typography variant="body2" sx={{ flexShrink: 0 }}>
-                          Image {currentImageIndex + 1} of {stackImages.length}
-                        </Typography>
-
-                        <Typography
-                          variant="caption"
-                          sx={{
-                            color: 'text.secondary',
-                            minWidth: 0,
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          {stackImages[currentImageIndex]}
-                        </Typography>
-                      </Box>
-
-                      <ToggleButtonGroup
-                        value={viewerSize}
-                        exclusive
-                        onChange={handleViewerSizeChange}
-                        size="small"
-                        aria-label="viewer size"
-                        sx={{
-                          gridArea: 'size',
-                          justifySelf: { xs: 'stretch', sm: 'start', md: 'end', xl: 'center' },
-                          width: { xs: '100%', sm: 'auto' },
-                          maxWidth: '100%',
-                          '& .MuiToggleButton-root': {
-                            width: { xs: 'auto', sm: 76 },
-                            flex: { xs: 1, sm: '0 0 auto' },
-                            px: 0,
-                          },
-                        }}
-                      >
-                        <ToggleButton value="fit" aria-label="fit">
-                          Fit
-                        </ToggleButton>
-                        <ToggleButton value="small" aria-label="small">
-                          Small
-                        </ToggleButton>
-                        <ToggleButton value="medium" aria-label="medium">
-                          Medium
-                        </ToggleButton>
-                        <ToggleButton value="large" aria-label="large">
-                          Large
-                        </ToggleButton>
-                        <ToggleButton value="full" aria-label="full">
-                          Full
-                        </ToggleButton>
-                      </ToggleButtonGroup>
-
-                      <Box
-                        sx={{
-                          gridArea: 'intensity',
-                          justifySelf: { xs: 'stretch', md: 'end' },
-                          width: '100%',
-                          maxWidth: 500,
-                        }}
-                      >
-                        <Box sx={stackDomainWidgetStyles}>
-                          <Typography variant="body2" sx={{ fontWeight: 500, flexShrink: 0 }}>
-                            Colourbar intensity
-                          </Typography>
-                          <Toolbar>
-                            <DomainWidget
-                              dataDomain={STACK_INTENSITY_DOMAIN}
-                              customDomain={stackCustomIntensityDomain}
-                              scaleType={ScaleType.Linear}
-                              disabled={!stackDataset}
-                              onCustomDomainChange={setStackCustomIntensityDomain}
-                            />
-                          </Toolbar>
-                        </Box>
-                      </Box>
-                    </Box>
-                  </Paper>
-
+                <Box
+                  sx={{
+                    display: 'grid',
+                    gridTemplateColumns: {
+                      xs: 'minmax(0, 1fr)',
+                      md: 'minmax(0, 1fr) auto',
+                      xl: 'minmax(0, 1fr) auto minmax(0, 1fr)',
+                    },
+                    gridTemplateAreas: {
+                      xs: '"image" "size" "intensity"',
+                      md: '"image size" "intensity intensity"',
+                      xl: '"image size intensity"',
+                    },
+                    alignItems: 'center',
+                    gap: 1.5,
+                    p: 1.5,
+                  }}
+                >
                   <Box
                     sx={{
                       display: 'flex',
-                      justifyContent: 'center',
-                      overflow: viewerSize === 'fit' ? 'hidden' : 'auto',
-                      flex: 1,
-                      minHeight: 0,
+                      alignItems: 'center',
+                      gap: 1,
+                      flexWrap: 'wrap',
+                      minWidth: 0,
+                      gridArea: 'image',
                     }}
                   >
-                    <Box
+                    <Typography variant="body2" sx={{ flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>
+                      Image {selectedJob && stackImages.length > 0 ? currentImageIndex + 1 : 0} of{' '}
+                      {selectedJob ? stackImages.length : 0}
+                    </Typography>
+
+                    <Typography
+                      variant="caption"
                       sx={{
-                        width:
-                          viewerSize === 'fit'
-                            ? '100%'
-                            : viewerSize === 'small'
-                              ? stackDisplayWidth > 0
-                                ? stackDisplayWidth * 0.25
-                                : '100%'
-                              : viewerSize === 'medium'
-                                ? stackDisplayWidth > 0
-                                  ? stackDisplayWidth * 0.5
-                                  : '100%'
-                                : viewerSize === 'large'
-                                  ? stackDisplayWidth > 0
-                                    ? stackDisplayWidth * 0.75
-                                    : '100%'
-                                  : stackDisplayWidth || '100%',
-                        aspectRatio: stackAspectRatio,
-                        maxHeight: viewerSize === 'fit' ? '100%' : 'none',
-                        position: 'relative',
-                        border: '1px solid #ccc',
-                        borderRadius: 1,
+                        color: alpha(viewerChrome.text, 0.75),
+                        minWidth: 0,
                         overflow: 'hidden',
-                        backgroundColor: 'black',
-                        color: 'rgba(255, 255, 255, 0.92)',
-                        '--h5w-colorBar-bounds--color': 'rgba(255, 255, 255, 0.92)',
-                        '--h5w-colorBar-tickLabels--color': 'rgba(255, 255, 255, 0.86)',
-                        '--h5w-colorBar-ticks--color': 'rgba(255, 255, 255, 0.72)',
-                        mx: 'auto',
-                        flexShrink: 0,
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
                       }}
                     >
-                      {stackDataset ? (
-                        <HeatmapVis
-                          dataArray={stackArray!}
-                          aspect="equal"
-                          flipYAxis
-                          style={{ height: '100%', width: '100%' }}
-                          domain={safeStackIntensityDomain}
+                      {selectedJob ? stackImages[currentImageIndex] : ''}
+                    </Typography>
+                  </Box>
+
+                  <ToggleButtonGroup
+                    value={viewerSize}
+                    exclusive
+                    onChange={handleViewerSizeChange}
+                    size="small"
+                    aria-label="viewer size"
+                    disabled={!selectedJob}
+                    sx={{
+                      gridArea: 'size',
+                      justifySelf: { xs: 'stretch', sm: 'start', md: 'end', xl: 'center' },
+                      width: { xs: '100%', sm: 'auto' },
+                      maxWidth: '100%',
+                      borderRadius: 0,
+                      '& .MuiToggleButton-root': {
+                        width: { xs: 'auto', sm: 64 },
+                        flex: { xs: 1, sm: '0 0 auto' },
+                        px: 0.75,
+                        height: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
+                        borderRadius: 0,
+                        borderColor: viewerChrome.border,
+                        color: viewerChrome.text,
+                        textTransform: 'none',
+                        '&:hover': { backgroundColor: viewerChrome.hover, color: viewerChrome.accent },
+                        '&:focus-visible': { outline: `2px solid ${viewerChrome.accent}`, outlineOffset: -2 },
+                        '&.Mui-selected': {
+                          color: viewerChrome.accent,
+                          backgroundColor: alpha(viewerChrome.accent, 0.12),
+                          boxShadow: `inset 0 -2px 0 ${viewerChrome.accent}`,
+                          fontWeight: 700,
+                        },
+                        '&.Mui-selected:hover': { backgroundColor: alpha(viewerChrome.accent, 0.18) },
+                        '&.Mui-disabled': {
+                          color: alpha(viewerChrome.text, 0.42),
+                          backgroundColor: viewerChrome.header,
+                          boxShadow: 'none',
+                        },
+                      },
+                    }}
+                  >
+                    <ToggleButton value="fit" aria-label="fit">
+                      Fit
+                    </ToggleButton>
+                    <ToggleButton value="small" aria-label="small">
+                      Small
+                    </ToggleButton>
+                    <ToggleButton value="medium" aria-label="medium">
+                      Medium
+                    </ToggleButton>
+                    <ToggleButton value="large" aria-label="large">
+                      Large
+                    </ToggleButton>
+                    <ToggleButton value="full" aria-label="full">
+                      Full
+                    </ToggleButton>
+                  </ToggleButtonGroup>
+
+                  <Box
+                    sx={{
+                      gridArea: 'intensity',
+                      justifySelf: { xs: 'stretch', md: 'end' },
+                      width: '100%',
+                      maxWidth: 500,
+                    }}
+                  >
+                    <Box sx={stackDomainWidgetStyles}>
+                      <Typography variant="body2" sx={{ fontWeight: 500, flexShrink: 0 }}>
+                        Colourbar intensity
+                      </Typography>
+                      <Toolbar>
+                        <DomainWidget
+                          dataDomain={STACK_INTENSITY_DOMAIN}
+                          customDomain={stackCustomIntensityDomain}
+                          scaleType={ScaleType.Linear}
+                          disabled={!selectedJob || !stackDataset}
+                          onCustomDomainChange={setStackCustomIntensityDomain}
                         />
-                      ) : stackLoading ? (
-                        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-                          <CircularProgress />
-                        </Box>
-                      ) : (
-                        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-                          <Typography color="white">
-                            {stackError ??
-                              (stackImages.length === 0
-                                ? 'No images found in this job stack.'
-                                : 'Loading stack images...')}
-                          </Typography>
-                        </Box>
-                      )}
+                      </Toolbar>
                     </Box>
                   </Box>
-                </>
+                </Box>
+              </Paper>
+              {selectedJobError ? (
+                <Alert severity="error">{selectedJobError}</Alert>
+              ) : selectedJobLoading ? (
+                <Box sx={{ ...panelSx, mt: '-1px', display: 'flex', justifyContent: 'center', p: 4 }}>
+                  <CircularProgress aria-label="Loading selected IMAT stack" />
+                </Box>
+              ) : !selectedJob ? (
+                <Box
+                  sx={{
+                    ...panelSx,
+                    mt: '-1px',
+                    flex: 1,
+                    minHeight: 0,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    p: 3,
+                    textAlign: 'center',
+                  }}
+                >
+                  <Typography variant="body1" fontWeight={700} sx={{ mb: 1 }}>
+                    Select a stack to view its images
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: alpha(viewerChrome.text, 0.75) }}>
+                    Choose an experiment and a stack from the list, or use Search to find one.
+                  </Typography>
+                </Box>
+              ) : (
+                <Box
+                  sx={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    overflow: viewerSize === 'fit' ? 'hidden' : 'auto',
+                    flex: 1,
+                    minHeight: 0,
+                    mt: '-1px',
+                  }}
+                >
+                  <Box
+                    sx={{
+                      width:
+                        viewerSize === 'fit'
+                          ? '100%'
+                          : viewerSize === 'small'
+                            ? stackDisplayWidth > 0
+                              ? stackDisplayWidth * 0.25
+                              : '100%'
+                            : viewerSize === 'medium'
+                              ? stackDisplayWidth > 0
+                                ? stackDisplayWidth * 0.5
+                                : '100%'
+                              : viewerSize === 'large'
+                                ? stackDisplayWidth > 0
+                                  ? stackDisplayWidth * 0.75
+                                  : '100%'
+                                : stackDisplayWidth || '100%',
+                      aspectRatio: stackAspectRatio,
+                      maxHeight: viewerSize === 'fit' ? '100%' : 'none',
+                      position: 'relative',
+                      border: `1px solid ${viewerChrome.border}`,
+                      borderRadius: 0,
+                      boxSizing: 'border-box',
+                      overflow: 'hidden',
+                      backgroundColor: 'black',
+                      color: 'rgba(255, 255, 255, 0.92)',
+                      '--h5w-colorBar-bounds--color': 'rgba(255, 255, 255, 0.92)',
+                      '--h5w-colorBar-tickLabels--color': 'rgba(255, 255, 255, 0.86)',
+                      '--h5w-colorBar-ticks--color': 'rgba(255, 255, 255, 0.72)',
+                      mx: 'auto',
+                      flexShrink: 0,
+                    }}
+                  >
+                    {stackDataset ? (
+                      <HeatmapVis
+                        dataArray={stackArray!}
+                        aspect="equal"
+                        flipYAxis
+                        style={{ height: '100%', width: '100%' }}
+                        domain={safeStackIntensityDomain}
+                      />
+                    ) : stackLoading ? (
+                      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+                        <CircularProgress />
+                      </Box>
+                    ) : (
+                      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+                        <Typography color="white">
+                          {stackError ??
+                            (stackImages.length === 0
+                              ? 'No images found in this job stack.'
+                              : 'Loading stack images...')}
+                        </Typography>
+                      </Box>
+                    )}
+                  </Box>
+                </Box>
               )}
             </Box>
           </Box>

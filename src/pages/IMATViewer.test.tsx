@@ -12,7 +12,11 @@ import type { Job } from '../lib/types';
 const treeJob = vi.hoisted(() => ({ get: vi.fn() }));
 
 vi.mock('@h5web/lib', () => ({
-  DomainWidget: () => <div data-testid="domain-widget" />,
+  DomainWidget: ({ disabled }: { disabled?: boolean }) => (
+    <button type="button" data-testid="domain-widget" disabled={disabled}>
+      Colourbar range
+    </button>
+  ),
   HeatmapVis: () => <div data-testid="heatmap" />,
   RgbVis: () => <div data-testid="rgb-image" />,
   ScaleType: { Linear: 'linear' },
@@ -21,18 +25,9 @@ vi.mock('@h5web/lib', () => ({
 }));
 
 vi.mock('../components/imat/ImatStackJobTree', () => ({
-  default: ({
-    autoSelect,
-    selectedJobId,
-    onSelectJob,
-  }: {
-    autoSelect: boolean;
-    selectedJobId: number | null;
-    onSelectJob: (job: Job) => void;
-  }) => (
+  default: ({ selectedJobId, onSelectJob }: { selectedJobId: number | null; onSelectJob: (job: Job) => void }) => (
     <aside aria-label="Mock stack tree">
       <span>{`Selected job: ${selectedJobId ?? 'none'}`}</span>
-      <span>{`Auto select: ${autoSelect}`}</span>
       <button type="button" onClick={() => onSelectJob(treeJob.get() as Job)}>
         Select another stack
       </button>
@@ -121,6 +116,43 @@ describe('IMATViewer stack selection', () => {
 
   afterEach(() => {
     cleanup();
+  });
+
+  test('opens without a selected stack and returns to the generic page when navigating back', async () => {
+    const user = userEvent.setup();
+    const path = '/reduction-history/IMAT/stack-viewer';
+    renderViewer(path);
+
+    expect(screen.getByText('Select a stack to view its images')).toBeInTheDocument();
+    const toolbar = screen.getByRole('group', { name: 'Stack viewer controls' });
+    expect(toolbar).toBeInTheDocument();
+    expect(screen.getByText('Image 0 of 0')).toBeInTheDocument();
+    expect(screen.getByRole('slider', { name: 'Stack image' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'fit' })).toBeDisabled();
+    expect(screen.getByTestId('domain-widget')).toBeDisabled();
+    expect(screen.getByText('Selected job: none')).toBeInTheDocument();
+    expect(screen.getByTestId('location').textContent).toBe(path);
+    expect(fiaApi.get).not.toHaveBeenCalled();
+    expect(h5Api.get).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('button', { name: 'Select another stack' }));
+    expect(await screen.findByTestId('heatmap')).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'Stack viewer controls' })).toBe(toolbar);
+    expect(screen.getByRole('slider', { name: 'Stack image' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'fit' })).toBeEnabled();
+    expect(screen.getByTestId('domain-widget')).toBeEnabled();
+    expect(screen.queryByText('Select a stack to view its images')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Back' }));
+    expect(await screen.findByText('Select a stack to view its images')).toBeInTheDocument();
+    expect(screen.getByText('Selected job: none')).toBeInTheDocument();
+    expect(screen.getByTestId('location').textContent).toBe(path);
+    expect(screen.queryByTestId('heatmap')).not.toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'Stack viewer controls' })).toBe(toolbar);
+    expect(screen.getByText('Image 0 of 0')).toBeInTheDocument();
+    expect(screen.getByRole('slider', { name: 'Stack image' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'fit' })).toBeDisabled();
+    expect(screen.getByTestId('domain-widget')).toBeDisabled();
   });
 
   test('hydrates and canonicalises an older deep-linked job, then clamps its image index', async () => {
@@ -242,7 +274,9 @@ describe('IMATViewer stack selection', () => {
     renderViewer('/reduction-history/IMAT/stack-viewer?jobId=3');
 
     expect(await screen.findByText('This job is not an available successful IMAT stack.')).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'Stack viewer controls' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'fit' })).toBeDisabled();
     expect(h5Api.get).not.toHaveBeenCalled();
-    expect(screen.getByText('Auto select: false')).toBeInTheDocument();
+    expect(screen.getByTestId('location').textContent).toBe('/reduction-history/IMAT/stack-viewer?jobId=3');
   });
 });

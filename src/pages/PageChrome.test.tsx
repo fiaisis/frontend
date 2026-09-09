@@ -1,6 +1,7 @@
-import { cleanup, render, screen, within } from '@testing-library/react';
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import React from 'react';
-import { MemoryRouter, Route } from 'react-router-dom';
+import { MemoryRouter, Route, useLocation } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
 import ExperimentViewer from './ExperimentViewer';
@@ -43,14 +44,24 @@ vi.mock('../components/jobs/InstrumentSelector', () => ({
 }));
 
 vi.mock('../components/experimentViewer/Viewer2D', () => ({ default: () => <div data-testid="viewer-2d" /> }));
-vi.mock('../components/experimentViewer/FileTree', () => ({ default: () => <div data-testid="file-tree" /> }));
+vi.mock('../components/experimentViewer/FileTree', () => ({
+  default: ({ viewTabs, searchControls }: { viewTabs?: React.ReactNode; searchControls?: React.ReactNode }) => (
+    <div data-testid="file-tree">
+      {viewTabs}
+      {searchControls}
+    </div>
+  ),
+}));
 vi.mock('../components/experimentViewer/Graph', () => ({ default: () => <div data-testid="plot-viewer" /> }));
 vi.mock('../components/experimentViewer/ViewerTabs', () => ({ default: () => <div data-testid="viewer-tabs" /> }));
 vi.mock('../components/experimentViewer/LiveLogViewer', () => ({ LiveLogViewer: () => null }));
 
+const PageLocation = (): React.ReactElement => <span data-testid="page-location">{useLocation().pathname}</span>;
+
 const renderPage = (path: string, route: string, page: React.ReactElement): ReturnType<typeof render> =>
   render(
     <MemoryRouter initialEntries={[path]}>
+      <PageLocation />
       <Route path={route}>{page}</Route>
     </MemoryRouter>
   );
@@ -62,6 +73,7 @@ describe('page chrome titles', () => {
     vi.mocked(fetchLiveDataFiles).mockResolvedValue([]);
     vi.mocked(fiaApi.get).mockImplementation(async (url) => {
       if (url === '/jobs/runners') return { data: { runner: '6.9' } };
+      if (url === '/jobs/count') return { data: { count: 0 } };
       if (url === '/job/42') {
         return { data: { script: { value: 'reduce()' }, run: { instrument_name: 'LOQ' } } };
       }
@@ -77,6 +89,67 @@ describe('page chrome titles', () => {
 
     expect(screen.queryByRole('heading', { name: 'Experiment viewer' })).not.toBeInTheDocument();
     expect(screen.getByLabelText('breadcrumb')).toBeInTheDocument();
+    expect(within(screen.getByLabelText('breadcrumb')).queryByRole('button')).not.toBeInTheDocument();
+    expect(
+      within(screen.getByRole('group', { name: 'Page controls' })).getByRole('button', {
+        name: 'Browse instruments',
+      })
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByRole('group', { name: 'Page controls' })).queryByRole('spinbutton')
+    ).not.toBeInTheDocument();
+    expect(
+      within(screen.getByRole('complementary', { name: 'Experiment viewer files' })).getByRole('form', {
+        name: 'Search experiment number',
+      })
+    ).toBeInTheDocument();
+  });
+
+  test('searches and clears experiment numbers from the left panel', async () => {
+    const user = userEvent.setup();
+    renderPage('/experiment-viewer/LOQ', '/experiment-viewer/:instrumentName/:experimentNumber?', <ExperimentViewer />);
+
+    await user.type(screen.getByRole('spinbutton', { name: 'Experiment number' }), '12345');
+    await user.click(screen.getByRole('button', { name: 'Search' }));
+
+    await waitFor(() => expect(screen.getByTestId('page-location')).toHaveTextContent('/experiment-viewer/LOQ/12345'));
+    expect(within(screen.getByLabelText('breadcrumb')).getByRole('link', { name: 'LOQ' })).toHaveAttribute(
+      'href',
+      '/experiment-viewer/LOQ'
+    );
+    expect(screen.getByRole('spinbutton', { name: 'Experiment number' })).toHaveValue(12345);
+    await waitFor(() =>
+      expect(fiaApi.get).toHaveBeenCalledWith('/jobs/count', {
+        params: {
+          filters: JSON.stringify({
+            job_state_in: ['SUCCESSFUL'],
+            instrument_in: ['LOQ'],
+            experiment_number_in: [12345],
+          }),
+        },
+      })
+    );
+    await user.click(screen.getByRole('button', { name: 'Clear experiment number' }));
+
+    await waitFor(() => expect(screen.getByTestId('page-location').textContent).toBe('/experiment-viewer/LOQ'));
+    expect(within(screen.getByLabelText('breadcrumb')).getByText('LOQ')).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('spinbutton', { name: 'Experiment number' })).toHaveValue(null);
+    expect(screen.getByRole('button', { name: 'Clear experiment number' })).toBeDisabled();
+  });
+
+  test('keeps experiment-only route details in the search control', () => {
+    renderPage(
+      '/experiment-viewer/experiment/12345',
+      '/experiment-viewer/experiment/:experimentOnlyNumber',
+      <ExperimentViewer />
+    );
+    expect(
+      within(screen.getByLabelText('breadcrumb')).getByRole('link', { name: 'Experiment viewer' })
+    ).toHaveAttribute('href', '/experiment-viewer');
+    expect(screen.getByRole('spinbutton', { name: 'Experiment number' })).toHaveValue(12345);
+    expect(
+      within(screen.getByLabelText('breadcrumb')).queryByText('experiment', { exact: true })
+    ).not.toBeInTheDocument();
   });
 
   test('removes the Live data viewer page heading while retaining connection status', async () => {
