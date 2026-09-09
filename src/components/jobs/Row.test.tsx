@@ -167,7 +167,14 @@ describe('Row and reduction details modal', () => {
     expect(toggleSelection).toHaveBeenCalledWith(42);
     expect(onOpenDetails).not.toHaveBeenCalled();
 
-    await user.click(screen.getByRole('button', { name: 'View reduction 42 details' }));
+    expect(screen.queryByRole('button', { name: 'View reduction 42 details' })).not.toBeInTheDocument();
+
+    row.focus();
+    await user.keyboard('{Enter}');
+    expect(onOpenDetails).toHaveBeenCalledWith(job);
+
+    onOpenDetails.mockClear();
+    await user.keyboard(' ');
     expect(onOpenDetails).toHaveBeenCalledWith(job);
   });
 
@@ -325,7 +332,7 @@ describe('Row and reduction details modal', () => {
     await user.click(screen.getByRole('tab', { name: 'Reduction outputs' }));
 
     expect(screen.getByText('[ERROR] Algorithm failed')).toBeInTheDocument();
-    expect(screen.getByText('Stacktrace output')).toBeInTheDocument();
+    expect(screen.getByText('Stacktrace')).toBeInTheDocument();
     expect(screen.getByText('Traceback: invalid workspace')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Download all' })).toBeDisabled();
   });

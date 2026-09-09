@@ -6,7 +6,6 @@ import {
   ErrorOutline,
   HighlightOff,
   ImageAspectRatio,
-  ChevronRight,
   OpenInNew,
   People,
   Replay,
@@ -275,7 +274,7 @@ const DetailItem: React.FC<{ icon: ReactElement; label: string; value: string | 
   value,
 }) => (
   <TableRow>
-    <TableCell component="th" scope="row" sx={{ width: '30%', minWidth: 0 }}>
+    <TableCell component="th" scope="row" sx={{ width: '45%', minWidth: 0 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
         <Box sx={{ display: 'inline-flex', color: 'text.secondary', flexShrink: 0 }}>{icon}</Box>
         <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 700, whiteSpace: 'nowrap' }}>
@@ -371,7 +370,7 @@ const InputDetailRow: React.FC<{ inputKey: string; value: string | number | bool
   value,
 }) => (
   <TableRow>
-    <TableCell component="th" scope="row" sx={{ width: '30%', minWidth: 0 }}>
+    <TableCell component="th" scope="row" sx={{ width: '45%', minWidth: 0 }}>
       <EllipsisTooltipText value={`${inputKey}:`} sx={{ color: 'text.secondary', fontWeight: 700 }} />
     </TableCell>
     <TableCell sx={{ minWidth: 0 }}>
@@ -421,6 +420,7 @@ const JobStatus: React.FC<{ state: string; statusMessage: string }> = ({ state, 
       sx={{
         display: 'inline-flex',
         maxWidth: '100%',
+        boxSizing: 'border-box',
         mt: 0.75,
         px: 1,
         py: 0.375,
@@ -430,7 +430,7 @@ const JobStatus: React.FC<{ state: string; statusMessage: string }> = ({ state, 
         backgroundColor: alpha(status.color, theme.palette.mode === 'dark' ? 0.16 : 0.1),
       }}
     >
-      <Typography variant="caption" sx={{ color: status.color, fontWeight: 700 }}>
+      <Typography variant="caption" noWrap title={status.message} sx={{ color: status.color, fontWeight: 700 }}>
         {status.message}
       </Typography>
     </Box>
@@ -911,9 +911,9 @@ const ReductionDetailsContent: React.FC<{
                       }}
                     >
                       <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>
-                        Stacktrace output
+                        Stacktrace
                       </Typography>
-                      <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
+                      <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>
                         {job.stacktrace ? job.stacktrace : 'No detailed stacktrace to show'}
                       </Typography>
                     </Box>
@@ -1215,19 +1215,7 @@ const Row: React.FC<{
         <EllipsisTooltipText value={formatUtcForLocale(job.end)} />
       </TableCell>
       <TableCell colSpan={2}>
-        <Box display="flex" alignItems="center" justifyContent="space-between">
-          <EllipsisTooltipText value={job.run?.title || 'N/A'} sx={{ flexGrow: 1 }} />
-          <IconButton
-            aria-label={`View reduction ${job.id} details`}
-            onClick={(event: React.MouseEvent<HTMLButtonElement>) => {
-              event.stopPropagation();
-              openDetails();
-            }}
-            sx={{ ml: 1, p: 0.5 }}
-          >
-            <ChevronRight />
-          </IconButton>
-        </Box>
+        <EllipsisTooltipText value={job.run?.title || 'N/A'} />
       </TableCell>
     </TableRow>
   );
