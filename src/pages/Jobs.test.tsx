@@ -36,8 +36,8 @@ vi.mock('../components/jobs/Filters', () => ({
 }));
 
 vi.mock('../components/configsettings/InstrumentConfigDrawer', () => ({
-  default: ({ buttonPlacement }: { buttonPlacement?: string }) => (
-    <button type="button" data-placement={buttonPlacement}>
+  default: ({ buttonPlacement, disabled }: { buttonPlacement?: string; disabled?: boolean }) => (
+    <button type="button" data-placement={buttonPlacement} disabled={disabled}>
       Edit config
     </button>
   ),
@@ -112,6 +112,12 @@ describe('Jobs', () => {
     expect(screen.queryByRole('button', { name: 'Clear filters' })).not.toBeInTheDocument();
     expect(screen.getByRole('checkbox', { name: 'Hide unsupported instruments' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'View all reductions' })).not.toBeInTheDocument();
+  });
+
+  test('enables the GEM instrument config', () => {
+    renderJobs('/reduction-history/GEM');
+
+    expect(screen.getByRole('button', { name: 'Edit config' })).toBeEnabled();
   });
 
   test('opens linkable reduction details and closes them through browser history', async () => {

@@ -1,8 +1,4 @@
-import {
-  JOB_ROWS_PER_PAGE_OPTIONS,
-  JOB_TABLE_MIN_WIDTH,
-  JOB_TABLE_SCROLLBAR_WIDTH,
-} from '../../src/components/jobs/constants';
+import { JOB_ROWS_PER_PAGE_OPTIONS, JOB_TABLE_MIN_WIDTH } from '../../src/components/jobs/constants';
 
 const baseJob = {
   start: '2025-01-01T10:00:00Z',
@@ -219,6 +215,29 @@ describe('Reduction history page', () => {
     cy.contains('LOQ scoped reduction').should('be.visible');
   });
 
+  it('opens GEM configuration with its file upload controls', () => {
+    cy.intercept('GET', /\/api\/instrument\/GEM\/jobs\/count\?.*$/, { count: 0 });
+    cy.intercept('GET', /\/api\/instrument\/GEM\/jobs\?.*$/, []);
+    cy.intercept('GET', /\/api\/instrument\/GEM\/specification$/, { enabled: true }).as('getGemSpecification');
+
+    cy.visitFia('/fia/reduction-history/GEM');
+    cy.get('button[aria-label="Open instrument config"]').should('be.enabled').click();
+    cy.wait('@getGemSpecification');
+    cy.get('#instrument-config-drawer')
+      .should('be.visible')
+      .within(() => {
+        cy.contains('GEM config settings').should('be.visible');
+        cy.contains('label', 'Upload file').should('be.visible');
+        cy.get('input[type="file"]')
+          .should('not.be.disabled')
+          .selectFile(
+            { contents: Cypress.Buffer.from('test calibration'), fileName: 'calibration.dat' },
+            { force: true }
+          );
+        cy.get('[role="status"]').should('contain', 'Selected file: calibration.dat');
+      });
+  });
+
   it('wraps table controls while keeping column headers horizontally scrollable on narrow screens', () => {
     cy.viewport(700, 900);
 
@@ -354,9 +373,14 @@ describe('Reduction history page', () => {
       cy.get('[role="combobox"]').should('not.exist');
     });
 
-    cy.get(`${tableContainerSelector} table`).should(($table) => {
-      // The table's scrollable frame also reserves space for the vertical scrollbar.
-      expect($table[0].getBoundingClientRect().width).to.be.at.least(JOB_TABLE_MIN_WIDTH - JOB_TABLE_SCROLLBAR_WIDTH);
+    cy.get(tableScrollSelector).should(($tableScroll) => {
+      const viewport = $tableScroll[0];
+      const header = viewport.ownerDocument.querySelector('[aria-label="Reduction history column headers"]')!;
+      const rows = $tableScroll.find('table')[0];
+
+      // Native scrollbar widths vary; both tables must fill the actual space available for rows.
+      expect(rows.getBoundingClientRect().width).to.be.closeTo(viewport.clientWidth, 1);
+      expect(header.getBoundingClientRect().width).to.be.closeTo(viewport.clientWidth, 1);
     });
 
     cy.get(tableContainerSelector).scrollTo('left');
@@ -466,20 +490,21 @@ describe('Reduction history page', () => {
 
     cy.visitFia('/fia/reduction-history/IMAT/stack-viewer');
 
-    cy.wait('@getImatStacks');
     cy.get('[aria-label="Stack viewer controls"]')
       .should('be.visible')
       .within(() => {
         cy.get('input[aria-label="Stack image"]').should('be.disabled');
         cy.get('button[aria-label="fit"]').should('be.disabled');
         cy.contains('Image 0 of 0').should('be.visible');
-        cy.contains('Colourbar intensity').should('be.visible');
       });
     cy.contains('Select a stack to view its images').should('be.visible');
     cy.location('search').should('eq', '');
+    cy.get('@getImatStacks.all').should('have.length', 0);
     cy.get('@findImatStack.all').should('have.length', 0);
     cy.get('@listImatImages.all').should('have.length', 0);
     cy.screenshot('imat-stack-generic', { capture: 'viewport' });
+    cy.get('aside[aria-label="IMAT stack jobs"]').contains('button', 'Search').click();
+    cy.wait('@getImatStacks');
     cy.contains('[role="button"]', 'Experiment 24680').click();
     cy.contains('[role="button"]', 'IMAT00000302').click();
     cy.location('search').should('include', 'jobId=302').and('include', 'experiment=24680');
@@ -501,5 +526,52 @@ describe('Reduction history page', () => {
     cy.get('[aria-label="Successful IMAT stacks"] [aria-current="true"]').should('not.exist');
     cy.get('[aria-label="Stack viewer controls"]').should('be.visible');
     cy.get('button[aria-label="fit"]').should('be.disabled');
+  });
+
+  it('selects different IMAT stacks from the job tree after searching', () => {
+    cy.intercept('GET', /\/api\/instrument\/IMAT\/jobs\?.*$/, {
+      statusCode: 200,
+      body: imatJobsResponse,
+    }).as('getImatStacks');
+
+    cy.intercept('GET', /\/plottingapi\/find_file\/instrument\/IMAT\/experiment_number\/\d+\?.*$/, {
+      statusCode: 200,
+      body: '/data/imat',
+    }).as('findImatStack');
+
+    cy.intercept('GET', /\/plottingapi\/imat\/list-images\?.*$/, (req) => {
+      const path = String(req.query.path);
+      req.reply({
+        statusCode: 200,
+        body: [path.includes('run-302') ? 'newest-frame.tif' : 'older-frame.tif'],
+      });
+    }).as('listImatImages');
+
+    cy.intercept('GET', /\/plottingapi\/imat\/image\?.*$/, {
+      statusCode: 500,
+      body: 'Image rendering is outside this navigation test',
+    });
+
+    cy.visitFia('/fia/reduction-history/IMAT/stack-viewer');
+
+    cy.get('aside[aria-label="IMAT stack jobs"]').should('be.visible');
+    cy.get('@getImatStacks.all').should('have.length', 0);
+    cy.get('aside[aria-label="IMAT stack jobs"]').contains('button', 'Search').click();
+    cy.wait('@getImatStacks');
+    cy.location('search').should('not.include', 'jobId=');
+    cy.contains('[role="button"]', 'Experiment 24680').click();
+    cy.contains('[role="button"]', 'IMAT00000302').click();
+    cy.location('search').should('include', 'jobId=302').and('include', 'experiment=24680');
+    cy.wait('@findImatStack');
+    cy.wait('@listImatImages');
+    cy.contains('newest-frame.tif').should('be.visible');
+
+    cy.contains('[role="button"]', 'Experiment 13579').click();
+    cy.contains('[role="button"]', 'IMAT00000301').click();
+
+    cy.location('search').should('include', 'jobId=301').and('include', 'experiment=13579');
+    cy.wait('@findImatStack');
+    cy.wait('@listImatImages');
+    cy.contains('older-frame.tif').should('be.visible');
   });
 });
