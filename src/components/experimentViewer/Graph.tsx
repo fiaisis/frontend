@@ -16,7 +16,7 @@ import {
 import { Box, Paper, Typography } from '@mui/material';
 import { alpha, useTheme } from '@mui/material/styles';
 import ndarray from 'ndarray';
-import React, { useMemo, useState } from 'react';
+import React, { useLayoutEffect, useMemo, useReducer, useState } from 'react';
 import { MdAutoGraph, MdGridOn } from 'react-icons/md';
 
 import { getViewerPlotSx } from './styles';
@@ -58,6 +58,13 @@ const PlotViewer: React.FC<PlotViewerProps> = ({
   const theme = useTheme();
   const viewerChrome = getJobTableChromeColors(theme.palette.mode);
   const hasData = linePlotData.length > 0;
+  const [, refreshPlotColors] = useReducer((version: number) => version + 1, 0);
+
+  // H5Web reads computed CSS colors during render, before theme styles commit.
+  // Read them again after the DOM updates without remounting the plot and losing zoom.
+  useLayoutEffect(() => {
+    refreshPlotColors();
+  }, [theme]);
 
   // State for line plot controls
   const [lineShowGrid, setLineShowGrid] = useState(true);
