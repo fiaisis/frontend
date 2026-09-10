@@ -19,6 +19,24 @@ const RefreshableViewer = (): React.ReactElement => {
   );
 };
 
+const ToggleableLineViewer = (): React.ReactElement => {
+  const [hasData, setHasData] = useState(false);
+  return (
+    <>
+      <button type="button" onClick={() => setHasData(!hasData)}>
+        {hasData ? 'Clear data' : 'Load data'}
+      </button>
+      <Box sx={{ height: 500 }}>
+        <PlotViewer
+          linePlotData={hasData ? [{ filename: 'signal', data: [1, 3, 2, 4, 1] }] : []}
+          showErrors={false}
+          onShowErrorsChange={() => undefined}
+        />
+      </Box>
+    </>
+  );
+};
+
 describe('Viewer toolbars', () => {
   beforeEach(() => {
     cy.viewport(1200, 800);
@@ -37,10 +55,48 @@ describe('Viewer toolbars', () => {
       </>
     );
     cy.get('[aria-label="1D plot controls"]').should('be.visible').find('button').first().should('be.disabled');
+    cy.get('[aria-label="1D plot controls"]').should('have.attr', 'inert');
+    for (const bound of ['min', 'max']) {
+      cy.get(`[aria-label="1D plot controls"] [aria-label="Change ${bound} limit"]`)
+        .should('have.attr', 'aria-disabled', 'true')
+        .and('have.attr', 'tabindex', '-1');
+    }
     cy.get('[aria-label="Plot controls"]').should('be.visible').and('have.attr', 'inert');
     cy.contains('Select a file to view 1D data').should('be.visible');
     cy.contains('Select a file to view 2D data').should('be.visible');
     cy.screenshot('viewer-toolbars-empty', { capture: 'viewport' });
+  });
+
+  it('enables the 1D domain slider only while a graph is displayed', () => {
+    mount(<ToggleableLineViewer />);
+    const toolbar = '[aria-label="1D plot controls"]';
+    const minSlider = `${toolbar} [aria-label="Change min limit"]`;
+
+    cy.get(minSlider).then(($slider) => {
+      $slider[0].focus();
+      expect($slider[0].ownerDocument.activeElement).not.to.equal($slider[0]);
+    });
+    cy.contains('button', 'Load data').click();
+    cy.get('canvas').should('be.visible');
+    cy.get(toolbar).should('not.have.attr', 'inert');
+    cy.get(minSlider).should('not.have.attr', 'aria-disabled');
+    cy.get(minSlider).focus();
+    cy.get(minSlider).then(($slider) => {
+      const previousValue = $slider.attr('aria-valuenow');
+      cy.realPress('ArrowRight');
+      cy.get(minSlider).should('not.have.attr', 'aria-valuenow', previousValue);
+    });
+
+    cy.contains('button', 'Clear data').click();
+    cy.contains('Select a file to view 1D data').should('be.visible');
+    cy.get(toolbar).should('have.attr', 'inert');
+    cy.get(minSlider).should('have.attr', 'aria-disabled', 'true').and('have.attr', 'tabindex', '-1');
+    cy.get(minSlider).then(($slider) => {
+      const previousValue = $slider.attr('aria-valuenow');
+      cy.get(minSlider).realClick();
+      cy.get(minSlider).should('not.have.focus').and('have.attr', 'aria-valuenow', previousValue);
+    });
+    cy.get(`${toolbar} [role="dialog"]`).should('not.be.visible');
   });
 
   it('keeps controls visible while loading and restores working controls after a refresh', () => {

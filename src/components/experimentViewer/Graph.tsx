@@ -155,6 +155,7 @@ const PlotViewer: React.FC<PlotViewerProps> = ({
         <Box
           component="fieldset"
           disabled={!hasData}
+          {...(!hasData ? { inert: '' } : {})}
           aria-label="1D plot controls"
           sx={{ display: 'flex', border: 0, p: 0, m: 0, minWidth: 0 }}
           className="toolbar"
@@ -164,6 +165,7 @@ const PlotViewer: React.FC<PlotViewerProps> = ({
               dataDomain={autoDomain}
               customDomain={customYDomain}
               scaleType={yScaleType}
+              disabled={!hasData}
               onCustomDomainChange={setCustomYDomain}
             />
             <Separator />

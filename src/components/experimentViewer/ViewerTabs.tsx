@@ -7,7 +7,7 @@ import React from 'react';
 import { getJobTableChromeColors, JOB_TABLE_TOOLBAR_CONTROL_HEIGHT } from '../jobs/constants';
 
 interface ViewerTabsProps {
-  activeTab: '1d' | '2d';
+  activeTab: '1d' | '2d' | false;
   onTabChange: (tab: '1d' | '2d') => void;
   disabled?: boolean;
 }
@@ -28,12 +28,16 @@ const ViewerTabs: React.FC<ViewerTabsProps> = ({ activeTab, onTabChange, disable
       variant="fullWidth"
       sx={{
         flexShrink: 0,
+        height: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
         minHeight: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
+        boxSizing: 'border-box',
         borderBottom: `1px solid ${viewerChrome.border}`,
         backgroundColor: viewerChrome.header,
+        '& .MuiTabs-list': { height: '100%' },
         '& .MuiTabs-indicator': { backgroundColor: viewerChrome.accent, height: 3 },
         '& .MuiTab-root': {
-          minHeight: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
+          height: '100%',
+          minHeight: 0,
           borderRadius: 0,
           px: 1.5,
           py: 0.75,

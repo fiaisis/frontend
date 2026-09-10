@@ -79,9 +79,19 @@ const Viewer2D: React.FC<Viewer2DProps> = ({
         },
         [`& .${visualizerStyles.visBar}`]: {
           borderBottom: `1px solid ${viewerChrome.border}`,
+          '& [role="tablist"]': { flexShrink: 0 },
+          // Keep the tab spacing when H5Web's global button reset loads last.
+          '& [role="tab"]': {
+            padding: '0.125rem 1rem 0',
+            borderBottom: '0.25rem solid transparent',
+            lineHeight: 1,
+            whiteSpace: 'nowrap',
+            '&:hover': { borderBottomColor: alpha(viewerChrome.accent, 0.12) },
+          },
           '& button[aria-selected="true"]': {
             color: viewerChrome.accent,
             backgroundColor: alpha(viewerChrome.accent, 0.12),
+            borderBottomColor: viewerChrome.accent,
           },
         },
       }}
