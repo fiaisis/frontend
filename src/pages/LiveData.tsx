@@ -252,6 +252,7 @@ const LiveData: React.FC = (): JSX.Element => {
               role="status"
               sx={{
                 flex: '0 0 auto',
+                width: 120,
                 minHeight: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
                 borderRadius: 0,
                 borderColor: alpha(connectionColor, 0.5),
