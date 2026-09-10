@@ -571,7 +571,7 @@ describe('Experiment viewer', { timeout: 30000 }, () => {
     servePages([[pageJob(10)]]);
     renderViewer(outputLink(), outputLink());
     await waitFor(() => expect(screen.getByTestId('plot-data')).toHaveTextContent(selectedFilename));
-    await user.click(screen.getByRole('checkbox', { name: selectedFilename }));
+    await user.click(await screen.findByRole('checkbox', { name: selectedFilename }));
     expect(screen.getByTestId('plot-data')).toHaveTextContent('[]');
     await user.click(screen.getByRole('button', { name: 'Go to page 2' }));
     await waitFor(() => expect(screen.queryByRole('progressbar', { name: 'Loading jobs' })).not.toBeInTheDocument());
