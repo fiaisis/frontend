@@ -16,7 +16,7 @@ jobs:
           node-version: '20'
           cache: 'yarn'
       - name: Install Dependencies
-        run: yarn install
+        run: yarn install --immutable
       - name: Run Cypress Component Tests
         uses: cypress-io/github-action@v7
         env:

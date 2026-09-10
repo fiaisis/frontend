@@ -132,6 +132,12 @@ To access the websites made by the above containers navigate to http://localhost
 
 ## Package issues
 
+H5Web is intentionally pinned to `17.0.0-beta.1`. Vite and TypeScript resolve H5Web imports to the source in the `src/h5web` submodule so our custom viewers can access internal components and styles. The installed `@h5web/app` and `@h5web/lib` packages supply supporting dependencies and must be pinned to that same exact version.
+
+Dependabot updates for H5Web and incompatible Three.js versions are held while this source version is in use. For a future H5Web upgrade, update the submodule commit and both package pins together, regenerate `yarn.lock`, review the Dependabot restrictions, and run the build and viewer tests.
+
+Keep `three` pinned to `0.182.0` while using the current H5Web submodule. H5Web implements plot zoom with camera scaling, which [Three.js r183 removed from the view matrix](https://github.com/mrdoob/three.js/releases/tag/r183). Newer versions let axes change while the plotted data stays at its original size. Run `cypress/component/ViewerZoom.cy.tsx` when updating H5Web or Three.js to check rendered zoom, pan, and reset behavior.
+
 When adding new dependencies to [`package.json`](package.json) or switching between branches with different dependencies, run `yarn install` to update the `node_modules` folder.
 
 Occasionally there are issues with package conflicts that require `node_modules` and `yarn.lock` to be deleted and the cache cleared. You can do this with the following command:

@@ -11,11 +11,25 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: [
+      // Use the pinned H5Web source for access to internal viewer components.
+      // The npm packages supply the supporting dependencies.
       // Handle CSS imports with exact matches
-      { find: '@h5web/shared/styles.css', replacement: path.resolve(__dirname, 'src/h5web/packages/shared/src/styles.css') },
-      { find: '@h5web/lib/styles.css', replacement: path.resolve(__dirname, 'src/h5web/packages/lib/src/global-styles.css') },
-      { find: '@h5web/lib/global-styles.css', replacement: path.resolve(__dirname, 'src/h5web/packages/lib/src/global-styles.css') },
-      { find: '@h5web/app/styles.css', replacement: path.resolve(__dirname, 'src/h5web/packages/app/src/global-styles.css') },
+      {
+        find: '@h5web/shared/styles.css',
+        replacement: path.resolve(__dirname, 'src/h5web/packages/shared/src/styles.css'),
+      },
+      {
+        find: '@h5web/lib/styles.css',
+        replacement: path.resolve(__dirname, 'src/h5web/packages/lib/src/global-styles.css'),
+      },
+      {
+        find: '@h5web/lib/global-styles.css',
+        replacement: path.resolve(__dirname, 'src/h5web/packages/lib/src/global-styles.css'),
+      },
+      {
+        find: '@h5web/app/styles.css',
+        replacement: path.resolve(__dirname, 'src/h5web/packages/app/src/global-styles.css'),
+      },
       // Handle @h5web/shared subpath imports with regex to ensure proper matching
       { find: /^@h5web\/shared\/(.+)$/, replacement: path.resolve(__dirname, 'src/h5web/packages/shared/src/$1') },
       { find: /^@h5web\/shared$/, replacement: path.resolve(__dirname, 'src/h5web/packages/shared/src/index.ts') },
