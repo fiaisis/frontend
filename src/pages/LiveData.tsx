@@ -37,6 +37,7 @@ const LiveData: React.FC = (): JSX.Element => {
   const theme = useTheme();
   const viewerChrome = getJobTableChromeColors(theme.palette.mode);
   const connectedColor = theme.palette.mode === 'dark' ? theme.palette.success.light : theme.palette.success.dark;
+  const disconnectedColor = theme.palette.mode === 'dark' ? theme.palette.error.light : theme.palette.error.dark;
   const { rootRef, availableHeight } = useAvailablePluginHeight();
   const { instrumentName } = useParams<{ instrumentName?: string }>();
   const selectedInstrument = instrumentName
@@ -89,6 +90,7 @@ const LiveData: React.FC = (): JSX.Element => {
 
   // SSE connection
   const { isConnected, directory, changedFile, error: sseError } = useLiveDataSSE(selectedInstrument, true);
+  const connectionColor = isConnected ? connectedColor : disconnectedColor;
 
   // Build full file path using directory from SSE and selected file
   const selectedFilePath = selectedInstrument && directory && selectedFile ? `${directory}/${selectedFile}` : null;
@@ -244,7 +246,7 @@ const LiveData: React.FC = (): JSX.Element => {
           selectedInstrument && (
             <Chip
               label={isConnected ? 'Connected' : 'Disconnected'}
-              color={isConnected ? 'success' : 'default'}
+              color={isConnected ? 'success' : 'error'}
               size="small"
               variant="outlined"
               role="status"
@@ -252,9 +254,9 @@ const LiveData: React.FC = (): JSX.Element => {
                 flex: '0 0 auto',
                 minHeight: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
                 borderRadius: 0,
-                borderColor: isConnected ? alpha(connectedColor, 0.5) : viewerChrome.border,
-                backgroundColor: isConnected ? alpha(connectedColor, 0.08) : viewerChrome.header,
-                color: isConnected ? connectedColor : viewerChrome.text,
+                borderColor: alpha(connectionColor, 0.5),
+                backgroundColor: alpha(connectionColor, 0.08),
+                color: connectionColor,
                 fontWeight: 500,
                 '& .MuiChip-label': { px: 1.5 },
               }}
