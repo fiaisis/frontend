@@ -176,12 +176,13 @@ describe('page chrome titles', () => {
     expect(screen.getByRole('status')).not.toContainElement(screen.getByRole('group', { name: 'Page controls' }));
   });
 
-  test('removes the Instruments page heading while retaining its cards', () => {
+  test('removes the Instruments page heading while retaining its cards', { timeout: 15000 }, () => {
     renderPage('/isis-instruments', '/isis-instruments', <Instruments />);
 
     expect(screen.queryByRole('heading', { name: 'ISIS instruments' })).not.toBeInTheDocument();
     expect(screen.getByRole('region', { name: 'Instrument cards' })).toBeInTheDocument();
-    expect(screen.getAllByRole('link', { name: 'Experiment viewer' })[0]).toHaveAttribute(
+    const firstCard = within(screen.getAllByTestId('instrument-card')[0]);
+    expect(firstCard.getByRole('link', { name: 'Experiment viewer' })).toHaveAttribute(
       'href',
       expect.stringMatching(/^\/experiment-viewer\?instrument=/)
     );

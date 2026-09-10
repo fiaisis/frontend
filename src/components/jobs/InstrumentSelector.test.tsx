@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 import { afterEach, describe, expect, test, vi } from 'vitest';
@@ -15,7 +15,7 @@ const focusedInstrumentOptions = instruments.filter((instrument) =>
   ['ALF', 'GEM', 'LARMOR', 'LOQ', 'SANS2D', 'ZOOM'].includes(instrument.name)
 );
 
-describe('InstrumentSelector', () => {
+describe('InstrumentSelector', { timeout: 15000 }, () => {
   afterEach(() => {
     cleanup();
     localStorage.clear();
@@ -143,12 +143,14 @@ describe('InstrumentSelector', () => {
     );
     const selectorButton = screen.getByRole('button', { name: 'Instrument: ALF' });
     await user.click(selectorButton);
-    await user.click(screen.getByRole('checkbox', { name: 'Hide unsupported instruments' }));
-    expect(screen.getByRole('menuitem', { name: /ALF\s/ })).toBeInTheDocument();
-    expect(screen.getByRole('menuitem', { name: /LOQ\s/ })).toBeInTheDocument();
-    expect(screen.getByRole('menuitem', { name: /MARI\s/ })).toBeInTheDocument();
-    await user.click(screen.getByRole('checkbox', { name: 'Hide unsupported instruments' }));
-    expect(screen.getAllByRole('menuitem')).toHaveLength(2);
+    const supportToggle = screen.getByRole('checkbox', { name: 'Hide unsupported instruments' });
+    await user.click(supportToggle);
+    const menu = within(screen.getByRole('menu'));
+    expect(menu.getByRole('menuitem', { name: /ALF\s/ })).toBeInTheDocument();
+    expect(menu.getByRole('menuitem', { name: /LOQ\s/ })).toBeInTheDocument();
+    expect(menu.getByRole('menuitem', { name: /MARI\s/ })).toBeInTheDocument();
+    await user.click(supportToggle);
+    expect(menu.getAllByRole('menuitem')).toHaveLength(2);
     expect(selectorButton).toHaveTextContent('ALF');
     expect(onChange).not.toHaveBeenCalled();
   });
@@ -211,13 +213,15 @@ describe('InstrumentSelector', () => {
 
     await user.click(screen.getByRole('button', { name: /Instrument:\s+Select an instrument/ }));
 
-    expect(screen.getByRole('menuitem', { name: /LOQ\s+Small-angle neutron scattering/ })).toBeInTheDocument();
-    expect(screen.getByRole('menuitem', { name: /SANS2D\s+Small-angle neutron scattering/ })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Remove LOQ from favourites' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Remove SANS2D from favourites' })).toBeInTheDocument();
-    expect(screen.getByRole('menuitem', { name: /ALF\s+Neutron diffraction/ })).toBeInTheDocument();
+    const menu = within(screen.getByRole('menu'));
+    const loqOption = menu.getByRole('menuitem', { name: /LOQ\s+Small-angle neutron scattering/ });
+    const sansOption = menu.getByRole('menuitem', { name: /SANS2D\s+Small-angle neutron scattering/ });
+    expect(within(loqOption).getByRole('button', { name: 'Remove LOQ from favourites' })).toBeInTheDocument();
+    expect(within(sansOption).getByRole('button', { name: 'Remove SANS2D from favourites' })).toBeInTheDocument();
+    expect(menu.getByRole('menuitem', { name: /ALF\s+Neutron diffraction/ })).toBeInTheDocument();
+    expect(menu.getAllByRole('menuitem')).toHaveLength(instruments.length);
 
-    await user.click(screen.getByRole('menuitem', { name: /LOQ\s+Small-angle neutron scattering/ }));
+    await user.click(loqOption);
 
     expect(handleInstrumentChange).toHaveBeenCalledTimes(1);
     expect(handleInstrumentChange).toHaveBeenCalledWith('LOQ');

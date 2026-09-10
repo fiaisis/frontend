@@ -126,7 +126,8 @@ const renderViewer = (path = outputLink(), nextPath = outputLink('other.nxs')): 
   );
 };
 
-describe('Experiment viewer', () => {
+// Complete search, navigation, and dataset-selection flows take longer with coverage enabled.
+describe('Experiment viewer', { timeout: 30000 }, () => {
   beforeEach(() => {
     vi.resetAllMocks();
     vi.mocked(fiaApi.get).mockImplementation(async (url) => {
@@ -199,7 +200,7 @@ describe('Experiment viewer', () => {
 
   test.each([undefined, 'LOQ'])(
     'waits for a blank search to load all reductions with instrument %s, paginates, and clears without loading',
-    { timeout: 15000 },
+    { timeout: 30000 },
     async (instrument) => {
       const user = userEvent.setup();
       const basePath = `/experiment-viewer${instrument ? `?instrument=${instrument}` : ''}`;
@@ -459,7 +460,7 @@ describe('Experiment viewer', () => {
 
   test(
     'loads an older reduction alongside the experiment and clears edited selections when paging',
-    { timeout: 15000 },
+    { timeout: 30000 },
     async () => {
       const user = userEvent.setup();
       servePages([[pageJob(10)], [makeJob(), pageJob(11)]]);
@@ -497,7 +498,7 @@ describe('Experiment viewer', () => {
 
   test(
     'resets dataset, slice, and MD file selections when paging while retaining the chosen view',
-    { timeout: 15000 },
+    { timeout: 30000 },
     async () => {
       const user = userEvent.setup();
       servePages([[makeJob(), pageJob(10)], [pageJob(11)]]);
@@ -595,7 +596,7 @@ describe('Experiment viewer', () => {
     renderViewer();
     await waitFor(() => expect(screen.getByTestId('plot-data')).toHaveTextContent(selectedFilename));
     await user.click(screen.getByRole('button', { name: /LOQ10.nxs/ }));
-    await user.click(screen.getByRole('checkbox', { name: 'page-10.nxs' }));
+    await user.click(await screen.findByRole('checkbox', { name: 'page-10.nxs' }));
     await waitFor(() => expect(screen.getByTestId('plot-data')).toHaveTextContent('page-10.nxs'));
     const plotRequests = vi.mocked(fetchData1D).mock.calls.length;
     await user.click(screen.getByRole('button', { name: 'Go to page 2' }));
@@ -769,7 +770,7 @@ describe('Experiment viewer', () => {
     await waitFor(() => expect(screen.getByTestId('plot-data')).toHaveTextContent(selectedFilename));
     vi.mocked(discoverFileStructure).mockReturnValueOnce(pending.promise);
     await user.click(screen.getByRole('button', { name: /LOQ10.nxs/ }));
-    await user.click(screen.getByRole('checkbox', { name: 'page-10.nxs' }));
+    await user.click(await screen.findByRole('checkbox', { name: 'page-10.nxs' }));
     await waitFor(() => expect(discoverFileStructure).toHaveBeenCalledWith('page-10.nxs', '/data/page-10.nxs'));
     await user.click(screen.getByRole('button', { name: 'Go to page 2' }));
     await waitFor(() => expect(screen.queryByRole('progressbar', { name: 'Loading jobs' })).not.toBeInTheDocument());

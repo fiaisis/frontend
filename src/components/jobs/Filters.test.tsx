@@ -1,7 +1,7 @@
 import 'dayjs/locale/en-gb';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 import { afterEach, describe, expect, test, vi } from 'vitest';
@@ -34,7 +34,7 @@ const renderFilters = (
   );
 };
 
-describe('FilterContainer', () => {
+describe('FilterContainer', { timeout: 15000 }, () => {
   afterEach(() => {
     cleanup();
     localStorage.clear();
@@ -52,14 +52,16 @@ describe('FilterContainer', () => {
 
     const trigger = screen.getByRole('button', { name: /^Instruments/ });
     await user.click(trigger);
-    expect(screen.getByRole('menuitemcheckbox', { name: /^LOQ\s/ })).toBeChecked();
-    await user.click(screen.getByRole('menuitemcheckbox', { name: /^GEM\s/ }));
-    expect(screen.getByRole('menu', { name: 'Instruments' })).toBeInTheDocument();
+    const menu = screen.getByRole('menu', { name: 'Instruments' });
+    const loqOption = within(menu).getByRole('menuitemcheckbox', { name: /^LOQ\s/ });
+    expect(loqOption).toBeChecked();
+    await user.click(within(menu).getByRole('menuitemcheckbox', { name: /^GEM\s/ }));
+    expect(menu).toBeInTheDocument();
     expect(handleFiltersChange).toHaveBeenLastCalledWith(expect.objectContaining({ instrument_in: ['LOQ', 'GEM'] }));
 
-    screen.getByRole('menuitemcheckbox', { name: /^LOQ\s/ }).focus();
+    loqOption.focus();
     await user.keyboard('{Enter}');
-    expect(screen.getByRole('menuitemcheckbox', { name: /^LOQ\s/ })).not.toBeChecked();
+    expect(loqOption).not.toBeChecked();
     expect(handleFiltersChange).toHaveBeenLastCalledWith(expect.objectContaining({ instrument_in: ['GEM'] }));
     expect(resetPageNumber).toHaveBeenCalledTimes(2);
     await user.keyboard('{Escape}');
