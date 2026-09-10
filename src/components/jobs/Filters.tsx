@@ -26,7 +26,7 @@ import dayjs from 'dayjs';
 import React, { FC, ReactElement, useEffect, useState, Dispatch, SetStateAction } from 'react';
 
 import { getJobTableChromeColors, JOB_TABLE_TOOLBAR_CONTROL_HEIGHT } from './constants';
-import { instruments } from '../../lib/instrumentData';
+import InstrumentFilter from './InstrumentFilter';
 import { JobQueryFilters, reductionStates } from '../../lib/types';
 
 const itemHeight = 48;
@@ -530,12 +530,7 @@ const FilterContainer: React.FC<{
               />
 
               {showInstrumentFilter && (
-                <MultipleSelectCheckmarks
-                  selectedItems={selectedInstruments ?? []}
-                  name={'Instruments'}
-                  handleChange={setSelectedInstruments}
-                  items={instruments.map((instrument) => instrument.name)}
-                />
+                <InstrumentFilter selectedInstruments={selectedInstruments} onChange={setSelectedInstruments} />
               )}
             </Box>
           </Box>

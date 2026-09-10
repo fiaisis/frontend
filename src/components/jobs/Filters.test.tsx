@@ -7,6 +7,7 @@ import React from 'react';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 
 import FilterContainer from './Filters';
+import { FAVORITE_INSTRUMENTS_STORAGE_KEY } from '../../lib/instrumentFavorites';
 import { JobQueryFilters } from '../../lib/types';
 
 const renderFilters = (
@@ -34,7 +35,82 @@ const renderFilters = (
 };
 
 describe('FilterContainer', () => {
-  afterEach(cleanup);
+  afterEach(() => {
+    cleanup();
+    localStorage.clear();
+  });
+
+  test('selects multiple instruments without closing the menu and supports keyboard dismissal', async () => {
+    const user = userEvent.setup();
+    const handleFiltersChange = vi.fn();
+    const handleFiltersClose = vi.fn();
+    const resetPageNumber = vi.fn();
+    renderFilters(
+      { instrument_in: ['LOQ'] },
+      { showInstrumentFilter: true, handleFiltersChange, handleFiltersClose, resetPageNumber }
+    );
+
+    const trigger = screen.getByRole('button', { name: /^Instruments/ });
+    await user.click(trigger);
+    expect(screen.getByRole('menuitemcheckbox', { name: /^LOQ\s/ })).toBeChecked();
+    await user.click(screen.getByRole('menuitemcheckbox', { name: /^GEM\s/ }));
+    expect(screen.getByRole('menu', { name: 'Instruments' })).toBeInTheDocument();
+    expect(handleFiltersChange).toHaveBeenLastCalledWith(expect.objectContaining({ instrument_in: ['LOQ', 'GEM'] }));
+
+    screen.getByRole('menuitemcheckbox', { name: /^LOQ\s/ }).focus();
+    await user.keyboard('{Enter}');
+    expect(screen.getByRole('menuitemcheckbox', { name: /^LOQ\s/ })).not.toBeChecked();
+    expect(handleFiltersChange).toHaveBeenLastCalledWith(expect.objectContaining({ instrument_in: ['GEM'] }));
+    expect(resetPageNumber).toHaveBeenCalledTimes(2);
+    await user.keyboard('{Escape}');
+    await waitFor(() => expect(screen.queryByRole('menu')).not.toBeInTheDocument());
+    expect(trigger).toHaveFocus();
+    expect(trigger).toHaveTextContent('GEM');
+    expect(handleFiltersClose).not.toHaveBeenCalled();
+
+    await user.keyboard(' ');
+    expect(screen.getByRole('menuitemcheckbox', { name: /^GEM\s/ })).toBeChecked();
+  });
+
+  test('shares instrument search, support filtering and favourites without changing selected filters', async () => {
+    const user = userEvent.setup();
+    const handleFiltersChange = vi.fn();
+    renderFilters({ instrument_in: ['ALF'] }, { showInstrumentFilter: true, handleFiltersChange });
+    handleFiltersChange.mockClear();
+
+    await user.click(screen.getByRole('button', { name: /^Instruments/ }));
+    const search = screen.getByRole('textbox', { name: 'Search for instrument' });
+    await user.type(search, 'ALF');
+    expect(screen.getByText('No instruments found')).toBeInTheDocument();
+    await user.click(screen.getByRole('checkbox', { name: 'Hide unsupported instruments' }));
+    expect(screen.getByRole('menuitemcheckbox', { name: /^ALF\s+Neutron diffraction/ })).toBeChecked();
+    await user.click(screen.getByRole('button', { name: 'Add ALF to favourites' }));
+    expect(screen.getByRole('button', { name: 'Remove ALF from favourites' })).toBeInTheDocument();
+    expect(JSON.parse(localStorage.getItem(FAVORITE_INSTRUMENTS_STORAGE_KEY) ?? '[]')).toHaveLength(1);
+    await user.clear(search);
+    expect(screen.getAllByRole('menuitemcheckbox')[0]).toHaveTextContent('ALF');
+    await user.type(search, 'small-angle');
+    expect(screen.getByRole('menuitemcheckbox', { name: /^LOQ\s/ })).toBeInTheDocument();
+    expect(screen.queryByRole('menuitemcheckbox', { name: /^ALF\s/ })).not.toBeInTheDocument();
+    expect(handleFiltersChange).not.toHaveBeenCalled();
+  });
+
+  test('clears instrument selections using the existing filter clear action', async () => {
+    const user = userEvent.setup();
+    const handleFiltersChange = vi.fn();
+    renderFilters({ instrument_in: ['GEM', 'LOQ'] }, { showInstrumentFilter: true, handleFiltersChange });
+
+    await user.click(screen.getByRole('button', { name: 'Clear', exact: true }));
+    await waitFor(() =>
+      expect(handleFiltersChange).toHaveBeenLastCalledWith(expect.objectContaining({ instrument_in: undefined }))
+    );
+    const trigger = screen.getByRole('button', { name: /^Instruments/ });
+    expect(trigger).not.toHaveTextContent('GEM');
+    expect(trigger).not.toHaveTextContent('LOQ');
+    await user.click(trigger);
+    expect(screen.getByRole('menuitemcheckbox', { name: /^GEM\s/ })).not.toBeChecked();
+    expect(screen.getByRole('menuitemcheckbox', { name: /^LOQ\s/ })).not.toBeChecked();
+  });
 
   test('offers view as user as a filter and resets pagination when it changes', async () => {
     const user = userEvent.setup();

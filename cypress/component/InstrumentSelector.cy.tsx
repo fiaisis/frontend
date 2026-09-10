@@ -1,8 +1,11 @@
 import { Box } from '@mui/material';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
+import { LocalizationProvider } from '@mui/x-date-pickers';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { mount } from 'cypress/react';
 import React from 'react';
 
+import FilterContainer from '../../src/components/jobs/Filters';
 import InstrumentSelector from '../../src/components/jobs/InstrumentSelector';
 import { REDUCTION_SUPPORTED_INSTRUMENTS } from '../../src/lib/instrumentSupport';
 
@@ -97,5 +100,48 @@ describe('Browse instruments menu', () => {
     cy.contains('[role="menuitem"]', 'LOQ').should('be.visible');
     cy.get('input[type="checkbox"]').check();
     cy.contains('[role="menuitem"]', 'LOQ').should('be.visible');
+  });
+
+  it('uses the same menu inside reduction filters and keeps multiple selections on a small dark screen', () => {
+    cy.viewport(375, 812);
+    mount(
+      <ThemeProvider theme={createTheme({ palette: { mode: 'dark' } })}>
+        <LocalizationProvider dateAdapter={AdapterDayjs}>
+          <FilterContainer
+            visible
+            showInstrumentFilter
+            appliedFilters={{}}
+            handleFiltersClose={cy.stub().as('closeFilters')}
+            handleFiltersChange={cy.stub().as('changeFilters')}
+            resetPageNumber={() => undefined}
+            showAsUserControl={false}
+            asUser={false}
+            setAsUser={() => undefined}
+          />
+        </LocalizationProvider>
+      </ThemeProvider>
+    );
+    cy.get('.MuiSelect-select[role="button"]').as('instrumentFilter').click();
+    cy.get('.MuiPopover-paper').should('have.css', 'border-radius', '0px');
+    cy.get('.MuiPopover-paper').should('have.css', 'background-color', 'rgb(31, 37, 43)');
+    cy.get('.MuiPopover-paper').should(($paper) => {
+      const bounds = $paper[0].getBoundingClientRect();
+      expect(bounds.left).to.be.at.least(0);
+      expect(bounds.right).to.be.at.most(375);
+      expect(bounds.bottom).to.be.at.most(812);
+    });
+    cy.get('input[aria-label="Search for instrument"]').type('small-angle');
+    cy.contains('[role="menuitemcheckbox"]', 'LOQ').click();
+    cy.contains('[role="menuitemcheckbox"]', 'LOQ').should('have.attr', 'aria-checked', 'true');
+    cy.contains('[role="menuitemcheckbox"]', 'SANS2D').click();
+    cy.contains('[role="menuitemcheckbox"]', 'SANS2D').should('have.attr', 'aria-checked', 'true');
+    cy.get('@changeFilters').its('lastCall.args.0.instrument_in').should('deep.equal', ['LOQ', 'SANS2D']);
+    cy.get('[aria-label="Add LOQ to favourites"]').click();
+    cy.get('[aria-label="Remove LOQ from favourites"]').should('be.visible');
+    cy.get('@changeFilters').its('lastCall.args.0.instrument_in').should('deep.equal', ['LOQ', 'SANS2D']);
+    cy.get('input[aria-label="Search for instrument"]').type('{esc}');
+    cy.get('[role="menu"]').should('not.exist');
+    cy.get('@instrumentFilter').should('have.focus').and('contain', 'LOQ, SANS2D');
+    cy.get('@closeFilters').should('not.have.been.called');
   });
 });
