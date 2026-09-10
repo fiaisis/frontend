@@ -266,11 +266,11 @@ describe('Reduction history page', () => {
     cy.get('[data-testid="reduction-history-page"]').then(($page) => {
       const pageRect = $page[0].getBoundingClientRect();
 
-      cy.get(tableContainerSelector).should(($container) => {
-        const containerRect = $container[0].getBoundingClientRect();
+      cy.get('[data-testid="reduction-history-table-paper"]').should(($paper) => {
+        const paperRect = $paper[0].getBoundingClientRect();
 
-        expect(containerRect.left).to.be.closeTo(pageRect.left, 1);
-        expect(containerRect.right).to.be.closeTo(pageRect.right, 1);
+        expect(paperRect.left).to.be.closeTo(pageRect.left + 16, 1);
+        expect(paperRect.right).to.be.closeTo(pageRect.right - 16, 1);
       });
     });
 
@@ -335,7 +335,7 @@ describe('Reduction history page', () => {
         ? Math.min(scrollContainer.getBoundingClientRect().bottom, viewportHeight)
         : viewportHeight;
 
-      expect(footer.getBoundingClientRect().bottom).to.be.closeTo(contentBottom, 1);
+      expect(footer.getBoundingClientRect().bottom).to.be.closeTo(contentBottom - 16, 1);
     });
 
     cy.get('.tour-job-table-adv-filters').should(($toolbarControls) => {

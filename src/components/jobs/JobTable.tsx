@@ -613,6 +613,9 @@ const JobTable: React.FC<{
             flexDirection: 'column',
             height: '100%',
             minHeight: 0,
+            boxSizing: 'border-box',
+            borderLeft: `1px solid ${tableChrome.border}`,
+            borderRight: `1px solid ${tableChrome.border}`,
             overflow: 'hidden',
             position: 'relative',
             backgroundColor: tableChrome.surface,
@@ -1123,6 +1126,8 @@ const JobTable: React.FC<{
                     px: 0.5,
                     borderColor: tableChrome.border,
                     color: toolbarTextColor,
+                    // Keep the selected border above the next button's overlapping edge.
+                    '&.Mui-selected': { zIndex: 1 },
                     '&:hover': {
                       borderColor: tableChrome.border,
                       backgroundColor: tableChrome.hover,

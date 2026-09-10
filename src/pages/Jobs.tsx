@@ -105,7 +105,7 @@ const ImatViewSelect: React.FC<{
         boxShadow: `inset 0 -3px 0 ${chrome.accent}`,
         fontSize: '0.875rem',
         fontWeight: 700,
-        '& .MuiOutlinedInput-notchedOutline': { border: 0 },
+        '& .MuiOutlinedInput-notchedOutline, &.Mui-focused .MuiOutlinedInput-notchedOutline': { border: 0 },
         '& .MuiSelect-select': {
           display: 'flex',
           alignItems: 'center',
@@ -114,9 +114,11 @@ const ImatViewSelect: React.FC<{
           py: 0,
           pl: 1.5,
           '&:focus': {
-            backgroundColor: chrome.hover,
-            outline: `2px solid ${chrome.accent}`,
-            outlineOffset: -2,
+            backgroundColor: 'transparent',
+            outline: 'none',
+          },
+          '&:focus-visible': {
+            backgroundColor: alpha(chrome.accent, 0.12),
           },
         },
         '&:hover': { backgroundColor: chrome.hover },
@@ -548,7 +550,10 @@ const Jobs: React.FC = (): ReactElement => {
         setAsUser={setAsUser}
       />
       {showReductionHistoryTable && (
-        <Box className="tour-red-his-tablehead" sx={{ display: 'flex', flex: '1 1 auto', minHeight: 0 }}>
+        <Box
+          className="tour-red-his-tablehead"
+          sx={{ display: 'flex', flex: '1 1 auto', minHeight: 0, minWidth: 0, boxSizing: 'border-box', px: 2, pb: 2 }}
+        >
           <JobTable
             selectedInstrument={selectedInstrument}
             currentPage={currentPage}
