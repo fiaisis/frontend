@@ -84,6 +84,16 @@ describe('App', () => {
     expect(screen.getByRole('heading', { name: 'ISIS instruments' })).toBeInTheDocument();
   });
 
+  test.each(['instrument=LOQ&experiment=12345', 'experiment=12345', 'instrument=LOQ&filename=LOQ123.nxs'])(
+    'opens Experiment viewer searches on the base route with %s',
+    (search) => {
+      renderAt(`/fia/experiment-viewer?${search}`);
+      expect(screen.getByRole('heading', { name: 'Experiment viewer' })).toBeInTheDocument();
+      expect(window.location.pathname).toBe('/fia/experiment-viewer');
+      expect(window.location.search).toBe(`?${search}`);
+    }
+  );
+
   test('scrolls to the top when the pathname changes', async () => {
     renderAt('/fia');
     vi.mocked(window.scrollTo).mockClear();

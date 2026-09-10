@@ -2,7 +2,7 @@ import { createTheme, Table, TableBody, ThemeProvider } from '@mui/material';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { JOB_TABLE_ROW_HEIGHT } from './constants';
@@ -81,6 +81,11 @@ const defaultModalProps: React.ComponentProps<typeof ReductionDetailsModal> = {
 const lightTestTheme = createTheme();
 const darkTestTheme = createTheme({ palette: { mode: 'dark' } });
 
+const CurrentLocation = (): React.ReactElement => {
+  const location = useLocation();
+  return <output data-testid="current-location">{location.pathname + location.search}</output>;
+};
+
 const setMediaQueryMatches = (matches: boolean): void => {
   vi.stubGlobal(
     'matchMedia',
@@ -106,6 +111,7 @@ const ModalHarness: React.FC<{
 }> = ({ overrides, mode }) => {
   return (
     <ThemeProvider theme={mode === 'dark' ? darkTestTheme : lightTestTheme}>
+      <CurrentLocation />
       <header data-testid="scigateway-topbar-underlay">SciGateway top bar</header>
       <aside data-testid="scigateway-sidemenu-underlay">SciGateway side menu</aside>
       <main data-testid="reduction-details-page-container">
@@ -211,7 +217,7 @@ describe('Row and reduction details modal', () => {
     await user.click(screen.getByRole('tab', { name: 'Reduction outputs' }));
     expect(screen.getByRole('link', { name: /Experiment viewer/ })).toHaveAttribute(
       'href',
-      '/experiment-viewer/LOQ/12345'
+      '/experiment-viewer?instrument=LOQ&experiment=12345'
     );
     expect(screen.getByText('result.nxs')).toBeInTheDocument();
     expect(screen.getByText('report.txt')).toBeInTheDocument();
@@ -220,17 +226,42 @@ describe('Row and reduction details modal', () => {
     expect(outputActions).toContainElement(screen.getByRole('link', { name: /Experiment viewer/ }));
     expect(outputActions).toContainElement(screen.getByRole('button', { name: 'Download all' }));
 
-    await user.click(screen.getAllByRole('button', { name: 'View' })[0]);
+    expect(screen.queryByRole('button', { name: 'External viewer' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Download' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+
+    const outputRow = screen.getByRole('button', { name: 'Actions for result.nxs' });
+    expect(outputRow).toContainElement(screen.getByText('result.nxs'));
+    await user.click(screen.getByText('result.nxs'));
+    expect(screen.getByRole('menu', { name: 'Actions for result.nxs' })).toBeInTheDocument();
+    expect(screen.getAllByRole('menuitem').map((item) => item.textContent)).toEqual([
+      'External viewer',
+      'Experiment viewer',
+      'Download',
+    ]);
+    await user.click(screen.getByRole('menuitem', { name: 'External viewer' }));
     expect(window.open).toHaveBeenCalledWith('/fia/data-viewer/view/LOQ/12345/result.nxs', '_blank');
     expect(analyticsEvent).toHaveBeenCalledWith(expect.objectContaining({ label: 'View button', value: 42 }));
+    await waitFor(() => expect(screen.queryByRole('menu')).not.toBeInTheDocument());
 
-    await user.click(screen.getAllByRole('button', { name: 'Download' })[0]);
+    const reportActions = screen.getByRole('button', { name: 'Actions for report.txt' });
+    reportActions.focus();
+    await user.keyboard('{Enter}');
+    expect(screen.getByRole('menu', { name: 'Actions for report.txt' })).toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: 'Experiment viewer' })).not.toBeInTheDocument();
+    await user.keyboard('{Escape}');
+    await waitFor(() => expect(screen.queryByRole('menu')).not.toBeInTheDocument());
+    expect(reportActions).toHaveFocus();
+    expect(defaultModalProps.onClose).not.toHaveBeenCalled();
+
+    await user.keyboard(' {End}{Enter}');
     await waitFor(() =>
       expect(fiaApi.get).toHaveBeenCalledWith(
-        '/job/42/filename/result.nxs',
+        '/job/42/filename/report.txt',
         expect.objectContaining({ responseType: 'blob' })
       )
     );
+    await waitFor(() => expect(screen.queryByRole('menu')).not.toBeInTheDocument());
 
     await user.click(screen.getByRole('button', { name: 'Download all' }));
     await waitFor(() =>
@@ -239,6 +270,31 @@ describe('Row and reduction details modal', () => {
         { 42: ['result.nxs', 'report.txt'] },
         expect.objectContaining({ responseType: 'blob' })
       )
+    );
+  });
+
+  test('opens the selected output in Experiment viewer and keeps the whole-experiment footer link', async () => {
+    const user = userEvent.setup();
+    const filename = 'result & scan #1.nxs';
+    renderModal({ job: makeJob({ outputs: `['${filename}']` }) });
+    await user.click(screen.getByRole('tab', { name: 'Reduction outputs' }));
+    expect(screen.getByRole('link', { name: 'Experiment viewer' })).toHaveAttribute(
+      'href',
+      '/experiment-viewer?instrument=LOQ&experiment=12345'
+    );
+
+    await user.click(screen.getByRole('button', { name: `Actions for ${filename}` }));
+    const link = screen.getByRole('menuitem', { name: 'Experiment viewer' });
+    const destination = `/experiment-viewer?${new URLSearchParams({ instrument: 'LOQ', experiment: '12345', jobId: '42', file: filename })}`;
+    expect(link).toHaveAttribute('href', destination);
+    expect(link).not.toHaveAttribute('target');
+    await user.keyboard('{ArrowDown}{Enter}');
+
+    await waitFor(() => expect(screen.queryByRole('menu')).not.toBeInTheDocument());
+    expect(screen.getByTestId('current-location')).toHaveTextContent(destination);
+    expect(window.open).not.toHaveBeenCalled();
+    expect(analyticsEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ label: 'Experiment viewer button', value: 42 })
     );
   });
 
@@ -275,22 +331,33 @@ describe('Row and reduction details modal', () => {
     });
 
     await user.click(screen.getByRole('tab', { name: 'Reduction outputs' }));
-    const viewButton = screen.getAllByRole('button', { name: 'View' })[0];
-    const downloadButton = screen.getAllByRole('button', { name: 'Download' })[0];
+    const outputRow = screen.getByRole('button', { name: 'Actions for result.nxs' });
     const experimentViewerButton = screen.getByRole('link', { name: /Experiment viewer/ });
     const downloadAllButton = screen.getByRole('button', { name: 'Download all' });
 
-    [viewButton, downloadButton, experimentViewerButton].forEach((button) => {
-      expect(button).toHaveStyle({
-        color: '#f5f7fa',
-        borderColor: '#71869a',
-        backgroundColor: '#1b2834',
-      });
+    expect(outputRow).toHaveStyle({
+      color: '#f5f7fa',
+      borderColor: '#33414e',
+      backgroundColor: '#151e27',
+    });
+    expect(experimentViewerButton).toHaveStyle({
+      color: '#f5f7fa',
+      borderColor: '#71869a',
+      backgroundColor: '#1b2834',
     });
     expect(downloadAllButton).toHaveStyle({
       color: '#0b1b29',
       backgroundColor: '#90caf9',
     });
+
+    await user.click(outputRow);
+    expect(screen.getByRole('menu').closest('.MuiPaper-root')).toHaveStyle({
+      color: '#f5f7fa',
+      backgroundColor: '#151e27',
+    });
+    expect(screen.getByRole('menuitem', { name: 'External viewer' })).toBeVisible();
+    expect(screen.getByRole('menuitem', { name: 'Experiment viewer' })).toBeVisible();
+    expect(screen.getByRole('menuitem', { name: 'Download' })).toBeVisible();
   });
 
   test('uses the modal action palette for the retry button', () => {
@@ -346,9 +413,11 @@ describe('Row and reduction details modal', () => {
 
     expect(screen.getByRole('link', { name: /Stack viewer/ })).toHaveAttribute(
       'href',
-      '/reduction-history/IMAT/stack-viewer?jobId=42&experiment=12345&instrument=IMAT'
+      '/reduction-history/IMAT/stack-viewer?jobId=42&experiment=12345'
     );
     expect(screen.queryByRole('link', { name: /Experiment viewer/ })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Actions for result.nxs' }));
+    expect(screen.queryByRole('menuitem', { name: 'Experiment viewer' })).not.toBeInTheDocument();
   });
 
   test('closes from the close button, Escape, and the viewport backdrop', async () => {

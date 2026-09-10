@@ -13,7 +13,7 @@ import {
   CircularProgress,
 } from '@mui/material';
 import { alpha, useTheme } from '@mui/material/styles';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import FileCard from './FileCard';
 import { getViewerControlsSx } from './styles';
@@ -23,9 +23,12 @@ import type { FileConfig, Job } from '../../lib/types';
 
 interface FileTreeProps {
   jobs: Job[];
+  openedJob?: Job;
+  isLoadingOpenedJob?: boolean;
   files: FileConfig[];
   isLoading?: boolean;
   showEmptyState?: boolean;
+  initialSelection?: { jobId: number; filename: string };
   viewTabs?: React.ReactNode;
   searchControls?: React.ReactNode;
   currentPage?: number;
@@ -45,9 +48,12 @@ interface FileTreeProps {
 
 const FileTree: React.FC<FileTreeProps> = ({
   jobs,
+  openedJob,
+  isLoadingOpenedJob = false,
   files,
   isLoading = false,
   showEmptyState = true,
+  initialSelection,
   viewTabs,
   searchControls,
   currentPage = 0,
@@ -69,6 +75,14 @@ const FileTree: React.FC<FileTreeProps> = ({
   const [expandedJobs, setExpandedJobs] = useState<Set<number>>(new Set());
   const [showEmptyJobs, setShowEmptyJobs] = useState(false);
   const [inputMode, setInputMode] = useState<'text' | 'chips'>('text');
+
+  const initialJobId = initialSelection?.jobId;
+  const initialFilename = initialSelection?.filename;
+  useEffect(() => {
+    if (initialJobId !== undefined) {
+      setExpandedJobs((previous) => new Set(previous).add(initialJobId));
+    }
+  }, [initialJobId, initialFilename]);
 
   // Helper to find file config by filename
   const getFileConfig = (filename: string): FileConfig | undefined => {
@@ -113,17 +127,130 @@ const FileTree: React.FC<FileTreeProps> = ({
     outputsArray: getJobOutputs(job),
   }));
 
-  const filteredJobs = isLoading
+  const pageJobs = isLoading
     ? []
     : showEmptyJobs
       ? jobsWithOutputs
       : jobsWithOutputs.filter((job) => job.outputsArray.length > 0);
+  const filteredJobs = pageJobs.filter((job) => job.id !== openedJob?.id);
   const emptyJobsCount = jobsWithOutputs.filter((job) => job.outputsArray.length === 0).length;
   const pageCount = pageSize > 0 ? Math.ceil(totalJobs / pageSize) : 0;
   const showPagination = Boolean(onPageChange && totalJobs > pageSize && pageCount > 1);
-  const showJobControls = showPagination || emptyJobsCount > 0 || Boolean(onAutoSelectPrimaryChange && jobs.length > 0);
+  const showJobControls =
+    showPagination || emptyJobsCount > 0 || Boolean(onAutoSelectPrimaryChange && (jobs.length > 0 || openedJob));
   const firstVisibleJob = totalJobs === 0 ? 0 : currentPage * pageSize + 1;
   const lastVisibleJob = Math.min((currentPage + 1) * pageSize, totalJobs);
+
+  const renderJob = (job: Job): JSX.Element => {
+    const outputs = getJobOutputs(job);
+    return (
+      <Accordion
+        square
+        disableGutters
+        elevation={0}
+        key={job.id}
+        expanded={expandedJobs.has(job.id)}
+        onChange={handleAccordionChange(job.id)}
+        sx={{
+          borderBottom: `1px solid ${viewerChrome.border}`,
+          backgroundColor: viewerChrome.surface,
+          color: viewerChrome.text,
+          '&:before': { display: 'none' },
+        }}
+      >
+        <AccordionSummary
+          expandIcon={<ExpandMoreIcon fontSize="small" />}
+          sx={{
+            minHeight: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
+            backgroundColor: viewerChrome.header,
+            '&:hover, &.Mui-focusVisible': { backgroundColor: viewerChrome.hover },
+            '&:focus-visible': { outline: `2px solid ${viewerChrome.accent}`, outlineOffset: -2 },
+            pl: 1.5,
+            pr: 1.25,
+            py: 0.25,
+            '&.Mui-expanded': {
+              minHeight: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
+              borderBottom: `1px solid ${viewerChrome.border}`,
+            },
+            '& .MuiAccordionSummary-content': {
+              minWidth: 0,
+              my: 0.5,
+            },
+            '& .MuiAccordionSummary-content.Mui-expanded': {
+              my: 0.5,
+            },
+            '& .MuiAccordionSummary-expandIconWrapper': {
+              ml: 1,
+              color: viewerChrome.text,
+            },
+          }}
+          slotProps={{ content: { sx: { maxWidth: '100%' } } }}
+        >
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, flex: 1, minWidth: 0, overflow: 'hidden' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%', minWidth: 0 }}>
+              <FolderIcon fontSize="small" sx={{ flexShrink: 0, color: viewerChrome.accent }} />
+              <Typography
+                variant="body2"
+                fontWeight="600"
+                noWrap
+                sx={{
+                  flex: 1,
+                  minWidth: 0,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+              >
+                {job.run.filename}
+              </Typography>
+              <Chip
+                label={`${outputs.length} files`}
+                size="small"
+                sx={{ height: 18, fontSize: '0.65rem', flexShrink: 0 }}
+              />
+            </Box>
+            <Typography
+              variant="caption"
+              noWrap
+              sx={{
+                color: alpha(viewerChrome.text, 0.75),
+                fontSize: '0.68rem',
+                display: 'block',
+              }}
+            >
+              {job.run.title}
+            </Typography>
+          </Box>
+        </AccordionSummary>
+        <AccordionDetails sx={{ p: 0.75 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+            {outputs.map((output, outputIndex) => {
+              const fileIndex = getFileIndex(output);
+              const file = getFileConfig(output);
+
+              if (!file) return null;
+
+              return (
+                <FileCard
+                  key={outputIndex}
+                  file={file}
+                  fileIndex={fileIndex}
+                  filename={output}
+                  activeViewerTab={activeViewerTab}
+                  selected2DFile={selected2DFile}
+                  inputMode={inputMode}
+                  onInputModeChange={setInputMode}
+                  onFileToggle={onFileToggle}
+                  onDatasetChange={onDatasetChange}
+                  onSelectionChange={onSelectionChange}
+                  onSelect2DFile={onSelect2DFile}
+                />
+              );
+            })}
+          </Box>
+        </AccordionDetails>
+      </Accordion>
+    );
+  };
 
   return (
     <Box
@@ -207,7 +334,7 @@ const FileTree: React.FC<FileTreeProps> = ({
             )}
 
             {/* Auto-select primary dataset toggle */}
-            {onAutoSelectPrimaryChange && jobs.length > 0 && (
+            {onAutoSelectPrimaryChange && (jobs.length > 0 || openedJob) && (
               <FormControlLabel
                 control={
                   <Checkbox
@@ -238,127 +365,39 @@ const FileTree: React.FC<FileTreeProps> = ({
           scrollbarColor: `${viewerChrome.border} ${viewerChrome.header}`,
         }}
       >
+        {(openedJob || isLoadingOpenedJob) && (
+          <Box component="section" aria-label="Opened reduction">
+            <Typography variant="subtitle2" sx={{ px: 1.5, py: 1, borderBottom: `1px solid ${viewerChrome.border}` }}>
+              Opened reduction
+            </Typography>
+            {isLoadingOpenedJob && (
+              <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
+                <CircularProgress size={24} aria-label="Loading opened reduction" />
+              </Box>
+            )}
+            {openedJob && renderJob(openedJob)}
+          </Box>
+        )}
+
+        {(openedJob || isLoadingOpenedJob) && (
+          <Typography variant="subtitle2" sx={{ px: 1.5, py: 1, borderBottom: `1px solid ${viewerChrome.border}` }}>
+            Experiment reductions
+          </Typography>
+        )}
+
         {isLoading && (
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', minHeight: 96 }}>
             <CircularProgress size={32} aria-label="Loading jobs" />
           </Box>
         )}
 
-        {!isLoading && showEmptyState && filteredJobs.length === 0 && (
+        {!isLoading && showEmptyState && pageJobs.length === 0 && (
           <Typography variant="body2" align="center" sx={{ p: 3, color: alpha(viewerChrome.text, 0.75) }}>
             {jobs.length === 0 ? 'No jobs listed' : 'No jobs with files'}
           </Typography>
         )}
 
-        {filteredJobs.map((job) => (
-          <Accordion
-            square
-            disableGutters
-            elevation={0}
-            key={job.id}
-            expanded={expandedJobs.has(job.id)}
-            onChange={handleAccordionChange(job.id)}
-            sx={{
-              borderBottom: `1px solid ${viewerChrome.border}`,
-              backgroundColor: viewerChrome.surface,
-              color: viewerChrome.text,
-              '&:before': { display: 'none' },
-            }}
-          >
-            <AccordionSummary
-              expandIcon={<ExpandMoreIcon fontSize="small" />}
-              sx={{
-                minHeight: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
-                backgroundColor: viewerChrome.header,
-                '&:hover, &.Mui-focusVisible': { backgroundColor: viewerChrome.hover },
-                '&:focus-visible': { outline: `2px solid ${viewerChrome.accent}`, outlineOffset: -2 },
-                pl: 1.5,
-                pr: 1.25,
-                py: 0.25,
-                '&.Mui-expanded': {
-                  minHeight: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
-                  borderBottom: `1px solid ${viewerChrome.border}`,
-                },
-                '& .MuiAccordionSummary-content': {
-                  minWidth: 0,
-                  my: 0.5,
-                },
-                '& .MuiAccordionSummary-content.Mui-expanded': {
-                  my: 0.5,
-                },
-                '& .MuiAccordionSummary-expandIconWrapper': {
-                  ml: 1,
-                  color: viewerChrome.text,
-                },
-              }}
-              slotProps={{ content: { sx: { maxWidth: '100%' } } }}
-            >
-              <Box
-                sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, flex: 1, minWidth: 0, overflow: 'hidden' }}
-              >
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%', minWidth: 0 }}>
-                  <FolderIcon fontSize="small" sx={{ flexShrink: 0, color: viewerChrome.accent }} />
-                  <Typography
-                    variant="body2"
-                    fontWeight="600"
-                    noWrap
-                    sx={{
-                      flex: 1,
-                      minWidth: 0,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                    }}
-                  >
-                    {job.run.filename}
-                  </Typography>
-                  <Chip
-                    label={`${job.outputsArray.length} files`}
-                    size="small"
-                    sx={{ height: 18, fontSize: '0.65rem', flexShrink: 0 }}
-                  />
-                </Box>
-                <Typography
-                  variant="caption"
-                  noWrap
-                  sx={{
-                    color: alpha(viewerChrome.text, 0.75),
-                    fontSize: '0.68rem',
-                    display: 'block',
-                  }}
-                >
-                  {job.run.title}
-                </Typography>
-              </Box>
-            </AccordionSummary>
-            <AccordionDetails sx={{ p: 0.75 }}>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
-                {job.outputsArray.map((output, outputIndex) => {
-                  const fileIndex = getFileIndex(output);
-                  const file = getFileConfig(output);
-
-                  if (!file) return null;
-
-                  return (
-                    <FileCard
-                      key={outputIndex}
-                      file={file}
-                      fileIndex={fileIndex}
-                      filename={output}
-                      activeViewerTab={activeViewerTab}
-                      selected2DFile={selected2DFile}
-                      inputMode={inputMode}
-                      onInputModeChange={setInputMode}
-                      onFileToggle={onFileToggle}
-                      onDatasetChange={onDatasetChange}
-                      onSelectionChange={onSelectionChange}
-                      onSelect2DFile={onSelect2DFile}
-                    />
-                  );
-                })}
-              </Box>
-            </AccordionDetails>
-          </Accordion>
-        ))}
+        {filteredJobs.map(renderJob)}
       </Box>
     </Box>
   );

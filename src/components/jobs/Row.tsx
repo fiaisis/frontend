@@ -21,9 +21,13 @@ import {
   Alert,
   Box,
   Button,
+  ButtonBase,
   Checkbox,
   CircularProgress,
   IconButton,
+  ListItemIcon,
+  Menu,
+  MenuItem,
   Modal,
   Snackbar,
   SxProps,
@@ -40,15 +44,16 @@ import {
   useTheme,
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
-import React, { ReactElement, useCallback, useEffect, useRef, useState } from 'react';
+import React, { ReactElement, useCallback, useEffect, useId, useRef, useState } from 'react';
 import ReactGA from 'react-ga4';
 import { Link } from 'react-router-dom';
 
 import { JOB_TABLE_ROW_HEIGHT } from './constants';
 import { fiaApi } from '../../lib/api';
+import { getExperimentViewerUrl } from '../../lib/experimentViewerUrl';
 import { parseJobOutputs } from '../../lib/hooks';
 import { formatUtcForLocale } from '../../lib/timezone';
-import { Job, MantidVersionMap } from '../../lib/types';
+import { Job, MantidVersionMap, outputFilter } from '../../lib/types';
 
 const ellipsisTextSx: SxProps<Theme> = {
   display: 'block',
@@ -294,6 +299,10 @@ const JobOutput: React.FC<{
   downloadingSingle: string | null;
   handleDownload: (job: Job, output: string) => Promise<void>;
 }> = ({ job, outputs, downloadingSingle, handleDownload }) => {
+  const menuId = useId();
+  const [menu, setMenu] = useState<{ anchorEl: HTMLElement; output: string; index: number } | null>(null);
+  const closeMenu = (): void => setMenu(null);
+
   if (outputs.length === 0) {
     return (
       <Typography variant="body2" color="text.secondary">
@@ -305,62 +314,138 @@ const JobOutput: React.FC<{
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
       {outputs.map((output, index) => (
-        <Box
+        <ButtonBase
           key={`${output}-${index}`}
+          type="button"
+          id={`${menuId}-${index}`}
+          aria-label={`Actions for ${output}`}
+          aria-haspopup="menu"
+          aria-controls={menu?.index === index ? menuId : undefined}
+          aria-expanded={menu?.index === index}
+          aria-busy={downloadingSingle === output}
+          onClick={(event) => setMenu({ anchorEl: event.currentTarget, output, index })}
           sx={{
-            display: 'grid',
-            gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 1fr) auto' },
+            display: 'flex',
+            width: '100%',
+            minHeight: 44,
             alignItems: 'center',
             gap: 1.5,
             p: 1,
+            textAlign: 'left',
+            color: (theme: Theme) => (theme.palette.mode === 'dark' ? '#f5f7fa' : '#263238'),
             border: '1px solid',
             borderColor: (theme: Theme) => (theme.palette.mode === 'dark' ? '#33414e' : '#dce3ea'),
             borderRadius: 1,
             minWidth: 0,
             backgroundColor: (theme: Theme) => (theme.palette.mode === 'dark' ? '#151e27' : '#f8fafc'),
             transition: 'border-color 120ms ease, background-color 120ms ease',
-            '&:hover': {
+            '&:hover, &.Mui-focusVisible': {
               borderColor: (theme: Theme) => alpha(theme.palette.mode === 'dark' ? '#90caf9' : '#1565c0', 0.55),
               backgroundColor: (theme: Theme) => (theme.palette.mode === 'dark' ? '#192530' : '#f3f7fb'),
             },
+            '&.Mui-focusVisible': {
+              outline: '2px solid',
+              outlineColor: (theme: Theme) => (theme.palette.mode === 'dark' ? '#90caf9' : '#1565c0'),
+              outlineOffset: 2,
+            },
           }}
         >
-          <Box sx={{ minWidth: 0 }}>
+          <Box component="span" sx={{ minWidth: 0, flex: 1 }}>
             <EllipsisTooltipText value={output} sx={{ fontWeight: 600 }} />
           </Box>
-          <Box
-            sx={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              justifyContent: { xs: 'flex-start', md: 'flex-end' },
-              gap: 1,
-              minWidth: 'fit-content',
-            }}
-          >
-            <Button
-              variant="outlined"
-              size="small"
-              startIcon={<OpenInNew />}
-              onClick={() =>
-                openDataViewer(job.id, job.run?.instrument_name || 'unknown', job.run?.experiment_number || 0, output)
-              }
-              sx={panelActionButtonSx}
-            >
-              View
-            </Button>
-            <Button
-              variant="outlined"
-              size="small"
-              startIcon={downloadingSingle === output ? undefined : <Download />}
-              onClick={() => handleDownload(job, output)}
-              disabled={downloadingSingle === output}
-              sx={[panelActionButtonSx, { width: 112 }]}
-            >
-              {downloadingSingle === output ? <CircularProgress size={22} color="inherit" /> : 'Download'}
-            </Button>
-          </Box>
-        </Box>
+          {downloadingSingle === output && (
+            <CircularProgress size={20} color="inherit" aria-label={`Downloading ${output}`} sx={{ flexShrink: 0 }} />
+          )}
+        </ButtonBase>
       ))}
+      <Menu
+        id={menuId}
+        anchorEl={menu?.anchorEl}
+        open={Boolean(menu)}
+        onClose={closeMenu}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+        slotProps={{
+          list: { 'aria-labelledby': menu?.anchorEl.id },
+          paper: {
+            sx: (theme) => ({
+              minWidth: 160,
+              border: '1px solid',
+              borderColor: theme.palette.mode === 'dark' ? '#33414e' : '#dce3ea',
+              backgroundColor: theme.palette.mode === 'dark' ? '#151e27' : '#ffffff',
+              backgroundImage: 'none',
+              color: theme.palette.mode === 'dark' ? '#f5f7fa' : '#263238',
+              '& .MuiListItemIcon-root': { minWidth: 32, color: 'inherit' },
+              '& .MuiMenuItem-root': {
+                minHeight: 40,
+                '&:hover, &.Mui-focusVisible': {
+                  backgroundColor: theme.palette.mode === 'dark' ? '#263746' : '#eef5fc',
+                },
+              },
+            }),
+          },
+        }}
+      >
+        <MenuItem
+          onClick={() => {
+            if (menu) {
+              closeMenu();
+              openDataViewer(
+                job.id,
+                job.run?.instrument_name || 'unknown',
+                job.run?.experiment_number || 0,
+                menu.output
+              );
+            }
+          }}
+        >
+          <ListItemIcon>
+            <OpenInNew fontSize="small" />
+          </ListItemIcon>
+          External viewer
+        </MenuItem>
+        {menu &&
+          job.run.instrument_name !== 'IMAT' &&
+          outputFilter.some((extension) => menu.output.endsWith(extension)) && (
+            <MenuItem
+              component={Link}
+              to={getExperimentViewerUrl({
+                instrument: job.run.instrument_name,
+                experiment: job.run.experiment_number,
+                jobId: job.id,
+                file: menu.output,
+              })}
+              onClick={() => {
+                closeMenu();
+                ReactGA.event({
+                  category: 'Button',
+                  action: 'Click',
+                  label: 'Experiment viewer button',
+                  value: job.id,
+                });
+              }}
+            >
+              <ListItemIcon>
+                <Visibility fontSize="small" />
+              </ListItemIcon>
+              Experiment viewer
+            </MenuItem>
+          )}
+        <MenuItem
+          disabled={menu?.output === downloadingSingle}
+          onClick={() => {
+            if (menu) {
+              closeMenu();
+              void handleDownload(job, menu.output);
+            }
+          }}
+        >
+          <ListItemIcon>
+            <Download fontSize="small" />
+          </ListItemIcon>
+          Download
+        </MenuItem>
+      </Menu>
     </Box>
   );
 };
@@ -760,8 +845,8 @@ const ReductionDetailsContent: React.FC<{
         <Box
           data-testid="reduction-details-content"
           sx={{
-            display: isLargeScreen ? 'grid' : 'flex',
-            gridTemplateColumns: isLargeScreen ? 'repeat(3, minmax(0, 1fr))' : undefined,
+            display: 'grid',
+            gridTemplateColumns: isLargeScreen ? 'repeat(3, minmax(0, 1fr))' : 'minmax(0, 1fr)',
             flex: 1,
             minHeight: 0,
             overflow: 'hidden',
@@ -886,20 +971,6 @@ const ReductionDetailsContent: React.FC<{
             {(isLargeScreen || activeTab === 2) && (
               <>
                 <Box sx={detailScrollableContentSx}>
-                  {showStackViewer && (
-                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 2 }}>
-                      <Button
-                        variant="outlined"
-                        size="small"
-                        component={Link}
-                        to={`/reduction-history/IMAT/stack-viewer?jobId=${job.id}&experiment=${job.run?.experiment_number}&instrument=${job.run?.instrument_name}`}
-                        startIcon={<StackedBarChart />}
-                        sx={panelActionButtonSx}
-                      >
-                        Stack viewer
-                      </Button>
-                    </Box>
-                  )}
                   {job.state === 'UNSUCCESSFUL' || job.state === 'ERROR' ? (
                     <Box
                       sx={{
@@ -936,12 +1007,27 @@ const ReductionDetailsContent: React.FC<{
                   <Box
                     sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 1, flexWrap: 'wrap' }}
                   >
+                    {showStackViewer && (
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        component={Link}
+                        to={`/reduction-history/IMAT/stack-viewer?jobId=${job.id}&experiment=${job.run?.experiment_number}`}
+                        startIcon={<StackedBarChart />}
+                        sx={panelActionButtonSx}
+                      >
+                        Stack viewer
+                      </Button>
+                    )}
                     {showExperimentViewer && (
                       <Button
                         variant="outlined"
                         size="small"
                         component={Link}
-                        to={`/experiment-viewer/${job.run.instrument_name}/${job.run.experiment_number}`}
+                        to={getExperimentViewerUrl({
+                          instrument: job.run.instrument_name,
+                          experiment: job.run.experiment_number,
+                        })}
                         startIcon={<Visibility />}
                         onClick={() =>
                           ReactGA.event({

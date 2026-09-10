@@ -48,7 +48,10 @@ vi.mock('../components/experimentViewer/Graph', () => ({ default: () => <div dat
 vi.mock('../components/experimentViewer/ViewerTabs', () => ({ default: () => <div data-testid="viewer-tabs" /> }));
 vi.mock('../components/experimentViewer/LiveLogViewer', () => ({ LiveLogViewer: () => null }));
 
-const PageLocation = (): React.ReactElement => <span data-testid="page-location">{useLocation().pathname}</span>;
+const PageLocation = (): React.ReactElement => {
+  const location = useLocation();
+  return <span data-testid="page-location">{location.pathname + location.search}</span>;
+};
 
 const renderPage = (path: string, route: string, page: React.ReactElement): ReturnType<typeof render> =>
   render(
@@ -92,22 +95,26 @@ describe('page chrome titles', () => {
     ).not.toBeInTheDocument();
     expect(
       within(screen.getByRole('complementary', { name: 'Experiment viewer files' })).getByRole('form', {
-        name: 'Search experiment number',
+        name: 'Search reduction jobs',
       })
     ).toBeInTheDocument();
   });
 
   test('searches and clears experiment numbers from the left panel', async () => {
     const user = userEvent.setup();
-    renderPage('/experiment-viewer/LOQ', '/experiment-viewer/:instrumentName/:experimentNumber?', <ExperimentViewer />);
+    renderPage('/experiment-viewer?instrument=LOQ', '/experiment-viewer', <ExperimentViewer />);
 
     await user.type(screen.getByRole('spinbutton', { name: 'Experiment number' }), '12345');
     await user.click(screen.getByRole('button', { name: 'Search' }));
 
-    await waitFor(() => expect(screen.getByTestId('page-location')).toHaveTextContent('/experiment-viewer/LOQ/12345'));
+    await waitFor(() =>
+      expect(screen.getByTestId('page-location')).toHaveTextContent(
+        '/experiment-viewer?instrument=LOQ&experiment=12345'
+      )
+    );
     expect(within(screen.getByLabelText('breadcrumb')).getByRole('link', { name: 'LOQ' })).toHaveAttribute(
       'href',
-      '/experiment-viewer/LOQ'
+      '/experiment-viewer?instrument=LOQ'
     );
     expect(screen.getByRole('spinbutton', { name: 'Experiment number' })).toHaveValue(12345);
     await waitFor(() =>
@@ -123,7 +130,9 @@ describe('page chrome titles', () => {
     );
     await user.click(screen.getByRole('button', { name: 'Clear experiment number' }));
 
-    await waitFor(() => expect(screen.getByTestId('page-location').textContent).toBe('/experiment-viewer/LOQ'));
+    await waitFor(() =>
+      expect(screen.getByTestId('page-location').textContent).toBe('/experiment-viewer?instrument=LOQ')
+    );
     expect(within(screen.getByLabelText('breadcrumb')).getByText('LOQ')).toHaveAttribute('aria-current', 'page');
     expect(screen.getByRole('spinbutton', { name: 'Experiment number' })).toHaveValue(null);
     expect(screen.getByRole('button', { name: 'Clear experiment number' })).toBeDisabled();
@@ -136,7 +145,7 @@ describe('page chrome titles', () => {
     });
     vi.mocked(fiaApi.get).mockReturnValue(pendingSearch);
 
-    renderPage('/experiment-viewer/LOQ', '/experiment-viewer/:instrumentName/:experimentNumber?', <ExperimentViewer />);
+    renderPage('/experiment-viewer?instrument=LOQ&search=true', '/experiment-viewer', <ExperimentViewer />);
 
     const filesPanel = screen.getByRole('complementary', { name: 'Experiment viewer files' });
     expect(within(filesPanel).getByRole('progressbar', { name: 'Loading jobs' })).toBeInTheDocument();
@@ -148,12 +157,8 @@ describe('page chrome titles', () => {
     expect(within(filesPanel).getByText('No jobs listed')).toBeInTheDocument();
   });
 
-  test('keeps experiment-only route details in the search control', () => {
-    renderPage(
-      '/experiment-viewer/experiment/12345',
-      '/experiment-viewer/experiment/:experimentOnlyNumber',
-      <ExperimentViewer />
-    );
+  test('keeps experiment-only query details in the search control', () => {
+    renderPage('/experiment-viewer?experiment=12345', '/experiment-viewer', <ExperimentViewer />);
     expect(
       within(screen.getByLabelText('breadcrumb')).getByRole('link', { name: 'Experiment viewer' })
     ).toHaveAttribute('href', '/experiment-viewer');
@@ -176,6 +181,10 @@ describe('page chrome titles', () => {
 
     expect(screen.queryByRole('heading', { name: 'ISIS instruments' })).not.toBeInTheDocument();
     expect(screen.getByRole('region', { name: 'Instrument cards' })).toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: 'Experiment viewer' })[0]).toHaveAttribute(
+      'href',
+      expect.stringMatching(/^\/experiment-viewer\?instrument=/)
+    );
     expect(
       within(screen.getByRole('group', { name: 'Page controls' })).getByRole('textbox', {
         name: 'Search for instrument, technique, or scientist',

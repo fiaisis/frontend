@@ -10,6 +10,7 @@ interface NavArrowsProps {
   labelOverrides?: Record<string, string>;
   onCrumbClick?: (destination: string) => void;
   trailingCrumb?: React.ReactNode;
+  linkCurrentPage?: boolean;
 }
 
 const NavArrows: React.FC<NavArrowsProps> = ({
@@ -17,6 +18,7 @@ const NavArrows: React.FC<NavArrowsProps> = ({
   labelOverrides,
   onCrumbClick,
   trailingCrumb,
+  linkCurrentPage = false,
 }) => {
   const url = useLocation();
   const path = url.pathname;
@@ -139,7 +141,7 @@ const NavArrows: React.FC<NavArrowsProps> = ({
           if (valueEditorRegex.test(label)) {
             label = 'Value editor';
           }
-          if (isLast) {
+          if (isLast && !linkCurrentPage) {
             return (
               <Typography className="breadcrumb-current" aria-current="page" key={index}>
                 {label}

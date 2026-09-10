@@ -13,6 +13,7 @@ import { Link as RouterLink } from 'react-router-dom';
 import { getJobTableChromeColors, JOB_TABLE_TOOLBAR_CONTROL_HEIGHT } from '../components/jobs/constants';
 import NavArrows from '../components/navigation/NavArrows';
 import PageHeader from '../components/navigation/PageHeader';
+import { getExperimentViewerUrl } from '../lib/experimentViewerUrl';
 import { getInstrumentTechniques, instruments } from '../lib/instrumentData';
 import { getStoredFavoriteInstrumentIds, setStoredFavoriteInstrumentIds } from '../lib/instrumentFavorites';
 import { useAvailablePluginHeight } from '../lib/useAvailablePluginHeight';
@@ -182,7 +183,6 @@ const Instruments: React.FC = () => {
             overflowX: 'hidden',
             overscrollBehaviorY: 'contain',
             scrollbarGutter: 'stable',
-            scrollbarWidth: 'thin',
             scrollbarColor: `${instrumentChrome.border} ${instrumentChrome.header}`,
             '&:focus-visible': { outline: `2px solid ${instrumentChrome.accent}`, outlineOffset: -2 },
           }}
@@ -376,7 +376,7 @@ const Instruments: React.FC = () => {
                       <Button
                         variant="text"
                         component={RouterLink}
-                        to={`/experiment-viewer/${instrument.name.toUpperCase()}`}
+                        to={getExperimentViewerUrl({ instrument: instrument.name.toUpperCase() })}
                         startIcon={<VisibilityIcon />}
                         sx={actionButtonSx}
                       >
