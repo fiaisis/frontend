@@ -31,7 +31,7 @@ import {
   Skeleton,
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useLayoutEffect, useState, useRef } from 'react';
 
 import {
   getJobTableChromeColors,
@@ -141,6 +141,35 @@ const JobTable: React.FC<{
   const [jobs, setJobs] = useState<Job[]>([]);
   const [totalRows, setTotalRows] = useState<number>(0);
   const previousRowsPerPage = useRef<JobRowsPerPage>(rowsPerPage);
+  const tableScrollRef = useRef<HTMLDivElement>(null);
+  const bodyTableRef = useRef<HTMLTableElement>(null);
+  const [scrollbarGutterWidth, setScrollbarGutterWidth] = useState(JOB_TABLE_SCROLLBAR_WIDTH);
+
+  useLayoutEffect(() => {
+    const scrollContainer = tableScrollRef.current;
+    const bodyTable = bodyTableRef.current;
+    if (!scrollContainer || !bodyTable) return;
+
+    // Native and overlay scrollbars can ignore the preferred WebKit width.
+    // Match the body's rendered width, including fractional CSS pixels.
+    const measureScrollbarGutter = (): void => {
+      setScrollbarGutterWidth(
+        Math.max(0, scrollContainer.getBoundingClientRect().width - bodyTable.getBoundingClientRect().width)
+      );
+    };
+
+    measureScrollbarGutter();
+    const resizeObserver =
+      typeof ResizeObserver === 'undefined' ? undefined : new ResizeObserver(measureScrollbarGutter);
+    resizeObserver?.observe(scrollContainer);
+    resizeObserver?.observe(bodyTable);
+    window.addEventListener('resize', measureScrollbarGutter);
+
+    return () => {
+      resizeObserver?.disconnect();
+      window.removeEventListener('resize', measureScrollbarGutter);
+    };
+  }, []);
 
   // Cache the last filter JSON so we only reset selection when the filter set
   // truly changes
@@ -874,7 +903,7 @@ const JobTable: React.FC<{
               data-testid="reduction-history-table-header"
               sx={{
                 display: 'grid',
-                gridTemplateColumns: `minmax(0, 1fr) ${JOB_TABLE_SCROLLBAR_WIDTH}px`,
+                gridTemplateColumns: `minmax(0, 1fr) ${scrollbarGutterWidth}px`,
                 flexShrink: 0,
                 minWidth: JOB_TABLE_MIN_WIDTH,
               }}
@@ -917,6 +946,7 @@ const JobTable: React.FC<{
             </Box>
 
             <TableContainer
+              ref={tableScrollRef}
               data-testid="reduction-history-table-scroll"
               style={{ overflowY: 'scroll', scrollbarGutter: 'stable' }}
               sx={{
@@ -944,6 +974,7 @@ const JobTable: React.FC<{
               }}
             >
               <Table
+                ref={bodyTableRef}
                 aria-label="Reduction history rows"
                 sx={{
                   tableLayout: 'fixed',
