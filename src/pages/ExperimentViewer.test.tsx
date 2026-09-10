@@ -146,7 +146,7 @@ describe('Experiment viewer', { timeout: 30000 }, () => {
     vi.restoreAllMocks();
   });
 
-  test('leaves both tabs unselected on the generic page and restores normal selection when browsing an instrument', async () => {
+  test('leaves both tabs unselected until a search starts, including after selecting an instrument', async () => {
     const user = userEvent.setup();
     renderViewer('/experiment-viewer');
 
@@ -159,6 +159,8 @@ describe('Experiment viewer', { timeout: 30000 }, () => {
 
     await user.click(screen.getByRole('button', { name: 'Browse instruments' }));
     expect(fiaApi.get).not.toHaveBeenCalled();
+    expect(screen.getByRole('tab', { name: '1D view' })).toHaveAttribute('aria-selected', 'false');
+    expect(screen.getByRole('tab', { name: 'MD view' })).toHaveAttribute('aria-selected', 'false');
     expect(screen.getByRole('tab', { name: 'MD view' })).toBeDisabled();
     await user.click(screen.getByRole('button', { name: 'Search' }));
     await waitFor(() => expect(screen.getByRole('tab', { name: 'MD view' })).toBeEnabled());
@@ -173,6 +175,8 @@ describe('Experiment viewer', { timeout: 30000 }, () => {
     }
 
     await user.click(screen.getByRole('button', { name: 'Browse instruments' }));
+    expect(screen.getByRole('tab', { name: '1D view' })).toHaveAttribute('aria-selected', 'false');
+    expect(screen.getByRole('tab', { name: 'MD view' })).toHaveAttribute('aria-selected', 'false');
     expect(screen.getByRole('tab', { name: 'MD view' })).toBeDisabled();
     await user.click(screen.getByRole('button', { name: 'Search' }));
     await waitFor(() => expect(screen.getByRole('tab', { name: 'MD view' })).toBeEnabled());
@@ -182,7 +186,7 @@ describe('Experiment viewer', { timeout: 30000 }, () => {
   });
 
   test.each([
-    '/experiment-viewer?instrument=LOQ',
+    '/experiment-viewer?instrument=LOQ&search=true',
     experimentPath,
     '/experiment-viewer?experiment=12345',
     searchLink('missing'),

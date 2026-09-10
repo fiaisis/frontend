@@ -581,7 +581,6 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
     />
   );
   const hasViewableFiles = files.length > 0;
-  const isGenericViewer = !searchInstrument && !isSearchActive;
   const viewerError = selectionError || jobsError || error;
 
   return (
@@ -645,9 +644,9 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
               }
               viewTabs={
                 <ViewerTabs
-                  activeTab={isGenericViewer ? false : activeViewerTab}
+                  activeTab={isSearchActive ? activeViewerTab : false}
                   onTabChange={setActiveViewerTab}
-                  disabled={isGenericViewer || !hasViewableFiles}
+                  disabled={!isSearchActive || !hasViewableFiles}
                 />
               }
               jobs={jobs}
