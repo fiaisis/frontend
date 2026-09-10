@@ -27,7 +27,6 @@ import {
   ToggleButtonGroup,
   Typography,
   useTheme,
-  LinearProgress,
   Skeleton,
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
@@ -560,17 +559,6 @@ const JobTable: React.FC<{
         </Alert>
       </Snackbar>
 
-      {isLoading && (
-        <LinearProgress
-          sx={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            zIndex: 1201,
-          }}
-        />
-      )}
       <Box sx={{ position: 'relative', width: '100%', height: '100%', minHeight: 0 }}>
         <Snackbar
           open={snackbarOpen}
