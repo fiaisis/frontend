@@ -40,7 +40,7 @@ const PAGE_REQUEST_SIZE = PAGE_SIZE + 1;
 type SearchType = 'experiment' | 'filename';
 
 type ActiveSearch = {
-  type: SearchType;
+  type: SearchType | 'all';
   value: string;
 };
 
@@ -55,6 +55,7 @@ export type ImatStackJobTreeProps = {
   selectedJobId: number | null;
   selectedJob: Job | null;
   onSelectJob: (job: Job) => void;
+  onClear: () => void;
 };
 
 const getRunStartTime = (job: Job): number => {
@@ -115,13 +116,13 @@ const mergeUniqueJobs = (currentJobs: Job[], nextJobs: Job[]): Job[] => {
   return Array.from(jobsById.values()).sort((left, right) => getRunStartTime(right) - getRunStartTime(left));
 };
 
-const ImatStackJobTree: React.FC<ImatStackJobTreeProps> = ({ selectedJobId, selectedJob, onSelectJob }) => {
+const ImatStackJobTree: React.FC<ImatStackJobTreeProps> = ({ selectedJobId, selectedJob, onSelectJob, onClear }) => {
   const theme = useTheme();
   const viewerChrome = getJobTableChromeColors(theme.palette.mode);
   const [jobs, setJobs] = React.useState<Job[]>([]);
   const [offset, setOffset] = React.useState(0);
   const [hasMore, setHasMore] = React.useState(false);
-  const [loading, setLoading] = React.useState(true);
+  const [loading, setLoading] = React.useState(false);
   const [loadingMore, setLoadingMore] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [retryKey, setRetryKey] = React.useState(0);
@@ -135,13 +136,19 @@ const ImatStackJobTree: React.FC<ImatStackJobTreeProps> = ({ selectedJobId, sele
   React.useEffect(() => {
     const controller = new AbortController();
     loadMoreControllerRef.current?.abort();
+    setLoadingMore(false);
+    setError(null);
+    setJobs([]);
+    setOffset(0);
+    setHasMore(false);
+
+    if (!activeSearch) {
+      setLoading(false);
+      return () => controller.abort();
+    }
 
     const fetchFirstPage = async (): Promise<void> => {
       setLoading(true);
-      setError(null);
-      setJobs([]);
-      setOffset(0);
-      setHasMore(false);
 
       try {
         const response = await fiaApi.get<Job[]>('/instrument/IMAT/jobs', {
@@ -161,7 +168,7 @@ const ImatStackJobTree: React.FC<ImatStackJobTreeProps> = ({ selectedJobId, sele
         setOffset(visibleJobs.length);
         setHasMore(response.data.length > PAGE_SIZE);
       } catch (err: unknown) {
-        if (axios.isAxiosError(err) && err.code === 'ERR_CANCELED') return;
+        if (controller.signal.aborted || (axios.isAxiosError(err) && err.code === 'ERR_CANCELED')) return;
         setError('Unable to load IMAT stacks.');
       } finally {
         if (!controller.signal.aborted) setLoading(false);
@@ -214,7 +221,8 @@ const ImatStackJobTree: React.FC<ImatStackJobTreeProps> = ({ selectedJobId, sele
     const value = searchValue.trim();
 
     if (!value) {
-      setSearchError('Enter a search value.');
+      setSearchError(null);
+      setActiveSearch({ type: 'all', value: '' });
       return;
     }
 
@@ -235,6 +243,8 @@ const ImatStackJobTree: React.FC<ImatStackJobTreeProps> = ({ selectedJobId, sele
     setSearchValue('');
     setSearchError(null);
     setActiveSearch(null);
+    setExpandedExperiments(new Set());
+    onClear();
   };
 
   const handleLoadMore = async (): Promise<void> => {
@@ -262,7 +272,7 @@ const ImatStackJobTree: React.FC<ImatStackJobTreeProps> = ({ selectedJobId, sele
       setOffset((current) => current + visibleJobs.length);
       setHasMore(response.data.length > PAGE_SIZE);
     } catch (err: unknown) {
-      if (axios.isAxiosError(err) && err.code === 'ERR_CANCELED') return;
+      if (controller.signal.aborted || (axios.isAxiosError(err) && err.code === 'ERR_CANCELED')) return;
       setError('Unable to load more IMAT stacks.');
     } finally {
       if (!controller.signal.aborted) setLoadingMore(false);
@@ -277,8 +287,8 @@ const ImatStackJobTree: React.FC<ImatStackJobTreeProps> = ({ selectedJobId, sele
       elevation={0}
       sx={{
         ...viewerSidebarSx,
-        height: { xs: 320, md: 'auto' },
-        maxHeight: { xs: 320, md: 'none' },
+        height: { xs: 372, md: 'auto' },
+        maxHeight: { xs: 372, md: 'none' },
         border: `1px solid ${viewerChrome.border}`,
         backgroundColor: viewerChrome.surface,
         color: viewerChrome.text,
@@ -320,8 +330,8 @@ const ImatStackJobTree: React.FC<ImatStackJobTreeProps> = ({ selectedJobId, sele
         onSubmit={handleSearch}
         sx={{ pt: 1.5, borderBottom: `1px solid ${viewerChrome.border}`, flexShrink: 0 }}
       >
-        <Box sx={{ display: 'flex', gap: 1, px: 1.5 }}>
-          <FormControl size="small" sx={{ minWidth: 112 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, px: 1.5 }}>
+          <FormControl fullWidth size="small">
             <InputLabel id="imat-stack-search-type-label">Search by</InputLabel>
             <Select
               labelId="imat-stack-search-type-label"
@@ -329,6 +339,7 @@ const ImatStackJobTree: React.FC<ImatStackJobTreeProps> = ({ selectedJobId, sele
               label="Search by"
               onChange={(event) => {
                 setSearchType(event.target.value as SearchType);
+                setSearchValue('');
                 setSearchError(null);
               }}
               MenuProps={{
@@ -350,18 +361,23 @@ const ImatStackJobTree: React.FC<ImatStackJobTreeProps> = ({ selectedJobId, sele
                 },
               }}
             >
-              <MenuItem value="experiment">Experiment</MenuItem>
+              <MenuItem value="experiment">Experiment number</MenuItem>
               <MenuItem value="filename">Run/file</MenuItem>
             </Select>
           </FormControl>
           <TextField
+            fullWidth
+            autoComplete="off"
+            type={searchType === 'experiment' ? 'number' : 'text'}
             value={searchValue}
             onChange={(event) => setSearchValue(event.target.value)}
             size="small"
-            label={searchType === 'experiment' ? 'Number' : 'Name'}
             error={Boolean(searchError)}
-            inputProps={{ 'aria-label': 'Stack search value' }}
-            sx={{ minWidth: 0, flex: 1 }}
+            inputProps={{
+              'aria-label': 'Stack search value',
+              ...(searchType === 'experiment' ? { min: 1, step: 1 } : {}),
+            }}
+            sx={{ minWidth: 0 }}
           />
         </Box>
         {searchError && (
@@ -387,7 +403,11 @@ const ImatStackJobTree: React.FC<ImatStackJobTreeProps> = ({ selectedJobId, sele
           >
             Search
           </Button>
-          <Button size="small" onClick={handleClearSearch} disabled={loading || (!activeSearch && !searchValue)}>
+          <Button
+            size="small"
+            onClick={handleClearSearch}
+            disabled={!activeSearch && !searchValue && selectedJobId === null && !selectedJob}
+          >
             Clear
           </Button>
         </Box>
@@ -420,9 +440,13 @@ const ImatStackJobTree: React.FC<ImatStackJobTreeProps> = ({ selectedJobId, sele
             </Alert>
           </Box>
         ) : jobGroups.length === 0 ? (
-          <Typography variant="body2" sx={{ p: 2, color: alpha(viewerChrome.text, 0.75) }}>
-            {activeSearch ? 'No successful IMAT stacks match this search.' : 'No successful IMAT stacks found.'}
-          </Typography>
+          activeSearch ? (
+            <Typography variant="body2" sx={{ p: 2, color: alpha(viewerChrome.text, 0.75) }}>
+              {activeSearch.type === 'all'
+                ? 'No successful IMAT stacks found.'
+                : 'No successful IMAT stacks match this search.'}
+            </Typography>
+          ) : null
         ) : (
           <List component="nav" aria-label="Successful IMAT stacks" disablePadding>
             {jobGroups.map((group) => {

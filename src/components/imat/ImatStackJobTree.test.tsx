@@ -42,7 +42,9 @@ const makeJob = (id: number, experimentNumber: number, runStart: string, filenam
 const renderTree = (
   overrides: Partial<React.ComponentProps<typeof ImatStackJobTree>> = {}
 ): ReturnType<typeof render> =>
-  render(<ImatStackJobTree selectedJobId={null} selectedJob={null} onSelectJob={vi.fn()} {...overrides} />);
+  render(
+    <ImatStackJobTree selectedJobId={null} selectedJob={null} onSelectJob={vi.fn()} onClear={vi.fn()} {...overrides} />
+  );
 
 describe('ImatStackJobTree', () => {
   beforeEach(() => {
@@ -54,12 +56,18 @@ describe('ImatStackJobTree', () => {
   });
 
   test('groups jobs by experiment, sorts newest first, and highlights the selected stack', async () => {
+    const user = userEvent.setup();
     const olderJob = makeJob(10, 1234, '2026-01-01T10:00:00Z');
     const selectedJob = makeJob(11, 1234, '2026-01-02T10:00:00Z');
     const otherExperiment = makeJob(12, 9999, '2025-12-01T10:00:00Z');
     vi.mocked(fiaApi.get).mockResolvedValue({ data: [olderJob, selectedJob, otherExperiment] });
 
     renderTree({ selectedJobId: selectedJob.id, selectedJob });
+
+    expect(fiaApi.get).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: /IMAT11/i })).toHaveAttribute('aria-current', 'true');
+    await user.click(screen.getByRole('button', { name: 'Search' }));
+    await screen.findByRole('button', { name: /Experiment 9999/ });
 
     const selectedStack = await screen.findByRole('button', { name: /IMAT11/i });
     expect(selectedStack).toHaveAttribute('aria-current', 'true');
@@ -79,6 +87,10 @@ describe('ImatStackJobTree', () => {
     vi.mocked(fiaApi.get).mockResolvedValue({ data: [newestJob, makeJob(21, 2000, '2026-02-01T10:00:00Z')] });
 
     renderTree({ onSelectJob });
+    expect(fiaApi.get).not.toHaveBeenCalled();
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Experiment 2000/ })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Search' }));
 
     const experiment = await screen.findByRole('button', { name: /Experiment 2000/ });
     expect(experiment).toHaveAttribute('aria-expanded', 'false');
@@ -88,13 +100,26 @@ describe('ImatStackJobTree', () => {
     expect(onSelectJob).toHaveBeenCalledExactlyOnceWith(newestJob);
   });
 
+  test.each([null, makeJob(1, 1234, '2026-01-01T10:00:00Z')])(
+    'allows clearing a linked stack before running a search, including while it is loading',
+    async (selectedJob) => {
+      const user = userEvent.setup();
+      const onClear = vi.fn();
+      renderTree({ selectedJobId: 1, selectedJob, onClear });
+      expect(screen.getByRole('button', { name: 'Clear' })).toBeEnabled();
+      await user.click(screen.getByRole('button', { name: 'Clear' }));
+      expect(onClear).toHaveBeenCalledTimes(1);
+      expect(fiaApi.get).not.toHaveBeenCalled();
+    }
+  );
+
   test('queries full history by exact experiment number and filename', async () => {
     const user = userEvent.setup();
     vi.mocked(fiaApi.get).mockResolvedValue({ data: [] });
     renderTree();
-    await screen.findByText('No successful IMAT stacks found.');
+    expect(fiaApi.get).not.toHaveBeenCalled();
 
-    await user.type(screen.getByLabelText('Stack search value'), '12345');
+    await user.type(screen.getByRole('spinbutton', { name: 'Stack search value' }), '12345');
     await user.click(screen.getByRole('button', { name: 'Search' }));
 
     await waitFor(() => {
@@ -106,8 +131,8 @@ describe('ImatStackJobTree', () => {
 
     await user.click(screen.getByRole('combobox', { name: 'Search by' }));
     await user.click(screen.getByRole('option', { name: 'Run/file' }));
-    await user.clear(screen.getByLabelText('Stack search value'));
-    await user.type(screen.getByLabelText('Stack search value'), 'IMAT00042');
+    expect(screen.getByRole('textbox', { name: 'Stack search value' })).toHaveValue('');
+    await user.type(screen.getByRole('textbox', { name: 'Stack search value' }), 'IMAT00042');
     await user.click(screen.getByRole('button', { name: 'Search' }));
 
     await waitFor(() => {
@@ -127,6 +152,7 @@ describe('ImatStackJobTree', () => {
       .mockResolvedValueOnce({ data: [firstPage[0], nextJob] });
 
     renderTree();
+    await user.click(screen.getByRole('button', { name: 'Search' }));
     await user.click(await screen.findByRole('button', { name: 'Load more' }));
 
     await waitFor(() => {
@@ -143,10 +169,46 @@ describe('ImatStackJobTree', () => {
     vi.mocked(fiaApi.get).mockRejectedValueOnce(new Error('offline')).mockResolvedValueOnce({ data: [] });
 
     renderTree();
+    await user.click(screen.getByRole('button', { name: 'Search' }));
     expect(await screen.findByText('Unable to load IMAT stacks.')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Retry' }));
 
     expect(await screen.findByText('No successful IMAT stacks found.')).toBeInTheDocument();
     expect(fiaApi.get).toHaveBeenCalledTimes(2);
   });
+
+  test.each(['Experiment number', 'Run/file'])(
+    'loads all stacks for a blank %s search, supports repeating it, and clears without fetching',
+    async (searchType) => {
+      const user = userEvent.setup();
+      vi.mocked(fiaApi.get).mockResolvedValue({ data: [makeJob(1, 1234, '2026-01-01T10:00:00Z')] });
+      renderTree();
+      expect(fiaApi.get).not.toHaveBeenCalled();
+      expect(screen.queryByText('No successful IMAT stacks found.')).not.toBeInTheDocument();
+      await user.click(screen.getByRole('combobox', { name: 'Search by' }));
+      await user.click(screen.getByRole('option', { name: searchType }));
+      await user.type(screen.getByLabelText('Stack search value'), '   {Enter}');
+      await screen.findByRole('button', { name: /Experiment 1234/ });
+      expect(fiaApi.get).toHaveBeenCalledWith('/instrument/IMAT/jobs', {
+        signal: expect.any(AbortSignal),
+        params: {
+          limit: 26,
+          offset: 0,
+          order_by: 'run_start',
+          order_direction: 'desc',
+          include_run: true,
+          filters: JSON.stringify({ job_state_in: ['SUCCESSFUL'] }),
+        },
+      });
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+      await user.click(screen.getByRole('button', { name: 'Search' }));
+      await screen.findByRole('button', { name: /Experiment 1234/ });
+      expect(fiaApi.get).toHaveBeenCalledTimes(2);
+      await user.click(screen.getByRole('button', { name: 'Clear' }));
+      expect(screen.queryByRole('button', { name: /Experiment 1234/ })).not.toBeInTheDocument();
+      expect(screen.getByLabelText('Stack search value')).toHaveValue(searchType === 'Experiment number' ? null : '');
+      expect(screen.getByRole('button', { name: 'Clear' })).toBeDisabled();
+      expect(fiaApi.get).toHaveBeenCalledTimes(2);
+    }
+  );
 });

@@ -18,6 +18,7 @@ import ndarray from 'ndarray';
 import React from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 
+import { getViewerPlotSx } from '../components/experimentViewer/styles';
 import ImatStackJobTree from '../components/imat/ImatStackJobTree';
 import { getJobTableChromeColors, JOB_TABLE_TOOLBAR_CONTROL_HEIGHT } from '../components/jobs/constants';
 import NavArrows from '../components/navigation/NavArrows';
@@ -163,7 +164,7 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
       const params = new URLSearchParams(history.location.search);
       params.set('jobId', job.id.toString());
       params.set('experiment', job.run.experiment_number.toString());
-      params.set('instrument', 'IMAT');
+      params.delete('instrument');
       if (resetImageIndex) params.delete('imageIndex');
 
       const search = params.toString();
@@ -191,6 +192,13 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
     },
     [writeSelectedJobToUrl]
   );
+
+  const handleClearStack = React.useCallback((): void => {
+    const params = new URLSearchParams(history.location.search);
+    ['jobId', 'experiment', 'instrument', 'imageIndex'].forEach((name) => params.delete(name));
+    const search = params.toString();
+    history.push({ pathname: history.location.pathname, search: search ? `?${search}` : '' });
+  }, [history]);
 
   // Hydrate deep-linked jobs and browser history selections that are not already in memory.
   React.useEffect(() => {
@@ -233,7 +241,7 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
         setSelectedJob(response.data);
         writeSelectedJobToUrl(response.data, true, false);
       } catch (err: unknown) {
-        if (axios.isAxiosError(err) && err.code === 'ERR_CANCELED') return;
+        if (controller.signal.aborted || (axios.isAxiosError(err) && err.code === 'ERR_CANCELED')) return;
         setSelectedJobError('The selected IMAT stack could not be loaded.');
       } finally {
         if (!controller.signal.aborted) setSelectedJobLoading(false);
@@ -257,6 +265,7 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
   const replaceViewerQueryParam = React.useCallback(
     (name: 'imageIndex' | 'viewerSize', value: string, defaultValue: string): void => {
       const params = new URLSearchParams(locationSearchRef.current);
+      params.delete('instrument');
       if (value === defaultValue) {
         params.delete(name);
       } else {
@@ -289,6 +298,8 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
 
   const stackDisplayWidth = stackDataset?.originalWidth || stackDataset?.sampledWidth || 0;
   const stackDisplayHeight = stackDataset?.originalHeight || stackDataset?.sampledHeight || 0;
+  const stackImageScale =
+    viewerSize === 'small' ? 0.25 : viewerSize === 'medium' ? 0.5 : viewerSize === 'large' ? 0.75 : 1;
 
   const stackAspectRatio = React.useMemo(() => {
     if (stackDisplayHeight === 0) return 1;
@@ -338,6 +349,7 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
     if (mode !== 'stack') return;
     setStackImages([]);
     setStackDataset(null);
+    setStackLoading(false);
     setDirectoryPath(null);
     setStackError(null);
     setIsSliding(false);
@@ -375,7 +387,7 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
           if (runNumber) path = `${path}/run-${runNumber}`;
           setDirectoryPath(path);
         } catch (err: unknown) {
-          if (axios.isAxiosError(err) && err.code === 'ERR_CANCELED') return;
+          if (controller.signal.aborted || (axios.isAxiosError(err) && err.code === 'ERR_CANCELED')) return;
           console.warn('find_file failed, falling back to job outputs:', err);
           let path = parseJobOutputs(selectedJob.outputs)[0] || selectedJob.outputs;
           if (path) {
@@ -392,7 +404,7 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
           }
         }
       } catch (err: unknown) {
-        if (axios.isAxiosError(err) && err.code === 'ERR_CANCELED') return;
+        if (controller.signal.aborted || (axios.isAxiosError(err) && err.code === 'ERR_CANCELED')) return;
         setStackError('Failed to resolve output directory');
       } finally {
         if (!controller.signal.aborted) setStackLoading(false);
@@ -421,7 +433,7 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
         );
         setStackImages(sortedData);
       } catch (err: unknown) {
-        if (axios.isAxiosError(err) && err.code === 'ERR_CANCELED') return;
+        if (controller.signal.aborted || (axios.isAxiosError(err) && err.code === 'ERR_CANCELED')) return;
         setStackError('Failed to list images in stack');
       } finally {
         if (!controller.signal.aborted) setStackLoading(false);
@@ -470,7 +482,7 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
           sampledHeight,
         });
       } catch (err: unknown) {
-        if (axios.isAxiosError(err) && err.code === 'ERR_CANCELED') return;
+        if (signal.aborted || (axios.isAxiosError(err) && err.code === 'ERR_CANCELED')) return;
         setStackError('Failed to load stack image');
       } finally {
         if (!signal.aborted) setStackLoading(false);
@@ -525,21 +537,12 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
   };
 
   const stackDomainWidgetStyles = {
+    gridArea: 'intensity',
+    justifySelf: { xs: 'stretch', md: 'end' },
     width: '100%',
-    maxWidth: '100%',
-    display: 'flex',
-    alignItems: 'center',
-    gap: 1,
-    pl: 1.25,
-    pr: 0.5,
-    minHeight: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
-    boxSizing: 'border-box',
+    maxWidth: 500,
+    minWidth: 0,
     color: viewerChrome.text,
-    backgroundColor: viewerChrome.surface,
-    border: `1px solid ${viewerChrome.border}`,
-    borderRadius: 0,
-    overflow: 'visible',
-    boxShadow: 'none',
     '--h5w-toolbar--height': '2.25rem',
     '--h5w-toolbar--bgColor': viewerChrome.surface,
     '--h5w-toolbar-label--color': viewerChrome.text,
@@ -662,7 +665,12 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
 
         {mode === 'stack' && (
           <Box sx={viewerColumnsSx}>
-            <ImatStackJobTree selectedJobId={stackJobId} selectedJob={selectedJob} onSelectJob={handleSelectJob} />
+            <ImatStackJobTree
+              selectedJobId={stackJobId}
+              selectedJob={selectedJob}
+              onSelectJob={handleSelectJob}
+              onClear={handleClearStack}
+            />
 
             <Box sx={viewerContentSx}>
               <Paper
@@ -672,33 +680,6 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
                 aria-label="Stack viewer controls"
                 sx={{ ...panelSx, flexShrink: 0 }}
               >
-                <Box
-                  sx={{
-                    px: 2,
-                    py: 0.5,
-                    backgroundColor: viewerChrome.header,
-                    borderBottom: `1px solid ${viewerChrome.border}`,
-                  }}
-                >
-                  <Slider
-                    aria-label="Stack image"
-                    disabled={!selectedJob || stackImages.length === 0}
-                    value={selectedJob && stackImages.length > 0 ? currentImageIndex : 0}
-                    min={0}
-                    max={Math.max(0, stackImages.length - 1)}
-                    onChange={handleSliderChange}
-                    onChangeCommitted={handleSliderChangeCommitted}
-                    valueLabelDisplay="auto"
-                    valueLabelFormat={(v: number) => `Index: ${v}`}
-                    slots={{ valueLabel: StackImageValueLabel }}
-                    sx={{
-                      color: viewerChrome.accent,
-                      '& .MuiSlider-thumb': { width: 14, height: 14, borderRadius: 0 },
-                      '& .MuiSlider-rail, & .MuiSlider-track': { borderRadius: 0 },
-                    }}
-                  />
-                </Box>
-
                 <Box
                   sx={{
                     display: 'grid',
@@ -756,12 +737,12 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
                     sx={{
                       gridArea: 'size',
                       justifySelf: { xs: 'stretch', sm: 'start', md: 'end', xl: 'center' },
-                      width: { xs: '100%', sm: 'auto' },
+                      width: { xs: '100%', sm: 400 },
                       maxWidth: '100%',
                       borderRadius: 0,
                       '& .MuiToggleButton-root': {
-                        width: { xs: 'auto', sm: 64 },
-                        flex: { xs: 1, sm: '0 0 auto' },
+                        flex: '1 1 0',
+                        minWidth: 0,
                         px: 0.75,
                         height: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
                         borderRadius: 0,
@@ -802,29 +783,47 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
                     </ToggleButton>
                   </ToggleButtonGroup>
 
-                  <Box
-                    sx={{
-                      gridArea: 'intensity',
-                      justifySelf: { xs: 'stretch', md: 'end' },
-                      width: '100%',
-                      maxWidth: 500,
-                    }}
-                  >
-                    <Box sx={stackDomainWidgetStyles}>
-                      <Typography variant="body2" sx={{ fontWeight: 500, flexShrink: 0 }}>
-                        Colourbar intensity
-                      </Typography>
-                      <Toolbar>
-                        <DomainWidget
-                          dataDomain={STACK_INTENSITY_DOMAIN}
-                          customDomain={stackCustomIntensityDomain}
-                          scaleType={ScaleType.Linear}
-                          disabled={!selectedJob || !stackDataset}
-                          onCustomDomainChange={setStackCustomIntensityDomain}
-                        />
-                      </Toolbar>
-                    </Box>
+                  <Box sx={stackDomainWidgetStyles}>
+                    <Toolbar>
+                      <DomainWidget
+                        dataDomain={STACK_INTENSITY_DOMAIN}
+                        customDomain={stackCustomIntensityDomain}
+                        scaleType={ScaleType.Linear}
+                        disabled={!selectedJob || !stackDataset}
+                        onCustomDomainChange={setStackCustomIntensityDomain}
+                      />
+                    </Toolbar>
                   </Box>
+                </Box>
+
+                <Box
+                  sx={{
+                    px: 2,
+                    height: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT + 1,
+                    boxSizing: 'border-box',
+                    display: 'flex',
+                    alignItems: 'center',
+                    backgroundColor: viewerChrome.header,
+                    borderTop: `1px solid ${viewerChrome.border}`,
+                  }}
+                >
+                  <Slider
+                    aria-label="Stack image"
+                    disabled={!selectedJob || stackImages.length === 0}
+                    value={selectedJob && stackImages.length > 0 ? currentImageIndex : 0}
+                    min={0}
+                    max={Math.max(0, stackImages.length - 1)}
+                    onChange={handleSliderChange}
+                    onChangeCommitted={handleSliderChangeCommitted}
+                    valueLabelDisplay="auto"
+                    valueLabelFormat={(v: number) => `Index: ${v}`}
+                    slots={{ valueLabel: StackImageValueLabel }}
+                    sx={{
+                      color: viewerChrome.accent,
+                      '& .MuiSlider-thumb': { width: 14, height: 14, borderRadius: 0 },
+                      '& .MuiSlider-rail, & .MuiSlider-track': { borderRadius: 0 },
+                    }}
+                  />
                 </Box>
               </Paper>
               {selectedJobError ? (
@@ -852,7 +851,7 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
                     Select a stack to view its images
                   </Typography>
                   <Typography variant="body2" sx={{ color: alpha(viewerChrome.text, 0.75) }}>
-                    Choose an experiment and a stack from the list, or use Search to find one.
+                    Use Search to find a stack. Leave the search empty to browse all successful IMAT reductions.
                   </Typography>
                 </Box>
               ) : (
@@ -860,42 +859,24 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
                   sx={{
                     display: 'flex',
                     justifyContent: 'center',
-                    overflow: viewerSize === 'fit' ? 'hidden' : 'auto',
+                    overflow: 'hidden',
                     flex: 1,
                     minHeight: 0,
                     mt: '-1px',
                   }}
                 >
                   <Box
+                    key={viewerSize}
                     sx={{
-                      width:
-                        viewerSize === 'fit'
-                          ? '100%'
-                          : viewerSize === 'small'
-                            ? stackDisplayWidth > 0
-                              ? stackDisplayWidth * 0.25
-                              : '100%'
-                            : viewerSize === 'medium'
-                              ? stackDisplayWidth > 0
-                                ? stackDisplayWidth * 0.5
-                                : '100%'
-                              : viewerSize === 'large'
-                                ? stackDisplayWidth > 0
-                                  ? stackDisplayWidth * 0.75
-                                  : '100%'
-                                : stackDisplayWidth || '100%',
+                      ...getViewerPlotSx(theme),
+                      width: '100%',
                       aspectRatio: stackAspectRatio,
-                      maxHeight: viewerSize === 'fit' ? '100%' : 'none',
+                      maxHeight: '100%',
                       position: 'relative',
                       border: `1px solid ${viewerChrome.border}`,
                       borderRadius: 0,
                       boxSizing: 'border-box',
-                      overflow: 'hidden',
-                      backgroundColor: 'black',
-                      color: 'rgba(255, 255, 255, 0.92)',
-                      '--h5w-colorBar-bounds--color': 'rgba(255, 255, 255, 0.92)',
-                      '--h5w-colorBar-tickLabels--color': 'rgba(255, 255, 255, 0.86)',
-                      '--h5w-colorBar-ticks--color': 'rgba(255, 255, 255, 0.72)',
+                      overflow: viewerSize === 'fit' ? 'hidden' : 'auto',
                       mx: 'auto',
                       flexShrink: 0,
                     }}
@@ -905,7 +886,13 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
                         dataArray={stackArray!}
                         aspect="equal"
                         flipYAxis
-                        style={{ height: '100%', width: '100%' }}
+                        style={{
+                          width:
+                            viewerSize === 'fit' || !stackDisplayWidth ? '100%' : stackDisplayWidth * stackImageScale,
+                          height:
+                            viewerSize === 'fit' || !stackDisplayHeight ? '100%' : stackDisplayHeight * stackImageScale,
+                          marginInline: 'auto',
+                        }}
                         domain={safeStackIntensityDomain}
                       />
                     ) : stackLoading ? (
@@ -914,7 +901,7 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
                       </Box>
                     ) : (
                       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-                        <Typography color="white">
+                        <Typography color="inherit">
                           {stackError ??
                             (stackImages.length === 0
                               ? 'No images found in this job stack.'
