@@ -169,7 +169,8 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
   const [files, setFiles] = useState<FileConfig[]>([]);
   const [linePlotData, setLinePlotData] = useState<LinePlotData[]>([]);
   const [showErrors, setShowErrors] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loadingJobs, setLoadingJobs] = useState(false);
+  const [loadingPlotData, setLoadingPlotData] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [autoSelectPrimary, setAutoSelectPrimary] = useState(true);
   const [activeViewerTab, setActiveViewerTab] = useState<'1d' | '2d'>('1d');
@@ -203,7 +204,7 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
       setSelected2DFilePath(null);
       setViewer2DError(null);
       setTotalJobs(0);
-      setLoading(false);
+      setLoadingJobs(false);
       setError(null);
     }
   }, [instrumentName, jobId, routeExperimentNumber]);
@@ -241,7 +242,7 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
       setSelected2DFilePath(null);
       setViewer2DError(null);
       setTotalJobs(0);
-      setLoading(false);
+      setLoadingJobs(false);
     };
 
     const loadJobs = async (): Promise<void> => {
@@ -251,7 +252,7 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
           return;
         }
 
-        setLoading(true);
+        setLoadingJobs(true);
         setError(null);
         clearViewerSelections();
         let jobsData: Job[];
@@ -436,7 +437,7 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
         setError('Failed to load jobs from server');
       } finally {
         if (isCurrentRequest) {
-          setLoading(false);
+          setLoadingJobs(false);
         }
       }
     };
@@ -619,15 +620,17 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
 
   // Fetch data for all enabled files with paths selected
   useEffect(() => {
+    let isCurrentRequest = true;
     const enabledFiles = files.filter((file) => file.enabled && file.path);
 
     if (enabledFiles.length === 0) {
       setLinePlotData([]);
+      setLoadingPlotData(false);
       return;
     }
 
     const fetchAllData = async (): Promise<void> => {
-      setLoading(true);
+      setLoadingPlotData(true);
       setError(null);
 
       try {
@@ -690,17 +693,28 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
         });
 
         const lineResults = await Promise.all(lineDataPromises);
-        setLinePlotData(lineResults);
+        if (isCurrentRequest) {
+          setLinePlotData(lineResults);
+        }
       } catch (err) {
+        if (!isCurrentRequest) {
+          return;
+        }
         console.error('Error fetching data:', err);
         setError('Failed to fetch data. Please check your backend connection.');
         setLinePlotData([]);
       } finally {
-        setLoading(false);
+        if (isCurrentRequest) {
+          setLoadingPlotData(false);
+        }
       }
     };
 
     fetchAllData();
+
+    return () => {
+      isCurrentRequest = false;
+    };
   }, [files, showErrors]);
 
   // Fetch filepath for 2D viewer when file is selected
@@ -846,10 +860,12 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
               }
               jobs={jobs}
               files={files}
+              isLoading={loadingJobs}
+              showEmptyState={isSearchActive || Boolean(jobId)}
               currentPage={showSearchControls ? currentPage : undefined}
               totalJobs={showSearchControls ? totalJobs : undefined}
               pageSize={EXPERIMENT_VIEWER_PAGE_SIZE}
-              isPaginationDisabled={loading}
+              isPaginationDisabled={loadingJobs}
               onPageChange={showSearchControls ? handlePageChange : undefined}
               onFileToggle={handleFileToggle}
               onDatasetChange={handleDatasetChange}
@@ -874,7 +890,7 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
             }}
           >
             {/* Loading indicator */}
-            {(loading || loading2DPath) && (
+            {(loadingPlotData || loading2DPath) && (
               <Box
                 sx={{
                   position: 'absolute',

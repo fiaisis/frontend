@@ -44,14 +44,6 @@ vi.mock('../components/jobs/InstrumentSelector', () => ({
 }));
 
 vi.mock('../components/experimentViewer/Viewer2D', () => ({ default: () => <div data-testid="viewer-2d" /> }));
-vi.mock('../components/experimentViewer/FileTree', () => ({
-  default: ({ viewTabs, searchControls }: { viewTabs?: React.ReactNode; searchControls?: React.ReactNode }) => (
-    <div data-testid="file-tree">
-      {viewTabs}
-      {searchControls}
-    </div>
-  ),
-}));
 vi.mock('../components/experimentViewer/Graph', () => ({ default: () => <div data-testid="plot-viewer" /> }));
 vi.mock('../components/experimentViewer/ViewerTabs', () => ({ default: () => <div data-testid="viewer-tabs" /> }));
 vi.mock('../components/experimentViewer/LiveLogViewer', () => ({ LiveLogViewer: () => null }));
@@ -135,6 +127,25 @@ describe('page chrome titles', () => {
     expect(within(screen.getByLabelText('breadcrumb')).getByText('LOQ')).toHaveAttribute('aria-current', 'page');
     expect(screen.getByRole('spinbutton', { name: 'Experiment number' })).toHaveValue(null);
     expect(screen.getByRole('button', { name: 'Clear experiment number' })).toBeDisabled();
+  });
+
+  test('shows experiment job loading in the files panel until the search finishes', async () => {
+    let finishSearch!: (response: { data: { count: number } }) => void;
+    const pendingSearch = new Promise<{ data: { count: number } }>((resolve) => {
+      finishSearch = resolve;
+    });
+    vi.mocked(fiaApi.get).mockReturnValue(pendingSearch);
+
+    renderPage('/experiment-viewer/LOQ', '/experiment-viewer/:instrumentName/:experimentNumber?', <ExperimentViewer />);
+
+    const filesPanel = screen.getByRole('complementary', { name: 'Experiment viewer files' });
+    expect(within(filesPanel).getByRole('progressbar', { name: 'Loading jobs' })).toBeInTheDocument();
+    expect(screen.queryByRole('progressbar', { name: 'Loading experiment data' })).not.toBeInTheDocument();
+    expect(within(filesPanel).queryByText('No jobs listed')).not.toBeInTheDocument();
+
+    finishSearch({ data: { count: 0 } });
+    await waitFor(() => expect(within(filesPanel).queryByRole('progressbar')).not.toBeInTheDocument());
+    expect(within(filesPanel).getByText('No jobs listed')).toBeInTheDocument();
   });
 
   test('keeps experiment-only route details in the search control', () => {

@@ -10,6 +10,7 @@ import {
   AccordionSummary,
   AccordionDetails,
   Pagination,
+  CircularProgress,
 } from '@mui/material';
 import { alpha, useTheme } from '@mui/material/styles';
 import React, { useState } from 'react';
@@ -23,6 +24,8 @@ import type { FileConfig, Job } from '../../lib/types';
 interface FileTreeProps {
   jobs: Job[];
   files: FileConfig[];
+  isLoading?: boolean;
+  showEmptyState?: boolean;
   viewTabs?: React.ReactNode;
   searchControls?: React.ReactNode;
   currentPage?: number;
@@ -43,6 +46,8 @@ interface FileTreeProps {
 const FileTree: React.FC<FileTreeProps> = ({
   jobs,
   files,
+  isLoading = false,
+  showEmptyState = true,
   viewTabs,
   searchControls,
   currentPage = 0,
@@ -108,7 +113,11 @@ const FileTree: React.FC<FileTreeProps> = ({
     outputsArray: getJobOutputs(job),
   }));
 
-  const filteredJobs = showEmptyJobs ? jobsWithOutputs : jobsWithOutputs.filter((job) => job.outputsArray.length > 0);
+  const filteredJobs = isLoading
+    ? []
+    : showEmptyJobs
+      ? jobsWithOutputs
+      : jobsWithOutputs.filter((job) => job.outputsArray.length > 0);
   const emptyJobsCount = jobsWithOutputs.filter((job) => job.outputsArray.length === 0).length;
   const pageCount = pageSize > 0 ? Math.ceil(totalJobs / pageSize) : 0;
   const showPagination = Boolean(onPageChange && totalJobs > pageSize && pageCount > 1);
@@ -220,6 +229,7 @@ const FileTree: React.FC<FileTreeProps> = ({
       )}
 
       <Box
+        aria-busy={isLoading}
         sx={{
           flex: '1 1 auto',
           minHeight: 0,
@@ -228,7 +238,13 @@ const FileTree: React.FC<FileTreeProps> = ({
           scrollbarColor: `${viewerChrome.border} ${viewerChrome.header}`,
         }}
       >
-        {filteredJobs.length === 0 && (
+        {isLoading && (
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', minHeight: 96 }}>
+            <CircularProgress size={32} aria-label="Loading jobs" />
+          </Box>
+        )}
+
+        {!isLoading && showEmptyState && filteredJobs.length === 0 && (
           <Typography variant="body2" align="center" sx={{ p: 3, color: alpha(viewerChrome.text, 0.75) }}>
             {jobs.length === 0 ? 'No jobs listed' : 'No jobs with files'}
           </Typography>
