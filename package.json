@@ -107,7 +107,7 @@
     "@typescript-eslint/eslint-plugin": "8.65.0",
     "@typescript-eslint/parser": "8.65.0",
     "@vitejs/plugin-react": "^4.3.4",
-    "@vitest/coverage-v8": "^4.1.10",
+    "@vitest/coverage-v8": "4.1.11",
     "cross-env": "^10.1.0",
     "cypress": "^15.18.1",
     "cypress-real-events": "^1.15.0",
