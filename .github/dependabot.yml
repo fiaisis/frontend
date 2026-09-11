@@ -22,6 +22,11 @@ updates:
           - '*'
     ignore:
       - dependency-name: '*react*'
+      # Upgrade the H5Web packages and source submodule together after viewer validation.
+      - dependency-name: '@h5web/*'
+      # The bundled H5Web zoom implementation requires camera scaling, removed in r183.
+      - dependency-name: 'three'
+        versions: ['>=0.183.0']
 
   - package-ecosystem: 'docker'
     directory: '/'

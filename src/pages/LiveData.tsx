@@ -1,4 +1,6 @@
 import '@h5web/lib/styles.css';
+import Edit from '@mui/icons-material/Edit';
+import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import {
   Alert,
   Box,
@@ -7,35 +9,68 @@ import {
   Link as MuiLink,
   List,
   ListItemButton,
+  ListItemIcon,
   ListItemText,
   Paper,
   Typography,
 } from '@mui/material';
+import { alpha, useTheme } from '@mui/material/styles';
 import { jwtDecode } from 'jwt-decode';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link as RouterLink, useHistory, useParams } from 'react-router-dom';
 
 import Viewer2D from '../components/experimentViewer/Viewer2D';
+import { getJobTableChromeColors, JOB_TABLE_TOOLBAR_CONTROL_HEIGHT } from '../components/jobs/constants';
 import InstrumentSelector from '../components/jobs/InstrumentSelector';
 import NavArrows from '../components/navigation/NavArrows';
+import PageHeader from '../components/navigation/PageHeader';
+import { getPageHeaderControlSx } from '../components/navigation/pageHeaderStyles';
+import { viewerColumnsSx, viewerContentSx, viewerSidebarSx } from '../components/viewer/layout';
 import { instruments as allInstruments } from '../lib/instrumentData';
+import { LIVE_SUPPORTED_INSTRUMENTS_FALLBACK } from '../lib/instrumentSupport';
 import { fetchLiveDataFiles, fetchLiveDataInstruments } from '../lib/plottingServiceAPI';
 import { outputFilter } from '../lib/types';
+import { useAvailablePluginHeight } from '../lib/useAvailablePluginHeight';
 import { useLiveDataSSE } from '../lib/useLiveDataSSE';
 
 const LiveData: React.FC = (): JSX.Element => {
+  const theme = useTheme();
+  const viewerChrome = getJobTableChromeColors(theme.palette.mode);
+  const connectedColor = theme.palette.mode === 'dark' ? theme.palette.success.light : theme.palette.success.dark;
+  const disconnectedColor = theme.palette.mode === 'dark' ? theme.palette.error.light : theme.palette.error.dark;
+  const { rootRef, availableHeight } = useAvailablePluginHeight();
   const { instrumentName } = useParams<{ instrumentName?: string }>();
-  // Instrument selection
-  const [instruments, setInstruments] = useState<string[]>([]);
-  const [selectedInstrument, setSelectedInstrument] = useState<string | null>(() => instrumentName ?? null);
-  const [loadingInstruments, setLoadingInstruments] = useState(true);
+  const selectedInstrument = instrumentName
+    ? (allInstruments.find((instrument) => instrument.name.toLowerCase() === instrumentName.toLowerCase())?.name ??
+      instrumentName)
+    : null;
 
   // File list
   const [files, setFiles] = useState<string[]>([]);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [loadingFiles, setLoadingFiles] = useState(false);
+  const fileRequestId = useRef(0);
   const history = useHistory();
   const [userRole, setUserRole] = useState<'staff' | 'user' | null>(null);
+  const [supportedInstruments, setSupportedInstruments] = useState<readonly string[]>(
+    LIVE_SUPPORTED_INSTRUMENTS_FALLBACK
+  );
+
+  useEffect(() => {
+    let active = true;
+    void fetchLiveDataInstruments()
+      .then((names) => {
+        if (active && Array.isArray(names) && names.every((name) => typeof name === 'string')) {
+          setSupportedInstruments(names);
+        }
+      })
+      .catch(() => {
+        // Retain the confirmed fallback list without blocking the viewer.
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     const token = localStorage.getItem('scigateway:token');
@@ -55,93 +90,38 @@ const LiveData: React.FC = (): JSX.Element => {
 
   // SSE connection
   const { isConnected, directory, changedFile, error: sseError } = useLiveDataSSE(selectedInstrument, true);
+  const connectionColor = isConnected ? connectedColor : disconnectedColor;
 
   // Build full file path using directory from SSE and selected file
-  const selectedFilePath = directory && selectedFile ? `${directory}/${selectedFile}` : null;
-  const liveDataInstrumentOptions = useMemo(() => {
-    const instrumentMetadataByName = new Map(
-      allInstruments.map((instrument) => [instrument.name.toLowerCase(), instrument])
-    );
-
-    return instruments.map((instrument, index) => {
-      return (
-        instrumentMetadataByName.get(instrument.toLowerCase()) ?? {
-          id: -(index + 1),
-          name: instrument,
-          description: '',
-          type: 'Live data',
-          infoPage: '',
-          scientists: [],
-        }
-      );
-    });
-  }, [instruments]);
-
-  // Fetch available instruments on mount
-  useEffect(() => {
-    const loadInstruments = async (): Promise<void> => {
-      try {
-        setLoadingInstruments(true);
-        const instrumentList = await fetchLiveDataInstruments();
-        setInstruments(instrumentList);
-      } catch (err) {
-        console.error('Failed to load instruments:', err);
-        setError('Failed to load available instruments');
-      } finally {
-        setLoadingInstruments(false);
-      }
-    };
-
-    loadInstruments();
-  }, []);
+  const selectedFilePath = selectedInstrument && directory && selectedFile ? `${directory}/${selectedFile}` : null;
 
   useEffect(() => {
-    if (loadingInstruments) {
-      return;
+    if (selectedInstrument && selectedInstrument !== instrumentName) {
+      history.replace(`/live-data/${selectedInstrument}`);
     }
-
-    if (instrumentName) {
-      const matchedInstrument = instruments.find(
-        (instrument) => instrument.toLowerCase() === instrumentName.toLowerCase()
-      );
-      const nextInstrument = matchedInstrument ?? instrumentName;
-
-      setSelectedInstrument((currentInstrument) =>
-        currentInstrument === nextInstrument ? currentInstrument : nextInstrument
-      );
-
-      if (matchedInstrument && matchedInstrument !== instrumentName) {
-        history.replace(`/live-data/${matchedInstrument}`);
-      }
-
-      return;
-    }
-
-    if (instruments.length === 0) {
-      setSelectedInstrument(null);
-      return;
-    }
-
-    const nextInstrument =
-      selectedInstrument && instruments.includes(selectedInstrument) ? selectedInstrument : instruments[0];
-
-    setSelectedInstrument(nextInstrument);
-    history.replace(`/live-data/${nextInstrument}`);
-  }, [history, instrumentName, instruments, loadingInstruments, selectedInstrument]);
+  }, [history, instrumentName, selectedInstrument]);
 
   // Fetch files when instrument changes
   const loadFiles = useCallback(
     async (resetSelection: boolean = false): Promise<void> => {
+      const requestId = ++fileRequestId.current;
       if (!selectedInstrument) {
         setFiles([]);
         setSelectedFile(null);
+        setLoadingFiles(false);
+        setError(null);
         return;
       }
 
       try {
         setLoadingFiles(true);
         setError(null);
+        if (resetSelection) {
+          setFiles([]);
+          setSelectedFile(null);
+        }
         const fileList = await fetchLiveDataFiles(selectedInstrument);
+        if (requestId !== fileRequestId.current) return;
         // Filter to only show valid H5 files
         const filteredFiles = fileList.filter((file) => outputFilter.some((ext) => file.endsWith(ext)));
         setFiles(filteredFiles);
@@ -154,18 +134,23 @@ const LiveData: React.FC = (): JSX.Element => {
           return currentFile && filteredFiles.includes(currentFile) ? currentFile : (filteredFiles[0] ?? null);
         });
       } catch (err) {
+        if (requestId !== fileRequestId.current) return;
         console.error('Failed to load files:', err);
         setError('Failed to load files from live data directory');
         setFiles([]);
+        setSelectedFile(null);
       } finally {
-        setLoadingFiles(false);
+        if (requestId === fileRequestId.current) setLoadingFiles(false);
       }
     },
     [selectedInstrument]
   );
 
   useEffect(() => {
-    loadFiles(true);
+    void loadFiles(true);
+    return () => {
+      fileRequestId.current += 1;
+    };
   }, [loadFiles]);
 
   // Handle file changes from SSE
@@ -193,10 +178,12 @@ const LiveData: React.FC = (): JSX.Element => {
 
   // Handle instrument change
   const handleInstrumentChange = (instrument: string): void => {
-    setSelectedInstrument(instrument);
+    const nextInstrument = instrument === 'ALL' ? null : instrument;
+    if (nextInstrument === selectedInstrument) return;
+    setFiles([]);
     setSelectedFile(null);
     setError(null);
-    history.push(`/live-data/${instrument}`);
+    history.push(nextInstrument ? `/live-data/${nextInstrument}` : '/live-data');
   };
 
   // Handle file selection
@@ -205,16 +192,7 @@ const LiveData: React.FC = (): JSX.Element => {
     setViewerKey((prev) => prev + 1);
   };
 
-  const breadcrumbTrailingCrumb = [
-    <InstrumentSelector
-      key="instrument"
-      selectedInstrument={selectedInstrument || 'ALL'}
-      handleInstrumentChange={handleInstrumentChange}
-      variant="breadcrumb"
-      instrumentOptions={liveDataInstrumentOptions}
-      showAllInstrumentsOption={false}
-      disabled={loadingInstruments || liveDataInstrumentOptions.length === 0}
-    />,
+  const pageControls = [
     ...(userRole === 'staff' && selectedInstrument
       ? [
           <MuiLink
@@ -222,89 +200,157 @@ const LiveData: React.FC = (): JSX.Element => {
             component={RouterLink}
             underline="hover"
             to={`/live-data/${selectedInstrument}/edit-script`}
+            sx={getPageHeaderControlSx}
           >
-            Click to edit script
+            <Edit fontSize="small" />
+            Edit script
           </MuiLink>,
         ]
       : []),
+    <InstrumentSelector
+      key="instrument"
+      selectedInstrument={selectedInstrument || 'ALL'}
+      handleInstrumentChange={handleInstrumentChange}
+      variant="compact"
+      compactLabel="Browse instruments"
+      allInstrumentsLabel="Clear selection"
+      support={{ page: 'live-data', instruments: supportedInstruments }}
+    />,
   ];
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100%', overflow: 'hidden' }}>
+    <Box
+      ref={rootRef}
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: availableHeight,
+        maxHeight: availableHeight,
+        minHeight: 0,
+        minWidth: 0,
+        width: '100%',
+        overflow: 'hidden',
+        color: viewerChrome.text,
+        '& .MuiCircularProgress-root': { color: viewerChrome.accent },
+      }}
+    >
+      <PageHeader
+        breadcrumbs={
+          <NavArrows
+            labelOverrides={selectedInstrument && instrumentName ? { [instrumentName]: selectedInstrument } : undefined}
+          />
+        }
+        controls={pageControls}
+        separateControls
+        status={
+          selectedInstrument && (
+            <Chip
+              label={isConnected ? 'Connected' : 'Disconnected'}
+              color={isConnected ? 'success' : 'error'}
+              size="small"
+              variant="outlined"
+              role="status"
+              sx={{
+                flex: '0 0 auto',
+                width: 120,
+                minHeight: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
+                borderRadius: 0,
+                borderColor: alpha(connectionColor, 0.5),
+                backgroundColor: alpha(connectionColor, 0.08),
+                color: connectionColor,
+                fontWeight: 500,
+                '& .MuiChip-label': { px: 1.5 },
+              }}
+            />
+          )
+        }
+      />
       <Box
         sx={{
           display: 'flex',
-          alignItems: 'flex-start',
-          justifyContent: 'space-between',
-          gap: 2,
-          flexWrap: { xs: 'wrap', lg: 'nowrap' },
-          mb: 2,
-          pr: { xs: 2, sm: 8 },
+          flexDirection: 'column',
+          flex: '1 1 auto',
+          minHeight: 0,
+          width: '100%',
+          boxSizing: 'border-box',
+          px: 2,
+          pb: 2,
         }}
       >
-        <Box sx={{ flex: '1 1 auto', minWidth: 0 }}>
-          <NavArrows trailingCrumb={breadcrumbTrailingCrumb} replaceLastCrumb={Boolean(instrumentName)} />
-          <Typography variant="h3" component="h1" sx={{ color: 'text.primary', px: '20px', pt: 2, pb: 1 }}>
-            Live data
-          </Typography>
-        </Box>
-        <Chip
-          label={isConnected ? 'Connected' : 'Disconnected'}
-          color={isConnected ? 'success' : 'default'}
-          size="small"
-          variant="outlined"
-          sx={{
-            flex: '0 0 auto',
-            mt: 2,
-            ml: 'auto',
-          }}
-        />
-      </Box>
-      <Box sx={{ display: 'flex', flexDirection: 'column', flex: '1 1 auto', minHeight: 0, width: '100%' }}>
         {/* Main content area */}
-        <Box sx={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+        <Box sx={viewerColumnsSx}>
           {/* Left panel - File list */}
           <Paper
             elevation={0}
+            square
             sx={{
-              width: 250,
-              borderRight: 1,
-              borderColor: 'divider',
+              ...viewerSidebarSx,
+              height: { xs: 180, md: 'auto' },
+              border: `1px solid ${viewerChrome.border}`,
+              backgroundColor: viewerChrome.surface,
+              color: viewerChrome.text,
               display: 'flex',
               flexDirection: 'column',
+              minHeight: 0,
               overflow: 'hidden',
             }}
           >
-            <Box sx={{ p: 1.5, borderBottom: 1, borderColor: 'divider' }}>
-              <Typography variant="subtitle2" color="text.secondary">
-                Files
-              </Typography>
-            </Box>
-
-            {loadingFiles ? (
+            {!selectedInstrument ? null : loadingFiles ? (
               <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-                <CircularProgress size={24} />
+                <CircularProgress size={24} aria-label="Loading live data files" />
               </Box>
             ) : files.length === 0 ? (
               <Box sx={{ p: 2 }}>
-                <Typography variant="body2" color="text.secondary">
-                  {selectedInstrument ? 'No files in live data directory' : 'Select an instrument'}
+                <Typography variant="body2" sx={{ color: alpha(viewerChrome.text, 0.75) }}>
+                  No files in live data directory
                 </Typography>
               </Box>
             ) : (
-              <List sx={{ flex: 1, overflow: 'auto', py: 0 }}>
+              <List
+                aria-label="Live data files"
+                sx={{
+                  flex: 1,
+                  minHeight: 0,
+                  overflowY: 'auto',
+                  overflowX: 'hidden',
+                  py: 0,
+                  scrollbarWidth: 'thin',
+                  scrollbarColor: `${viewerChrome.border} ${viewerChrome.header}`,
+                }}
+              >
                 {files.map((file) => (
                   <ListItemButton
                     key={file}
                     selected={file === selectedFile}
                     onClick={() => handleFileSelect(file)}
-                    sx={{ py: 0.5, px: 1.5 }}
+                    sx={{
+                      minHeight: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
+                      py: 0.5,
+                      px: 1.5,
+                      borderBottom: `1px solid ${viewerChrome.border}`,
+                      borderRadius: 0,
+                      '&:hover, &.Mui-focusVisible': { backgroundColor: viewerChrome.hover },
+                      '&:focus-visible': { outline: `2px solid ${viewerChrome.accent}`, outlineOffset: -2 },
+                      '&.Mui-selected': {
+                        color: viewerChrome.accent,
+                        backgroundColor: alpha(viewerChrome.accent, 0.12),
+                        boxShadow: `inset 3px 0 0 ${viewerChrome.accent}`,
+                      },
+                      '&.Mui-selected:hover, &.Mui-selected.Mui-focusVisible': {
+                        backgroundColor: alpha(viewerChrome.accent, 0.18),
+                      },
+                    }}
                   >
+                    <ListItemIcon sx={{ minWidth: 28, color: 'inherit' }}>
+                      <InsertDriveFileIcon fontSize="small" />
+                    </ListItemIcon>
                     <ListItemText
                       primary={file}
                       primaryTypographyProps={{
                         variant: 'body2',
+                        title: file,
                         sx: {
+                          fontWeight: file === selectedFile ? 600 : 400,
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap',
@@ -318,7 +364,16 @@ const LiveData: React.FC = (): JSX.Element => {
           </Paper>
 
           {/* Right panel - 2D Viewer */}
-          <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative' }}>
+          <Box
+            sx={{
+              ...viewerContentSx,
+              position: 'relative',
+              overflow: 'hidden',
+              border: `1px solid ${viewerChrome.border}`,
+              borderRadius: 0,
+              backgroundColor: viewerChrome.surface,
+            }}
+          >
             {/* Error messages */}
             {(error || sseError) && (
               <Box
@@ -328,16 +383,22 @@ const LiveData: React.FC = (): JSX.Element => {
                   left: '50%',
                   transform: 'translateX(-50%)',
                   zIndex: 20,
+                  maxWidth: 'calc(100% - 32px)',
                 }}
               >
-                <Alert severity="error" onClose={() => setError(null)}>
+                <Alert severity="error" onClose={() => setError(null)} sx={{ borderRadius: 0 }}>
                   {error || sseError}
                 </Alert>
               </Box>
             )}
 
             {/* Viewer */}
-            <Viewer2D key={viewerKey} filepath={selectedFilePath} />
+            <Viewer2D
+              refreshKey={viewerKey}
+              filepath={selectedFilePath}
+              emptyTitle={selectedInstrument ? undefined : 'Select an instrument to view live data'}
+              emptyMessage={selectedInstrument ? undefined : 'Use Browse instruments to choose an instrument.'}
+            />
           </Box>
         </Box>
       </Box>

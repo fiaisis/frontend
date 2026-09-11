@@ -89,6 +89,28 @@ const imatJobsResponse = [
 ];
 
 const tableContainerSelector = '[data-testid="reduction-history-table-container"]';
+const tableScrollSelector = '[data-testid="reduction-history-table-scroll"]';
+const paginationFooterSelector = '[data-testid="reduction-history-pagination-footer"]';
+const scrollableOverflowValues = new Set(['auto', 'scroll', 'overlay']);
+
+const findScrollableAncestor = (element: HTMLElement | null): HTMLElement | null => {
+  let currentElement = element;
+  const ownerDocument = element?.ownerDocument;
+
+  while (
+    currentElement &&
+    currentElement !== ownerDocument?.body &&
+    currentElement !== ownerDocument?.documentElement
+  ) {
+    if (scrollableOverflowValues.has(getComputedStyle(currentElement).overflowY)) {
+      return currentElement;
+    }
+
+    currentElement = currentElement.parentElement;
+  }
+
+  return null;
+};
 
 describe('Reduction history page', () => {
   beforeEach(() => {
@@ -140,14 +162,14 @@ describe('Reduction history page', () => {
     cy.wait('@getAllCount');
     cy.wait('@getAllJobs');
 
-    cy.contains('h1', 'Reduction history').should('be.visible');
+    cy.get('[data-testid="reduction-history-page-header"]').find('[aria-label="breadcrumb"]').should('be.visible');
     cy.contains('All instruments reduction').should('be.visible');
 
-    cy.get('[aria-label="breadcrumb"]').within(() => {
+    cy.get('[role="group"][aria-label="Page controls"]').within(() => {
       cy.get('#instrument-selector-button').should('contain', 'Browse instruments').click();
     });
     cy.contains('[role="menuitem"]', 'View all reductions').should('not.exist');
-    cy.contains('button', 'Small-angle neutron scattering').click();
+    cy.get('input[aria-label="Search for instrument"]').type('LOQ');
     cy.contains('[role="menuitem"]', 'LOQ').click();
 
     cy.wait('@getLoqCount');
@@ -155,21 +177,64 @@ describe('Reduction history page', () => {
 
     cy.location('pathname').should('eq', '/fia/reduction-history/LOQ');
     cy.get('[aria-label="breadcrumb"]').within(() => {
-      cy.contains('a', 'LOQ').should('be.visible');
+      cy.contains('[aria-current="page"]', 'LOQ').should('be.visible');
+    });
+    cy.get('[role="group"][aria-label="Page controls"]').within(() => {
       cy.get('#instrument-selector-button').should('contain', 'Browse instruments').and('not.contain', 'LOQ');
     });
-    cy.contains('h1', 'LOQ reduction history').should('be.visible');
+    cy.get('[data-testid="reduction-history-page-header"]').find('[aria-label="breadcrumb"]').should('be.visible');
     cy.contains('LOQ scoped reduction').should('be.visible');
 
     cy.get(tableContainerSelector).scrollTo('right');
     cy.contains('LOQ scoped reduction').should('be.visible').click();
-    cy.get(tableContainerSelector).scrollTo('right');
-    cy.contains('a', 'Experiment viewer').scrollIntoView();
-    cy.contains('a', 'Experiment viewer')
+    cy.location('search').should('include', 'reductionId=202');
+    cy.get('[data-testid="reduction-details-modal"]')
       .should('be.visible')
       .within(() => {
-        cy.get('[data-testid="VisibilityIcon"]').should('exist');
-        cy.get('[data-testid="OpenInNewIcon"]').should('not.exist');
+        cy.contains('[role="tab"]', 'Reduction outputs').click();
+        cy.contains('a', 'Experiment viewer')
+          .should('be.visible')
+          .within(() => {
+            cy.get('[data-testid="VisibilityIcon"]').should('exist');
+            cy.get('[data-testid="OpenInNewIcon"]').should('not.exist');
+          });
+      });
+    cy.get('[data-testid="reduction-details-backdrop"]').should(($backdrop) => {
+      const bounds = $backdrop[0].getBoundingClientRect();
+
+      expect(bounds.top).to.equal(0);
+      expect(bounds.left).to.equal(0);
+      expect(bounds.right).to.equal(Cypress.config('viewportWidth'));
+      expect(bounds.bottom).to.equal(Cypress.config('viewportHeight'));
+    });
+
+    cy.contains('LOQ scoped reduction').should('exist');
+    cy.get('[aria-label="Close reduction details"]').click();
+    cy.get('[data-testid="reduction-details-modal"]').should('not.exist');
+    cy.location('search').should('not.include', 'reductionId');
+    cy.contains('LOQ scoped reduction').should('be.visible');
+  });
+
+  it('opens GEM configuration with its file upload controls', () => {
+    cy.intercept('GET', /\/api\/instrument\/GEM\/jobs\/count\?.*$/, { count: 0 });
+    cy.intercept('GET', /\/api\/instrument\/GEM\/jobs\?.*$/, []);
+    cy.intercept('GET', /\/api\/instrument\/GEM\/specification$/, { enabled: true }).as('getGemSpecification');
+
+    cy.visitFia('/fia/reduction-history/GEM');
+    cy.get('button[aria-label="Open instrument config"]').should('be.enabled').click();
+    cy.wait('@getGemSpecification');
+    cy.get('#instrument-config-drawer')
+      .should('be.visible')
+      .within(() => {
+        cy.contains('GEM config settings').should('be.visible');
+        cy.contains('label', 'Upload file').should('be.visible');
+        cy.get('input[type="file"]')
+          .should('not.be.disabled')
+          .selectFile(
+            { contents: Cypress.Buffer.from('test calibration'), fileName: 'calibration.dat' },
+            { force: true }
+          );
+        cy.get('[role="status"]').should('contain', 'Selected file: calibration.dat');
       });
   });
 
@@ -202,19 +267,30 @@ describe('Reduction history page', () => {
 
     cy.get(tableContainerSelector).scrollTo('right');
     cy.get('[data-testid="rows-per-page-controls"]').within(() => {
-      cy.contains('button', '10').should('be.visible').click();
+      cy.contains('button', '50').should('be.visible').click();
     });
 
     cy.wait('@getAllCount');
     cy.wait('@getAllJobs');
 
     cy.get(tableContainerSelector).scrollTo('right');
-    cy.contains('Showing 1-10 of 74082 reductions').should('be.visible');
+    cy.contains('Showing 1-50 of 74082 reductions').should('be.visible');
 
     cy.get(tableContainerSelector).should(($container) => {
       const container = $container[0];
 
       expect(container.scrollWidth).to.be.greaterThan(container.clientWidth);
+    });
+
+    cy.get('[data-testid="reduction-history-page"]').then(($page) => {
+      const pageRect = $page[0].getBoundingClientRect();
+
+      cy.get('[data-testid="reduction-history-table-paper"]').should(($paper) => {
+        const paperRect = $paper[0].getBoundingClientRect();
+
+        expect(paperRect.left).to.be.closeTo(pageRect.left + 16, 1);
+        expect(paperRect.right).to.be.closeTo(pageRect.right - 16, 1);
+      });
     });
 
     cy.get('[data-testid="reduction-history-table-toolbar"]').should(($toolbar) => {
@@ -235,8 +311,50 @@ describe('Reduction history page', () => {
         expect(getComputedStyle(tableControls).flexWrap).to.equal('wrap');
       });
 
-    cy.get('[data-testid="reduction-history-table-toolbar"] .MuiTablePagination-toolbar').should(($pagination) => {
-      expect(getComputedStyle($pagination[0]).flexWrap).to.equal('wrap');
+    cy.get(paginationFooterSelector).within(() => {
+      cy.get('[data-testid="rows-per-page-controls"]').should('be.visible');
+      cy.get('[data-testid="reduction-history-page-selector"]').should('be.visible');
+      cy.get('[data-testid="reduction-history-displayed-rows"]').should('be.visible');
+      cy.get('nav[aria-label="Reduction history pages"]').should('exist');
+    });
+
+    cy.get('[data-testid="reduction-history-table-toolbar"] [data-testid="rows-per-page-controls"]').should(
+      'not.exist'
+    );
+
+    cy.get(tableContainerSelector).should(($container) => {
+      expect(getComputedStyle($container[0]).overflowX).to.equal('auto');
+      expect(getComputedStyle($container[0]).overflowY).to.equal('hidden');
+    });
+
+    cy.get(tableScrollSelector).should(($tableScroll) => {
+      expect(getComputedStyle($tableScroll[0]).overflowY).to.equal('scroll');
+      expect($tableScroll.find('thead')).to.have.length(0);
+    });
+
+    cy.get('[data-testid="reduction-history-table-header"]').should(($tableHeader) => {
+      expect($tableHeader.find('thead')).to.have.length(1);
+    });
+
+    cy.get('[data-testid="reduction-history-table-toolbar"]').should(($toolbar) => {
+      const styles = getComputedStyle($toolbar[0]);
+
+      expect(styles.position).to.equal('sticky');
+      expect(styles.top).to.equal('0px');
+    });
+
+    cy.get(paginationFooterSelector).should(($footer) => {
+      const footer = $footer[0];
+      const viewportWindow = footer.ownerDocument.defaultView;
+      expect(viewportWindow).not.to.equal(null);
+
+      const viewportHeight = viewportWindow?.innerHeight ?? 0;
+      const scrollContainer = findScrollableAncestor(footer.parentElement);
+      const contentBottom = scrollContainer
+        ? Math.min(scrollContainer.getBoundingClientRect().bottom, viewportHeight)
+        : viewportHeight;
+
+      expect(footer.getBoundingClientRect().bottom).to.be.closeTo(contentBottom - 16, 1);
     });
 
     cy.get('.tour-job-table-adv-filters').should(($toolbarControls) => {
@@ -250,12 +368,19 @@ describe('Reduction history page', () => {
       JOB_ROWS_PER_PAGE_OPTIONS.forEach((option) => {
         cy.contains('button', option.toString()).should('be.visible');
       });
-      cy.get('button[aria-pressed="true"]').should('have.length', 1).and('have.text', '10');
+      cy.contains('button', /^10$/).should('not.exist');
+      cy.get('button[aria-pressed="true"]').should('have.length', 1).and('have.text', '50');
       cy.get('[role="combobox"]').should('not.exist');
     });
 
-    cy.get(`${tableContainerSelector} table`).should(($table) => {
-      expect($table[0].getBoundingClientRect().width).to.be.at.least(JOB_TABLE_MIN_WIDTH);
+    cy.get(tableScrollSelector).should(($tableScroll) => {
+      const viewport = $tableScroll[0];
+      const header = viewport.ownerDocument.querySelector('[aria-label="Reduction history column headers"]')!;
+      const rows = $tableScroll.find('table')[0];
+
+      // Native scrollbar widths vary; both tables must fill the actual space available for rows.
+      expect(rows.getBoundingClientRect().width).to.be.closeTo(viewport.clientWidth, 1);
+      expect(header.getBoundingClientRect().width).to.be.closeTo(viewport.clientWidth, 1);
     });
 
     cy.get(tableContainerSelector).scrollTo('left');
@@ -264,7 +389,12 @@ describe('Reduction history page', () => {
     });
   });
 
-  it('shows the IMAT image view breadcrumb buttons with one active option', () => {
+  it('switches IMAT views with a breadcrumb dropdown on desktop and mobile', () => {
+    cy.viewport(1280, 720);
+    cy.intercept('GET', '**/plottingapi/imat/latest-image', {
+      statusCode: 500,
+      body: 'No image in this navigation test',
+    });
     cy.intercept('GET', /\/api\/instrument\/IMAT\/jobs\/count\?.*$/, (req) => {
       expect(req.headers.authorization).to.match(/^Bearer(?: .+)?$/);
       req.reply({
@@ -288,17 +418,53 @@ describe('Reduction history page', () => {
     cy.wait('@getImatJobs');
 
     cy.get('[aria-label="breadcrumb"]').within(() => {
-      cy.contains('a', 'IMAT').should('be.visible');
-      cy.get('#instrument-selector-button').should('contain', 'Browse instruments');
-      cy.get('[role="group"][aria-label="IMAT view"]').within(() => {
-        cy.contains('button', 'Reduction history').should('have.attr', 'aria-pressed', 'true');
-        cy.contains('button', 'Latest image').should('have.attr', 'aria-pressed', 'false');
-        cy.contains('button', 'Stack viewer').should('have.attr', 'aria-pressed', 'false');
-      });
+      cy.contains('a', 'IMAT').should('have.attr', 'href', '/fia/reduction-history/IMAT');
+      cy.get('[role="combobox"][aria-label="IMAT view"]')
+        .should('contain', 'Reduction history')
+        .and('have.attr', 'aria-current', 'page');
     });
+    cy.get('[role="group"][aria-label="Page controls"]').within(() => {
+      cy.get('#instrument-selector-button').should('contain', 'Browse instruments');
+      cy.get('[aria-label="IMAT view"]').should('not.exist');
+    });
+
+    const viewSelect = '[role="combobox"][aria-label="IMAT view"]';
+    cy.screenshot('imat-header-desktop', { capture: 'viewport' });
+    cy.get(viewSelect).click();
+    cy.get('[role="option"]').should('have.length', 3);
+    cy.contains('[role="option"]', 'Reduction history').should('have.attr', 'aria-selected', 'true');
+    cy.screenshot('imat-view-menu-desktop', { capture: 'viewport' });
+    cy.contains('[role="option"]', 'Stack viewer').click();
+    cy.location('pathname').should('eq', '/fia/reduction-history/IMAT/stack-viewer');
+    cy.get(viewSelect).should('contain', 'Stack viewer').click();
+    cy.contains('[role="option"]', 'Latest image').click();
+    cy.location('pathname').should('eq', '/fia/reduction-history/IMAT/latest-image');
+    cy.get(viewSelect).should('contain', 'Latest image').click();
+    cy.contains('[role="option"]', 'Reduction history').click();
+    cy.location('pathname').should('eq', '/fia/reduction-history/IMAT');
+
+    cy.viewport(375, 812);
+    cy.get('[role="group"][aria-label="Page controls"]').should(($controls) => {
+      const controls = $controls[0];
+      const breadcrumb = controls.ownerDocument.querySelector('[aria-label="breadcrumb"]')!;
+      expect(controls.getBoundingClientRect().top).to.be.greaterThan(breadcrumb.getBoundingClientRect().bottom);
+      expect(controls.getBoundingClientRect().right).to.be.at.most(375);
+    });
+    cy.get(viewSelect).scrollIntoView();
+    cy.get(viewSelect).focus();
+    cy.get(viewSelect).should('have.focus').trigger('keydown', { key: 'ArrowDown' });
+    cy.get('[role="listbox"]').should('be.visible');
+    cy.get('[role="option"]').each(($option) => {
+      expect($option[0].getBoundingClientRect().right).to.be.at.most(375);
+      cy.wrap($option).should('be.visible');
+    });
+    cy.screenshot('imat-view-menu-mobile', { capture: 'viewport' });
+    cy.get('[role="listbox"]').trigger('keydown', { key: 'Escape' });
+    cy.get(viewSelect).should('have.focus');
   });
 
-  it('selects different IMAT stacks from the job tree', () => {
+  it('opens a generic IMAT stack viewer and loads stacks only after selection', () => {
+    cy.viewport(1280, 720);
     cy.intercept('GET', /\/api\/instrument\/IMAT\/jobs\?.*$/, {
       statusCode: 200,
       body: imatJobsResponse,
@@ -324,7 +490,77 @@ describe('Reduction history page', () => {
 
     cy.visitFia('/fia/reduction-history/IMAT/stack-viewer');
 
+    cy.get('[aria-label="Stack viewer controls"]')
+      .should('be.visible')
+      .within(() => {
+        cy.get('input[aria-label="Stack image"]').should('be.disabled');
+        cy.get('button[aria-label="fit"]').should('be.disabled');
+        cy.contains('Image 0 of 0').should('be.visible');
+      });
+    cy.contains('Select a stack to view its images').should('be.visible');
+    cy.location('search').should('eq', '');
+    cy.get('@getImatStacks.all').should('have.length', 0);
+    cy.get('@findImatStack.all').should('have.length', 0);
+    cy.get('@listImatImages.all').should('have.length', 0);
+    cy.screenshot('imat-stack-generic', { capture: 'viewport' });
+    cy.get('aside[aria-label="IMAT stack jobs"]').contains('button', 'Search').click();
     cy.wait('@getImatStacks');
+    cy.contains('[role="button"]', 'Experiment 24680').click();
+    cy.contains('[role="button"]', 'IMAT00000302').click();
+    cy.location('search').should('include', 'jobId=302').and('include', 'experiment=24680');
+    cy.wait('@findImatStack');
+    cy.wait('@listImatImages');
+    cy.contains('newest-frame.tif').should('be.visible');
+    cy.get('button[aria-label="fit"]').should('be.enabled');
+
+    cy.contains('[role="button"]', 'Experiment 13579').click();
+    cy.contains('[role="button"]', 'IMAT00000301').click();
+
+    cy.location('search').should('include', 'jobId=301').and('include', 'experiment=13579');
+    cy.wait('@findImatStack');
+    cy.wait('@listImatImages');
+    cy.contains('older-frame.tif').should('be.visible');
+    cy.go(-2);
+    cy.location('search').should('eq', '');
+    cy.contains('Select a stack to view its images').should('be.visible');
+    cy.get('[aria-label="Successful IMAT stacks"] [aria-current="true"]').should('not.exist');
+    cy.get('[aria-label="Stack viewer controls"]').should('be.visible');
+    cy.get('button[aria-label="fit"]').should('be.disabled');
+  });
+
+  it('selects different IMAT stacks from the job tree after searching', () => {
+    cy.intercept('GET', /\/api\/instrument\/IMAT\/jobs\?.*$/, {
+      statusCode: 200,
+      body: imatJobsResponse,
+    }).as('getImatStacks');
+
+    cy.intercept('GET', /\/plottingapi\/find_file\/instrument\/IMAT\/experiment_number\/\d+\?.*$/, {
+      statusCode: 200,
+      body: '/data/imat',
+    }).as('findImatStack');
+
+    cy.intercept('GET', /\/plottingapi\/imat\/list-images\?.*$/, (req) => {
+      const path = String(req.query.path);
+      req.reply({
+        statusCode: 200,
+        body: [path.includes('run-302') ? 'newest-frame.tif' : 'older-frame.tif'],
+      });
+    }).as('listImatImages');
+
+    cy.intercept('GET', /\/plottingapi\/imat\/image\?.*$/, {
+      statusCode: 500,
+      body: 'Image rendering is outside this navigation test',
+    });
+
+    cy.visitFia('/fia/reduction-history/IMAT/stack-viewer');
+
+    cy.get('aside[aria-label="IMAT stack jobs"]').should('be.visible');
+    cy.get('@getImatStacks.all').should('have.length', 0);
+    cy.get('aside[aria-label="IMAT stack jobs"]').contains('button', 'Search').click();
+    cy.wait('@getImatStacks');
+    cy.location('search').should('not.include', 'jobId=');
+    cy.contains('[role="button"]', 'Experiment 24680').click();
+    cy.contains('[role="button"]', 'IMAT00000302').click();
     cy.location('search').should('include', 'jobId=302').and('include', 'experiment=24680');
     cy.wait('@findImatStack');
     cy.wait('@listImatImages');

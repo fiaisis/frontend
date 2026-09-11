@@ -7,6 +7,7 @@ import { BrowserRouter as Router, Redirect, Route, Switch, useLocation } from 'r
 
 import GlobalStyles from './GlobalStyles';
 import { clearFailedAuthRequestsQueue, retryFailedAuthRequests } from './lib/api';
+import { findScrollableAncestor } from './lib/useAvailablePluginHeight';
 import DataViewer from './pages/DataViewer';
 import ExperimentViewer from './pages/ExperimentViewer';
 import Homepage from './pages/Homepage';
@@ -20,22 +21,6 @@ import ValueEditor from './pages/ValueEditor';
 ReactGA.initialize('G-7XJBCP6P75');
 // Track the initial page load event
 ReactGA.send({ hitType: 'pageview', page: window.location.pathname });
-
-const scrollableOverflowValues = new Set(['auto', 'scroll', 'overlay']);
-
-const findScrollableAncestor = (element: HTMLElement | null): HTMLElement | null => {
-  let currentElement = element;
-
-  while (currentElement && currentElement !== document.body && currentElement !== document.documentElement) {
-    if (scrollableOverflowValues.has(window.getComputedStyle(currentElement).overflowY)) {
-      return currentElement;
-    }
-
-    currentElement = currentElement.parentElement;
-  }
-
-  return null;
-};
 
 const ScrollToTop: FC = () => {
   const { pathname } = useLocation();
@@ -104,8 +89,11 @@ const App: FC = () => {
             <Route exact path="/instruments">
               <Redirect to="/isis-instruments" />
             </Route>
-            <Route exact path="/isis-instruments/:instrumentOrTechnique?">
+            <Route exact path="/isis-instruments">
               <Instruments />
+            </Route>
+            <Route path="/isis-instruments">
+              <Redirect to="/isis-instruments" />
             </Route>
             <Route exact path="/reduction-history">
               <Jobs />
@@ -121,12 +109,6 @@ const App: FC = () => {
             </Route>
             <Route path="/reduction-history/:instrumentName/value-editor-:jobId">
               <ValueEditor />
-            </Route>
-            <Route exact path="/experiment-viewer/experiment/:experimentOnlyNumber">
-              <ExperimentViewer />
-            </Route>
-            <Route exact path="/experiment-viewer/:instrumentName/:experimentNumber?">
-              <ExperimentViewer />
             </Route>
             <Route exact path="/experiment-viewer">
               <ExperimentViewer />

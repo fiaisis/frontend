@@ -1,12 +1,31 @@
 import Editor from '@monaco-editor/react';
-import { Alert, Box, Button, CircularProgress, Snackbar, Tab, Tabs, Typography, useTheme } from '@mui/material';
+import Replay from '@mui/icons-material/Replay';
+import {
+  Alert,
+  Box,
+  Button,
+  CircularProgress,
+  MenuItem,
+  Select,
+  SelectChangeEvent,
+  Snackbar,
+  Tab,
+  Tabs,
+  Typography,
+  useTheme,
+} from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useHistory, useParams } from 'react-router-dom';
 
+import { getJobTableChromeColors, JOB_TABLE_TOOLBAR_CONTROL_HEIGHT } from '../components/jobs/constants';
 import NavArrows from '../components/navigation/NavArrows';
+import PageHeader from '../components/navigation/PageHeader';
+import { getPageHeaderControlSx } from '../components/navigation/pageHeaderStyles';
 import { fiaApi } from '../lib/api';
 import { isValidInstrument } from '../lib/instrumentData';
 import { MantidVersionMap } from '../lib/types';
+import { useAvailablePluginHeight } from '../lib/useAvailablePluginHeight';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -18,8 +37,19 @@ const TabPanel = (props: TabPanelProps): JSX.Element => {
   const { children, value, index, ...other } = props;
 
   return (
-    <div role="tabpanel" hidden={value !== index} id={`tabpanel-${index}`} aria-labelledby={`tab-${index}`} {...other}>
-      {value === index && <Box sx={{ p: 3, height: 'calc(85vh - 48px - 48px - 24px)' }}>{children}</Box>}
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`tabpanel-${index}`}
+      aria-labelledby={`tab-${index}`}
+      style={{ flex: '1 1 auto', minHeight: 0, minWidth: 0, overflow: 'hidden' }}
+      {...other}
+    >
+      {value === index && (
+        <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, minWidth: 0 }}>
+          {children}
+        </Box>
+      )}
     </div>
   );
 };
@@ -32,7 +62,9 @@ const a11yProps = (index: number): { id: string; 'aria-controls': string } => {
 };
 
 const ValueEditor: React.FC = () => {
+  const { rootRef, availableHeight } = useAvailablePluginHeight();
   const theme = useTheme();
+  const editorChrome = getJobTableChromeColors(theme.palette.mode);
   const [value, setValue] = useState<number>(0);
   const [runnerVersion, setRunnerVersion] = useState<string>('');
   const [runners, setRunners] = useState<MantidVersionMap>({});
@@ -107,7 +139,7 @@ const ValueEditor: React.FC = () => {
     setValue(newValue);
   };
 
-  const handleRunnerVersionChange = (event: React.ChangeEvent<HTMLSelectElement>): void => {
+  const handleRunnerVersionChange = (event: SelectChangeEvent<string>): void => {
     setRunnerVersion(event.target.value);
   };
 
@@ -132,126 +164,276 @@ const ValueEditor: React.FC = () => {
   };
 
   return (
-    <>
-      <NavArrows />
-      <Box sx={{ width: '100%', height: '85vh', overflow: 'hidden' }}>
-        <Box sx={{ p: 2, backgroundColor: theme.palette.background.default }}>
-          <Typography variant="h3" component="h1" style={{ color: theme.palette.text.primary }}>
-            {instrumentName} Job {jobId} values
-          </Typography>
-
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <Snackbar
-                open={snackbarOpen}
-                autoHideDuration={5000}
-                onClose={(event, reason) => {
-                  if (reason !== 'clickaway') {
-                    setSnackbarOpen(false);
-                  }
-                }}
-                disableWindowBlurListener={false}
-                anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-              >
-                <Alert
-                  sx={{
-                    padding: '10px 14px',
-                    fontSize: '1rem',
-                    width: '100%',
-                    maxWidth: '600px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    border: '1px solid',
-                    borderRadius: '8px',
-                    fontWeight: 'bold',
-                  }}
-                  severity={rerunSuccessful.current ? 'success' : 'error'}
-                >
-                  {rerunSuccessful.current
-                    ? `Rerun started successfully for reduction ${jobId}`
-                    : `Rerun could not be started for ${jobId} — please try again later or contact staff`}
-                </Alert>
-              </Snackbar>
-              <Typography sx={{ color: theme.palette.text.primary, mr: 2 }}>Runner version:</Typography>
-              <select
-                value={runnerVersion}
-                onChange={handleRunnerVersionChange}
-                disabled={Object.keys(runners).length === 0}
-                style={{
-                  padding: '8px',
-                  borderRadius: '4px',
-                }}
-              >
-                {Object.entries(runners).map(([sha, version]) => (
-                  <option key={sha} value={sha}>
-                    Mantid {version}
-                  </option>
-                ))}
-              </select>
-            </Box>
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={handleRerun}
-              disabled={loading || !runnerVersion}
-              sx={{ width: 170, height: 38 }}
-            >
-              {loading ? <CircularProgress size={24} color="inherit" /> : 'Rerun with changes'}
-            </Button>
-          </Box>
-        </Box>
-
-        <Box sx={{ borderTop: 3, borderColor: 'divider' }}>
-          <Tabs
-            value={value}
-            onChange={handleChange}
-            aria-label="Value Editor Tabs"
-            color="primary"
+    <Box
+      ref={rootRef}
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: availableHeight,
+        maxHeight: availableHeight,
+        minHeight: 0,
+        minWidth: 0,
+        width: '100%',
+        overflow: 'hidden',
+        color: editorChrome.text,
+        '& .MuiCircularProgress-root': { color: editorChrome.accent },
+      }}
+    >
+      <PageHeader breadcrumbs={<NavArrows />} />
+      <Box
+        sx={{
+          display: 'flex',
+          flex: '1 1 auto',
+          flexDirection: 'column',
+          minHeight: 0,
+          minWidth: 0,
+          width: '100%',
+          overflow: 'hidden',
+          boxSizing: 'border-box',
+          px: 2,
+          pb: 2,
+        }}
+      >
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            flex: '1 1 auto',
+            minHeight: 0,
+            minWidth: 0,
+            overflow: 'hidden',
+            border: `1px solid ${editorChrome.border}`,
+            borderRadius: 0,
+            backgroundColor: editorChrome.surface,
+          }}
+        >
+          <Box
             sx={{
-              '& .MuiTab-root': {
-                color: theme.palette.mode === 'dark' ? theme.palette.common.white : undefined,
-                '&.Mui-selected': {
-                  color: theme.palette.mode === 'dark' ? theme.palette.common.white : undefined,
-                  backgroundColor: theme.palette.mode === 'dark' ? theme.palette.grey[800] : undefined,
-                },
-              },
+              display: 'flex',
+              flexWrap: 'wrap',
+              alignItems: 'center',
+              gap: 1.5,
+              flexShrink: 0,
+              p: 1.5,
+              borderBottom: `1px solid ${editorChrome.border}`,
+              backgroundColor: editorChrome.header,
             }}
           >
-            {['Script', 'User inputs'].map((label, index) => (
-              <Tab key={index} label={label} {...a11yProps(index)} />
-            ))}
-          </Tabs>
-        </Box>
+            <Typography
+              variant="body2"
+              component="p"
+              noWrap
+              title={`${instrumentName ?? urlInstrumentName} Job ${jobId} values`}
+              sx={{ flex: '1 1 200px', minWidth: 0, fontWeight: 700, m: 0 }}
+            >
+              {instrumentName ?? urlInstrumentName} Job {jobId} values
+            </Typography>
 
-        <TabPanel value={value} index={0}>
-          {/* Loading state necessary so that page contents don't load before scriptValue is set */}
-          {loading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-              <CircularProgress />
-            </Box>
-          ) : (
-            <Editor
-              onChange={(newValue) => {
-                if (newValue !== null) {
-                  setScriptValue(newValue ?? '');
-                  userModified.current = true; // Indicates that the user has modified the script
-                }
+            <Box
+              role="group"
+              aria-label="Reduction controls"
+              sx={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                alignItems: 'center',
+                gap: 1,
+                ml: 'auto',
+                maxWidth: '100%',
+                width: { xs: '100%', sm: 'auto' },
               }}
-              height="100%"
-              defaultLanguage="python"
-              value={scriptValue}
-              theme={theme.palette.mode === 'dark' ? 'vs-dark' : 'vs-light'}
-            />
-          )}
-        </TabPanel>
-        <TabPanel value={value} index={1}>
-          <Typography sx={{ color: theme.palette.text.primary, textAlign: 'center' }}>
-            Options for user inputs will appear here soon
-          </Typography>
-        </TabPanel>
+            >
+              <Box
+                sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0, width: { xs: '100%', sm: 'auto' } }}
+              >
+                <Snackbar
+                  open={snackbarOpen}
+                  autoHideDuration={5000}
+                  onClose={(event, reason) => {
+                    if (reason !== 'clickaway') {
+                      setSnackbarOpen(false);
+                    }
+                  }}
+                  disableWindowBlurListener={false}
+                  anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+                >
+                  <Alert
+                    sx={{
+                      padding: '10px 14px',
+                      fontSize: '1rem',
+                      width: '100%',
+                      maxWidth: '600px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      border: '1px solid',
+                      borderRadius: 0,
+                      boxShadow: 'none',
+                      fontWeight: 'bold',
+                    }}
+                    severity={rerunSuccessful.current ? 'success' : 'error'}
+                  >
+                    {rerunSuccessful.current
+                      ? `Rerun started successfully for reduction ${jobId}`
+                      : `Rerun could not be started for ${jobId} — please try again later or contact staff`}
+                  </Alert>
+                </Snackbar>
+                <Typography id="runner-version-label" variant="body2" sx={{ whiteSpace: 'nowrap', fontWeight: 500 }}>
+                  Runner version
+                </Typography>
+                <Select
+                  id="runner-version"
+                  labelId="runner-version-label"
+                  value={runnerVersion}
+                  onChange={handleRunnerVersionChange}
+                  disabled={Object.keys(runners).length === 0}
+                  size="small"
+                  sx={{
+                    width: { xs: '100%', sm: 180 },
+                    minWidth: 0,
+                    height: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
+                    borderRadius: 0,
+                    backgroundColor: editorChrome.surface,
+                    color: editorChrome.text,
+                    fontSize: '0.875rem',
+                    '& .MuiSelect-select': { py: 1, pl: 1.5 },
+                    '& .MuiSelect-icon': { color: editorChrome.accent },
+                    '& .MuiOutlinedInput-notchedOutline': { borderColor: editorChrome.border },
+                    '&:hover .MuiOutlinedInput-notchedOutline, &.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                      borderColor: editorChrome.accent,
+                    },
+                    '& .MuiSelect-select:focus-visible': {
+                      outline: `2px solid ${editorChrome.accent}`,
+                      outlineOffset: -2,
+                    },
+                  }}
+                  MenuProps={{
+                    PaperProps: {
+                      sx: {
+                        borderRadius: 0,
+                        border: `1px solid ${editorChrome.border}`,
+                        backgroundColor: editorChrome.surface,
+                        color: editorChrome.text,
+                        boxShadow: 'none',
+                        '& .MuiMenuItem-root': {
+                          minHeight: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
+                          fontSize: '0.875rem',
+                          '&:hover, &.Mui-focusVisible': { backgroundColor: editorChrome.hover },
+                          '&.Mui-selected': {
+                            color: editorChrome.accent,
+                            backgroundColor: alpha(editorChrome.accent, 0.12),
+                          },
+                          '&.Mui-selected:hover': { backgroundColor: alpha(editorChrome.accent, 0.18) },
+                        },
+                      },
+                    },
+                    MenuListProps: { sx: { py: 0 } },
+                  }}
+                >
+                  {Object.entries(runners).map(([sha, version]) => (
+                    <MenuItem key={sha} value={sha}>
+                      Mantid {version}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </Box>
+              <Button
+                variant="text"
+                startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <Replay fontSize="small" />}
+                onClick={handleRerun}
+                disabled={loading || !runnerVersion}
+                sx={{
+                  ...getPageHeaderControlSx(theme),
+                  flexGrow: 0,
+                  width: { xs: '100%', sm: 'auto' },
+                  border: `1px solid ${editorChrome.border}`,
+                  '& .MuiButton-startIcon': { m: 0 },
+                  '& .MuiCircularProgress-root': { color: 'inherit' },
+                }}
+              >
+                Rerun with changes
+              </Button>
+            </Box>
+          </Box>
+
+          <Box
+            sx={{
+              flexShrink: 0,
+              borderBottom: `1px solid ${editorChrome.border}`,
+              backgroundColor: editorChrome.header,
+            }}
+          >
+            <Tabs
+              value={value}
+              onChange={handleChange}
+              aria-label="Value Editor Tabs"
+              variant="fullWidth"
+              sx={{
+                minHeight: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
+                maxWidth: { xs: '100%', sm: 320 },
+                overflow: 'visible',
+                '& .MuiTabs-indicator': { backgroundColor: editorChrome.accent, height: 3 },
+                '& .MuiTab-root': {
+                  minHeight: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
+                  borderRadius: 0,
+                  px: 1.5,
+                  py: 0.75,
+                  textTransform: 'none',
+                  fontSize: '0.875rem',
+                  fontWeight: 600,
+                  color: editorChrome.text,
+                  borderRight: { xs: 0, sm: `1px solid ${editorChrome.border}` },
+                  '& + .MuiTab-root': { borderLeft: { xs: `1px solid ${editorChrome.border}`, sm: 0 } },
+                  '&:hover': { backgroundColor: editorChrome.hover },
+                  '&:focus-visible': { outline: `2px solid ${editorChrome.accent}`, outlineOffset: -2 },
+                  '&.Mui-selected': {
+                    color: editorChrome.accent,
+                    backgroundColor: alpha(editorChrome.accent, 0.12),
+                  },
+                },
+              }}
+            >
+              {['Script', 'User inputs'].map((label, index) => (
+                <Tab key={index} label={label} {...a11yProps(index)} />
+              ))}
+            </Tabs>
+          </Box>
+
+          <TabPanel value={value} index={0}>
+            {/* Loading state necessary so that page contents don't load before scriptValue is set */}
+            {loading ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+                <CircularProgress aria-label="Loading reduction script" />
+              </Box>
+            ) : (
+              <Editor
+                onChange={(newValue) => {
+                  if (newValue !== null) {
+                    setScriptValue(newValue ?? '');
+                    userModified.current = true; // Indicates that the user has modified the script
+                  }
+                }}
+                height="100%"
+                defaultLanguage="python"
+                value={scriptValue}
+                theme={theme.palette.mode === 'dark' ? 'vs-dark' : 'vs-light'}
+                options={{
+                  minimap: { enabled: true },
+                  fontSize: 14,
+                  automaticLayout: true,
+                  padding: { top: 12, bottom: 12 },
+                  ariaLabel: `${instrumentName ?? urlInstrumentName} reduction ${jobId} script editor`,
+                }}
+              />
+            )}
+          </TabPanel>
+          <TabPanel value={value} index={1}>
+            <Typography variant="body2" sx={{ color: alpha(editorChrome.text, 0.75), textAlign: 'center', p: 3 }}>
+              Options for user inputs will appear here soon
+            </Typography>
+          </TabPanel>
+        </Box>
       </Box>
-    </>
+    </Box>
   );
 };
 

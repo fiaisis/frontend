@@ -1,20 +1,29 @@
-import { Box, ToggleButton, ToggleButtonGroup, Typography, useTheme } from '@mui/material';
-import { alpha } from '@mui/material/styles';
+import { Box, MenuItem, Select } from '@mui/material';
+import { alpha, useTheme } from '@mui/material/styles';
 import { jwtDecode } from 'jwt-decode';
 import React, { ReactElement, useState } from 'react';
 import { useHistory, useLocation, useParams } from 'react-router-dom';
 
 import IMATViewer from './IMATViewer';
 import InstrumentConfigDrawer from '../components/configsettings/InstrumentConfigDrawer';
-import { JOB_ROWS_PER_PAGE_OPTIONS, JobRowsPerPage, isJobRowsPerPage } from '../components/jobs/constants';
+import {
+  getJobTableChromeColors,
+  JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
+  JOB_ROWS_PER_PAGE_OPTIONS,
+  JobRowsPerPage,
+  isJobRowsPerPage,
+} from '../components/jobs/constants';
 import FilterContainer from '../components/jobs/Filters';
 import InstrumentSelector from '../components/jobs/InstrumentSelector';
 import JobTable from '../components/jobs/JobTable';
 import NavArrows from '../components/navigation/NavArrows';
+import PageHeader from '../components/navigation/PageHeader';
 import { instruments, isValidInstrument } from '../lib/instrumentData';
+import { REDUCTION_SUPPORTED_INSTRUMENTS } from '../lib/instrumentSupport';
 import { JobQueryFilters } from '../lib/types';
+import { useAvailablePluginHeight } from '../lib/useAvailablePluginHeight';
 
-const DEFAULT_ROWS_PER_PAGE: JobRowsPerPage = JOB_ROWS_PER_PAGE_OPTIONS[1];
+const DEFAULT_ROWS_PER_PAGE: JobRowsPerPage = JOB_ROWS_PER_PAGE_OPTIONS[0];
 
 // Retrieve rows per page from localStorage or use default
 const getStoredRowsPerPage = (): JobRowsPerPage => {
@@ -45,6 +54,11 @@ type ImatViewValue = (typeof IMAT_VIEW_OPTIONS)[number]['value'];
 
 const IMAT_STACK_QUERY_PARAMS = ['jobId', 'experiment', 'instrument', 'imageIndex', 'viewerSize'] as const;
 const JOB_TABLE_QUERY_PARAMS = ['page', 'rowsPerPage', 'filters', 'orderBy', 'orderDir'] as const;
+const REDUCTION_DETAILS_QUERY_PARAM = 'reductionId';
+
+interface ReductionHistoryLocationState {
+  reductionDetailsOpenedFromTable?: boolean;
+}
 
 const getImatViewPath = (value: ImatViewValue): string =>
   IMAT_VIEW_OPTIONS.find((option) => option.value === value)?.path ?? IMAT_VIEW_OPTIONS[0].path;
@@ -66,78 +80,91 @@ const clearJobTableQueryParams = (params: URLSearchParams): void => {
 const getCanonicalInstrumentName = (name: string | undefined): string | undefined =>
   instruments.find((instrument) => instrument.name.toUpperCase() === name?.toUpperCase())?.name;
 
-const ImatViewButtons: React.FC<{
+const ImatViewSelect: React.FC<{
   value: ImatViewValue;
   onChange: (value: ImatViewValue) => void;
 }> = ({ value, onChange }) => {
-  const handleChange = (_event: React.MouseEvent<HTMLElement>, nextValue: ImatViewValue | null): void => {
-    if (nextValue !== null && nextValue !== value) {
-      onChange(nextValue);
-    }
-  };
+  const theme = useTheme();
+  const chrome = getJobTableChromeColors(theme.palette.mode);
 
   return (
-    <Box
-      className="breadcrumb-control breadcrumb-control-preserve-hover-background"
+    <Select
+      value={value}
+      onChange={(event) => {
+        const nextValue = Number(event.target.value) as ImatViewValue;
+        if (nextValue !== value) onChange(nextValue);
+      }}
+      size="small"
+      SelectDisplayProps={{ 'aria-label': 'IMAT view', 'aria-current': 'page' }}
       sx={{
-        gap: 0.5,
-        alignItems: 'center',
-        boxSizing: 'border-box',
-        height: 40,
-        lineHeight: '32px !important',
+        minWidth: 184,
+        height: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
+        borderRadius: 0,
+        backgroundColor: chrome.header,
+        color: chrome.text,
+        boxShadow: `inset 0 -3px 0 ${chrome.accent}`,
+        fontSize: '0.875rem',
+        fontWeight: 700,
+        '& .MuiOutlinedInput-notchedOutline, &.Mui-focused .MuiOutlinedInput-notchedOutline': { border: 0 },
+        '& .MuiSelect-select': {
+          display: 'flex',
+          alignItems: 'center',
+          boxSizing: 'border-box',
+          height: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
+          py: 0,
+          pl: 1.5,
+          '&:focus': {
+            backgroundColor: 'transparent',
+            outline: 'none',
+          },
+          '&:focus-visible': {
+            backgroundColor: alpha(chrome.accent, 0.12),
+          },
+        },
+        '&:hover': { backgroundColor: chrome.hover },
+        '& .MuiSelect-icon': { color: chrome.accent },
+      }}
+      MenuProps={{
+        MenuListProps: { 'aria-label': 'IMAT views' },
+        PaperProps: {
+          sx: {
+            borderRadius: 0,
+            border: `1px solid ${chrome.border}`,
+            backgroundColor: chrome.surface,
+            backgroundImage: 'none',
+            color: chrome.text,
+            boxShadow: 'none',
+            '& .MuiMenuItem-root': {
+              minHeight: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
+              fontSize: '0.875rem',
+              '&:hover, &.Mui-focusVisible': { backgroundColor: chrome.hover },
+              '&.Mui-selected': {
+                color: chrome.accent,
+                backgroundColor: alpha(chrome.accent, 0.12),
+              },
+              '&.Mui-selected:hover, &.Mui-selected.Mui-focusVisible': {
+                backgroundColor: alpha(chrome.accent, 0.18),
+              },
+              '&:focus-visible': { outline: `2px solid ${chrome.accent}`, outlineOffset: -2 },
+            },
+          },
+        },
       }}
     >
-      <ToggleButtonGroup
-        exclusive
-        size="small"
-        value={value}
-        onChange={handleChange}
-        aria-label="IMAT view"
-        sx={(theme) => ({
-          gap: 0.5,
-          '& .MuiToggleButtonGroup-grouped': {
-            border: 0,
-            margin: 0,
-          },
-          '& .MuiToggleButton-root': {
-            minWidth: 0,
-            border: 0,
-            borderRadius: '3px !important',
-            px: 1,
-            py: 0.25,
-            color: 'inherit',
-            font: 'inherit',
-            lineHeight: '24px',
-            textTransform: 'none',
-            whiteSpace: 'nowrap',
-            '&:hover': {
-              backgroundColor: alpha(theme.palette.common.white, 0.16),
-            },
-            '&.Mui-selected': {
-              color: theme.palette.primary.main,
-              backgroundColor: theme.palette.primary.contrastText,
-              fontWeight: 700,
-            },
-            '&.Mui-selected:hover': {
-              backgroundColor: alpha(theme.palette.primary.contrastText, 0.9),
-            },
-          },
-        })}
-      >
-        {IMAT_VIEW_OPTIONS.map((option) => (
-          <ToggleButton key={option.value} value={option.value} aria-label={option.label}>
-            {option.label}
-          </ToggleButton>
-        ))}
-      </ToggleButtonGroup>
-    </Box>
+      {IMAT_VIEW_OPTIONS.map((option) => (
+        <MenuItem key={option.value} value={option.value}>
+          {option.label}
+        </MenuItem>
+      ))}
+    </Select>
   );
 };
 
 const Jobs: React.FC = (): ReactElement => {
+  const { rootRef: reductionHistoryRootRef, availableHeight: reductionHistoryHeight } = useAvailablePluginHeight();
   const { instrumentName } = useParams<{ instrumentName?: string }>();
   const history = useHistory();
-  const location = useLocation();
+  const location = useLocation<ReductionHistoryLocationState>();
   const isImat = (instrumentName || '').toUpperCase() === 'IMAT';
   const isImatViewPath = location.pathname.endsWith('/latest-image') || location.pathname.endsWith('/stack-viewer');
   const imatView = React.useMemo(
@@ -148,18 +175,12 @@ const Jobs: React.FC = (): ReactElement => {
   const configAvailable = ['LOQ', 'MARI', 'SANS2D', 'VESUVIO', 'OSIRIS', 'IRIS', 'ENGINX', 'GEM'].includes(
     selectedInstrument.toUpperCase()
   );
-  const reductionHistoryHeading = React.useMemo(() => {
-    if (isImat && imatView === 1) return 'IMAT latest image';
-    if (isImat && imatView === 2) return 'IMAT stack viewer';
-    return selectedInstrument === 'ALL' ? 'Reduction history' : `${selectedInstrument} reduction history`;
-  }, [imatView, isImat, selectedInstrument]);
   // Redirect if an instrument is specified in the URL but it's not a valid instrument name
   React.useEffect(() => {
     if ((instrumentName && !isValidInstrument(instrumentName)) || (isImatViewPath && !isImat)) {
       window.location.replace('/404/');
     }
   }, [history, instrumentName, isImat, isImatViewPath]);
-  const theme = useTheme();
   const [currentPage, setCurrentPage] = React.useState<number>(0);
   const [rowsPerPage, setRowsPerPage] = React.useState<JobRowsPerPage>(getStoredRowsPerPage);
   const [currentFilters, setCurrentFilters] = React.useState<JobQueryFilters>({});
@@ -172,6 +193,27 @@ const Jobs: React.FC = (): ReactElement => {
   const [orderDirection, setOrderDirection] = useState<'asc' | 'desc'>('desc');
   const [orderBy, setOrderBy] = useState<string>('run_start');
   const [filtersOpen, setFiltersOpen] = React.useState<boolean>(false);
+  const showReductionHistoryTable = !isImat || imatView === 0;
+  const rawReductionId = React.useMemo(
+    () => new URLSearchParams(location.search).get(REDUCTION_DETAILS_QUERY_PARAM),
+    [location.search]
+  );
+  const parsedReductionId = rawReductionId === null ? Number.NaN : Number(rawReductionId);
+  const selectedReductionId =
+    Number.isSafeInteger(parsedReductionId) && parsedReductionId > 0 ? parsedReductionId : null;
+
+  React.useEffect(() => {
+    if (rawReductionId === null || selectedReductionId !== null) return;
+
+    const params = new URLSearchParams(location.search);
+    params.delete(REDUCTION_DETAILS_QUERY_PARAM);
+    const search = params.toString();
+    history.replace({
+      pathname: location.pathname,
+      search: search ? `?${search}` : '',
+      state: location.state,
+    });
+  }, [history, location.pathname, location.search, location.state, rawReductionId, selectedReductionId]);
 
   const getUserRole = (): 'staff' | 'user' | null => {
     const token = localStorage.getItem('scigateway:token');
@@ -248,10 +290,10 @@ const Jobs: React.FC = (): ReactElement => {
       const newSearch = params.toString();
       const searchString = newSearch ? `?${newSearch}` : '';
       if (searchString !== location.search) {
-        history.replace({ pathname: location.pathname, search: searchString });
+        history.replace({ pathname: location.pathname, search: searchString, state: location.state });
       }
     },
-    [history, imatView, isImat, location.pathname, location.search]
+    [history, imatView, isImat, location.pathname, location.search, location.state]
   );
 
   React.useEffect(() => {
@@ -264,6 +306,7 @@ const Jobs: React.FC = (): ReactElement => {
     const params = new URLSearchParams(location.search);
     params.delete('page');
     params.delete('tab');
+    params.delete(REDUCTION_DETAILS_QUERY_PARAM);
     if (newInstrument.toUpperCase() !== 'IMAT') {
       clearImatStackQueryParams(params);
     }
@@ -380,6 +423,10 @@ const Jobs: React.FC = (): ReactElement => {
   }, [rowsPerPage]);
 
   React.useEffect(() => {
+    localStorage.setItem('asUser', JSON.stringify(asUser));
+  }, [asUser]);
+
+  React.useEffect(() => {
     if (isImat && imatView !== 0) return;
     updateQueryParams({ rowsPerPage });
   }, [imatView, isImat, rowsPerPage, updateQueryParams]);
@@ -411,6 +458,7 @@ const Jobs: React.FC = (): ReactElement => {
   const handleImatViewChange = (newValue: ImatViewValue): void => {
     const params = new URLSearchParams(location.search);
     params.delete('tab');
+    params.delete(REDUCTION_DETAILS_QUERY_PARAM);
     if (newValue !== 0) clearJobTableQueryParams(params);
     if (newValue !== 2) clearImatStackQueryParams(params);
 
@@ -421,55 +469,75 @@ const Jobs: React.FC = (): ReactElement => {
     });
   };
 
-  const breadcrumbTrailingCrumbs = [
+  const handleOpenReductionDetails = React.useCallback(
+    (jobId: number): void => {
+      const params = new URLSearchParams(location.search);
+      params.set(REDUCTION_DETAILS_QUERY_PARAM, jobId.toString());
+      history.push({
+        pathname: location.pathname,
+        search: `?${params.toString()}`,
+        state: {
+          ...(location.state ?? {}),
+          reductionDetailsOpenedFromTable: true,
+        },
+      });
+    },
+    [history, location.pathname, location.search, location.state]
+  );
+
+  const handleCloseReductionDetails = React.useCallback((): void => {
+    if (location.state?.reductionDetailsOpenedFromTable) {
+      history.goBack();
+      return;
+    }
+
+    const params = new URLSearchParams(location.search);
+    params.delete(REDUCTION_DETAILS_QUERY_PARAM);
+    const search = params.toString();
+    history.replace({
+      pathname: location.pathname,
+      search: search ? `?${search}` : '',
+      state: location.state,
+    });
+  }, [history, location.pathname, location.search, location.state]);
+
+  const pageControls = [
     <InstrumentSelector
       key="instrument"
       selectedInstrument={selectedInstrument}
       handleInstrumentChange={handleInstrumentChange}
-      variant="breadcrumb"
+      variant="compact"
       allInstrumentsLabel="Clear filters"
-      breadcrumbLabel="Browse instruments"
+      compactLabel="Browse instruments"
+      support={{ page: 'reduction-history', instruments: REDUCTION_SUPPORTED_INSTRUMENTS }}
     />,
-    ...(isImat ? [<ImatViewButtons key="imat-view" value={imatView} onChange={handleImatViewChange} />] : []),
   ];
 
   return (
-    <>
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'flex-start',
-          justifyContent: 'space-between',
-          gap: 2,
-          flexWrap: { xs: 'wrap', md: 'nowrap' },
-          mb: 2,
-          pr: { xs: 2, sm: 3 },
-        }}
-      >
-        <Box
-          sx={{
-            flex: '1 1 auto',
-            minWidth: 0,
-          }}
-        >
+    <Box
+      ref={reductionHistoryRootRef}
+      data-testid="reduction-history-page"
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: reductionHistoryHeight,
+        maxHeight: reductionHistoryHeight,
+        minHeight: 0,
+        overflow: 'hidden',
+        position: 'relative',
+      }}
+    >
+      <PageHeader
+        data-testid="reduction-history-page-header"
+        breadcrumbs={
           <NavArrows
-            trailingCrumb={breadcrumbTrailingCrumbs}
-            replaceLastCrumbCount={isImat && imatView !== 0 ? 1 : undefined}
+            omitLastCrumbCount={isImat && imatView !== 0 ? 1 : 0}
             labelOverrides={breadcrumbLabelOverrides}
+            trailingCrumb={isImat ? <ImatViewSelect value={imatView} onChange={handleImatViewChange} /> : undefined}
           />
-          <Typography variant="h3" component="h1" sx={{ color: theme.palette.text.primary, px: '20px', pt: 2, pb: 1 }}>
-            {reductionHistoryHeading}
-          </Typography>
-        </Box>
-        {selectedInstrument !== 'ALL' && (
-          <InstrumentConfigDrawer
-            drawerOpen={configDrawerOpen}
-            setDrawerOpen={setConfigDrawerOpen}
-            selectedInstrument={selectedInstrument}
-            disabled={!configAvailable}
-          />
-        )}
-      </Box>
+        }
+        controls={pageControls}
+      />
       <FilterContainer
         showInstrumentFilter={selectedInstrument === 'ALL'}
         visible={filtersOpen}
@@ -477,34 +545,15 @@ const Jobs: React.FC = (): ReactElement => {
         handleFiltersChange={handleFiltersChange}
         appliedFilters={currentFilters}
         resetPageNumber={() => handlePageChange(0)}
+        showAsUserControl={userRole === 'staff'}
+        asUser={asUser}
+        setAsUser={setAsUser}
       />
-      {isImat ? (
-        <>
-          {imatView === 0 && (
-            <Box className="tour-red-his-tablehead" sx={{ padding: '0 20px 160px' }}>
-              <JobTable
-                selectedInstrument={selectedInstrument}
-                currentPage={currentPage}
-                handlePageChange={handlePageChange}
-                asUser={asUser}
-                rowsPerPage={rowsPerPage}
-                handleRowsPerPageChange={handleRowsPerPageChange}
-                setAsUser={setAsUser}
-                showAsUserControl={userRole === 'staff'}
-                filters={currentFilters}
-                orderBy={orderBy}
-                orderDirection={orderDirection}
-                handleSort={handleSort}
-                filtersApplied={hasFilters(currentFilters)}
-                openFilters={() => setFiltersOpen(true)}
-              />
-            </Box>
-          )}
-          {imatView === 1 && <IMATViewer mode="latest" showNav={false} />}
-          {imatView === 2 && <IMATViewer mode="stack" showNav={false} />}
-        </>
-      ) : (
-        <Box className="tour-red-his-tablehead" sx={{ padding: '0 20px 160px' }}>
+      {showReductionHistoryTable && (
+        <Box
+          className="tour-red-his-tablehead"
+          sx={{ display: 'flex', flex: '1 1 auto', minHeight: 0, minWidth: 0, boxSizing: 'border-box', px: 2, pb: 2 }}
+        >
           <JobTable
             selectedInstrument={selectedInstrument}
             currentPage={currentPage}
@@ -513,17 +562,33 @@ const Jobs: React.FC = (): ReactElement => {
             rowsPerPage={rowsPerPage}
             handleRowsPerPageChange={handleRowsPerPageChange}
             setAsUser={setAsUser}
-            showAsUserControl={userRole === 'staff'}
             filters={currentFilters}
             orderBy={orderBy}
             orderDirection={orderDirection}
             handleSort={handleSort}
-            filtersApplied={hasFilters(currentFilters)}
+            filtersApplied={hasFilters(currentFilters) || asUser}
             openFilters={() => setFiltersOpen(true)}
+            handleFiltersChange={handleFiltersChange}
+            selectedReductionId={selectedReductionId}
+            openReductionDetails={handleOpenReductionDetails}
+            closeReductionDetails={handleCloseReductionDetails}
+            configControl={
+              selectedInstrument !== 'ALL' ? (
+                <InstrumentConfigDrawer
+                  drawerOpen={configDrawerOpen}
+                  setDrawerOpen={setConfigDrawerOpen}
+                  selectedInstrument={selectedInstrument}
+                  disabled={!configAvailable}
+                  buttonPlacement="toolbar"
+                />
+              ) : undefined
+            }
           />
         </Box>
       )}
-    </>
+      {isImat && imatView === 1 && <IMATViewer mode="latest" showNav={false} />}
+      {isImat && imatView === 2 && <IMATViewer mode="stack" showNav={false} />}
+    </Box>
   );
 };
 

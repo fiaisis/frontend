@@ -1,12 +1,11 @@
 import {
   CheckCircleOutline,
+  Close,
   Download,
   Edit,
   ErrorOutline,
   HighlightOff,
   ImageAspectRatio,
-  KeyboardArrowDown,
-  KeyboardArrowUp,
   OpenInNew,
   People,
   Replay,
@@ -22,29 +21,39 @@ import {
   Alert,
   Box,
   Button,
+  ButtonBase,
   Checkbox,
   CircularProgress,
-  Collapse,
   IconButton,
+  ListItemIcon,
+  Menu,
+  MenuItem,
+  Modal,
   Snackbar,
   SxProps,
+  Tab,
   Table,
   TableBody,
   TableCell,
   TableRow,
+  Tabs,
   Theme,
   Tooltip,
   Typography,
+  useMediaQuery,
   useTheme,
 } from '@mui/material';
-import React, { ReactElement, useCallback, useEffect, useRef, useState } from 'react';
+import { alpha } from '@mui/material/styles';
+import React, { ReactElement, useCallback, useEffect, useId, useRef, useState } from 'react';
 import ReactGA from 'react-ga4';
 import { Link } from 'react-router-dom';
 
+import { JOB_TABLE_ROW_HEIGHT } from './constants';
 import { fiaApi } from '../../lib/api';
+import { getExperimentViewerUrl } from '../../lib/experimentViewerUrl';
 import { parseJobOutputs } from '../../lib/hooks';
 import { formatUtcForLocale } from '../../lib/timezone';
-import { Job, MantidVersionMap } from '../../lib/types';
+import { Job, MantidVersionMap, outputFilter } from '../../lib/types';
 
 const ellipsisTextSx: SxProps<Theme> = {
   display: 'block',
@@ -137,25 +146,121 @@ const JobStatusIcon: React.FC<{ state: string }> = ({ state }: { state: string }
   );
 };
 
-const panelActionButtonSx: SxProps<Theme> = {
-  flexShrink: 0,
-  whiteSpace: 'nowrap',
-  minHeight: 34,
+const panelActionButtonSx: SxProps<Theme> = (theme) => {
+  const isDark = theme.palette.mode === 'dark';
+  const accent = isDark ? '#90caf9' : '#1565c0';
+
+  return {
+    flexShrink: 0,
+    whiteSpace: 'nowrap',
+    minHeight: 34,
+    color: isDark ? '#f5f7fa' : '#263238',
+    borderColor: isDark ? '#71869a' : '#7a8896',
+    backgroundColor: isDark ? '#1b2834' : '#ffffff',
+    boxShadow: 'none',
+    '& .MuiSvgIcon-root': { color: 'inherit' },
+    '&:hover': {
+      color: isDark ? '#ffffff' : '#102a43',
+      borderColor: accent,
+      backgroundColor: isDark ? '#263746' : '#eef5fc',
+      boxShadow: 'none',
+    },
+    '&.MuiButton-contained': {
+      color: isDark ? '#0b1b29' : '#ffffff',
+      borderColor: accent,
+      backgroundColor: accent,
+    },
+    '&.MuiButton-contained:hover': {
+      color: isDark ? '#07131d' : '#ffffff',
+      borderColor: isDark ? '#b8ddfb' : '#0d47a1',
+      backgroundColor: isDark ? '#b8ddfb' : '#0d47a1',
+    },
+    '&.Mui-disabled': {
+      color: isDark ? '#91a1af' : '#6f7c87',
+      borderColor: isDark ? '#4b5c6b' : '#c4ccd3',
+      backgroundColor: isDark ? '#202b35' : '#eef1f4',
+    },
+  };
 };
+
+const panelIconButtonSx: SxProps<Theme> = (theme) => {
+  const isDark = theme.palette.mode === 'dark';
+  const accent = isDark ? '#90caf9' : '#1565c0';
+
+  return {
+    width: 40,
+    height: 40,
+    border: '1px solid',
+    borderColor: isDark ? '#71869a' : '#7a8896',
+    color: isDark ? '#f5f7fa' : '#263238',
+    backgroundColor: isDark ? '#1b2834' : '#ffffff',
+    '&:hover': {
+      borderColor: accent,
+      color: isDark ? '#ffffff' : '#102a43',
+      backgroundColor: isDark ? '#263746' : '#eef5fc',
+    },
+    '&.Mui-disabled': {
+      borderColor: isDark ? '#4b5c6b' : '#c4ccd3',
+      color: isDark ? '#91a1af' : '#6f7c87',
+      backgroundColor: isDark ? '#202b35' : '#eef1f4',
+    },
+  };
+};
+
+const detailScrollableContentSx: SxProps<Theme> = (theme) => ({
+  flex: 1,
+  minHeight: 0,
+  overflowY: 'auto',
+  p: { xs: 1.5, sm: 2.5 },
+  backgroundColor: theme.palette.mode === 'dark' ? '#10171f' : '#ffffff',
+  scrollbarColor: `${theme.palette.mode === 'dark' ? '#4a5a69' : '#aab6c2'} transparent`,
+  '&::-webkit-scrollbar': { width: 10 },
+  '&::-webkit-scrollbar-thumb': {
+    border: '3px solid transparent',
+    borderRadius: 8,
+    backgroundClip: 'padding-box',
+    backgroundColor: theme.palette.mode === 'dark' ? '#4a5a69' : '#aab6c2',
+  },
+});
+
+const detailActionBarSx: SxProps<Theme> = (theme) => ({
+  display: 'flex',
+  flexShrink: 0,
+  alignItems: 'center',
+  justifyContent: 'flex-end',
+  gap: 1,
+  minHeight: 60,
+  px: { xs: 1.5, sm: 2.5 },
+  py: 1.25,
+  borderTop: '1px solid',
+  borderTopColor: theme.palette.mode === 'dark' ? '#33414e' : '#dce3ea',
+  backgroundColor: theme.palette.mode === 'dark' ? '#151e27' : '#f7f9fc',
+  boxShadow: theme.palette.mode === 'dark' ? '0 -8px 24px rgba(0, 0, 0, 0.16)' : '0 -8px 24px rgba(35, 55, 75, 0.06)',
+});
+
+const detailSectionHeaderSx: SxProps<Theme> = (theme) => ({
+  flexShrink: 0,
+  px: 2.5,
+  py: 1.5,
+  borderBottom: '1px solid',
+  borderBottomColor: theme.palette.mode === 'dark' ? '#33414e' : '#dce3ea',
+  backgroundColor: theme.palette.mode === 'dark' ? '#151e27' : '#f5f8fc',
+});
 
 const detailTableSx: SxProps<Theme> = {
   tableLayout: 'fixed',
   border: '1px solid',
-  borderColor: 'divider',
+  borderColor: (theme) => (theme.palette.mode === 'dark' ? '#33414e' : '#dce3ea'),
+  backgroundColor: (theme) => (theme.palette.mode === 'dark' ? '#151e27' : '#fbfcfe'),
   '& .MuiTableCell-root': {
     py: 0.75,
     px: 1,
     borderBottom: '1px solid',
-    borderBottomColor: 'divider',
+    borderBottomColor: (theme) => (theme.palette.mode === 'dark' ? '#33414e' : '#dce3ea'),
   },
   '& .MuiTableCell-root:not(:last-child)': {
     borderRight: '1px solid',
-    borderRightColor: 'divider',
+    borderRightColor: (theme) => (theme.palette.mode === 'dark' ? '#33414e' : '#dce3ea'),
   },
   '& .detail-empty-cell.MuiTableCell-root': {
     borderBottom: '1px solid transparent',
@@ -168,90 +273,13 @@ const detailTableSx: SxProps<Theme> = {
   },
 };
 
-const DetailPanel: React.FC<{
-  title: string;
-  actions?: React.ReactNode;
-  children: React.ReactNode;
-  sx?: SxProps<Theme>;
-}> = ({ title, actions, children, sx }) => (
-  <Box
-    sx={[
-      {
-        minWidth: 0,
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        border: '1px solid',
-        borderColor: 'divider',
-        borderRadius: 1,
-        backgroundColor: 'background.paper',
-        overflow: 'hidden',
-      },
-      ...(Array.isArray(sx) ? sx : sx ? [sx] : []),
-    ]}
-  >
-    <Box
-      sx={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: 1.5,
-        minHeight: 54,
-        boxSizing: 'border-box',
-        px: 1.5,
-        py: 1,
-        borderBottom: '1px solid',
-        borderBottomColor: 'divider',
-        backgroundColor: 'action.hover',
-      }}
-    >
-      <Typography variant="subtitle1" sx={{ fontWeight: 700, minWidth: 0 }}>
-        {title}
-      </Typography>
-      {actions && (
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'flex-end',
-            gap: 1,
-            flexWrap: 'wrap',
-          }}
-        >
-          {actions}
-        </Box>
-      )}
-    </Box>
-    <Box sx={{ p: 1.5, minWidth: 0, flex: 1 }}>{children}</Box>
-  </Box>
-);
-
-const EmptyDetailRows: React.FC<{ count: number }> = ({ count }) => (
-  <>
-    {Array.from({ length: count }).map((_, index) => (
-      <TableRow key={`empty-detail-row-${index}`} aria-hidden="true">
-        <TableCell className="detail-empty-cell" component="th" scope="row" sx={{ width: '30%', minWidth: 0 }}>
-          <Typography variant="body2" sx={{ visibility: 'hidden' }}>
-            Empty
-          </Typography>
-        </TableCell>
-        <TableCell className="detail-empty-cell" sx={{ minWidth: 0 }}>
-          <Typography variant="body2" sx={{ visibility: 'hidden' }}>
-            Empty
-          </Typography>
-        </TableCell>
-      </TableRow>
-    ))}
-  </>
-);
-
 const DetailItem: React.FC<{ icon: ReactElement; label: string; value: string | number }> = ({
   icon,
   label,
   value,
 }) => (
   <TableRow>
-    <TableCell component="th" scope="row" sx={{ width: '30%', minWidth: 0 }}>
+    <TableCell component="th" scope="row" sx={{ width: '45%', minWidth: 0 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
         <Box sx={{ display: 'inline-flex', color: 'text.secondary', flexShrink: 0 }}>{icon}</Box>
         <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 700, whiteSpace: 'nowrap' }}>
@@ -271,6 +299,10 @@ const JobOutput: React.FC<{
   downloadingSingle: string | null;
   handleDownload: (job: Job, output: string) => Promise<void>;
 }> = ({ job, outputs, downloadingSingle, handleDownload }) => {
+  const menuId = useId();
+  const [menu, setMenu] = useState<{ anchorEl: HTMLElement; output: string; index: number } | null>(null);
+  const closeMenu = (): void => setMenu(null);
+
   if (outputs.length === 0) {
     return (
       <Typography variant="body2" color="text.secondary">
@@ -282,56 +314,138 @@ const JobOutput: React.FC<{
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
       {outputs.map((output, index) => (
-        <Box
+        <ButtonBase
           key={`${output}-${index}`}
+          type="button"
+          id={`${menuId}-${index}`}
+          aria-label={`Actions for ${output}`}
+          aria-haspopup="menu"
+          aria-controls={menu?.index === index ? menuId : undefined}
+          aria-expanded={menu?.index === index}
+          aria-busy={downloadingSingle === output}
+          onClick={(event) => setMenu({ anchorEl: event.currentTarget, output, index })}
           sx={{
-            display: 'grid',
-            gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 1fr) auto' },
+            display: 'flex',
+            width: '100%',
+            minHeight: 44,
             alignItems: 'center',
             gap: 1.5,
             p: 1,
+            textAlign: 'left',
+            color: (theme: Theme) => (theme.palette.mode === 'dark' ? '#f5f7fa' : '#263238'),
             border: '1px solid',
-            borderColor: 'divider',
+            borderColor: (theme: Theme) => (theme.palette.mode === 'dark' ? '#33414e' : '#dce3ea'),
             borderRadius: 1,
             minWidth: 0,
+            backgroundColor: (theme: Theme) => (theme.palette.mode === 'dark' ? '#151e27' : '#f8fafc'),
+            transition: 'border-color 120ms ease, background-color 120ms ease',
+            '&:hover, &.Mui-focusVisible': {
+              borderColor: (theme: Theme) => alpha(theme.palette.mode === 'dark' ? '#90caf9' : '#1565c0', 0.55),
+              backgroundColor: (theme: Theme) => (theme.palette.mode === 'dark' ? '#192530' : '#f3f7fb'),
+            },
+            '&.Mui-focusVisible': {
+              outline: '2px solid',
+              outlineColor: (theme: Theme) => (theme.palette.mode === 'dark' ? '#90caf9' : '#1565c0'),
+              outlineOffset: 2,
+            },
           }}
         >
-          <Box sx={{ minWidth: 0 }}>
+          <Box component="span" sx={{ minWidth: 0, flex: 1 }}>
             <EllipsisTooltipText value={output} sx={{ fontWeight: 600 }} />
           </Box>
-          <Box
-            sx={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              justifyContent: { xs: 'flex-start', md: 'flex-end' },
-              gap: 1,
-              minWidth: 'fit-content',
-            }}
-          >
-            <Button
-              variant="contained"
-              size="small"
-              startIcon={<OpenInNew />}
-              onClick={() =>
-                openDataViewer(job.id, job.run?.instrument_name || 'unknown', job.run?.experiment_number || 0, output)
-              }
-              sx={panelActionButtonSx}
-            >
-              View
-            </Button>
-            <Button
-              variant="contained"
-              size="small"
-              startIcon={downloadingSingle === output ? undefined : <Download />}
-              onClick={() => handleDownload(job, output)}
-              disabled={downloadingSingle === output}
-              sx={[panelActionButtonSx, { width: 112 }]}
-            >
-              {downloadingSingle === output ? <CircularProgress size={22} color="inherit" /> : 'Download'}
-            </Button>
-          </Box>
-        </Box>
+          {downloadingSingle === output && (
+            <CircularProgress size={20} color="inherit" aria-label={`Downloading ${output}`} sx={{ flexShrink: 0 }} />
+          )}
+        </ButtonBase>
       ))}
+      <Menu
+        id={menuId}
+        anchorEl={menu?.anchorEl}
+        open={Boolean(menu)}
+        onClose={closeMenu}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+        slotProps={{
+          list: { 'aria-labelledby': menu?.anchorEl.id },
+          paper: {
+            sx: (theme) => ({
+              minWidth: 160,
+              border: '1px solid',
+              borderColor: theme.palette.mode === 'dark' ? '#33414e' : '#dce3ea',
+              backgroundColor: theme.palette.mode === 'dark' ? '#151e27' : '#ffffff',
+              backgroundImage: 'none',
+              color: theme.palette.mode === 'dark' ? '#f5f7fa' : '#263238',
+              '& .MuiListItemIcon-root': { minWidth: 32, color: 'inherit' },
+              '& .MuiMenuItem-root': {
+                minHeight: 40,
+                '&:hover, &.Mui-focusVisible': {
+                  backgroundColor: theme.palette.mode === 'dark' ? '#263746' : '#eef5fc',
+                },
+              },
+            }),
+          },
+        }}
+      >
+        <MenuItem
+          onClick={() => {
+            if (menu) {
+              closeMenu();
+              openDataViewer(
+                job.id,
+                job.run?.instrument_name || 'unknown',
+                job.run?.experiment_number || 0,
+                menu.output
+              );
+            }
+          }}
+        >
+          <ListItemIcon>
+            <OpenInNew fontSize="small" />
+          </ListItemIcon>
+          External viewer
+        </MenuItem>
+        {menu &&
+          job.run.instrument_name !== 'IMAT' &&
+          outputFilter.some((extension) => menu.output.endsWith(extension)) && (
+            <MenuItem
+              component={Link}
+              to={getExperimentViewerUrl({
+                instrument: job.run.instrument_name,
+                experiment: job.run.experiment_number,
+                jobId: job.id,
+                file: menu.output,
+              })}
+              onClick={() => {
+                closeMenu();
+                ReactGA.event({
+                  category: 'Button',
+                  action: 'Click',
+                  label: 'Experiment viewer button',
+                  value: job.id,
+                });
+              }}
+            >
+              <ListItemIcon>
+                <Visibility fontSize="small" />
+              </ListItemIcon>
+              Experiment viewer
+            </MenuItem>
+          )}
+        <MenuItem
+          disabled={menu?.output === downloadingSingle}
+          onClick={() => {
+            if (menu) {
+              closeMenu();
+              void handleDownload(job, menu.output);
+            }
+          }}
+        >
+          <ListItemIcon>
+            <Download fontSize="small" />
+          </ListItemIcon>
+          Download
+        </MenuItem>
+      </Menu>
     </Box>
   );
 };
@@ -341,7 +455,7 @@ const InputDetailRow: React.FC<{ inputKey: string; value: string | number | bool
   value,
 }) => (
   <TableRow>
-    <TableCell component="th" scope="row" sx={{ width: '30%', minWidth: 0 }}>
+    <TableCell component="th" scope="row" sx={{ width: '45%', minWidth: 0 }}>
       <EllipsisTooltipText value={`${inputKey}:`} sx={{ color: 'text.secondary', fontWeight: 700 }} />
     </TableCell>
     <TableCell sx={{ minWidth: 0 }}>
@@ -350,13 +464,7 @@ const InputDetailRow: React.FC<{ inputKey: string; value: string | number | bool
   </TableRow>
 );
 
-const JobInput: React.FC<{ job: Job; emptyRowCount: number }> = ({
-  job,
-  emptyRowCount,
-}: {
-  job: Job;
-  emptyRowCount: number;
-}): ReactElement => {
+const JobInput: React.FC<{ job: Job }> = ({ job }): ReactElement => {
   const entries = Object.entries(job.inputs);
 
   return (
@@ -373,7 +481,6 @@ const JobInput: React.FC<{ job: Job; emptyRowCount: number }> = ({
         ) : (
           entries.map(([key, value], index) => <InputDetailRow key={index} inputKey={key} value={value} />)
         )}
-        <EmptyDetailRows count={emptyRowCount} />
       </TableBody>
     </Table>
   );
@@ -384,36 +491,53 @@ const JobStatus: React.FC<{ state: string; statusMessage: string }> = ({ state, 
   const statusTexts: Record<string, { color: string; message: string }> = {
     ERROR: { color: theme.palette.error.dark, message: `[ERROR] ${statusMessage}` },
     SUCCESSFUL: { color: theme.palette.success.main, message: `[SUCCESS] Reduction performed successfully` },
-    NOT_STARTED: { color: theme.palette.grey[700], message: `[NOT STARTED] This reduction has not been started yet` },
+    NOT_STARTED: {
+      color: theme.palette.mode === 'dark' ? theme.palette.grey[300] : theme.palette.grey[700],
+      message: `[NOT STARTED] This reduction has not been started yet`,
+    },
     UNSUCCESSFUL: { color: theme.palette.warning.main, message: `[UNSUCCESSFUL] ${statusMessage}` },
   };
 
   const status = statusTexts[state];
   return status ? (
-    <Typography variant="subtitle1" style={{ color: status.color, fontWeight: 'bold' }}>
-      {status.message}
-    </Typography>
+    <Box
+      component="span"
+      sx={{
+        display: 'inline-flex',
+        maxWidth: '100%',
+        boxSizing: 'border-box',
+        mt: 0.75,
+        px: 1,
+        py: 0.375,
+        border: '1px solid',
+        borderColor: alpha(status.color, 0.4),
+        borderRadius: 1,
+        backgroundColor: alpha(status.color, theme.palette.mode === 'dark' ? 0.16 : 0.1),
+      }}
+    >
+      <Typography variant="caption" noWrap title={status.message} sx={{ color: status.color, fontWeight: 700 }}>
+        {status.message}
+      </Typography>
+    </Box>
   ) : null;
 };
 
-const Row: React.FC<{
+const extractFilename = (path: string): string => path.split('/').pop()?.split('.')[0] ?? '';
+
+const ReductionDetailsContent: React.FC<{
   job: Job;
-  index: number;
-  isSelected: boolean;
-  toggleSelection: (jobId: number) => void;
   resubmitJob: (job: Job) => Promise<void>;
   refreshJobs: () => void;
   mantidVersions: MantidVersionMap;
-}> = ({ job, index, resubmitJob, refreshJobs, isSelected, toggleSelection, mantidVersions }) => {
-  const [open, setOpen] = useState(false);
-  const theme = useTheme();
+}> = ({ job, resubmitJob, refreshJobs, mantidVersions }) => {
+  const [activeTab, setActiveTab] = useState(0);
+  const isLargeScreen = useMediaQuery((theme: Theme) => theme.breakpoints.up('lg'));
   const [loading, setLoading] = useState(false);
   const resubmitJobId = useRef<number | null>(null);
   const resubmitSuccessful = useRef<boolean | null>(null);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [downloadErrorOpen, setDownloadErrorOpen] = useState(false);
   const [downloadErrorMessage, setDownloadErrorMessage] = useState('');
-  const [isStatusHovered, setIsStatusHovered] = useState(false);
 
   const jobOutputs = parseJobOutputs(job.outputs);
   const [downloadingAll, setDownloadingAll] = useState(false);
@@ -482,8 +606,6 @@ const Row: React.FC<{
     }
   };
 
-  const extractFilename = (path: string): string => path.split('/').pop()?.split('.')[0] ?? '';
-
   const loadingTimeoutRef = useRef<number | null>(null);
   const resubmitFinalizeTimeoutRef = useRef<number | null>(null);
 
@@ -528,30 +650,6 @@ const Row: React.FC<{
         refreshJobs();
       }, 2000);
     }
-  };
-
-  const bandedRows = {
-    backgroundColor:
-      index % 2 === 0
-        ? theme.palette.mode === 'light'
-          ? '#f0f0f0' // Light mode, even rows
-          : theme.palette.mode === 'dark'
-            ? '#2d2d2d' // Dark mode, even rows
-            : '#000000' // High contrast mode, even rows
-        : theme.palette.background.default, // Odd rows (default background color)
-  };
-
-  const bandedRowsHover = (theme: Theme, index: number): React.CSSProperties => {
-    return {
-      backgroundColor:
-        theme.palette.mode === 'light'
-          ? '#e0e0e0' // Light mode hover color
-          : theme.palette.mode === 'dark'
-            ? index % 2 === 0
-              ? '#4c4c4c' // Dark mode, even rows
-              : '#4a4a4a' // Dark mode, odd rows
-            : '#ffffff', // High contrast mode hover color
-    };
   };
 
   const runnerImageUrl = job.runner_image && job.runner_image.includes('@') ? job.runner_image.split('@')[1] : null;
@@ -613,12 +711,6 @@ const Row: React.FC<{
       value: job.run?.users || '—',
     },
   ];
-  const inputRowCount = Math.max(Object.keys(job.inputs).length, 1);
-  const balancedDetailRowCount = Math.max(inputRowCount, runDetails.length);
-  const emptyInputRowCount = balancedDetailRowCount - inputRowCount;
-  const emptyRunDetailRowCount = balancedDetailRowCount - runDetails.length;
-  const outputPanelTitle =
-    job.state === 'UNSUCCESSFUL' || job.state === 'ERROR' ? 'Stacktrace output' : 'Reduction outputs';
   const showStackViewer = job.run?.instrument_name === 'IMAT' && job.state === 'SUCCESSFUL';
   const showExperimentViewer = job.run?.instrument_name !== 'IMAT';
 
@@ -684,149 +776,243 @@ const Row: React.FC<{
         </Alert>
       </Snackbar>
 
-      <TableRow
+      <Box
         sx={{
-          ...bandedRows,
-          height: '50px',
-          '&:hover': bandedRowsHover(theme, index),
+          display: 'flex',
+          flexDirection: 'column',
+          height: '100%',
+          minHeight: 0,
+          backgroundColor: (theme: Theme) => (theme.palette.mode === 'dark' ? '#10171f' : '#ffffff'),
         }}
-        onClick={() => setOpen(!open)}
       >
-        <TableCell sx={{ width: '14%', px: 1 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
-            <Box
-              onMouseEnter={() => setIsStatusHovered(true)}
-              onMouseLeave={() => setIsStatusHovered(false)}
-              onClick={(e: React.MouseEvent) => e.stopPropagation()}
-              sx={{
-                width: 32,
-                height: 32,
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
+        {!isLargeScreen && (
+          <Tabs
+            value={activeTab}
+            onChange={(_event: React.SyntheticEvent, newValue: number) => setActiveTab(newValue)}
+            aria-label="Reduction details"
+            variant="fullWidth"
+            data-testid="reduction-details-tabs"
+            sx={(theme: Theme) => {
+              const accent = theme.palette.mode === 'dark' ? '#90caf9' : '#1565c0';
+              const mutedText = theme.palette.mode === 'dark' ? '#aebdca' : '#536170';
+
+              return {
                 flexShrink: 0,
-              }}
-            >
-              {isStatusHovered || isSelected ? (
-                <Checkbox
-                  color="primary"
-                  checked={isSelected}
-                  onChange={() => toggleSelection(job.id)}
-                  sx={{ p: 0.5 }}
-                  inputProps={{ 'aria-label': `${isSelected ? 'Deselect' : 'Select'} reduction ${job.id}` }}
-                />
-              ) : (
-                <JobStatusIcon state={job.state} />
-              )}
-            </Box>
-            <EllipsisTooltipText value={job.run?.experiment_number || 'N/A'} sx={{ flexGrow: 1 }} />
-          </Box>
-        </TableCell>
-        <TableCell>
-          <EllipsisTooltipText value={extractFilename(job.run?.filename || 'N/A')} />
-        </TableCell>
-        <TableCell>
-          <EllipsisTooltipText value={formatUtcForLocale(job.run?.run_start)} />
-        </TableCell>
-        <TableCell>
-          <EllipsisTooltipText value={formatUtcForLocale(job.run?.run_end)} />
-        </TableCell>
-        <TableCell>
-          <EllipsisTooltipText value={formatUtcForLocale(job.start)} />
-        </TableCell>
-        <TableCell>
-          <EllipsisTooltipText value={formatUtcForLocale(job.end)} />
-        </TableCell>
-        <TableCell colSpan={2}>
-          <Box display="flex" alignItems="center" justifyContent="space-between">
-            <EllipsisTooltipText value={job.run?.title || 'N/A'} sx={{ flexGrow: 1 }} />
-            <IconButton
-              aria-label="expand row"
-              onClick={(e: React.MouseEvent) => {
-                e.stopPropagation();
-                setOpen(!open);
-              }}
-              sx={{ ml: 1 }}
-            >
-              {open ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
-            </IconButton>
-          </Box>
-        </TableCell>
-      </TableRow>
-      <TableRow>
-        <TableCell colSpan={8} style={{ paddingBottom: 0, paddingTop: 0, backgroundColor: bandedRows.backgroundColor }}>
-          <Collapse in={open} timeout="auto" unmountOnExit>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, p: 2 }}>
-              <JobStatus state={job.state} statusMessage={job.status_message} />
+                minHeight: 50,
+                px: { xs: 0.5, sm: 1.5 },
+                borderBottom: '1px solid',
+                borderBottomColor: theme.palette.mode === 'dark' ? '#33414e' : '#dce3ea',
+                backgroundColor: theme.palette.mode === 'dark' ? '#151e27' : '#f5f8fc',
+                '& .MuiTabs-indicator': {
+                  height: 3,
+                  borderRadius: '3px 3px 0 0',
+                  backgroundColor: accent,
+                },
+                '& .MuiTab-root': {
+                  flex: '1 1 0',
+                  minWidth: 0,
+                  maxWidth: 'none',
+                  minHeight: 50,
+                  px: { xs: 1.5, sm: 2.25 },
+                  color: mutedText,
+                  fontSize: '0.9rem',
+                  fontWeight: 650,
+                  letterSpacing: '0.01em',
+                  textTransform: 'none',
+                  transition: 'color 120ms ease, background-color 120ms ease',
+                  '&:hover': {
+                    color: accent,
+                    backgroundColor: alpha(accent, 0.07),
+                  },
+                  '&.Mui-selected': {
+                    color: accent,
+                    backgroundColor: alpha(accent, theme.palette.mode === 'dark' ? 0.13 : 0.08),
+                  },
+                },
+                '& .MuiTabs-scrollButtons': {
+                  color: mutedText,
+                  '&.Mui-disabled': { opacity: 0.28 },
+                },
+              };
+            }}
+          >
+            <Tab id="reduction-tab-inputs" aria-controls="reduction-tabpanel-inputs" label="Reduction inputs" />
+            <Tab id="reduction-tab-run" aria-controls="reduction-tabpanel-run" label="Run details" />
+            <Tab id="reduction-tab-outputs" aria-controls="reduction-tabpanel-outputs" label="Reduction outputs" />
+          </Tabs>
+        )}
 
-              <Box
-                sx={{
-                  display: 'grid',
-                  gridTemplateColumns: { xs: '1fr', lg: 'repeat(2, minmax(0, 1fr))' },
-                  gap: 2,
-                  alignItems: 'stretch',
-                }}
-              >
-                <DetailPanel
-                  title="Reduction inputs"
-                  actions={
-                    <>
-                      <Button
-                        variant="contained"
-                        size="small"
-                        component={Link}
-                        to={`/reduction-history/${job.run.instrument_name}/value-editor-${job.id}`}
-                        startIcon={<Edit />}
-                        onClick={() =>
-                          ReactGA.event({
-                            category: 'Button',
-                            action: 'Click',
-                            label: 'Value editor button',
-                            value: job.id,
-                          })
-                        }
-                        sx={panelActionButtonSx}
-                      >
-                        Value editor
-                      </Button>
-                      <Button
-                        variant="contained"
-                        size="small"
-                        startIcon={loading ? undefined : <Replay />}
-                        disabled={loading}
-                        onClick={handleResubmit}
-                        sx={[panelActionButtonSx, { width: 116 }]}
-                      >
-                        {loading ? <CircularProgress size={22} color="inherit" /> : 'Resubmit'}
-                      </Button>
-                    </>
-                  }
-                >
-                  <JobInput job={job} emptyRowCount={emptyInputRowCount} />
-                </DetailPanel>
+        <Box
+          data-testid="reduction-details-content"
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: isLargeScreen ? 'repeat(3, minmax(0, 1fr))' : 'minmax(0, 1fr)',
+            flex: 1,
+            minHeight: 0,
+            overflow: 'hidden',
+          }}
+        >
+          <Box
+            id="reduction-tabpanel-inputs"
+            role={isLargeScreen ? 'region' : 'tabpanel'}
+            aria-labelledby={isLargeScreen ? 'reduction-section-inputs-heading' : 'reduction-tab-inputs'}
+            hidden={!isLargeScreen && activeTab !== 0}
+            sx={{
+              display: isLargeScreen || activeTab === 0 ? 'flex' : 'none',
+              minWidth: 0,
+              minHeight: 0,
+              flexDirection: 'column',
+              borderRight: isLargeScreen ? '1px solid' : 0,
+              borderRightColor: (theme: Theme) => (theme.palette.mode === 'dark' ? '#33414e' : '#dce3ea'),
+            }}
+          >
+            {isLargeScreen && (
+              <Box sx={detailSectionHeaderSx}>
+                <Typography id="reduction-section-inputs-heading" component="h3" variant="subtitle1" fontWeight={700}>
+                  Reduction inputs
+                </Typography>
+              </Box>
+            )}
+            {(isLargeScreen || activeTab === 0) && (
+              <>
+                <Box sx={detailScrollableContentSx}>
+                  <JobInput job={job} />
+                </Box>
+                <Box data-testid="reduction-input-actions" sx={detailActionBarSx}>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    component={Link}
+                    to={`/reduction-history/${job.run.instrument_name}/value-editor-${job.id}`}
+                    startIcon={<Edit />}
+                    onClick={() =>
+                      ReactGA.event({
+                        category: 'Button',
+                        action: 'Click',
+                        label: 'Value editor button',
+                        value: job.id,
+                      })
+                    }
+                    sx={panelActionButtonSx}
+                  >
+                    Value editor
+                  </Button>
+                  <Button
+                    variant="contained"
+                    size="small"
+                    startIcon={loading ? undefined : <Replay />}
+                    disabled={loading}
+                    onClick={handleResubmit}
+                    sx={[panelActionButtonSx, { width: 116 }]}
+                  >
+                    {loading ? <CircularProgress size={22} color="inherit" /> : 'Resubmit'}
+                  </Button>
+                </Box>
+              </>
+            )}
+          </Box>
 
-                <DetailPanel title="Run details">
+          <Box
+            id="reduction-tabpanel-run"
+            role={isLargeScreen ? 'region' : 'tabpanel'}
+            aria-labelledby={isLargeScreen ? 'reduction-section-run-heading' : 'reduction-tab-run'}
+            hidden={!isLargeScreen && activeTab !== 1}
+            sx={{
+              display: isLargeScreen || activeTab === 1 ? 'flex' : 'none',
+              minWidth: 0,
+              minHeight: 0,
+              flexDirection: 'column',
+              borderRight: isLargeScreen ? '1px solid' : 0,
+              borderRightColor: (theme: Theme) => (theme.palette.mode === 'dark' ? '#33414e' : '#dce3ea'),
+            }}
+          >
+            {isLargeScreen && (
+              <Box sx={detailSectionHeaderSx}>
+                <Typography id="reduction-section-run-heading" component="h3" variant="subtitle1" fontWeight={700}>
+                  Run details
+                </Typography>
+              </Box>
+            )}
+            {(isLargeScreen || activeTab === 1) && (
+              <>
+                <Box sx={detailScrollableContentSx}>
                   <Table size="small" aria-label="Run details" sx={detailTableSx}>
                     <TableBody>
                       {runDetails.map(({ icon, label, value }, index) => (
                         <DetailItem key={index} icon={icon} label={label} value={value} />
                       ))}
-                      <EmptyDetailRows count={emptyRunDetailRowCount} />
                     </TableBody>
                   </Table>
-                </DetailPanel>
-              </Box>
+                </Box>
+                <Box data-testid="reduction-run-actions" aria-hidden="true" sx={detailActionBarSx} />
+              </>
+            )}
+          </Box>
 
-              <DetailPanel
-                title={outputPanelTitle}
-                actions={
-                  <>
+          <Box
+            id="reduction-tabpanel-outputs"
+            role={isLargeScreen ? 'region' : 'tabpanel'}
+            aria-labelledby={isLargeScreen ? 'reduction-section-outputs-heading' : 'reduction-tab-outputs'}
+            hidden={!isLargeScreen && activeTab !== 2}
+            sx={{
+              display: isLargeScreen || activeTab === 2 ? 'flex' : 'none',
+              minWidth: 0,
+              minHeight: 0,
+              flexDirection: 'column',
+            }}
+          >
+            {isLargeScreen && (
+              <Box sx={detailSectionHeaderSx}>
+                <Typography id="reduction-section-outputs-heading" component="h3" variant="subtitle1" fontWeight={700}>
+                  Reduction outputs
+                </Typography>
+              </Box>
+            )}
+            {(isLargeScreen || activeTab === 2) && (
+              <>
+                <Box sx={detailScrollableContentSx}>
+                  {job.state === 'UNSUCCESSFUL' || job.state === 'ERROR' ? (
+                    <Box
+                      sx={{
+                        p: 2,
+                        border: '1px solid',
+                        borderColor: (theme: Theme) => alpha(theme.palette.error.main, 0.35),
+                        borderRadius: 1,
+                        backgroundColor: (theme: Theme) => alpha(theme.palette.error.main, 0.06),
+                      }}
+                    >
+                      <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>
+                        Stacktrace
+                      </Typography>
+                      <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>
+                        {job.stacktrace ? job.stacktrace : 'No detailed stacktrace to show'}
+                      </Typography>
+                    </Box>
+                  ) : (
+                    <JobOutput
+                      job={job}
+                      outputs={jobOutputs}
+                      downloadingSingle={downloadingSingle}
+                      handleDownload={handleDownload}
+                    />
+                  )}
+                </Box>
+                <Box
+                  data-testid="reduction-output-actions"
+                  sx={[detailActionBarSx, { justifyContent: 'space-between', flexWrap: 'wrap' }]}
+                >
+                  <Typography variant="body2" color="text.secondary">
+                    {jobOutputs.length} {jobOutputs.length === 1 ? 'output file' : 'output files'}
+                  </Typography>
+                  <Box
+                    sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 1, flexWrap: 'wrap' }}
+                  >
                     {showStackViewer && (
                       <Button
-                        variant="contained"
+                        variant="outlined"
                         size="small"
                         component={Link}
-                        to={`/reduction-history/IMAT/stack-viewer?jobId=${job.id}&experiment=${job.run?.experiment_number}&instrument=${job.run?.instrument_name}`}
+                        to={`/reduction-history/IMAT/stack-viewer?jobId=${job.id}&experiment=${job.run?.experiment_number}`}
                         startIcon={<StackedBarChart />}
                         sx={panelActionButtonSx}
                       >
@@ -835,10 +1021,13 @@ const Row: React.FC<{
                     )}
                     {showExperimentViewer && (
                       <Button
-                        variant="contained"
+                        variant="outlined"
                         size="small"
                         component={Link}
-                        to={`/experiment-viewer/${job.run.instrument_name}/${job.run.experiment_number}`}
+                        to={getExperimentViewerUrl({
+                          instrument: job.run.instrument_name,
+                          experiment: job.run.experiment_number,
+                        })}
                         startIcon={<Visibility />}
                         onClick={() =>
                           ReactGA.event({
@@ -863,31 +1052,258 @@ const Row: React.FC<{
                     >
                       {downloadingAll ? <CircularProgress size={22} color="inherit" /> : 'Download all'}
                     </Button>
-                  </>
-                }
-              >
-                {job.state === 'UNSUCCESSFUL' || job.state === 'ERROR' ? (
-                  <Box sx={{ maxHeight: 280, overflowY: 'auto' }}>
-                    <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
-                      {job.stacktrace ? job.stacktrace : 'No detailed stacktrace to show'}
-                    </Typography>
                   </Box>
-                ) : (
-                  <Box sx={{ maxHeight: 300, overflowY: 'auto', pr: 0.5 }}>
-                    <JobOutput
-                      job={job}
-                      outputs={jobOutputs}
-                      downloadingSingle={downloadingSingle}
-                      handleDownload={handleDownload}
-                    />
-                  </Box>
-                )}
-              </DetailPanel>
-            </Box>
-          </Collapse>
-        </TableCell>
-      </TableRow>
+                </Box>
+              </>
+            )}
+          </Box>
+        </Box>
+      </Box>
     </>
+  );
+};
+
+export const ReductionDetailsModal: React.FC<{
+  open: boolean;
+  jobId: number | null;
+  job: Job | null;
+  loading: boolean;
+  error: string | null;
+  onRetry: () => void;
+  onClose: () => void;
+  resubmitJob: (job: Job) => Promise<void>;
+  refreshJobs: () => void;
+  mantidVersions: MantidVersionMap;
+}> = ({ open, jobId, job, loading, error, onRetry, onClose, resubmitJob, refreshJobs, mantidVersions }) => (
+  <Modal
+    open={open}
+    onClose={onClose}
+    disableScrollLock
+    aria-labelledby="reduction-details-title"
+    sx={(theme: Theme) => ({
+      position: 'fixed',
+      inset: 0,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: theme.zIndex.modal,
+      pointerEvents: 'auto',
+    })}
+    BackdropProps={{
+      'data-testid': 'reduction-details-backdrop',
+      sx: {
+        position: 'fixed',
+        backgroundColor: 'rgba(5, 10, 16, 0.58)',
+        backdropFilter: 'blur(5px)',
+        WebkitBackdropFilter: 'blur(5px)',
+      },
+    }}
+  >
+    <Box
+      role="dialog"
+      aria-modal="true"
+      data-testid="reduction-details-modal"
+      sx={(theme: Theme) => ({
+        display: 'flex',
+        flexDirection: 'column',
+        width: 'calc(100% - 32px)',
+        maxWidth: 1600,
+        height: 'calc(100% - 32px)',
+        maxHeight: 720,
+        minHeight: 0,
+        overflow: 'hidden',
+        color: theme.palette.mode === 'dark' ? '#f2f6fa' : '#1f2a35',
+        backgroundColor: theme.palette.mode === 'dark' ? '#10171f' : '#ffffff',
+        border: '1px solid',
+        borderColor: theme.palette.mode === 'dark' ? '#3b4a58' : '#cfd8e2',
+        borderRadius: 2,
+        boxShadow:
+          theme.palette.mode === 'dark' ? '0 24px 72px rgba(0, 0, 0, 0.7)' : '0 24px 72px rgba(27, 43, 58, 0.28)',
+        outline: 0,
+      })}
+    >
+      <Box
+        sx={(theme: Theme) => ({
+          display: 'flex',
+          alignItems: 'flex-start',
+          justifyContent: 'space-between',
+          gap: 2,
+          flexShrink: 0,
+          px: { xs: 1.5, sm: 2.5 },
+          py: 1.75,
+          borderBottom: '1px solid',
+          borderBottomColor: theme.palette.mode === 'dark' ? '#33414e' : '#dce3ea',
+          background:
+            theme.palette.mode === 'dark'
+              ? 'linear-gradient(135deg, #1a2733 0%, #121a22 100%)'
+              : 'linear-gradient(135deg, #f8fbff 0%, #edf4fb 100%)',
+        })}
+      >
+        <Box sx={{ minWidth: 0 }}>
+          <Typography id="reduction-details-title" variant="h5" component="h2" sx={{ fontWeight: 750 }}>
+            Reduction {job?.id ?? jobId ?? ''}
+          </Typography>
+          {job && (
+            <>
+              <Typography variant="body2" color="text.secondary" noWrap>
+                {job.run?.instrument_name || 'Unknown instrument'} · Experiment {job.run?.experiment_number || '—'} ·{' '}
+                {job.run?.title || 'Untitled reduction'}
+              </Typography>
+              <JobStatus state={job.state} statusMessage={job.status_message} />
+            </>
+          )}
+        </Box>
+        <IconButton
+          autoFocus
+          aria-label="Close reduction details"
+          onClick={onClose}
+          edge="end"
+          sx={[panelIconButtonSx, { mt: -0.5 }]}
+        >
+          <Close />
+        </IconButton>
+      </Box>
+
+      {job ? (
+        <ReductionDetailsContent
+          key={job.id}
+          job={job}
+          resubmitJob={resubmitJob}
+          refreshJobs={refreshJobs}
+          mantidVersions={mantidVersions}
+        />
+      ) : (
+        <Box
+          sx={{
+            display: 'flex',
+            flex: 1,
+            minHeight: 0,
+            alignItems: 'center',
+            justifyContent: 'center',
+            p: 3,
+          }}
+        >
+          {loading ? (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <CircularProgress size={28} />
+              <Typography>Loading reduction details…</Typography>
+            </Box>
+          ) : error ? (
+            <Alert
+              severity="error"
+              action={
+                <Button variant="outlined" size="small" onClick={onRetry} sx={panelActionButtonSx}>
+                  Retry
+                </Button>
+              }
+            >
+              {error}
+            </Alert>
+          ) : null}
+        </Box>
+      )}
+    </Box>
+  </Modal>
+);
+
+const Row: React.FC<{
+  job: Job;
+  index: number;
+  isSelected: boolean;
+  toggleSelection: (jobId: number) => void;
+  onOpenDetails: (job: Job) => void;
+}> = ({ job, index, isSelected, toggleSelection, onOpenDetails }) => {
+  const theme = useTheme();
+  const [isStatusHovered, setIsStatusHovered] = useState(false);
+  const backgroundColor =
+    index % 2 === 0
+      ? theme.palette.mode === 'light'
+        ? '#f0f0f0'
+        : theme.palette.mode === 'dark'
+          ? '#2d2d2d'
+          : '#000000'
+      : theme.palette.background.default;
+  const hoverBackgroundColor =
+    theme.palette.mode === 'light'
+      ? '#e0e0e0'
+      : theme.palette.mode === 'dark'
+        ? index % 2 === 0
+          ? '#4c4c4c'
+          : '#4a4a4a'
+        : '#ffffff';
+
+  const openDetails = (): void => onOpenDetails(job);
+
+  return (
+    <TableRow
+      aria-label={`View reduction ${job.id} details`}
+      tabIndex={0}
+      sx={{
+        backgroundColor,
+        height: JOB_TABLE_ROW_HEIGHT,
+        cursor: 'pointer',
+        '& > .MuiTableCell-root': { py: 0.5 },
+        '&:hover': { backgroundColor: hoverBackgroundColor },
+        '&:focus-visible': { outline: `2px solid ${theme.palette.primary.main}`, outlineOffset: -2 },
+      }}
+      onClick={openDetails}
+      onKeyDown={(event: React.KeyboardEvent<HTMLTableRowElement>) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          openDetails();
+        }
+      }}
+    >
+      <TableCell sx={{ px: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
+          <Box
+            onMouseEnter={() => setIsStatusHovered(true)}
+            onMouseLeave={() => setIsStatusHovered(false)}
+            onClick={(event: React.MouseEvent) => event.stopPropagation()}
+            onKeyDown={(event: React.KeyboardEvent) => event.stopPropagation()}
+            sx={{
+              width: 32,
+              height: 32,
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}
+          >
+            {isStatusHovered || isSelected ? (
+              <Checkbox
+                color="primary"
+                checked={isSelected}
+                onChange={() => toggleSelection(job.id)}
+                sx={{ p: 0.5 }}
+                inputProps={{ 'aria-label': `${isSelected ? 'Deselect' : 'Select'} reduction ${job.id}` }}
+              />
+            ) : (
+              <JobStatusIcon state={job.state} />
+            )}
+          </Box>
+          <EllipsisTooltipText value={job.run?.experiment_number || 'N/A'} sx={{ flexGrow: 1 }} />
+        </Box>
+      </TableCell>
+      <TableCell>
+        <EllipsisTooltipText value={extractFilename(job.run?.filename || 'N/A')} />
+      </TableCell>
+      <TableCell>
+        <EllipsisTooltipText value={formatUtcForLocale(job.run?.run_start)} />
+      </TableCell>
+      <TableCell>
+        <EllipsisTooltipText value={formatUtcForLocale(job.run?.run_end)} />
+      </TableCell>
+      <TableCell>
+        <EllipsisTooltipText value={formatUtcForLocale(job.start)} />
+      </TableCell>
+      <TableCell>
+        <EllipsisTooltipText value={formatUtcForLocale(job.end)} />
+      </TableCell>
+      <TableCell colSpan={2}>
+        <EllipsisTooltipText value={job.run?.title || 'N/A'} />
+      </TableCell>
+    </TableRow>
   );
 };
 

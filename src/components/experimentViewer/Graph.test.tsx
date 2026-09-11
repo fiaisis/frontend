@@ -157,7 +157,7 @@ const linePlotData: LinePlotData[] = [
 let mountedContainer: HTMLDivElement | null = null;
 let mountedRoot: Root | null = null;
 
-function renderPlotViewer(showErrors = false, onShowErrorsChange = vi.fn()): HTMLDivElement {
+function renderPlotViewer(showErrors = false, onShowErrorsChange = vi.fn(), data = linePlotData): HTMLDivElement {
   mountedContainer = document.createElement('div');
   document.body.appendChild(mountedContainer);
   mountedRoot = createRoot(mountedContainer);
@@ -165,7 +165,7 @@ function renderPlotViewer(showErrors = false, onShowErrorsChange = vi.fn()): HTM
   act(() => {
     mountedRoot!.render(
       <ThemeProvider theme={createTheme()}>
-        <PlotViewer linePlotData={linePlotData} showErrors={showErrors} onShowErrorsChange={onShowErrorsChange} />
+        <PlotViewer linePlotData={data} showErrors={showErrors} onShowErrorsChange={onShowErrorsChange} />
       </ThemeProvider>
     );
   });
@@ -224,6 +224,26 @@ test('renders the extended 1D toolbar and labels the x axis as Index', () => {
       scaleType: 'linear',
     })
   );
+});
+
+test('keeps controls visible and disabled without a selected file, then enables them when data arrives', () => {
+  const container = renderPlotViewer(false, vi.fn(), []);
+  const gridButton = getButton(container, 'Grid');
+  expect(gridButton).toBeDisabled();
+  expect(container.textContent).toContain('Select a file to view 1D data');
+  expect(mockLineVis).not.toHaveBeenCalled();
+
+  act(() => {
+    mountedRoot!.render(
+      <ThemeProvider theme={createTheme()}>
+        <PlotViewer linePlotData={linePlotData} showErrors={false} onShowErrorsChange={vi.fn()} />
+      </ThemeProvider>
+    );
+  });
+
+  expect(getButton(container, 'Grid')).toBe(gridButton);
+  expect(gridButton).toBeEnabled();
+  expect(container.querySelector('[data-testid="line-vis"]')).toBeInTheDocument();
 });
 
 test('updates LineVis props when the y range and style controls change', () => {

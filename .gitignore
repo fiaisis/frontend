@@ -17,6 +17,7 @@
 
 # testing
 /coverage
+/cypress/screenshots/
 junit.xml
 
 # production

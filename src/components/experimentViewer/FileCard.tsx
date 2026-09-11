@@ -16,7 +16,11 @@ import {
   ToggleButtonGroup,
   Typography,
 } from '@mui/material';
+import { alpha, useTheme } from '@mui/material/styles';
 import React from 'react';
+
+import { getViewerControlsSx } from './styles';
+import { getJobTableChromeColors } from '../jobs/constants';
 
 import type { FileConfig } from '../../lib/types';
 
@@ -47,12 +51,19 @@ const FileCard: React.FC<FileCardProps> = ({
   onSelectionChange,
   onSelect2DFile,
 }): JSX.Element => {
+  const theme = useTheme();
+  const viewerChrome = getJobTableChromeColors(theme.palette.mode);
+  const isSelected = activeViewerTab === '2d' ? selected2DFile === filename : file.enabled;
+
   return (
     <Card
       variant="outlined"
       sx={{
-        border: file.enabled ? 2 : 1,
-        borderColor: file.enabled ? 'primary.main' : 'divider',
+        ...getViewerControlsSx(theme),
+        border: `1px solid ${isSelected ? viewerChrome.accent : viewerChrome.border}`,
+        borderRadius: 0,
+        backgroundColor: isSelected ? alpha(viewerChrome.accent, 0.08) : viewerChrome.surface,
+        boxShadow: isSelected ? `inset 3px 0 0 ${viewerChrome.accent}` : 'none',
       }}
     >
       <CardContent sx={{ p: 1.25, '&:last-child': { pb: 1.25 } }}>
@@ -67,12 +78,16 @@ const FileCard: React.FC<FileCardProps> = ({
           }
           label={
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              <InsertDriveFileIcon fontSize="small" color="action" />
+              <InsertDriveFileIcon
+                fontSize="small"
+                sx={{ color: isSelected ? viewerChrome.accent : viewerChrome.text }}
+              />
               <Typography
                 variant="body2"
                 sx={{
                   wordBreak: 'break-all',
                   fontSize: '0.8rem',
+                  fontWeight: isSelected ? 600 : 400,
                 }}
               >
                 {filename}
@@ -84,7 +99,7 @@ const FileCard: React.FC<FileCardProps> = ({
 
         {/* File controls - only show in 1D mode if enabled */}
         {activeViewerTab === '1d' && file.enabled && (
-          <Box sx={{ mt: 1.25, ml: 3.5, display: 'flex', flexDirection: 'column', gap: 1.25 }}>
+          <Box sx={{ mt: 1.5, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
             {/* Dataset selector - dropdown for discovered datasets */}
             <Box>
               {file.isDiscovered && file.discoveredDatasets && file.discoveredDatasets.length > 0 ? (
@@ -105,6 +120,19 @@ const FileCard: React.FC<FileCardProps> = ({
                     displayEmpty
                     sx={{
                       fontSize: '0.875rem',
+                    }}
+                    MenuProps={{
+                      slotProps: {
+                        paper: {
+                          sx: {
+                            ...getViewerControlsSx(theme),
+                            borderRadius: 0,
+                            border: `1px solid ${viewerChrome.border}`,
+                            backgroundColor: viewerChrome.surface,
+                            boxShadow: 'none',
+                          },
+                        },
+                      },
                     }}
                   >
                     {!file.path && (
@@ -195,8 +223,17 @@ const FileCard: React.FC<FileCardProps> = ({
             {file.path && file.selectedDatasetIs2D && (
               <Box>
                 {/* Mode toggle */}
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                  <Typography variant="body2" fontWeight="500">
+                <Box
+                  sx={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: 1,
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    mb: 1,
+                  }}
+                >
+                  <Typography variant="caption" fontWeight={600}>
                     Slice selection (2D → 1D)
                   </Typography>
                   <ToggleButtonGroup
@@ -204,7 +241,24 @@ const FileCard: React.FC<FileCardProps> = ({
                     value={inputMode}
                     exclusive
                     onChange={(_, newMode) => newMode && onInputModeChange(newMode)}
-                    sx={{ height: 24 }}
+                    aria-label="Slice input mode"
+                    sx={{
+                      height: 28,
+                      '& .MuiToggleButton-root': {
+                        borderRadius: 0,
+                        borderColor: viewerChrome.border,
+                        color: viewerChrome.text,
+                        textTransform: 'none',
+                        '&:hover': { backgroundColor: viewerChrome.hover },
+                        '&.Mui-selected': {
+                          color: viewerChrome.accent,
+                          backgroundColor: alpha(viewerChrome.accent, 0.12),
+                          boxShadow: `inset 0 -2px 0 ${viewerChrome.accent}`,
+                        },
+                        '&.Mui-selected:hover': { backgroundColor: alpha(viewerChrome.accent, 0.18) },
+                        '&:focus-visible': { outline: `2px solid ${viewerChrome.accent}`, outlineOffset: -2 },
+                      },
+                    }}
                   >
                     <ToggleButton value="text" sx={{ px: 1, py: 0.5, fontSize: '0.75rem' }}>
                       Text
@@ -233,13 +287,14 @@ const FileCard: React.FC<FileCardProps> = ({
                       }
                     }}
                     placeholder="7,8"
+                    slotProps={{ htmlInput: { 'aria-label': 'Slice indices' } }}
                     fullWidth
                     sx={{
                       '& .MuiInputBase-input': {
                         fontSize: '0.875rem',
                       },
                     }}
-                    helperText="Comma-separated indices (each slice fetched separately)"
+                    helperText="Comma-separated slice indices"
                   />
                 )}
 
@@ -264,7 +319,7 @@ const FileCard: React.FC<FileCardProps> = ({
                       size="small"
                       type="number"
                       placeholder="Add slice"
-                      slotProps={{ htmlInput: { min: 0 } }}
+                      slotProps={{ htmlInput: { min: 0, 'aria-label': 'Add slice' } }}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {
                           const input = e.target as HTMLInputElement;

@@ -1,414 +1,60 @@
-import ArrowDropDown from '@mui/icons-material/ArrowDropDown';
+import CloseIcon from '@mui/icons-material/Close';
 import HistoryIcon from '@mui/icons-material/History';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import SearchIcon from '@mui/icons-material/Search';
 import StarIcon from '@mui/icons-material/Star';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
 import VisibilityIcon from '@mui/icons-material/Visibility';
-import {
-  Box,
-  Button,
-  Chip,
-  Divider,
-  IconButton,
-  InputAdornment,
-  ListItemText,
-  MenuItem,
-  Paper,
-  Popover,
-  Stack,
-  TextField,
-  Typography,
-  useTheme,
-} from '@mui/material';
+import { Box, Button, Chip, IconButton, InputAdornment, Paper, TextField, Typography, useTheme } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import * as React from 'react';
-import { Link as RouterLink, useHistory, useLocation, useParams } from 'react-router-dom';
+import { Link as RouterLink } from 'react-router-dom';
 
-import {
-  ALL_FILTER,
-  FAVORITES_FILTER,
-  SELECTOR_MENU_WIDTH,
-  TechniqueFilterButton,
-} from '../components/jobs/InstrumentSelector';
+import { getJobTableChromeColors, JOB_TABLE_TOOLBAR_CONTROL_HEIGHT } from '../components/jobs/constants';
 import NavArrows from '../components/navigation/NavArrows';
-import {
-  formatInstrumentTechniques,
-  getInstrumentTechniques,
-  getUniqueInstrumentTechniques,
-  instrumentHasTechnique,
-  instruments,
-  type InstrumentData,
-} from '../lib/instrumentData';
+import PageHeader from '../components/navigation/PageHeader';
+import { getExperimentViewerUrl } from '../lib/experimentViewerUrl';
+import { getInstrumentTechniques, instruments } from '../lib/instrumentData';
 import { getStoredFavoriteInstrumentIds, setStoredFavoriteInstrumentIds } from '../lib/instrumentFavorites';
+import { useAvailablePluginHeight } from '../lib/useAvailablePluginHeight';
 
-const INSTRUMENT_BROWSER_LABEL = 'Browse instruments';
-
-const getTechniqueSlug = (instrumentType: string): string =>
-  instrumentType
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-
-const getTechniqueRoute = (instrumentType: string): string =>
-  instrumentType === ALL_FILTER ? '/isis-instruments' : `/isis-instruments/${getTechniqueSlug(instrumentType)}`;
-
-const getInstrumentRoute = (instrument: InstrumentData): string =>
-  `/isis-instruments/${encodeURIComponent(instrument.name.toUpperCase())}`;
-
-const getDecodedRouteParam = (routeParam: string | undefined): string | undefined => {
-  if (!routeParam) {
-    return undefined;
-  }
-
-  try {
-    return decodeURIComponent(routeParam);
-  } catch {
-    return routeParam;
-  }
-};
-
-const getInstrumentFromRouteParam = (routeParam: string | undefined): InstrumentData | null => {
-  const decodedRouteParam = getDecodedRouteParam(routeParam);
-
-  if (!decodedRouteParam) {
-    return null;
-  }
-
-  const normalizedInstrument = decodedRouteParam.trim().toLowerCase();
-
-  return instruments.find((instrument) => instrument.name.toLowerCase() === normalizedInstrument) ?? null;
-};
-
-const getTechniqueFromRouteParam = (routeTechnique: string | undefined, instrumentTypes: string[]): string => {
-  const decodedTechnique = getDecodedRouteParam(routeTechnique);
-
-  if (!decodedTechnique) {
-    return ALL_FILTER;
-  }
-
-  const normalizedTechnique = decodedTechnique.trim().toLowerCase();
-
-  return (
-    instrumentTypes.find(
-      (instrumentType) =>
-        instrumentType.toLowerCase() === normalizedTechnique || getTechniqueSlug(instrumentType) === normalizedTechnique
-    ) ?? ALL_FILTER
-  );
-};
-
-const InstrumentSearchBreadcrumb: React.FC<{
-  menuOpen: boolean;
-  onMenuOpen: (button: HTMLButtonElement) => void;
-}> = ({ menuOpen, onMenuOpen }) => {
-  const breadcrumbLabel = INSTRUMENT_BROWSER_LABEL;
-
-  return (
-    <Button
-      id="instrument-search-button"
-      className="breadcrumb-control"
-      variant="text"
-      aria-haspopup="menu"
-      aria-controls={menuOpen ? 'instrument-search-menu' : undefined}
-      aria-expanded={menuOpen ? 'true' : undefined}
-      aria-label={`Instrument search: ${breadcrumbLabel}`}
-      endIcon={<ArrowDropDown />}
-      onClick={(event: React.MouseEvent<HTMLButtonElement>) => onMenuOpen(event.currentTarget)}
-      sx={{
-        minWidth: 0,
-        border: 0,
-        borderRadius: 0,
-        boxShadow: 'none',
-        font: 'inherit',
-        textTransform: 'none',
-        '& .MuiButton-endIcon': { ml: 0.75, mr: 0, color: 'inherit' },
-      }}
-    >
-      <Box component="span">{breadcrumbLabel}</Box>
-    </Button>
-  );
-};
-
-const InstrumentSearchPopover: React.FC<{
-  menuOpen: boolean;
-  menuAnchorPosition: { top: number; left: number } | null;
-  searchTerm: string;
-  selectedType: string;
-  selectedInstrumentName: string | null;
-  showFavoritesOnly: boolean;
-  favoriteIds: number[];
-  favoriteIdSet: Set<number>;
-  instrumentTypes: string[];
-  instrumentCountByType: Map<string, number>;
-  filteredInstruments: InstrumentData[];
-  onSearchTermChange: (searchTerm: string) => void;
-  onSelectedTypeChange: (instrumentType: string) => void;
-  onSelectFavorites: () => void;
-  onShowAllTypes: () => void;
-  onClearFilters: () => void;
-  onSelectInstrument: (instrument: InstrumentData) => void;
-  onMenuClose: () => void;
-  onToggleFavorite: (id: number) => void;
-}> = ({
-  menuOpen,
-  menuAnchorPosition,
-  searchTerm,
-  selectedType,
-  selectedInstrumentName,
-  showFavoritesOnly,
-  favoriteIds,
-  favoriteIdSet,
-  instrumentTypes,
-  instrumentCountByType,
-  filteredInstruments,
-  onSearchTermChange,
-  onSelectedTypeChange,
-  onSelectFavorites,
-  onShowAllTypes,
-  onClearFilters,
-  onSelectInstrument,
-  onMenuClose,
-  onToggleFavorite,
-}) => {
-  const hasActiveFilters =
-    searchTerm.trim().length > 0 || selectedType !== ALL_FILTER || showFavoritesOnly || selectedInstrumentName !== null;
-
-  const handleInstrumentSelect = (instrument: InstrumentData): void => {
-    onSelectInstrument(instrument);
-  };
-
-  return (
-    <Popover
-      id="instrument-search-menu"
-      anchorPosition={menuAnchorPosition ?? undefined}
-      anchorReference="anchorPosition"
-      open={menuOpen && menuAnchorPosition !== null}
-      onClose={onMenuClose}
-      anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-      transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-      slotProps={{
-        paper: {
-          sx: { width: SELECTOR_MENU_WIDTH, maxWidth: 'calc(100vw - 32px)' },
-        },
-      }}
-    >
-      <Box
-        aria-labelledby="instrument-search-button"
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          maxHeight: 'min(620px, calc(100vh - 96px))',
-        }}
-      >
-        <Box sx={{ p: 1.5, pb: 1.25 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <TextField
-              fullWidth
-              size="small"
-              value={searchTerm}
-              onChange={(event) => onSearchTermChange(event.target.value)}
-              placeholder="Search for instrument, technique, or scientist"
-              sx={{ minWidth: 0, flex: '1 1 auto' }}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon fontSize="small" />
-                  </InputAdornment>
-                ),
-              }}
-            />
-            {hasActiveFilters && (
-              <Button
-                variant="contained"
-                size="medium"
-                onClick={onClearFilters}
-                sx={{ flex: '0 0 auto', height: 40, whiteSpace: 'nowrap', textTransform: 'none' }}
-              >
-                Clear filters
-              </Button>
-            )}
-          </Box>
-          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 0.75, mt: 1 }}>
-            <TechniqueFilterButton
-              label={ALL_FILTER}
-              count={instruments.length}
-              active={selectedType === ALL_FILTER && !showFavoritesOnly && selectedInstrumentName === null}
-              onClick={onShowAllTypes}
-            />
-            <TechniqueFilterButton
-              label={FAVORITES_FILTER}
-              count={favoriteIds.length}
-              active={showFavoritesOnly}
-              onClick={onSelectFavorites}
-            />
-            {instrumentTypes.map((instrumentType) => (
-              <TechniqueFilterButton
-                key={instrumentType}
-                label={instrumentType}
-                count={instrumentCountByType.get(instrumentType) ?? 0}
-                active={selectedType === instrumentType}
-                onClick={() => onSelectedTypeChange(instrumentType)}
-              />
-            ))}
-          </Box>
-        </Box>
-        <Divider />
-        <Box role="menu" aria-labelledby="instrument-search-button" sx={{ overflowY: 'auto', py: 0.5 }}>
-          {filteredInstruments.length > 0 ? (
-            filteredInstruments.map((instrument) => {
-              const favourite = favoriteIdSet.has(instrument.id);
-
-              return (
-                <MenuItem
-                  component="div"
-                  role="menuitem"
-                  key={instrument.id}
-                  selected={selectedInstrumentName === instrument.name}
-                  onClick={() => handleInstrumentSelect(instrument)}
-                >
-                  <ListItemText
-                    primary={instrument.name}
-                    secondary={formatInstrumentTechniques(instrument)}
-                    secondaryTypographyProps={{ noWrap: true }}
-                    sx={{ mr: 1 }}
-                  />
-                  <IconButton
-                    aria-label={`${favourite ? 'Remove' : 'Add'} ${instrument.name} ${
-                      favourite ? 'from favourites' : 'to favourites'
-                    }`}
-                    size="small"
-                    onClick={(event: React.MouseEvent<HTMLButtonElement>) => {
-                      event.stopPropagation();
-                      onToggleFavorite(instrument.id);
-                    }}
-                    sx={{ flex: '0 0 auto', color: favourite ? 'warning.main' : 'action.active' }}
-                  >
-                    {favourite ? <StarIcon fontSize="small" /> : <StarBorderIcon fontSize="small" />}
-                  </IconButton>
-                </MenuItem>
-              );
-            })
-          ) : (
-            <Box sx={{ px: 2, py: 3, textAlign: 'center' }}>
-              <Typography variant="body2" color="text.secondary">
-                No instruments found
-              </Typography>
-            </Box>
-          )}
-        </Box>
-      </Box>
-    </Popover>
-  );
-};
+const INSTRUMENT_SEARCH_LABEL = 'Search for instrument, technique, or scientist';
 
 const Instruments: React.FC = () => {
+  const { rootRef, availableHeight } = useAvailablePluginHeight();
+  const cardsScrollRef = React.useRef<HTMLDivElement>(null);
   const theme = useTheme();
-  const history = useHistory();
-  const location = useLocation();
-  const { instrumentOrTechnique } = useParams<{ instrumentOrTechnique?: string }>();
   const [favoriteIds, setFavoriteIds] = React.useState<number[]>(getStoredFavoriteInstrumentIds);
   const [searchTerm, setSearchTerm] = React.useState('');
-  const [showFavoritesOnly, setShowFavoritesOnly] = React.useState(false);
-  const [menuOpen, setMenuOpen] = React.useState(false);
-  const [menuAnchorPosition, setMenuAnchorPosition] = React.useState<{ top: number; left: number } | null>(null);
-  const instrumentActionColor = theme.palette.mode === 'dark' ? '#86b4ff' : theme.palette.primary.main;
-  const instrumentActionHoverColor = theme.palette.mode === 'dark' ? '#b7d1ff' : theme.palette.primary.dark;
-
-  const instrumentTypes = React.useMemo(() => getUniqueInstrumentTechniques(instruments), []);
-  const routeSelectedInstrument = React.useMemo(
-    () => getInstrumentFromRouteParam(instrumentOrTechnique),
-    [instrumentOrTechnique]
-  );
-  const routeSelectedType = React.useMemo(
-    () =>
-      routeSelectedInstrument === null
-        ? getTechniqueFromRouteParam(instrumentOrTechnique, instrumentTypes)
-        : ALL_FILTER,
-    [instrumentTypes, instrumentOrTechnique, routeSelectedInstrument]
-  );
-  const [selectedType, setSelectedType] = React.useState(routeSelectedType);
-  const selectedInstrumentName = routeSelectedInstrument?.name ?? null;
-  const breadcrumbLabelOverrides = React.useMemo(() => {
-    const overrides: Record<string, string> = {};
-    const decodedRouteParam = getDecodedRouteParam(instrumentOrTechnique);
-
-    if (decodedRouteParam && routeSelectedInstrument !== null) {
-      overrides[decodedRouteParam] = routeSelectedInstrument.name;
-    }
-
-    if (routeSelectedType !== ALL_FILTER) {
-      overrides[getTechniqueSlug(routeSelectedType)] = routeSelectedType;
-
-      if (decodedRouteParam) {
-        overrides[decodedRouteParam] = routeSelectedType;
-      }
-    }
-
-    return overrides;
-  }, [instrumentOrTechnique, routeSelectedInstrument, routeSelectedType]);
-
-  const instrumentCountByType = React.useMemo(
-    () =>
-      instruments.reduce<Map<string, number>>((countByType, instrument) => {
-        getInstrumentTechniques(instrument).forEach((technique) => {
-          countByType.set(technique, (countByType.get(technique) ?? 0) + 1);
-        });
-        return countByType;
-      }, new Map<string, number>()),
-    []
-  );
-
-  const updateRoute = React.useCallback(
-    (nextPath: string, method: 'push' | 'replace' = 'push'): void => {
-      if (location.pathname === nextPath) {
-        return;
-      }
-
-      if (method === 'replace') {
-        history.replace(nextPath);
-        return;
-      }
-
-      history.push(nextPath);
-    },
-    [history, location.pathname]
-  );
-
-  const updateTechniqueRoute = React.useCallback(
-    (instrumentType: string, method: 'push' | 'replace' = 'push'): void => {
-      updateRoute(getTechniqueRoute(instrumentType), method);
-    },
-    [updateRoute]
-  );
-
-  const updateInstrumentRoute = React.useCallback(
-    (instrument: InstrumentData, method: 'push' | 'replace' = 'push'): void => {
-      updateRoute(getInstrumentRoute(instrument), method);
-    },
-    [updateRoute]
-  );
+  const instrumentChrome = getJobTableChromeColors(theme.palette.mode);
+  const actionButtonSx = {
+    minWidth: 0,
+    minHeight: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
+    border: 0,
+    borderRadius: 0,
+    boxShadow: 'none',
+    px: 1,
+    color: instrumentChrome.accent,
+    textTransform: 'none',
+    fontSize: '0.75rem',
+    lineHeight: 1.4,
+    '& .MuiButton-startIcon': { mr: 0.75, '& > svg': { fontSize: 18 } },
+    '&:hover': { backgroundColor: instrumentChrome.hover, boxShadow: 'none' },
+    '&:focus-visible': { outline: `2px solid ${instrumentChrome.accent}`, outlineOffset: -2 },
+  };
+  const chipSx = {
+    maxWidth: '100%',
+    height: 24,
+    borderRadius: 0,
+    borderColor: instrumentChrome.border,
+    color: instrumentChrome.text,
+    fontSize: '0.75rem',
+    '& .MuiChip-label': { px: 0.75, overflow: 'hidden', textOverflow: 'ellipsis' },
+  };
 
   React.useEffect(() => {
     setStoredFavoriteInstrumentIds(favoriteIds);
   }, [favoriteIds]);
-
-  React.useEffect(() => {
-    setSelectedType(routeSelectedType);
-
-    if (routeSelectedInstrument !== null || routeSelectedType !== ALL_FILTER) {
-      setShowFavoritesOnly(false);
-    }
-
-    if (instrumentOrTechnique) {
-      const canonicalRoute =
-        routeSelectedInstrument !== null
-          ? getInstrumentRoute(routeSelectedInstrument)
-          : getTechniqueRoute(routeSelectedType);
-
-      updateRoute(canonicalRoute, 'replace');
-    }
-  }, [instrumentOrTechnique, routeSelectedInstrument, routeSelectedType, updateRoute]);
 
   const favoriteIdSet = React.useMemo(() => new Set(favoriteIds), [favoriteIds]);
 
@@ -426,16 +72,13 @@ const Instruments: React.FC = () => {
         const matchesSearch =
           normalizedSearch.length === 0 ||
           searchableValues.some((searchableValue) => searchableValue.toLowerCase().includes(normalizedSearch));
-        const matchesType = selectedType === ALL_FILTER || instrumentHasTechnique(instrument, selectedType);
-        const matchesFavorite = !showFavoritesOnly || favoriteIdSet.has(instrument.id);
-
-        return matchesSearch && matchesType && matchesFavorite;
+        return matchesSearch;
       })
       .sort((instrumentA, instrumentB) => {
         const favoriteSort = Number(favoriteIdSet.has(instrumentB.id)) - Number(favoriteIdSet.has(instrumentA.id));
         return favoriteSort || instrumentA.name.localeCompare(instrumentB.name);
       });
-  }, [favoriteIdSet, searchTerm, selectedType, showFavoritesOnly]);
+  }, [favoriteIdSet, searchTerm]);
 
   const handleToggleFavorite = (id: number): void => {
     setFavoriteIds((prevFavoriteIds) =>
@@ -445,312 +88,319 @@ const Instruments: React.FC = () => {
     );
   };
 
-  const handleClearFilters = (): void => {
-    setSearchTerm('');
-    setSelectedType(ALL_FILTER);
-    setShowFavoritesOnly(false);
-    updateTechniqueRoute(ALL_FILTER);
-  };
+  const handleClearSearch = (): void => setSearchTerm('');
 
-  const clearSearchFilters = React.useCallback((): void => {
-    setSearchTerm('');
-    setShowFavoritesOnly(false);
-  }, []);
-
-  const handleShowAllTypes = (): void => {
-    setSelectedType(ALL_FILTER);
-    setShowFavoritesOnly(false);
-    updateTechniqueRoute(ALL_FILTER);
-  };
-
-  const handleSelectFavorites = (): void => {
-    setSelectedType(ALL_FILTER);
-    setShowFavoritesOnly(true);
-    updateTechniqueRoute(ALL_FILTER);
-  };
-
-  const handleSelectType = (instrumentType: string): void => {
-    setSelectedType(instrumentType);
-    setShowFavoritesOnly(false);
-    updateTechniqueRoute(instrumentType);
-  };
-
-  const handleSelectInstrument = (instrument: InstrumentData): void => {
-    setSearchTerm('');
-    setSelectedType(ALL_FILTER);
-    setShowFavoritesOnly(false);
-    updateInstrumentRoute(instrument);
-  };
-
-  const handleBreadcrumbClick = React.useCallback(
-    (destination: string): void => {
-      if (destination.startsWith('/isis-instruments/')) {
-        clearSearchFilters();
-      }
-    },
-    [clearSearchFilters]
-  );
-
-  const handleMenuOpen = React.useCallback((button: HTMLButtonElement): void => {
-    const rect = button.getBoundingClientRect();
-
-    setMenuOpen(true);
-    setMenuAnchorPosition({
-      left: rect.left,
-      top: rect.bottom,
-    });
-  }, []);
-
-  const handleMenuClose = React.useCallback((): void => {
-    setMenuOpen(false);
-    setMenuAnchorPosition(null);
-  }, []);
-
-  const visibleInstruments = React.useMemo(
-    () => (routeSelectedInstrument !== null ? [routeSelectedInstrument] : filteredInstruments),
-    [filteredInstruments, routeSelectedInstrument]
-  );
+  React.useLayoutEffect(() => {
+    if (cardsScrollRef.current) {
+      cardsScrollRef.current.scrollTop = 0;
+    }
+  }, [searchTerm]);
 
   return (
-    <>
-      <NavArrows
-        trailingCrumb={<InstrumentSearchBreadcrumb menuOpen={menuOpen} onMenuOpen={handleMenuOpen} />}
-        labelOverrides={breadcrumbLabelOverrides}
-        onCrumbClick={handleBreadcrumbClick}
-      />
-      <InstrumentSearchPopover
-        menuOpen={menuOpen}
-        menuAnchorPosition={menuAnchorPosition}
-        searchTerm={searchTerm}
-        selectedType={selectedType}
-        selectedInstrumentName={selectedInstrumentName}
-        showFavoritesOnly={showFavoritesOnly}
-        favoriteIds={favoriteIds}
-        favoriteIdSet={favoriteIdSet}
-        instrumentTypes={instrumentTypes}
-        instrumentCountByType={instrumentCountByType}
-        filteredInstruments={filteredInstruments}
-        onSearchTermChange={setSearchTerm}
-        onSelectedTypeChange={handleSelectType}
-        onSelectFavorites={handleSelectFavorites}
-        onShowAllTypes={handleShowAllTypes}
-        onClearFilters={handleClearFilters}
-        onSelectInstrument={handleSelectInstrument}
-        onMenuClose={handleMenuClose}
-        onToggleFavorite={handleToggleFavorite}
-      />
-      <Box className="tour-instruments" sx={{ px: { xs: 2, md: 3 }, py: 2, pb: 4 }}>
-        <Box
-          sx={{
-            display: 'flex',
-            flexDirection: { xs: 'column', md: 'row' },
-            alignItems: { xs: 'flex-start', md: 'flex-end' },
-            justifyContent: 'space-between',
-            gap: 1,
-            mb: 2,
-          }}
-        >
-          <Box>
-            <Typography variant="h3" component="h1" sx={{ color: 'text.primary' }}>
-              ISIS instruments
-            </Typography>
-            <Typography variant="body1" color="text.secondary">
-              {instruments.length} instruments across {instrumentTypes.length} techniques
-            </Typography>
-          </Box>
-        </Box>
-
-        {visibleInstruments.length === 0 ? (
-          <Paper variant="outlined" sx={{ p: 4, borderRadius: 1, textAlign: 'center' }}>
-            <Typography variant="h6" component="h2" sx={{ mb: 1 }}>
-              No instruments found
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Try another search term or filter.
-            </Typography>
-            <Button
-              variant="outlined"
-              onClick={handleClearFilters}
-              sx={{
-                color: instrumentActionColor,
-                borderColor: alpha(instrumentActionColor, theme.palette.mode === 'dark' ? 0.72 : 0.5),
-                '&:hover': {
-                  color: instrumentActionHoverColor,
-                  borderColor: instrumentActionHoverColor,
-                  backgroundColor: alpha(instrumentActionColor, theme.palette.mode === 'dark' ? 0.16 : 0.08),
-                },
-              }}
-            >
-              Clear filters
-            </Button>
-          </Paper>
-        ) : (
-          <Box
+    <Box
+      ref={rootRef}
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: availableHeight,
+        maxHeight: availableHeight,
+        minHeight: 0,
+        minWidth: 0,
+        overflow: 'hidden',
+      }}
+    >
+      <PageHeader
+        breadcrumbs={<NavArrows />}
+        controls={
+          <TextField
+            id="instrument-search"
+            size="small"
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+            placeholder={INSTRUMENT_SEARCH_LABEL}
+            inputProps={{ 'aria-label': INSTRUMENT_SEARCH_LABEL }}
             sx={{
-              display: 'grid',
-              gridTemplateColumns: {
-                xs: '1fr',
-                md: 'repeat(2, minmax(0, 1fr))',
-                xl: 'repeat(3, minmax(0, 1fr))',
+              width: 420,
+              maxWidth: '100%',
+              minWidth: 0,
+              '& .MuiOutlinedInput-root': {
+                height: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
+                borderRadius: 0,
+                backgroundColor: instrumentChrome.surface,
+                color: instrumentChrome.text,
+                '& fieldset': { border: 0 },
+                '&.Mui-focused': { boxShadow: `inset 0 0 0 2px ${instrumentChrome.accent}` },
               },
-              gap: 2,
-              alignItems: 'stretch',
-              gridAutoRows: '1fr',
             }}
-          >
-            {visibleInstruments.map((instrument) => {
-              const favourite = favoriteIdSet.has(instrument.id);
-
-              return (
-                <Paper
-                  key={instrument.id}
-                  data-testid="instrument-card"
-                  variant="outlined"
-                  sx={{
-                    borderRadius: 1,
-                    minWidth: 0,
-                    minHeight: 0,
-                    height: '100%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    overflow: 'hidden',
-                    borderColor: 'divider',
-                    backgroundColor: favourite ? theme.palette.action.hover : 'background.paper',
-                  }}
-                >
-                  {instrument.image && (
-                    <Box
-                      component="img"
-                      src={instrument.image.url}
-                      alt={instrument.image.alt}
-                      loading="lazy"
-                      sx={{
-                        display: 'block',
-                        width: '100%',
-                        aspectRatio: '16 / 9',
-                        objectFit: 'cover',
-                        backgroundColor: 'action.hover',
-                        flex: '0 0 auto',
-                      }}
-                    />
-                  )}
-
-                  <Box
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon fontSize="small" sx={{ color: instrumentChrome.accent }} />
+                </InputAdornment>
+              ),
+              endAdornment: searchTerm ? (
+                <InputAdornment position="end">
+                  <IconButton
+                    aria-label="Clear instrument search"
+                    onClick={handleClearSearch}
+                    size="small"
                     sx={{
-                      p: 2,
-                      minWidth: 0,
-                      minHeight: 0,
-                      flexGrow: 1,
-                      display: 'flex',
-                      flexDirection: 'column',
+                      borderRadius: 0,
+                      color: instrumentChrome.accent,
+                      '&:hover': { backgroundColor: instrumentChrome.hover },
+                      '&:focus-visible': { outline: `2px solid ${instrumentChrome.accent}`, outlineOffset: -2 },
                     }}
                   >
-                    <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 1 }}>
-                      <Box sx={{ minWidth: 0 }}>
-                        <Typography
-                          variant="h6"
-                          component="h2"
-                          sx={{ color: instrumentActionColor, fontWeight: 700, lineHeight: 1.2 }}
-                        >
-                          {instrument.name}
-                        </Typography>
-                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, mt: 1 }}>
-                          {getInstrumentTechniques(instrument).map((technique) => (
-                            <Chip
-                              key={technique}
-                              size="small"
-                              label={technique}
-                              sx={{
-                                maxWidth: '100%',
-                                '& .MuiChip-label': { overflow: 'hidden', textOverflow: 'ellipsis' },
-                              }}
-                            />
-                          ))}
-                        </Box>
-                      </Box>
-                      <IconButton
-                        aria-label={`${favourite ? 'Remove' : 'Add'} ${instrument.name} ${
-                          favourite ? 'from favourites' : 'to favourites'
-                        }`}
-                        onClick={() => handleToggleFavorite(instrument.id)}
-                        sx={{ color: favourite ? 'warning.main' : 'action.active' }}
-                      >
-                        {favourite ? <StarIcon /> : <StarBorderIcon />}
-                      </IconButton>
-                    </Box>
+                    <CloseIcon fontSize="small" />
+                  </IconButton>
+                </InputAdornment>
+              ) : undefined,
+            }}
+          />
+        }
+      />
+      <Box
+        className="tour-instruments"
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          flex: 1,
+          minHeight: 0,
+          px: 2,
+          pb: 3,
+          color: instrumentChrome.text,
+        }}
+      >
+        <Box
+          ref={cardsScrollRef}
+          role="region"
+          aria-label="Instrument cards"
+          tabIndex={0}
+          sx={{
+            flex: 1,
+            minHeight: 0,
+            overflowY: 'auto',
+            overflowX: 'hidden',
+            overscrollBehaviorY: 'contain',
+            scrollbarGutter: 'stable',
+            scrollbarColor: `${instrumentChrome.border} ${instrumentChrome.header}`,
+            '&:focus-visible': { outline: `2px solid ${instrumentChrome.accent}`, outlineOffset: -2 },
+          }}
+        >
+          {filteredInstruments.length === 0 ? (
+            <Paper
+              square
+              variant="outlined"
+              sx={{
+                p: 4,
+                textAlign: 'center',
+                borderColor: instrumentChrome.border,
+                backgroundColor: instrumentChrome.surface,
+                color: instrumentChrome.text,
+              }}
+            >
+              <Typography variant="h6" component="h2" sx={{ mb: 1 }}>
+                No instruments found
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                Try another search term.
+              </Typography>
+              <Button variant="text" onClick={handleClearSearch} sx={actionButtonSx}>
+                Clear search
+              </Button>
+            </Paper>
+          ) : (
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: {
+                  xs: '1fr',
+                  md: 'repeat(2, minmax(0, 1fr))',
+                  xl: 'repeat(3, minmax(0, 1fr))',
+                },
+                gap: 1.5,
+                alignItems: 'stretch',
+                gridAutoRows: '1fr',
+              }}
+            >
+              {filteredInstruments.map((instrument) => {
+                const favourite = favoriteIdSet.has(instrument.id);
 
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
+                return (
+                  <Paper
+                    key={instrument.id}
+                    data-testid="instrument-card"
+                    square
+                    variant="outlined"
+                    sx={{
+                      minWidth: 0,
+                      minHeight: 0,
+                      height: '100%',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      overflow: 'hidden',
+                      borderColor: instrumentChrome.border,
+                      backgroundColor: instrumentChrome.surface,
+                      color: instrumentChrome.text,
+                      boxShadow: 'none',
+                    }}
+                  >
+                    {instrument.image && (
+                      <Box
+                        component="img"
+                        src={instrument.image.url}
+                        alt={instrument.image.alt}
+                        loading="lazy"
+                        sx={{
+                          display: 'block',
+                          width: '100%',
+                          aspectRatio: '16 / 9',
+                          objectFit: 'cover',
+                          backgroundColor: instrumentChrome.header,
+                          borderBottom: `1px solid ${instrumentChrome.border}`,
+                          flex: '0 0 auto',
+                        }}
+                      />
+                    )}
+
+                    <Box
                       sx={{
-                        mt: 1.5,
-                        flexGrow: 1,
+                        p: 1.5,
+                        backgroundColor: favourite ? alpha(instrumentChrome.accent, 0.08) : instrumentChrome.header,
+                        borderBottom: `1px solid ${instrumentChrome.border}`,
+                        minWidth: 0,
                       }}
                     >
-                      {instrument.description}
-                    </Typography>
-
-                    <Box sx={{ mt: 2 }}>
-                      <Typography variant="subtitle2" component="h3" sx={{ mb: 1 }}>
-                        Scientists
-                      </Typography>
-                      {instrument.scientists.length > 0 ? (
-                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                          {instrument.scientists.map((scientist) => (
-                            <Chip key={scientist} size="small" label={scientist} />
-                          ))}
+                      <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 1 }}>
+                        <Box sx={{ minWidth: 0 }}>
+                          <Typography
+                            variant="h6"
+                            component="h2"
+                            sx={{ color: instrumentChrome.accent, fontSize: '1rem', fontWeight: 700, lineHeight: 1.4 }}
+                          >
+                            {instrument.name}
+                          </Typography>
+                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, mt: 1 }}>
+                            {getInstrumentTechniques(instrument).map((technique) => (
+                              <Chip
+                                key={technique}
+                                size="small"
+                                variant="outlined"
+                                label={technique}
+                                sx={{
+                                  ...chipSx,
+                                  borderColor: alpha(instrumentChrome.accent, 0.5),
+                                  backgroundColor: alpha(instrumentChrome.accent, 0.08),
+                                  color: instrumentChrome.accent,
+                                }}
+                              />
+                            ))}
+                          </Box>
                         </Box>
-                      ) : (
-                        <Typography variant="body2" color="text.secondary">
-                          No scientists listed by ISIS.
-                        </Typography>
-                      )}
+                        <IconButton
+                          aria-label={`${favourite ? 'Remove' : 'Add'} ${instrument.name} ${
+                            favourite ? 'from favourites' : 'to favourites'
+                          }`}
+                          onClick={() => handleToggleFavorite(instrument.id)}
+                          size="small"
+                          sx={{
+                            width: 32,
+                            height: 32,
+                            flexShrink: 0,
+                            borderRadius: 0,
+                            border: `1px solid ${instrumentChrome.border}`,
+                            color: favourite ? 'warning.main' : instrumentChrome.text,
+                            backgroundColor: instrumentChrome.surface,
+                            '&:hover': { backgroundColor: instrumentChrome.hover },
+                            '&:focus-visible': {
+                              outline: `2px solid ${instrumentChrome.accent}`,
+                              outlineOffset: -2,
+                            },
+                          }}
+                        >
+                          {favourite ? <StarIcon /> : <StarBorderIcon />}
+                        </IconButton>
+                      </Box>
                     </Box>
 
-                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ mt: 2 }}>
+                    <Box sx={{ p: 1.5, minWidth: 0, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{
+                          flexGrow: 1,
+                          color: alpha(instrumentChrome.text, 0.78),
+                        }}
+                      >
+                        {instrument.description}
+                      </Typography>
+
+                      <Box sx={{ mt: 2 }}>
+                        <Typography variant="subtitle2" component="h3" sx={{ mb: 1 }}>
+                          Scientists
+                        </Typography>
+                        {instrument.scientists.length > 0 ? (
+                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                            {instrument.scientists.map((scientist) => (
+                              <Chip key={scientist} size="small" variant="outlined" label={scientist} sx={chipSx} />
+                            ))}
+                          </Box>
+                        ) : (
+                          <Typography variant="body2" color="text.secondary">
+                            No scientists listed by ISIS.
+                          </Typography>
+                        )}
+                      </Box>
+                    </Box>
+
+                    <Box
+                      sx={{
+                        display: 'grid',
+                        gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, minmax(0, 1fr))' },
+                        borderTop: `1px solid ${instrumentChrome.border}`,
+                        '& > :not(:last-child)': {
+                          borderRight: { xs: 0, sm: `1px solid ${instrumentChrome.border}` },
+                          borderBottom: { xs: `1px solid ${instrumentChrome.border}`, sm: 0 },
+                        },
+                      }}
+                    >
                       <Button
-                        variant="contained"
+                        variant="text"
                         component={RouterLink}
                         to={`/reduction-history/${instrument.name.toUpperCase()}`}
                         startIcon={<HistoryIcon />}
+                        sx={actionButtonSx}
                       >
                         Reduction history
                       </Button>
                       <Button
-                        variant="contained"
+                        variant="text"
                         component={RouterLink}
-                        to={`/experiment-viewer/${instrument.name.toUpperCase()}`}
+                        to={getExperimentViewerUrl({ instrument: instrument.name.toUpperCase() })}
                         startIcon={<VisibilityIcon />}
+                        sx={actionButtonSx}
                       >
                         Experiment viewer
                       </Button>
                       <Button
-                        variant="outlined"
+                        variant="text"
                         href={instrument.infoPage}
                         target="_blank"
                         rel="noopener noreferrer"
                         startIcon={<OpenInNewIcon />}
-                        sx={{
-                          color: instrumentActionColor,
-                          borderColor: alpha(instrumentActionColor, theme.palette.mode === 'dark' ? 0.72 : 0.5),
-                          '&:hover': {
-                            color: instrumentActionHoverColor,
-                            borderColor: instrumentActionHoverColor,
-                            backgroundColor: alpha(instrumentActionColor, theme.palette.mode === 'dark' ? 0.16 : 0.08),
-                          },
-                        }}
+                        sx={actionButtonSx}
                       >
                         ISIS page
                       </Button>
-                    </Stack>
-                  </Box>
-                </Paper>
-              );
-            })}
-          </Box>
-        )}
+                    </Box>
+                  </Paper>
+                );
+              })}
+            </Box>
+          )}
+        </Box>
       </Box>
-    </>
+    </Box>
   );
 };
 

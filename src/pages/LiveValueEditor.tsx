@@ -1,95 +1,84 @@
 import Editor from '@monaco-editor/react';
-import { Save } from '@mui/icons-material';
+import { DescriptionOutlined, Save } from '@mui/icons-material';
 import { Alert, Box, Button, CircularProgress, Snackbar, Typography, useTheme } from '@mui/material';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useHistory, useParams } from 'react-router-dom';
 
 import { LiveLogViewer } from '../components/experimentViewer/LiveLogViewer';
+import { getJobTableChromeColors } from '../components/jobs/constants';
 import InstrumentSelector from '../components/jobs/InstrumentSelector';
 import NavArrows from '../components/navigation/NavArrows';
+import PageHeader from '../components/navigation/PageHeader';
+import { getPageHeaderControlSx } from '../components/navigation/pageHeaderStyles';
 import { fiaApi } from '../lib/api';
 import { instruments as allInstruments } from '../lib/instrumentData';
+import { LIVE_SUPPORTED_INSTRUMENTS_FALLBACK } from '../lib/instrumentSupport';
 import { fetchLiveDataInstruments } from '../lib/plottingServiceAPI';
+import { useAvailablePluginHeight } from '../lib/useAvailablePluginHeight';
 
 const LiveValueEditor: React.FC = () => {
+  const { rootRef, availableHeight } = useAvailablePluginHeight();
   const theme = useTheme();
+  const editorChrome = getJobTableChromeColors(theme.palette.mode);
+  const actionButtonSx = {
+    ...getPageHeaderControlSx(theme),
+    '& .MuiButton-startIcon': { m: 0 },
+  };
   const { instrumentName } = useParams<{ instrumentName: string }>();
   const history = useHistory();
   const [scriptValue, setScriptValue] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
-  const [instruments, setInstruments] = useState<string[]>([]);
-  const [loadingInstruments, setLoadingInstruments] = useState(true);
+  const [supportedInstruments, setSupportedInstruments] = useState<readonly string[]>(
+    LIVE_SUPPORTED_INSTRUMENTS_FALLBACK
+  );
   const [saving, setSaving] = useState<boolean>(false);
   const [saveResult, setSaveResult] = useState<{ success: boolean; message: string } | null>(null);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [showLiveLogViewer, setShowLiveLogViewer] = useState(false);
   const userModified = useRef(false);
-  const liveDataInstrumentOptions = useMemo(() => {
-    const instrumentMetadataByName = new Map(
-      allInstruments.map((instrument) => [instrument.name.toLowerCase(), instrument])
-    );
-
-    return instruments.map((instrument, index) => {
-      return (
-        instrumentMetadataByName.get(instrument.toLowerCase()) ?? {
-          id: -(index + 1),
-          name: instrument,
-          description: '',
-          type: 'Live data',
-          infoPage: '',
-          scientists: [],
-        }
-      );
-    });
-  }, [instruments]);
-
   useEffect(() => {
+    let active = true;
     const loadInstruments = async (): Promise<void> => {
       try {
-        setLoadingInstruments(true);
         const instrumentList = await fetchLiveDataInstruments();
-        setInstruments(instrumentList);
+        if (active && Array.isArray(instrumentList) && instrumentList.every((name) => typeof name === 'string')) {
+          setSupportedInstruments(instrumentList);
+        }
       } catch (err) {
         console.error('Failed to load instruments:', err);
-      } finally {
-        setLoadingInstruments(false);
       }
     };
 
-    loadInstruments();
+    void loadInstruments();
+    return () => {
+      active = false;
+    };
   }, []);
 
   useEffect(() => {
-    if (loadingInstruments) {
-      return;
-    }
-
-    const matchedInstrument = instruments.find(
-      (instrument) => instrument.toLowerCase() === instrumentName.toLowerCase()
-    );
+    const matchedInstrument =
+      allInstruments.find((instrument) => instrument.name.toLowerCase() === instrumentName.toLowerCase())?.name ??
+      supportedInstruments.find((instrument) => instrument.toLowerCase() === instrumentName.toLowerCase());
 
     if (matchedInstrument && matchedInstrument !== instrumentName) {
       history.replace(`/live-data/${matchedInstrument}/edit-script`);
     }
-  }, [history, instrumentName, instruments, loadingInstruments]);
+  }, [history, instrumentName, supportedInstruments]);
 
   const handleInstrumentChange = (instrument: string): void => {
     history.push(`/live-data/${instrument}/edit-script`);
   };
 
-  const breadcrumbTrailingCrumbs = [
+  const pageControls = [
     <InstrumentSelector
       key="instrument"
       selectedInstrument={instrumentName}
       handleInstrumentChange={handleInstrumentChange}
-      variant="breadcrumb"
-      instrumentOptions={liveDataInstrumentOptions}
+      variant="compact"
+      compactLabel="Browse instruments"
       showAllInstrumentsOption={false}
-      disabled={loadingInstruments || liveDataInstrumentOptions.length === 0}
+      support={{ page: 'live-data', instruments: supportedInstruments }}
     />,
-    <Typography key="edit-script" color="text.primary">
-      Edit script
-    </Typography>,
   ];
 
   const fetchScript = useCallback(async (): Promise<void> => {
@@ -136,76 +125,118 @@ const LiveValueEditor: React.FC = () => {
   };
 
   return (
-    <>
-      <NavArrows trailingCrumb={breadcrumbTrailingCrumbs} replaceLastCrumbCount={2} />
+    <Box
+      ref={rootRef}
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: availableHeight,
+        maxHeight: availableHeight,
+        minHeight: 0,
+        minWidth: 0,
+        width: '100%',
+        overflow: 'hidden',
+        color: editorChrome.text,
+      }}
+    >
+      <PageHeader breadcrumbs={<NavArrows />} controls={pageControls} />
       <Box
         sx={{
           width: '100%',
-          height: 'calc(100vh - 64px)',
+          flex: '1 1 auto',
+          minHeight: 0,
+          minWidth: 0,
           overflow: 'hidden',
           display: 'flex',
           flexDirection: 'column',
+          boxSizing: 'border-box',
+          px: 2,
+          pb: 2,
         }}
       >
-        <Box sx={{ p: 2, backgroundColor: theme.palette.background.default }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-            <Typography variant="h3" component="h1" style={{ color: theme.palette.text.primary }}>
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            flex: '1 1 auto',
+            minHeight: 0,
+            minWidth: 0,
+            overflow: 'hidden',
+            border: `1px solid ${editorChrome.border}`,
+            borderRadius: 0,
+            backgroundColor: editorChrome.surface,
+          }}
+        >
+          <Box
+            sx={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              alignItems: 'center',
+              gap: 1,
+              flexShrink: 0,
+              p: 1.5,
+              borderBottom: `1px solid ${editorChrome.border}`,
+              backgroundColor: editorChrome.header,
+            }}
+          >
+            <Typography
+              variant="body2"
+              component="p"
+              noWrap
+              title={`${instrumentName} Live data script`}
+              sx={{ flex: '1 1 180px', minWidth: 0, fontWeight: 700, m: 0 }}
+            >
               {instrumentName} Live data script
             </Typography>
-            <Box sx={{ display: 'flex', gap: 1 }}>
-              {/* View Logs Button */}
-              <Button variant="contained" size="small" onClick={() => setShowLiveLogViewer(true)} sx={{ ml: 'auto' }}>
-                View Logs
-              </Button>
-              <LiveLogViewer
-                open={showLiveLogViewer}
-                onClose={() => setShowLiveLogViewer(false)}
-                instrumentName={instrumentName.toUpperCase() ?? 'null'}
-              />
+            <Box
+              role="group"
+              aria-label="Script actions"
+              sx={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: '1px',
+                ml: 'auto',
+                maxWidth: '100%',
+                border: `1px solid ${editorChrome.border}`,
+                backgroundColor: editorChrome.border,
+              }}
+            >
               <Button
-                variant="contained"
-                color="primary"
-                startIcon={saving ? <CircularProgress size={20} color="inherit" /> : <Save />}
+                variant="text"
+                startIcon={<DescriptionOutlined fontSize="small" />}
+                onClick={() => setShowLiveLogViewer(true)}
+                sx={actionButtonSx}
+              >
+                View logs
+              </Button>
+              <Button
+                variant="text"
+                startIcon={saving ? <CircularProgress size={20} color="inherit" /> : <Save fontSize="small" />}
                 onClick={handleSave}
                 disabled={loading || saving}
-                sx={{ minWidth: 120 }}
+                sx={actionButtonSx}
               >
-                {saving ? 'Saving...' : 'Save Script'}
+                {saving ? 'Saving...' : 'Save script'}
               </Button>
             </Box>
           </Box>
-
-          <Snackbar
-            open={snackbarOpen}
-            autoHideDuration={5000}
-            onClose={(event, reason) => {
-              if (reason !== 'clickaway') {
-                setSnackbarOpen(false);
-              }
+          <Box
+            sx={{
+              flex: '1 1 auto',
+              minHeight: 0,
+              minWidth: 0,
+              display: 'flex',
+              overflow: 'hidden',
+              '& .MuiCircularProgress-root': { color: editorChrome.accent },
             }}
-            anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
           >
-            {saveResult ? (
-              <Alert
-                onClose={() => setSnackbarOpen(false)}
-                severity={saveResult.success ? 'success' : 'error'}
-                sx={{ width: '100%' }}
+            {loading ? (
+              <Box
+                sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', width: '100%' }}
               >
-                {saveResult.message}
-              </Alert>
-            ) : undefined}
-          </Snackbar>
-        </Box>
-
-        <Box sx={{ flex: 1, borderTop: 3, borderColor: 'divider', display: 'flex', overflow: 'hidden' }}>
-          {loading ? (
-            <Box
-              sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', width: '100%' }}
-            >
-              <CircularProgress />
-            </Box>
-          ) : (
-            <>
+                <CircularProgress aria-label="Loading live data script" />
+              </Box>
+            ) : (
               <Box sx={{ flex: 1, height: '100%', minWidth: 0 }}>
                 <Editor
                   onChange={(newValue) => {
@@ -222,14 +253,41 @@ const LiveValueEditor: React.FC = () => {
                     minimap: { enabled: true },
                     fontSize: 14,
                     automaticLayout: true,
+                    padding: { top: 12, bottom: 12 },
+                    ariaLabel: `${instrumentName} live data script editor`,
                   }}
                 />
               </Box>
-            </>
-          )}
+            )}
+          </Box>
         </Box>
       </Box>
-    </>
+      <LiveLogViewer
+        open={showLiveLogViewer}
+        onClose={() => setShowLiveLogViewer(false)}
+        instrumentName={instrumentName.toUpperCase() ?? 'null'}
+      />
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={5000}
+        onClose={(event, reason) => {
+          if (reason !== 'clickaway') {
+            setSnackbarOpen(false);
+          }
+        }}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        {saveResult ? (
+          <Alert
+            onClose={() => setSnackbarOpen(false)}
+            severity={saveResult.success ? 'success' : 'error'}
+            sx={{ width: '100%', borderRadius: 0, border: '1px solid', borderColor: 'currentColor', boxShadow: 'none' }}
+          >
+            {saveResult.message}
+          </Alert>
+        ) : undefined}
+      </Snackbar>
+    </Box>
   );
 };
 

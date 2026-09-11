@@ -2,36 +2,79 @@ import {
   Box,
   Button,
   Checkbox,
-  Divider,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
   FormControl,
+  FormControlLabel,
   InputLabel,
   ListItemText,
   MenuItem,
   OutlinedInput,
   Select,
   SelectChangeEvent,
+  Switch,
   TextField,
+  Typography,
+  useTheme,
 } from '@mui/material';
+import { alpha, Theme } from '@mui/material/styles';
+import { SystemStyleObject } from '@mui/system';
 import { DatePicker } from '@mui/x-date-pickers';
 import dayjs from 'dayjs';
 import React, { FC, ReactElement, useEffect, useState, Dispatch, SetStateAction } from 'react';
 
-import { instruments } from '../../lib/instrumentData';
+import { getJobTableChromeColors, JOB_TABLE_TOOLBAR_CONTROL_HEIGHT } from './constants';
+import InstrumentFilter from './InstrumentFilter';
 import { JobQueryFilters, reductionStates } from '../../lib/types';
 
 const itemHeight = 48;
 const itemPaddingTop = 8;
+const getFilterPaperSx = (theme: Theme): SystemStyleObject<Theme> => {
+  const filterChrome = getJobTableChromeColors(theme.palette.mode);
+
+  return {
+    borderRadius: 0,
+    border: `1px solid ${filterChrome.border}`,
+    backgroundColor: filterChrome.surface,
+    backgroundImage: 'none',
+    color: filterChrome.text,
+  };
+};
+
 const menuProps = {
   PaperProps: {
     style: {
       maxHeight: itemHeight * 4.5 + itemPaddingTop,
       width: 250,
     },
+    sx: (theme: Theme) => {
+      const filterChrome = getJobTableChromeColors(theme.palette.mode);
+
+      return {
+        ...getFilterPaperSx(theme),
+        '& .MuiMenuItem-root': {
+          minHeight: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
+          py: 0.25,
+          '&:hover, &.Mui-focusVisible': { backgroundColor: filterChrome.hover },
+          '&.Mui-selected': { backgroundColor: alpha(filterChrome.accent, 0.12) },
+          '&.Mui-selected:hover': { backgroundColor: alpha(filterChrome.accent, 0.18) },
+        },
+        '& .MuiCheckbox-root': {
+          color: alpha(filterChrome.text, 0.7),
+          '&.Mui-checked': { color: filterChrome.accent },
+        },
+        '& .MuiListItemText-primary': { fontSize: '0.875rem' },
+      };
+    },
   },
+};
+
+const datePickerSlotProps = {
+  textField: { size: 'small' as const, fullWidth: true, error: false },
+  desktopPaper: { sx: getFilterPaperSx },
+  mobilePaper: { sx: getFilterPaperSx },
 };
 
 // Hook for page-resetting when a filter is changed
@@ -65,15 +108,15 @@ const DatePickerPair: FC<{
   beforeValue: string | null;
   afterValue: string | null;
 }> = ({ label, handleAfterChange, handleBeforeChange, beforeValue, afterValue }) => (
-  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, alignItems: 'center' }}>
+  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, minWidth: 0 }}>
     <DatePicker
-      slotProps={{ textField: { size: 'small', sx: { width: 175 }, error: false } }}
+      slotProps={datePickerSlotProps}
       label={`${label} after`}
       onChange={(date) => handleAfterChange(date?.toISOString() ?? null)}
       value={dayjs(afterValue)}
     />
     <DatePicker
-      slotProps={{ textField: { size: 'small', sx: { width: 175 }, error: false } }}
+      slotProps={datePickerSlotProps}
       label={`${label} before`}
       onChange={(date) => handleBeforeChange(date?.toISOString() ?? null)}
       value={dayjs(beforeValue)}
@@ -88,7 +131,7 @@ const MultipleSelectCheckmarks: FC<{
   handleChange: (items: string[]) => void;
 }> = ({ name, items, selectedItems, handleChange }): ReactElement => {
   return (
-    <FormControl sx={{ width: 175 }} size={'small'}>
+    <FormControl fullWidth size={'small'}>
       <InputLabel id="demo-multiple-checkbox-label">{name}</InputLabel>
       <Select
         labelId="demo-multiple-checkbox-label"
@@ -127,6 +170,9 @@ const FilterContainer: React.FC<{
   handleFiltersChange: (filters: JobQueryFilters) => void;
   resetPageNumber: () => void;
   appliedFilters: JobQueryFilters;
+  showAsUserControl: boolean;
+  asUser: boolean;
+  setAsUser: (asUser: boolean) => void;
 }> = ({
   visible,
   handleFiltersClose,
@@ -134,7 +180,20 @@ const FilterContainer: React.FC<{
   handleFiltersChange,
   resetPageNumber,
   appliedFilters,
+  showAsUserControl,
+  asUser,
+  setAsUser,
 }): ReactElement => {
+  const theme = useTheme();
+  const filterChrome = getJobTableChromeColors(theme.palette.mode);
+  const sectionSx = { minWidth: 0, border: `1px solid ${filterChrome.border}` };
+  const sectionHeadingSx = {
+    px: 1.5,
+    py: 1,
+    borderBottom: `1px solid ${filterChrome.border}`,
+    backgroundColor: filterChrome.header,
+    fontWeight: 700,
+  };
   const [selectedInstruments, setSelectedInstruments, setSelectedInstrumentsSilently] = useFilterWithReset<string[]>(
     [],
     resetPageNumber
@@ -199,6 +258,7 @@ const FilterContainer: React.FC<{
   const [debouncedExperimentNumberBefore, setDebouncedExperimentNumberBefore] = useState<number | null>(null);
 
   const previousAppliedFiltersRef = React.useRef<string>('');
+  const syncingFromAppliedFiltersRef = React.useRef(false);
 
   // Debounce filters so API isn't spammed while typing
   useEffect(() => {
@@ -229,6 +289,7 @@ const FilterContainer: React.FC<{
       return;
     }
 
+    syncingFromAppliedFiltersRef.current = true;
     previousAppliedFiltersRef.current = serializedFilters;
 
     const instruments = Array.isArray(appliedFilters.instrument_in) ? [...appliedFilters.instrument_in] : [];
@@ -284,6 +345,11 @@ const FilterContainer: React.FC<{
 
   // Build the payload for the API whenever any debounced field changes
   useEffect(() => {
+    if (syncingFromAppliedFiltersRef.current) {
+      syncingFromAppliedFiltersRef.current = false;
+      return;
+    }
+
     const filters: JobQueryFilters = Object();
     if (selectedInstruments) {
       filters.instrument_in = selectedInstruments.length !== 0 ? selectedInstruments : undefined;
@@ -331,6 +397,7 @@ const FilterContainer: React.FC<{
 
   const clearAndCloseFilters = (): void => {
     handleFiltersChange(Object());
+    setAsUser(false);
     setSelectedInstruments([]);
     setSelectedStates([]);
     setExperimentNumberIn([]);
@@ -356,94 +423,171 @@ const FilterContainer: React.FC<{
   };
 
   return (
-    <Dialog open={visible} onClose={handleFiltersClose} maxWidth="lg" fullWidth>
-      <DialogTitle>Filters</DialogTitle>
-      <DialogContent dividers>
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
-          <Box display={'flex'} width={'100%'} justifyContent={'space-between'} gap={2} sx={{ flexWrap: 'wrap' }}>
-            <Box display={'flex'} flexDirection={'column'} gap={1}>
-              <span>General</span>
-              <Box display={'flex'} gap={1} sx={{ flexWrap: 'wrap' }}>
-                <MultipleSelectCheckmarks
-                  name={'Reduction state'}
-                  items={(reductionStates as unknown as string[]) ?? []}
-                  selectedItems={selectedStates}
-                  handleChange={setSelectedStates}
-                />
-
-                <TextField
-                  size={'small'}
-                  sx={{ width: 175 }}
-                  label={'Filename'}
-                  value={filename ?? ''}
-                  placeholder={'loq123.nxs'}
-                  onChange={(event) => setFilename(event.target.value)}
-                />
-                <TextField
-                  size={'small'}
-                  sx={{ width: 175 }}
-                  label={'Title'}
-                  placeholder={'Title'}
-                  value={title ?? ''}
-                  onChange={(event) => setTitle(event.target.value)}
-                />
-
-                {showInstrumentFilter && (
-                  <MultipleSelectCheckmarks
-                    selectedItems={selectedInstruments ?? []}
-                    name={'Instruments'}
-                    handleChange={setSelectedInstruments}
-                    items={instruments.map((instrument) => instrument.name)}
-                  />
-                )}
-              </Box>
-            </Box>
-            <Divider orientation={'vertical'} flexItem />
-            <Box display={'flex'} flexDirection={'column'} gap={1}>
-              <span>Experiment numbers</span>
-              <Box display={'flex'} gap={1} sx={{ flexWrap: 'wrap' }}>
-                <TextField
-                  size={'small'}
-                  sx={{ width: 175 }}
-                  label={'Search'}
-                  value={experimentNumberIn ?? ''}
-                  placeholder={'12345, 54321'}
-                  onChange={(event) => {
-                    try {
-                      if (event.target.value === '') {
-                        setExperimentNumberIn([]);
-                      }
-                      setExperimentNumberIn(event.target.value.replace(' ', '').split(','));
-                    } catch {
-                      setExperimentNumberIn([]);
-                    }
+    <Dialog open={visible} onClose={handleFiltersClose} maxWidth="lg" fullWidth PaperProps={{ sx: getFilterPaperSx }}>
+      <DialogTitle
+        sx={{
+          px: 2,
+          py: 1.25,
+          backgroundColor: filterChrome.header,
+          fontSize: '1rem',
+          fontWeight: 700,
+        }}
+      >
+        Filters
+      </DialogTitle>
+      <DialogContent
+        dividers
+        sx={{
+          p: { xs: 1.5, sm: 2 },
+          borderColor: filterChrome.border,
+          '& .MuiFormControl-root': { minWidth: 0 },
+          '& .MuiOutlinedInput-root': {
+            borderRadius: 0,
+            minHeight: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
+            backgroundColor: filterChrome.surface,
+            color: filterChrome.text,
+            fontSize: '0.875rem',
+            '& fieldset': { borderColor: filterChrome.border },
+            '&:hover fieldset, &.Mui-focused fieldset': { borderColor: filterChrome.accent },
+          },
+          '& .MuiInputLabel-root': {
+            color: alpha(filterChrome.text, 0.75),
+            '&.Mui-focused': { color: filterChrome.accent },
+          },
+          '& .MuiSelect-icon, & .MuiIconButton-root': { color: filterChrome.accent },
+          '& .MuiIconButton-root': {
+            borderRadius: 0,
+            '&:hover': { backgroundColor: filterChrome.hover },
+          },
+        }}
+      >
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 2fr) minmax(0, 1fr)' },
+            gap: 1.5,
+          }}
+        >
+          <Box sx={sectionSx}>
+            <Typography component="h3" variant="body2" sx={sectionHeadingSx}>
+              General
+            </Typography>
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))' },
+                gap: 1.5,
+                p: 1.5,
+              }}
+            >
+              {showAsUserControl && (
+                <FormControlLabel
+                  control={
+                    <Switch
+                      size="small"
+                      checked={asUser}
+                      onChange={(_event, checked) => {
+                        setAsUser(checked);
+                        resetPageNumber();
+                      }}
+                      inputProps={{ 'aria-label': 'View as user' }}
+                    />
+                  }
+                  label="View as user"
+                  sx={{
+                    gridColumn: '1 / -1',
+                    m: 0,
+                    minHeight: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
+                    gap: 0.75,
+                    '& .MuiFormControlLabel-label': { fontSize: '0.875rem' },
+                    '& .MuiSwitch-switchBase.Mui-checked': { color: filterChrome.accent },
+                    '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: filterChrome.accent },
                   }}
                 />
-                <TextField
-                  size={'small'}
-                  inputMode={'numeric'}
-                  sx={{ width: 175 }}
-                  label={'After'}
-                  placeholder={'12345'}
-                  value={experimentNumberAfter ?? ''}
-                  onChange={(event) => setExperimentNumberAfter(parseInt(event.target.value, 10))}
-                />
-                <TextField
-                  size={'small'}
-                  inputMode={'numeric'}
-                  sx={{ width: 175 }}
-                  label={'Before'}
-                  placeholder={'54321'}
-                  value={experimentNumberBefore ?? ''}
-                  onChange={(event) => setExperimentNumberBefore(parseInt(event.target.value, 10))}
-                />
-              </Box>
+              )}
+              <MultipleSelectCheckmarks
+                name={'Reduction state'}
+                items={(reductionStates as unknown as string[]) ?? []}
+                selectedItems={selectedStates}
+                handleChange={setSelectedStates}
+              />
+
+              <TextField
+                size={'small'}
+                fullWidth
+                label={'Filename'}
+                value={filename ?? ''}
+                placeholder={'loq123.nxs'}
+                onChange={(event) => setFilename(event.target.value)}
+              />
+              <TextField
+                size={'small'}
+                fullWidth
+                label={'Title'}
+                placeholder={'Title'}
+                value={title ?? ''}
+                onChange={(event) => setTitle(event.target.value)}
+              />
+
+              {showInstrumentFilter && (
+                <InstrumentFilter selectedInstruments={selectedInstruments} onChange={setSelectedInstruments} />
+              )}
             </Box>
           </Box>
-          <Divider orientation={'horizontal'} flexItem />
-          <Box display={'flex'} gap={1} flexDirection={'column'}>
-            <span>Dates</span>
-            <Box display={'flex'} gap={1} sx={{ flexWrap: 'wrap' }}>
+          <Box sx={sectionSx}>
+            <Typography component="h3" variant="body2" sx={sectionHeadingSx}>
+              Experiment numbers
+            </Typography>
+            <Box sx={{ display: 'grid', gap: 1.5, p: 1.5 }}>
+              <TextField
+                size={'small'}
+                fullWidth
+                label={'Search'}
+                value={experimentNumberIn ?? ''}
+                placeholder={'12345, 54321'}
+                onChange={(event) => {
+                  try {
+                    if (event.target.value === '') {
+                      setExperimentNumberIn([]);
+                    }
+                    setExperimentNumberIn(event.target.value.replace(' ', '').split(','));
+                  } catch {
+                    setExperimentNumberIn([]);
+                  }
+                }}
+              />
+              <TextField
+                size={'small'}
+                inputMode={'numeric'}
+                fullWidth
+                label={'After'}
+                placeholder={'12345'}
+                value={experimentNumberAfter ?? ''}
+                onChange={(event) => setExperimentNumberAfter(parseInt(event.target.value, 10))}
+              />
+              <TextField
+                size={'small'}
+                inputMode={'numeric'}
+                fullWidth
+                label={'Before'}
+                placeholder={'54321'}
+                value={experimentNumberBefore ?? ''}
+                onChange={(event) => setExperimentNumberBefore(parseInt(event.target.value, 10))}
+              />
+            </Box>
+          </Box>
+          <Box sx={{ ...sectionSx, gridColumn: '1 / -1' }}>
+            <Typography component="h3" variant="body2" sx={sectionHeadingSx}>
+              Dates
+            </Typography>
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))', md: 'repeat(4, minmax(0, 1fr))' },
+                gap: 1.5,
+                p: 1.5,
+              }}
+            >
               <DatePickerPair
                 handleBeforeChange={setRunStartBefore}
                 handleAfterChange={setRunStartAfter}
@@ -476,11 +620,28 @@ const FilterContainer: React.FC<{
           </Box>
         </Box>
       </DialogContent>
-      <DialogActions>
-        <Button variant="outlined" onClick={handleFiltersClose}>
+      <DialogActions
+        disableSpacing
+        sx={{
+          p: 0,
+          '& .MuiButton-root': {
+            minWidth: 96,
+            minHeight: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
+            px: 2,
+            borderRadius: 0,
+            borderLeft: `1px solid ${filterChrome.border}`,
+            color: filterChrome.accent,
+            textTransform: 'none',
+            boxShadow: 'none',
+            '&:hover': { backgroundColor: filterChrome.hover },
+            '&:focus-visible': { outline: `2px solid ${filterChrome.accent}`, outlineOffset: -2 },
+          },
+        }}
+      >
+        <Button variant="text" onClick={handleFiltersClose}>
           Close
         </Button>
-        <Button variant="contained" color="warning" sx={{ width: 150 }} onClick={clearAndCloseFilters}>
+        <Button variant="text" onClick={clearAndCloseFilters}>
           Clear
         </Button>
       </DialogActions>

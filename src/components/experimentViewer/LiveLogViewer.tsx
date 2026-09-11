@@ -16,16 +16,12 @@ import {
   Typography,
   useTheme,
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import React, { ReactNode, useEffect, useRef, useState } from 'react';
 import Draggable from 'react-draggable';
 
 import { useLiveLogsSSE } from '../../lib/useLiveLogs';
-
-interface LiveLogViewerProps {
-  open: boolean;
-  onClose: () => void;
-  instrumentName: string;
-}
+import { getJobTableChromeColors, JOB_TABLE_TOOLBAR_CONTROL_HEIGHT } from '../jobs/constants';
 
 interface LiveLogViewerProps {
   open: boolean;
@@ -47,6 +43,8 @@ const WaitingDots = (): ReactNode => {
 };
 
 function PaperComponent(props: PaperProps): ReactNode {
+  const theme = useTheme();
+  const chrome = getJobTableChromeColors(theme.palette.mode);
   return (
     // Add the cancel prop to ignore the protected areas
     <Draggable handle=".drag-handle" cancel=".no-drag">
@@ -56,10 +54,28 @@ function PaperComponent(props: PaperProps): ReactNode {
           pointerEvents: 'auto', // Let the Paper catch all clicks, including the resize grabber
           resize: 'both',
           overflow: 'hidden',
-          minWidth: '450px',
-          minHeight: '300px',
+          width: 760,
+          maxWidth: 'calc(100vw - 32px)',
+          minWidth: 'min(450px, calc(100vw - 32px))',
+          minHeight: 'min(300px, calc(100dvh - 32px))',
+          maxHeight: 'calc(100dvh - 32px)',
+          m: 2,
           display: 'flex',
           flexDirection: 'column',
+          border: `1px solid ${chrome.border}`,
+          borderRadius: 0,
+          backgroundColor: chrome.surface,
+          backgroundImage: 'none',
+          color: chrome.text,
+          boxShadow: 'none',
+          '& .MuiCircularProgress-root': { color: chrome.accent },
+          '& .MuiButton-root, & .MuiIconButton-root': {
+            minHeight: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
+            borderRadius: 0,
+            boxShadow: 'none',
+            textTransform: 'none',
+            '&:focus-visible': { outline: `2px solid ${chrome.accent}`, outlineOffset: -2 },
+          },
           ...props.sx,
         }}
       />
@@ -68,6 +84,7 @@ function PaperComponent(props: PaperProps): ReactNode {
 }
 export const LiveLogViewer: React.FC<LiveLogViewerProps> = ({ open, onClose, instrumentName }) => {
   const theme = useTheme();
+  const chrome = getJobTableChromeColors(theme.palette.mode);
   const logsEndRef = useRef<HTMLDivElement>(null);
   const logContainerRef = useRef<HTMLDivElement>(null);
   const lastScrollTopRef = useRef<number>(0);
@@ -116,9 +133,9 @@ export const LiveLogViewer: React.FC<LiveLogViewerProps> = ({ open, onClose, ins
       case 'INFO':
         return theme.palette.info.main;
       case 'DEBUG':
-        return theme.palette.text.secondary;
+        return alpha(chrome.text, 0.75);
       default:
-        return theme.palette.text.primary;
+        return chrome.text;
     }
   };
 
@@ -146,30 +163,47 @@ export const LiveLogViewer: React.FC<LiveLogViewerProps> = ({ open, onClose, ins
           cursor: 'move',
           pointerEvents: 'auto',
           display: 'flex',
+          flexWrap: 'wrap',
+          gap: 1,
+          flexShrink: 0,
           justifyContent: 'space-between',
           alignItems: 'center',
-          bgcolor: theme.palette.mode === 'dark' ? 'grey.900' : 'grey.100',
-          borderBottom: `1px solid ${theme.palette.divider}`,
-          p: 1.5,
+          bgcolor: chrome.header,
+          borderBottom: `1px solid ${chrome.border}`,
+          px: 1.5,
+          py: 0.5,
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Typography variant="subtitle1" fontWeight="bold">
-            Live Logs: {instrumentName}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
+          <Typography component="span" variant="body2" fontWeight={700} noWrap>
+            Live logs: {instrumentName}
           </Typography>
           {!isConnected && !error && <CircularProgress size={16} />}
         </Box>
 
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Box className="no-drag" sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: 'auto' }}>
           {/* Timestamp Toggle */}
           <FormControlLabel
             control={
-              <Switch size="small" checked={showTimestamps} onChange={(e) => setShowTimestamps(e.target.checked)} />
+              <Switch
+                size="small"
+                checked={showTimestamps}
+                onChange={(e) => setShowTimestamps(e.target.checked)}
+                sx={{
+                  '& .MuiSwitch-switchBase.Mui-checked': { color: chrome.accent },
+                  '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: chrome.accent },
+                }}
+              />
             }
             label={<Typography variant="caption">Timestamps</Typography>}
             sx={{ m: 0 }}
           />
-          <IconButton aria-label="close" onClick={onClose} size="small">
+          <IconButton
+            aria-label="Close live logs"
+            onClick={onClose}
+            size="small"
+            sx={{ width: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT, color: chrome.accent, '&:hover': { bgcolor: chrome.hover } }}
+          >
             <CloseIcon fontSize="small" />
           </IconButton>
         </Box>
@@ -179,11 +213,12 @@ export const LiveLogViewer: React.FC<LiveLogViewerProps> = ({ open, onClose, ins
       <DialogContent
         sx={{
           pointerEvents: 'auto',
-          bgcolor: theme.palette.mode === 'dark' ? '#121212' : '#fafafa',
+          bgcolor: chrome.surface,
           p: 0,
           display: 'flex',
           flexDirection: 'column',
           flexGrow: 1, // Ensures this space fills when the user resizes the window
+          minHeight: 0,
           height: '400px', // Initial height
           position: 'relative',
         }}
@@ -193,7 +228,10 @@ export const LiveLogViewer: React.FC<LiveLogViewerProps> = ({ open, onClose, ins
           onScroll={handleScroll}
           sx={{
             flexGrow: 1,
+            minHeight: 0,
             overflowY: 'auto',
+            scrollbarWidth: 'thin',
+            scrollbarColor: `${chrome.border} ${chrome.header}`,
             p: 2,
             fontFamily: 'monospace',
             fontSize: '0.85rem',
@@ -208,7 +246,7 @@ export const LiveLogViewer: React.FC<LiveLogViewerProps> = ({ open, onClose, ins
           )}
 
           {validLogs.length === 0 && isConnected && !error && (
-            <Typography variant="body2" color="textSecondary" sx={{ fontStyle: 'italic' }}>
+            <Typography variant="body2" sx={{ color: alpha(chrome.text, 0.75), fontStyle: 'italic' }}>
               Connected. <WaitingDots />
             </Typography>
           )}
@@ -227,7 +265,7 @@ export const LiveLogViewer: React.FC<LiveLogViewerProps> = ({ open, onClose, ins
                 <Box
                   component="span"
                   sx={{
-                    color: theme.palette.text.secondary,
+                    color: alpha(chrome.text, 0.75),
                     flexShrink: 0,
                     width: '9ch', // Safely accommodates HH:MM:SS AM/PM
                     textAlign: 'left',
@@ -253,7 +291,7 @@ export const LiveLogViewer: React.FC<LiveLogViewerProps> = ({ open, onClose, ins
               <Box
                 component="span"
                 sx={{
-                  color: theme.palette.text.primary,
+                  color: chrome.text,
                   textAlign: 'left',
                   flexGrow: 1, // Takes up all remaining space
                 }}
@@ -275,18 +313,20 @@ export const LiveLogViewer: React.FC<LiveLogViewerProps> = ({ open, onClose, ins
               bottom: 16,
               left: '50%',
               transform: 'translateX(-50%)',
-              borderRadius: '20px',
+              borderRadius: 0,
+              border: `1px solid ${chrome.accent}`,
               textTransform: 'none',
-              bgcolor: theme.palette.primary.main,
-              color: theme.palette.primary.contrastText,
+              bgcolor: chrome.accent,
+              color: chrome.accentContrast,
               '&:hover': {
-                bgcolor: theme.palette.primary.dark,
+                bgcolor: chrome.accent,
+                boxShadow: 'none',
               },
-              boxShadow: theme.shadows[4],
+              boxShadow: 'none',
               zIndex: 10,
             }}
           >
-            Resume Autoscroll
+            Resume autoscroll
           </Button>
         )}
       </DialogContent>
@@ -298,8 +338,9 @@ export const LiveLogViewer: React.FC<LiveLogViewerProps> = ({ open, onClose, ins
           cursor: 'move',
           pointerEvents: 'auto',
           height: '24px',
-          bgcolor: theme.palette.mode === 'dark' ? 'grey.900' : 'grey.100',
-          borderTop: `1px solid ${theme.palette.divider}`,
+          flexShrink: 0,
+          bgcolor: chrome.header,
+          borderTop: `1px solid ${chrome.border}`,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',

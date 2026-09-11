@@ -21,12 +21,16 @@ import {
   Select,
   TextField,
   Typography,
+  useTheme,
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import axios from 'axios';
 import React from 'react';
 
 import { fiaApi } from '../../lib/api';
 import { formatUtcForLocale } from '../../lib/timezone';
+import { getJobTableChromeColors, JOB_TABLE_TOOLBAR_CONTROL_HEIGHT } from '../jobs/constants';
+import { viewerSidebarSx } from '../viewer/layout';
 
 import type { Job, JobQueryFilters } from '../../lib/types';
 
@@ -36,7 +40,7 @@ const PAGE_REQUEST_SIZE = PAGE_SIZE + 1;
 type SearchType = 'experiment' | 'filename';
 
 type ActiveSearch = {
-  type: SearchType;
+  type: SearchType | 'all';
   value: string;
 };
 
@@ -48,10 +52,10 @@ type JobGroup = {
 };
 
 export type ImatStackJobTreeProps = {
-  autoSelect: boolean;
   selectedJobId: number | null;
   selectedJob: Job | null;
-  onSelectJob: (job: Job, replace?: boolean) => void;
+  onSelectJob: (job: Job) => void;
+  onClear: () => void;
 };
 
 const getRunStartTime = (job: Job): number => {
@@ -112,11 +116,13 @@ const mergeUniqueJobs = (currentJobs: Job[], nextJobs: Job[]): Job[] => {
   return Array.from(jobsById.values()).sort((left, right) => getRunStartTime(right) - getRunStartTime(left));
 };
 
-const ImatStackJobTree: React.FC<ImatStackJobTreeProps> = ({ autoSelect, selectedJobId, selectedJob, onSelectJob }) => {
+const ImatStackJobTree: React.FC<ImatStackJobTreeProps> = ({ selectedJobId, selectedJob, onSelectJob, onClear }) => {
+  const theme = useTheme();
+  const viewerChrome = getJobTableChromeColors(theme.palette.mode);
   const [jobs, setJobs] = React.useState<Job[]>([]);
   const [offset, setOffset] = React.useState(0);
   const [hasMore, setHasMore] = React.useState(false);
-  const [loading, setLoading] = React.useState(true);
+  const [loading, setLoading] = React.useState(false);
   const [loadingMore, setLoadingMore] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [retryKey, setRetryKey] = React.useState(0);
@@ -130,13 +136,19 @@ const ImatStackJobTree: React.FC<ImatStackJobTreeProps> = ({ autoSelect, selecte
   React.useEffect(() => {
     const controller = new AbortController();
     loadMoreControllerRef.current?.abort();
+    setLoadingMore(false);
+    setError(null);
+    setJobs([]);
+    setOffset(0);
+    setHasMore(false);
+
+    if (!activeSearch) {
+      setLoading(false);
+      return () => controller.abort();
+    }
 
     const fetchFirstPage = async (): Promise<void> => {
       setLoading(true);
-      setError(null);
-      setJobs([]);
-      setOffset(0);
-      setHasMore(false);
 
       try {
         const response = await fiaApi.get<Job[]>('/instrument/IMAT/jobs', {
@@ -156,7 +168,7 @@ const ImatStackJobTree: React.FC<ImatStackJobTreeProps> = ({ autoSelect, selecte
         setOffset(visibleJobs.length);
         setHasMore(response.data.length > PAGE_SIZE);
       } catch (err: unknown) {
-        if (axios.isAxiosError(err) && err.code === 'ERR_CANCELED') return;
+        if (controller.signal.aborted || (axios.isAxiosError(err) && err.code === 'ERR_CANCELED')) return;
         setError('Unable to load IMAT stacks.');
       } finally {
         if (!controller.signal.aborted) setLoading(false);
@@ -166,12 +178,6 @@ const ImatStackJobTree: React.FC<ImatStackJobTreeProps> = ({ autoSelect, selecte
     void fetchFirstPage();
     return () => controller.abort();
   }, [activeSearch, retryKey]);
-
-  React.useEffect(() => {
-    if (autoSelect && !loading && selectedJobId === null && jobs.length > 0) {
-      onSelectJob(jobs[0], true);
-    }
-  }, [autoSelect, jobs, loading, onSelectJob, selectedJobId]);
 
   React.useEffect(() => {
     if (!selectedJob) return;
@@ -215,7 +221,8 @@ const ImatStackJobTree: React.FC<ImatStackJobTreeProps> = ({ autoSelect, selecte
     const value = searchValue.trim();
 
     if (!value) {
-      setSearchError('Enter a search value.');
+      setSearchError(null);
+      setActiveSearch({ type: 'all', value: '' });
       return;
     }
 
@@ -236,6 +243,8 @@ const ImatStackJobTree: React.FC<ImatStackJobTreeProps> = ({ autoSelect, selecte
     setSearchValue('');
     setSearchError(null);
     setActiveSearch(null);
+    setExpandedExperiments(new Set());
+    onClear();
   };
 
   const handleLoadMore = async (): Promise<void> => {
@@ -263,7 +272,7 @@ const ImatStackJobTree: React.FC<ImatStackJobTreeProps> = ({ autoSelect, selecte
       setOffset((current) => current + visibleJobs.length);
       setHasMore(response.data.length > PAGE_SIZE);
     } catch (err: unknown) {
-      if (axios.isAxiosError(err) && err.code === 'ERR_CANCELED') return;
+      if (controller.signal.aborted || (axios.isAxiosError(err) && err.code === 'ERR_CANCELED')) return;
       setError('Unable to load more IMAT stacks.');
     } finally {
       if (!controller.signal.aborted) setLoadingMore(false);
@@ -274,25 +283,55 @@ const ImatStackJobTree: React.FC<ImatStackJobTreeProps> = ({ autoSelect, selecte
     <Paper
       component="aside"
       aria-label="IMAT stack jobs"
+      square
       elevation={0}
       sx={{
-        width: { xs: '100%', md: 300 },
-        minWidth: { md: 300 },
-        height: { xs: 320, md: 'auto' },
-        maxHeight: { xs: 320, md: 'none' },
-        border: 1,
-        borderColor: 'divider',
+        ...viewerSidebarSx,
+        height: { xs: 372, md: 'auto' },
+        maxHeight: { xs: 372, md: 'none' },
+        border: `1px solid ${viewerChrome.border}`,
+        backgroundColor: viewerChrome.surface,
+        color: viewerChrome.text,
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
+        '& .MuiButton-root': {
+          minHeight: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
+          borderRadius: 0,
+          color: viewerChrome.accent,
+          textTransform: 'none',
+          boxShadow: 'none',
+          '&:hover': { backgroundColor: viewerChrome.hover },
+          '&:focus-visible': { outline: `2px solid ${viewerChrome.accent}`, outlineOffset: -2 },
+          '&.Mui-disabled': { color: alpha(viewerChrome.text, 0.42) },
+        },
+        '& .MuiOutlinedInput-root': {
+          borderRadius: 0,
+          minHeight: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
+          backgroundColor: viewerChrome.surface,
+          color: viewerChrome.text,
+          fontSize: '0.875rem',
+          '&:not(.Mui-error) fieldset': { borderColor: viewerChrome.border },
+          '&:not(.Mui-error):hover fieldset, &.Mui-focused:not(.Mui-error) fieldset': {
+            borderColor: viewerChrome.accent,
+          },
+        },
+        '& .MuiInputLabel-root:not(.Mui-error)': {
+          color: alpha(viewerChrome.text, 0.75),
+          '&.Mui-focused': { color: viewerChrome.accent },
+        },
+        '& .MuiSelect-icon, & .MuiCircularProgress-root': { color: viewerChrome.accent },
+        '& .MuiListItemText-secondary': { color: alpha(viewerChrome.text, 0.75) },
+        '& .MuiAlert-root': { borderRadius: 0 },
       }}
     >
-      <Box component="form" onSubmit={handleSearch} sx={{ p: 1.5, borderBottom: 1, borderColor: 'divider' }}>
-        <Typography variant="subtitle1" component="h2" sx={{ fontWeight: 600, mb: 1 }}>
-          Stacks
-        </Typography>
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          <FormControl size="small" sx={{ minWidth: 112 }}>
+      <Box
+        component="form"
+        onSubmit={handleSearch}
+        sx={{ pt: 1.5, borderBottom: `1px solid ${viewerChrome.border}`, flexShrink: 0 }}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, px: 1.5 }}>
+          <FormControl fullWidth size="small">
             <InputLabel id="imat-stack-search-type-label">Search by</InputLabel>
             <Select
               labelId="imat-stack-search-type-label"
@@ -300,39 +339,89 @@ const ImatStackJobTree: React.FC<ImatStackJobTreeProps> = ({ autoSelect, selecte
               label="Search by"
               onChange={(event) => {
                 setSearchType(event.target.value as SearchType);
+                setSearchValue('');
                 setSearchError(null);
               }}
+              MenuProps={{
+                PaperProps: {
+                  sx: {
+                    borderRadius: 0,
+                    border: `1px solid ${viewerChrome.border}`,
+                    backgroundColor: viewerChrome.surface,
+                    backgroundImage: 'none',
+                    color: viewerChrome.text,
+                    '& .MuiMenuItem-root': {
+                      minHeight: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
+                      fontSize: '0.875rem',
+                      '&:hover, &.Mui-focusVisible': { backgroundColor: viewerChrome.hover },
+                      '&.Mui-selected': { backgroundColor: alpha(viewerChrome.accent, 0.12) },
+                      '&.Mui-selected:hover': { backgroundColor: alpha(viewerChrome.accent, 0.18) },
+                    },
+                  },
+                },
+              }}
             >
-              <MenuItem value="experiment">Experiment</MenuItem>
+              <MenuItem value="experiment">Experiment number</MenuItem>
               <MenuItem value="filename">Run/file</MenuItem>
             </Select>
           </FormControl>
           <TextField
+            fullWidth
+            autoComplete="off"
+            type={searchType === 'experiment' ? 'number' : 'text'}
             value={searchValue}
             onChange={(event) => setSearchValue(event.target.value)}
             size="small"
-            label={searchType === 'experiment' ? 'Number' : 'Name'}
             error={Boolean(searchError)}
-            inputProps={{ 'aria-label': 'Stack search value' }}
-            sx={{ minWidth: 0, flex: 1 }}
+            inputProps={{
+              'aria-label': 'Stack search value',
+              ...(searchType === 'experiment' ? { min: 1, step: 1 } : {}),
+            }}
+            sx={{ minWidth: 0 }}
           />
         </Box>
         {searchError && (
-          <Typography variant="caption" color="error" role="alert">
+          <Typography variant="caption" color="error" role="alert" sx={{ display: 'block', px: 1.5 }}>
             {searchError}
           </Typography>
         )}
-        <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
-          <Button type="submit" size="small" variant="contained" startIcon={<Search />} disabled={loading}>
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            mt: 1.5,
+            borderTop: `1px solid ${viewerChrome.border}`,
+          }}
+        >
+          <Button
+            type="submit"
+            size="small"
+            variant="text"
+            startIcon={<Search />}
+            disabled={loading}
+            sx={{ borderRight: `1px solid ${viewerChrome.border}` }}
+          >
             Search
           </Button>
-          <Button size="small" onClick={handleClearSearch} disabled={loading || (!activeSearch && !searchValue)}>
+          <Button
+            size="small"
+            onClick={handleClearSearch}
+            disabled={!activeSearch && !searchValue && selectedJobId === null && !selectedJob}
+          >
             Clear
           </Button>
         </Box>
       </Box>
 
-      <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+      <Box
+        sx={{
+          flex: 1,
+          minHeight: 0,
+          overflowY: 'auto',
+          scrollbarWidth: 'thin',
+          scrollbarColor: `${viewerChrome.border} ${viewerChrome.header}`,
+        }}
+      >
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
             <CircularProgress size={24} aria-label="Loading IMAT stacks" />
@@ -351,9 +440,13 @@ const ImatStackJobTree: React.FC<ImatStackJobTreeProps> = ({ autoSelect, selecte
             </Alert>
           </Box>
         ) : jobGroups.length === 0 ? (
-          <Typography variant="body2" color="text.secondary" sx={{ p: 2 }}>
-            {activeSearch ? 'No successful IMAT stacks match this search.' : 'No successful IMAT stacks found.'}
-          </Typography>
+          activeSearch ? (
+            <Typography variant="body2" sx={{ p: 2, color: alpha(viewerChrome.text, 0.75) }}>
+              {activeSearch.type === 'all'
+                ? 'No successful IMAT stacks found.'
+                : 'No successful IMAT stacks match this search.'}
+            </Typography>
+          ) : null
         ) : (
           <List component="nav" aria-label="Successful IMAT stacks" disablePadding>
             {jobGroups.map((group) => {
@@ -367,13 +460,21 @@ const ImatStackJobTree: React.FC<ImatStackJobTreeProps> = ({ autoSelect, selecte
                     onClick={() => handleToggleExperiment(group.key)}
                     aria-expanded={isExpanded}
                     aria-controls={`imat-experiment-${group.key}`}
-                    sx={{ py: 0.75, px: 1.5 }}
+                    sx={{
+                      py: 0.75,
+                      px: 1.5,
+                      minHeight: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
+                      borderBottom: `1px solid ${viewerChrome.border}`,
+                      backgroundColor: viewerChrome.header,
+                      '&:hover, &.Mui-focusVisible': { backgroundColor: viewerChrome.hover },
+                      '&:focus-visible': { outline: `2px solid ${viewerChrome.accent}`, outlineOffset: -2 },
+                    }}
                   >
-                    <ListItemIcon sx={{ minWidth: 32 }}>
+                    <ListItemIcon sx={{ minWidth: 28, color: viewerChrome.text }}>
                       {isExpanded ? <ExpandMore fontSize="small" /> : <ChevronRight fontSize="small" />}
                     </ListItemIcon>
-                    <ListItemIcon sx={{ minWidth: 32 }}>
-                      {isExpanded ? <FolderOpen fontSize="small" color="primary" /> : <Folder fontSize="small" />}
+                    <ListItemIcon sx={{ minWidth: 28, color: viewerChrome.accent }}>
+                      {isExpanded ? <FolderOpen fontSize="small" /> : <Folder fontSize="small" />}
                     </ListItemIcon>
                     <ListItemText
                       primary={groupLabel}
@@ -395,10 +496,32 @@ const ImatStackJobTree: React.FC<ImatStackJobTreeProps> = ({ autoSelect, selecte
                             selected={isSelected}
                             aria-current={isSelected ? 'true' : undefined}
                             onClick={() => onSelectJob(job)}
-                            sx={{ pl: 6.5, pr: 1.5, py: 0.75, alignItems: 'flex-start' }}
+                            sx={{
+                              pl: 5,
+                              pr: 1.5,
+                              py: 0.75,
+                              alignItems: 'flex-start',
+                              borderBottom: `1px solid ${viewerChrome.border}`,
+                              '&:hover, &.Mui-focusVisible': { backgroundColor: viewerChrome.hover },
+                              '&:focus-visible': { outline: `2px solid ${viewerChrome.accent}`, outlineOffset: -2 },
+                              '&.Mui-selected': {
+                                backgroundColor: alpha(viewerChrome.accent, 0.12),
+                                color: viewerChrome.accent,
+                                boxShadow: `inset 3px 0 0 ${viewerChrome.accent}`,
+                              },
+                              '&.Mui-selected:hover, &.Mui-selected.Mui-focusVisible': {
+                                backgroundColor: alpha(viewerChrome.accent, 0.18),
+                              },
+                            }}
                           >
-                            <ListItemIcon sx={{ minWidth: 30, mt: 0.25 }}>
-                              <ImageIcon fontSize="small" color={isSelected ? 'primary' : 'inherit'} />
+                            <ListItemIcon
+                              sx={{
+                                minWidth: 28,
+                                mt: 0.25,
+                                color: isSelected ? viewerChrome.accent : viewerChrome.text,
+                              }}
+                            >
+                              <ImageIcon fontSize="small" />
                             </ListItemIcon>
                             <ListItemText
                               primary={getFilename(job)}
@@ -427,9 +550,11 @@ const ImatStackJobTree: React.FC<ImatStackJobTreeProps> = ({ autoSelect, selecte
       </Box>
 
       {(hasMore || loadingMore || (error && jobs.length > 0)) && (
-        <Box sx={{ p: 1, borderTop: 1, borderColor: 'divider' }}>
+        <Box
+          sx={{ borderTop: `1px solid ${viewerChrome.border}`, backgroundColor: viewerChrome.header, flexShrink: 0 }}
+        >
           {error && jobs.length > 0 && (
-            <Typography variant="caption" color="error" role="alert" sx={{ display: 'block', mb: 0.5 }}>
+            <Typography variant="caption" color="error" role="alert" sx={{ display: 'block', p: 1 }}>
               {error}
             </Typography>
           )}
