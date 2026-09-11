@@ -28,19 +28,24 @@ describe('DataViewer', () => {
     cleanup();
   });
 
-  test('fits the plugin content area without escaping over the SciGateway shell', () => {
+  test('fills the viewport above the SciGateway shell for external data viewing', () => {
     renderDataViewer('reduced.nxs');
 
     const page = screen.getByTestId('nexus-viewer').closest('main');
 
     expect(page).not.toBeNull();
-    expect(page?.style.height).toMatch(/^\d+px$/);
-    expect(page).toHaveStyle({ width: '100%' });
-    expect(page?.style.position).toBe('');
-    expect(page?.style.zIndex).toBe('');
+    expect(page).toHaveStyle({
+      position: 'fixed',
+      top: '0px',
+      left: '0px',
+      height: '100vh',
+      width: '100vw',
+      zIndex: '9999',
+      overflow: 'auto',
+    });
   });
 
-  test('keeps text files inside the same constrained page', () => {
+  test('shows text files inside the same full-screen page', () => {
     renderDataViewer('reduced.txt');
 
     expect(screen.getByTestId('text-viewer')).toBeInTheDocument();

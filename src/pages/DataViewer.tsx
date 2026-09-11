@@ -3,10 +3,8 @@ import { useParams } from 'react-router-dom';
 
 import NexusViewer from '../components/data-viewer/NexusViewer';
 import TextViewer from '../components/data-viewer/TextViewer';
-import { useAvailablePluginHeight } from '../lib/useAvailablePluginHeight';
 
 export default function DataViewer(): JSX.Element {
-  const { rootRef, availableHeight } = useAvailablePluginHeight<HTMLElement>();
   const params = useParams<{
     instrument?: string;
     experimentNumber?: string;
@@ -29,12 +27,14 @@ export default function DataViewer(): JSX.Element {
   return (
     <main
       className="h5-container"
-      ref={rootRef}
       style={{
-        height: availableHeight,
-        maxHeight: availableHeight,
-        minHeight: 0,
-        width: '100%',
+        // External data-viewer routes fill the viewport above the SciGateway shell.
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        height: '100vh',
+        width: '100vw',
+        zIndex: 9999,
         backgroundColor: '#000',
         overflow: 'auto',
       }}
