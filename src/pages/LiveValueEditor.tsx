@@ -1,7 +1,7 @@
 import Editor from '@monaco-editor/react';
 import { DescriptionOutlined, Save } from '@mui/icons-material';
 import { Alert, Box, Button, CircularProgress, Snackbar, Typography, useTheme } from '@mui/material';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useHistory, useParams } from 'react-router-dom';
 
 import { LiveLogViewer } from '../components/experimentViewer/LiveLogViewer';
@@ -12,6 +12,7 @@ import PageHeader from '../components/navigation/PageHeader';
 import { getPageHeaderControlSx } from '../components/navigation/pageHeaderStyles';
 import { fiaApi } from '../lib/api';
 import { instruments as allInstruments } from '../lib/instrumentData';
+import { LIVE_SUPPORTED_INSTRUMENTS_FALLBACK } from '../lib/instrumentSupport';
 import { fetchLiveDataInstruments } from '../lib/plottingServiceAPI';
 import { useAvailablePluginHeight } from '../lib/useAvailablePluginHeight';
 
@@ -27,61 +28,42 @@ const LiveValueEditor: React.FC = () => {
   const history = useHistory();
   const [scriptValue, setScriptValue] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
-  const [instruments, setInstruments] = useState<string[]>([]);
-  const [loadingInstruments, setLoadingInstruments] = useState(true);
+  const [supportedInstruments, setSupportedInstruments] = useState<readonly string[]>(
+    LIVE_SUPPORTED_INSTRUMENTS_FALLBACK
+  );
   const [saving, setSaving] = useState<boolean>(false);
   const [saveResult, setSaveResult] = useState<{ success: boolean; message: string } | null>(null);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [showLiveLogViewer, setShowLiveLogViewer] = useState(false);
   const userModified = useRef(false);
-  const liveDataInstrumentOptions = useMemo(() => {
-    const instrumentMetadataByName = new Map(
-      allInstruments.map((instrument) => [instrument.name.toLowerCase(), instrument])
-    );
-
-    return instruments.map((instrument, index) => {
-      return (
-        instrumentMetadataByName.get(instrument.toLowerCase()) ?? {
-          id: -(index + 1),
-          name: instrument,
-          description: '',
-          type: 'Live data',
-          infoPage: '',
-          scientists: [],
-        }
-      );
-    });
-  }, [instruments]);
-
   useEffect(() => {
+    let active = true;
     const loadInstruments = async (): Promise<void> => {
       try {
-        setLoadingInstruments(true);
         const instrumentList = await fetchLiveDataInstruments();
-        setInstruments(instrumentList);
+        if (active && Array.isArray(instrumentList) && instrumentList.every((name) => typeof name === 'string')) {
+          setSupportedInstruments(instrumentList);
+        }
       } catch (err) {
         console.error('Failed to load instruments:', err);
-      } finally {
-        setLoadingInstruments(false);
       }
     };
 
-    loadInstruments();
+    void loadInstruments();
+    return () => {
+      active = false;
+    };
   }, []);
 
   useEffect(() => {
-    if (loadingInstruments) {
-      return;
-    }
-
-    const matchedInstrument = instruments.find(
-      (instrument) => instrument.toLowerCase() === instrumentName.toLowerCase()
-    );
+    const matchedInstrument =
+      allInstruments.find((instrument) => instrument.name.toLowerCase() === instrumentName.toLowerCase())?.name ??
+      supportedInstruments.find((instrument) => instrument.toLowerCase() === instrumentName.toLowerCase());
 
     if (matchedInstrument && matchedInstrument !== instrumentName) {
       history.replace(`/live-data/${matchedInstrument}/edit-script`);
     }
-  }, [history, instrumentName, instruments, loadingInstruments]);
+  }, [history, instrumentName, supportedInstruments]);
 
   const handleInstrumentChange = (instrument: string): void => {
     history.push(`/live-data/${instrument}/edit-script`);
@@ -94,9 +76,8 @@ const LiveValueEditor: React.FC = () => {
       handleInstrumentChange={handleInstrumentChange}
       variant="compact"
       compactLabel="Browse instruments"
-      instrumentOptions={liveDataInstrumentOptions}
       showAllInstrumentsOption={false}
-      disabled={loadingInstruments || liveDataInstrumentOptions.length === 0}
+      support={{ page: 'live-data', instruments: supportedInstruments }}
     />,
   ];
 
