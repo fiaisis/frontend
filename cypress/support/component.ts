@@ -29,6 +29,7 @@ import { mount } from 'cypress/react';
 // Alternatively, can be defined in cypress/support/component.d.ts
 // with a <reference path="./component" /> at the top of your spec.
 declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace -- Augment Cypress's public Chainable interface.
   namespace Cypress {
     interface Chainable {
       mount: typeof mount;

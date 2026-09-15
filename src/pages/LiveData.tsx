@@ -346,14 +346,16 @@ const LiveData: React.FC = (): JSX.Element => {
                     </ListItemIcon>
                     <ListItemText
                       primary={file}
-                      primaryTypographyProps={{
-                        variant: 'body2',
-                        title: file,
-                        sx: {
-                          fontWeight: file === selectedFile ? 600 : 400,
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
+                      slotProps={{
+                        primary: {
+                          variant: 'body2',
+                          title: file,
+                          sx: {
+                            fontWeight: file === selectedFile ? 600 : 400,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          },
                         },
                       }}
                     />

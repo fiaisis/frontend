@@ -38,11 +38,11 @@ describe('DataViewer', () => {
       position: 'fixed',
       top: '0px',
       left: '0px',
-      height: '100vh',
-      width: '100vw',
-      zIndex: '9999',
+      'z-index': '9999',
       overflow: 'auto',
     });
+    expect(page?.style.height).toBe('100vh');
+    expect(page?.style.width).toBe('100vw');
   });
 
   test('shows text files inside the same full-screen page', () => {

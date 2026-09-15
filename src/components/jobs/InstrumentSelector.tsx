@@ -73,7 +73,7 @@ const InstrumentSelector: React.FC<{
         aria-haspopup="menu"
         aria-controls={typeMenuOpen ? 'instrument-type-menu' : undefined}
         aria-expanded={typeMenuOpen ? 'true' : undefined}
-        aria-label={isCompactVariant ? `Instrument: ${buttonLabel}` : undefined}
+        aria-label={isCompactVariant ? `Instrument: ${buttonLabel}` : `Instrument ${buttonLabel}`}
         disabled={disabled}
         endIcon={<ArrowDropDown />}
         onClick={(event: React.MouseEvent<HTMLButtonElement>) => setTypeMenuAnchorEl(event.currentTarget)}
@@ -101,14 +101,26 @@ const InstrumentSelector: React.FC<{
             component="span"
             sx={{ display: 'flex', minWidth: 0, flexDirection: 'column', alignItems: 'flex-start' }}
           >
-            <Typography component="span" variant="caption" color="text.secondary" sx={{ lineHeight: 1.2 }}>
+            <Typography
+              component="span"
+              variant="caption"
+              sx={{
+                color: 'text.secondary',
+                lineHeight: 1.2,
+              }}
+            >
               Instrument
             </Typography>
             <Typography
               component="span"
               variant="body1"
-              color="text.primary"
-              sx={{ maxWidth: 170, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+              sx={{
+                color: 'text.primary',
+                maxWidth: 170,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
             >
               {selectorLabel}
             </Typography>

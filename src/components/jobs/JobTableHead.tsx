@@ -1,5 +1,6 @@
-import { Box, CSSObject, SxProps, TableCell, TableHead, TableRow, TableSortLabel, useTheme } from '@mui/material';
+import { Box, SxProps, TableCell, TableHead, TableRow, TableSortLabel, useTheme } from '@mui/material';
 import { Theme } from '@mui/material/styles';
+import { SystemStyleObject } from '@mui/system';
 import React from 'react';
 
 import { getJobTableChromeColors, JOB_TABLE_HEADER_HEIGHT } from './constants';
@@ -14,7 +15,7 @@ interface SortableHeaderCellProps {
   sx?: SxProps<Theme>; // Additional styles
 }
 
-const headerStyles = (theme: Theme): CSSObject => {
+const headerStyles = (theme: Theme): SystemStyleObject<Theme> => {
   const tableChrome = getJobTableChromeColors(theme.palette.mode);
 
   return {
@@ -66,7 +67,7 @@ const SortableHeaderCell: React.FC<SortableHeaderCellProps> = ({
   );
 };
 
-const highlightHover = (theme: Theme): React.CSSProperties => {
+const highlightHover = (theme: Theme): SystemStyleObject<Theme> => {
   const tableChrome = getJobTableChromeColors(theme.palette.mode);
 
   return {

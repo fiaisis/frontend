@@ -1,9 +1,9 @@
 import {
-  CheckCircleOutline,
+  CheckCircleOutlined,
   Close,
   Download,
   Edit,
-  ErrorOutline,
+  ErrorOutlined,
   HighlightOff,
   ImageAspectRatio,
   OpenInNew,
@@ -15,7 +15,7 @@ import {
   Visibility,
   VpnKey,
   WarningAmber,
-  WorkOutline,
+  WorkOutlined,
 } from '@mui/icons-material';
 import {
   Alert,
@@ -133,15 +133,15 @@ const openDataViewer = (jobId: number, instrumentName: string, experimentNumber:
 
 const JobStatusIcon: React.FC<{ state: string }> = ({ state }: { state: string }): ReactElement => {
   const icons: Record<string, ReactElement> = {
-    ERROR: <ErrorOutline color="error" />,
-    SUCCESSFUL: <CheckCircleOutline color="success" />,
+    ERROR: <ErrorOutlined color="error" />,
+    SUCCESSFUL: <CheckCircleOutlined color="success" />,
     UNSUCCESSFUL: <WarningAmber color="warning" />,
     NOT_STARTED: <HighlightOff color="action" />,
   };
 
   return (
     <Box component="span" aria-label={`Reduction state: ${state}`} sx={{ display: 'inline-flex' }}>
-      {icons[state] || <ErrorOutline />}
+      {icons[state] || <ErrorOutlined />}
     </Box>
   );
 };
@@ -305,7 +305,12 @@ const JobOutput: React.FC<{
 
   if (outputs.length === 0) {
     return (
-      <Typography variant="body2" color="text.secondary">
+      <Typography
+        variant="body2"
+        sx={{
+          color: 'text.secondary',
+        }}
+      >
         No output files to show
       </Typography>
     );
@@ -323,7 +328,9 @@ const JobOutput: React.FC<{
           aria-controls={menu?.index === index ? menuId : undefined}
           aria-expanded={menu?.index === index}
           aria-busy={downloadingSingle === output}
-          onClick={(event) => setMenu({ anchorEl: event.currentTarget, output, index })}
+          onClick={(event: React.MouseEvent<HTMLButtonElement>) =>
+            setMenu({ anchorEl: event.currentTarget, output, index })
+          }
           sx={{
             display: 'flex',
             width: '100%',
@@ -368,7 +375,7 @@ const JobOutput: React.FC<{
         slotProps={{
           list: { 'aria-labelledby': menu?.anchorEl.id },
           paper: {
-            sx: (theme) => ({
+            sx: (theme: Theme) => ({
               minWidth: 160,
               border: '1px solid',
               borderColor: theme.palette.mode === 'dark' ? '#33414e' : '#dce3ea',
@@ -473,7 +480,12 @@ const JobInput: React.FC<{ job: Job }> = ({ job }): ReactElement => {
         {entries.length === 0 ? (
           <TableRow>
             <TableCell colSpan={2}>
-              <Typography variant="body2" color="text.secondary">
+              <Typography
+                variant="body2"
+                sx={{
+                  color: 'text.secondary',
+                }}
+              >
                 No input data available
               </Typography>
             </TableCell>
@@ -661,7 +673,7 @@ const ReductionDetailsContent: React.FC<{
       value: job.run.experiment_number || '—',
     },
     {
-      icon: <WorkOutline fontSize="small" />,
+      icon: <WorkOutlined fontSize="small" />,
       label: 'Job type:',
       value: job.type
         ? job.type
@@ -868,7 +880,14 @@ const ReductionDetailsContent: React.FC<{
           >
             {isLargeScreen && (
               <Box sx={detailSectionHeaderSx}>
-                <Typography id="reduction-section-inputs-heading" component="h3" variant="subtitle1" fontWeight={700}>
+                <Typography
+                  id="reduction-section-inputs-heading"
+                  component="h3"
+                  variant="subtitle1"
+                  sx={{
+                    fontWeight: 700,
+                  }}
+                >
                   Reduction inputs
                 </Typography>
               </Box>
@@ -928,7 +947,14 @@ const ReductionDetailsContent: React.FC<{
           >
             {isLargeScreen && (
               <Box sx={detailSectionHeaderSx}>
-                <Typography id="reduction-section-run-heading" component="h3" variant="subtitle1" fontWeight={700}>
+                <Typography
+                  id="reduction-section-run-heading"
+                  component="h3"
+                  variant="subtitle1"
+                  sx={{
+                    fontWeight: 700,
+                  }}
+                >
                   Run details
                 </Typography>
               </Box>
@@ -963,7 +989,14 @@ const ReductionDetailsContent: React.FC<{
           >
             {isLargeScreen && (
               <Box sx={detailSectionHeaderSx}>
-                <Typography id="reduction-section-outputs-heading" component="h3" variant="subtitle1" fontWeight={700}>
+                <Typography
+                  id="reduction-section-outputs-heading"
+                  component="h3"
+                  variant="subtitle1"
+                  sx={{
+                    fontWeight: 700,
+                  }}
+                >
                   Reduction outputs
                 </Typography>
               </Box>
@@ -1001,7 +1034,12 @@ const ReductionDetailsContent: React.FC<{
                   data-testid="reduction-output-actions"
                   sx={[detailActionBarSx, { justifyContent: 'space-between', flexWrap: 'wrap' }]}
                 >
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: 'text.secondary',
+                    }}
+                  >
                     {jobOutputs.length} {jobOutputs.length === 1 ? 'output file' : 'output files'}
                   </Typography>
                   <Box
@@ -1089,14 +1127,16 @@ export const ReductionDetailsModal: React.FC<{
       zIndex: theme.zIndex.modal,
       pointerEvents: 'auto',
     })}
-    BackdropProps={{
-      'data-testid': 'reduction-details-backdrop',
-      sx: {
-        position: 'fixed',
-        backgroundColor: 'rgba(5, 10, 16, 0.58)',
-        backdropFilter: 'blur(5px)',
-        WebkitBackdropFilter: 'blur(5px)',
-      },
+    slotProps={{
+      backdrop: () => ({
+        'data-testid': 'reduction-details-backdrop',
+        sx: {
+          position: 'fixed',
+          backgroundColor: 'rgba(5, 10, 16, 0.58)',
+          backdropFilter: 'blur(5px)',
+          WebkitBackdropFilter: 'blur(5px)',
+        },
+      }),
     }}
   >
     <Box
@@ -1145,7 +1185,13 @@ export const ReductionDetailsModal: React.FC<{
           </Typography>
           {job && (
             <>
-              <Typography variant="body2" color="text.secondary" noWrap>
+              <Typography
+                variant="body2"
+                noWrap
+                sx={{
+                  color: 'text.secondary',
+                }}
+              >
                 {job.run?.instrument_name || 'Unknown instrument'} · Experiment {job.run?.experiment_number || '—'} ·{' '}
                 {job.run?.title || 'Untitled reduction'}
               </Typography>
@@ -1276,7 +1322,9 @@ const Row: React.FC<{
                 checked={isSelected}
                 onChange={() => toggleSelection(job.id)}
                 sx={{ p: 0.5 }}
-                inputProps={{ 'aria-label': `${isSelected ? 'Deselect' : 'Select'} reduction ${job.id}` }}
+                slotProps={{
+                  input: { 'aria-label': `${isSelected ? 'Deselect' : 'Select'} reduction ${job.id}` },
+                }}
               />
             ) : (
               <JobStatusIcon state={job.state} />

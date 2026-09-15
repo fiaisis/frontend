@@ -238,7 +238,13 @@ const PlotViewer: React.FC<PlotViewerProps> = ({
         ) : (
           <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', p: 3 }}>
             <Box sx={{ textAlign: 'center' }}>
-              <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 1 }}>
+              <Typography
+                variant="subtitle1"
+                sx={{
+                  fontWeight: 600,
+                  mb: 1,
+                }}
+              >
                 {emptyTitle}
               </Typography>
               <Typography variant="body2" sx={{ color: alpha(viewerChrome.text, 0.75) }}>

@@ -285,7 +285,6 @@ export async function discoverFileStructure(filename: string, fullPath: string):
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             ...(dtype as any),
             class: stringClass,
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
           } as DType;
         }
 

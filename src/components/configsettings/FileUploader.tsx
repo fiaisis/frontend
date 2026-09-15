@@ -25,7 +25,7 @@ const FileUploader = (instrument_url: string) => {
       setUploadMessage(`Uploaded file: ${selectedFile.name}`);
     } catch (error) {
       console.error('Error uploading file:', error);
-      throw new Error('Failed to upload the file');
+      throw new Error('Failed to upload the file', { cause: error });
     }
   };
   return { selectedFile, uploadMessage, handleFileSelection, handleFileUpload };

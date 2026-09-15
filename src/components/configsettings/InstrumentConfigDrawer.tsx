@@ -73,12 +73,6 @@ const InstrumentConfigDrawer: React.FC<{
         anchor={'right'}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        PaperProps={{
-          id: 'instrument-config-drawer',
-          role: 'dialog',
-          'aria-modal': true,
-          'aria-labelledby': 'instrument-config-title',
-        }}
         sx={{
           '& .MuiDrawer-paper': {
             width: { xs: CONFIG_DRAWER_MAX_WIDTH, sm: `${CONFIG_DRAWER_WIDTH}px` },
@@ -120,6 +114,14 @@ const InstrumentConfigDrawer: React.FC<{
               color: alpha(configChrome.text, 0.75),
               '&.Mui-focused': { color: configChrome.accent },
             },
+          },
+        }}
+        slotProps={{
+          paper: {
+            id: 'instrument-config-drawer',
+            role: 'dialog',
+            'aria-modal': true,
+            'aria-labelledby': 'instrument-config-title',
           },
         }}
       >

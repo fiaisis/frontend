@@ -847,7 +847,13 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
                     textAlign: 'center',
                   }}
                 >
-                  <Typography variant="body1" fontWeight={700} sx={{ mb: 1 }}>
+                  <Typography
+                    variant="body1"
+                    sx={{
+                      fontWeight: 700,
+                      mb: 1,
+                    }}
+                  >
                     Select a stack to view its images
                   </Typography>
                   <Typography variant="body2" sx={{ color: alpha(viewerChrome.text, 0.75) }}>
@@ -901,7 +907,11 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
                       </Box>
                     ) : (
                       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-                        <Typography color="inherit">
+                        <Typography
+                          sx={{
+                            color: 'inherit',
+                          }}
+                        >
                           {stackError ??
                             (stackImages.length === 0
                               ? 'No images found in this job stack.'

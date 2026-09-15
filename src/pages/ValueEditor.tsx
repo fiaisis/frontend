@@ -307,26 +307,28 @@ const ValueEditor: React.FC = () => {
                     },
                   }}
                   MenuProps={{
-                    PaperProps: {
-                      sx: {
-                        borderRadius: 0,
-                        border: `1px solid ${editorChrome.border}`,
-                        backgroundColor: editorChrome.surface,
-                        color: editorChrome.text,
-                        boxShadow: 'none',
-                        '& .MuiMenuItem-root': {
-                          minHeight: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
-                          fontSize: '0.875rem',
-                          '&:hover, &.Mui-focusVisible': { backgroundColor: editorChrome.hover },
-                          '&.Mui-selected': {
-                            color: editorChrome.accent,
-                            backgroundColor: alpha(editorChrome.accent, 0.12),
+                    slotProps: {
+                      paper: {
+                        sx: {
+                          borderRadius: 0,
+                          border: `1px solid ${editorChrome.border}`,
+                          backgroundColor: editorChrome.surface,
+                          color: editorChrome.text,
+                          boxShadow: 'none',
+                          '& .MuiMenuItem-root': {
+                            minHeight: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
+                            fontSize: '0.875rem',
+                            '&:hover, &.Mui-focusVisible': { backgroundColor: editorChrome.hover },
+                            '&.Mui-selected': {
+                              color: editorChrome.accent,
+                              backgroundColor: alpha(editorChrome.accent, 0.12),
+                            },
+                            '&.Mui-selected:hover': { backgroundColor: alpha(editorChrome.accent, 0.18) },
                           },
-                          '&.Mui-selected:hover': { backgroundColor: alpha(editorChrome.accent, 0.18) },
                         },
                       },
+                      list: { sx: { py: 0 } },
                     },
-                    MenuListProps: { sx: { py: 0 } },
                   }}
                 >
                   {Object.entries(runners).map(([sha, version]) => (

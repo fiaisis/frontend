@@ -102,7 +102,7 @@ describe('FilterContainer', { timeout: 15000 }, () => {
     const handleFiltersChange = vi.fn();
     renderFilters({ instrument_in: ['GEM', 'LOQ'] }, { showInstrumentFilter: true, handleFiltersChange });
 
-    await user.click(screen.getByRole('button', { name: 'Clear', exact: true }));
+    await user.click(screen.getByRole('button', { name: 'Clear' }));
     await waitFor(() =>
       expect(handleFiltersChange).toHaveBeenLastCalledWith(expect.objectContaining({ instrument_in: undefined }))
     );
@@ -121,7 +121,7 @@ describe('FilterContainer', { timeout: 15000 }, () => {
 
     renderFilters({}, { setAsUser, resetPageNumber });
 
-    await user.click(screen.getByRole('checkbox', { name: 'View as user' }));
+    await user.click(screen.getByRole('switch', { name: 'View as user' }));
 
     expect(setAsUser).toHaveBeenCalledWith(true);
     expect(resetPageNumber).toHaveBeenCalledTimes(1);

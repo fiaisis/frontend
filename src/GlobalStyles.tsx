@@ -9,7 +9,9 @@ document.addEventListener('scigateway', (e) => {
   const action = (e as CustomEvent).detail;
   // If the event contains theme options, update the theme
   if (action.type === 'scigateway:api:send_themeoptions' && action.payload && action.payload.theme) {
-    theme = action.payload.theme;
+    // SciGateway can use an older MUI version. Recreate its theme with the
+    // plugin's version to supply the helpers and defaults our components need.
+    theme = createTheme(action.payload.theme);
   }
 });
 

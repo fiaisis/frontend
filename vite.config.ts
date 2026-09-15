@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite';
+import { defineConfig, esmExternalRequirePlugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 
@@ -81,9 +81,17 @@ export default defineConfig({
       name: 'fia',
       formats: ['iife'],
     },
-    rollupOptions: {
-      external: bundleReact ? [] : ['react', 'react-dom'],
+    rolldownOptions: {
+      // Browser hosts provide React globals, so dependency require() calls must
+      // use the same external imports as the application's ESM imports.
+      plugins: bundleReact ? [] : [esmExternalRequirePlugin({ external: ['react', 'react-dom'] })],
+      transform: {
+        define: { 'import.meta.url': '__fiaImportMetaUrl' },
+      },
       output: {
+        // Asset URLs are relative to the plugin script, which can be served
+        // from a different origin to SciGateway itself.
+        intro: "var __fiaImportMetaUrl = document.currentScript?.src || new URL('main.js', document.baseURI).href;",
         globals: {
           react: 'React',
           'react-dom': 'ReactDOM',
@@ -91,7 +99,7 @@ export default defineConfig({
         entryFileNames: 'main.js',
         chunkFileNames: '[name].js',
         assetFileNames: 'images/[name][extname]',
-        inlineDynamicImports: true,
+        codeSplitting: false,
       },
     },
   },

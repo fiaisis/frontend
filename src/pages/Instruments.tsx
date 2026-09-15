@@ -118,7 +118,6 @@ const Instruments: React.FC = () => {
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
             placeholder={INSTRUMENT_SEARCH_LABEL}
-            inputProps={{ 'aria-label': INSTRUMENT_SEARCH_LABEL }}
             sx={{
               width: 420,
               maxWidth: '100%',
@@ -132,29 +131,33 @@ const Instruments: React.FC = () => {
                 '&.Mui-focused': { boxShadow: `inset 0 0 0 2px ${instrumentChrome.accent}` },
               },
             }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon fontSize="small" sx={{ color: instrumentChrome.accent }} />
-                </InputAdornment>
-              ),
-              endAdornment: searchTerm ? (
-                <InputAdornment position="end">
-                  <IconButton
-                    aria-label="Clear instrument search"
-                    onClick={handleClearSearch}
-                    size="small"
-                    sx={{
-                      borderRadius: 0,
-                      color: instrumentChrome.accent,
-                      '&:hover': { backgroundColor: instrumentChrome.hover },
-                      '&:focus-visible': { outline: `2px solid ${instrumentChrome.accent}`, outlineOffset: -2 },
-                    }}
-                  >
-                    <CloseIcon fontSize="small" />
-                  </IconButton>
-                </InputAdornment>
-              ) : undefined,
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon fontSize="small" sx={{ color: instrumentChrome.accent }} />
+                  </InputAdornment>
+                ),
+                endAdornment: searchTerm ? (
+                  <InputAdornment position="end">
+                    <IconButton
+                      aria-label="Clear instrument search"
+                      onClick={handleClearSearch}
+                      size="small"
+                      sx={{
+                        borderRadius: 0,
+                        color: instrumentChrome.accent,
+                        '&:hover': { backgroundColor: instrumentChrome.hover },
+                        '&:focus-visible': { outline: `2px solid ${instrumentChrome.accent}`, outlineOffset: -2 },
+                      }}
+                    >
+                      <CloseIcon fontSize="small" />
+                    </IconButton>
+                  </InputAdornment>
+                ) : undefined,
+              },
+
+              htmlInput: { 'aria-label': INSTRUMENT_SEARCH_LABEL },
             }}
           />
         }
@@ -202,7 +205,13 @@ const Instruments: React.FC = () => {
               <Typography variant="h6" component="h2" sx={{ mb: 1 }}>
                 No instruments found
               </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: 'text.secondary',
+                  mb: 2,
+                }}
+              >
                 Try another search term.
               </Typography>
               <Button variant="text" onClick={handleClearSearch} sx={actionButtonSx}>
@@ -326,7 +335,6 @@ const Instruments: React.FC = () => {
                     <Box sx={{ p: 1.5, minWidth: 0, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
                       <Typography
                         variant="body2"
-                        color="text.secondary"
                         sx={{
                           flexGrow: 1,
                           color: alpha(instrumentChrome.text, 0.78),
@@ -346,7 +354,12 @@ const Instruments: React.FC = () => {
                             ))}
                           </Box>
                         ) : (
-                          <Typography variant="body2" color="text.secondary">
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              color: 'text.secondary',
+                            }}
+                          >
                             No scientists listed by ISIS.
                           </Typography>
                         )}

@@ -79,19 +79,21 @@ const JobSearch: React.FC<JobSearchProps> = ({ experimentNumber, filename, isSea
               setError(null);
             }}
             MenuProps={{
-              PaperProps: {
-                sx: {
-                  borderRadius: 0,
-                  border: `1px solid ${chrome.border}`,
-                  backgroundColor: chrome.surface,
-                  backgroundImage: 'none',
-                  color: chrome.text,
-                  '& .MuiMenuItem-root': {
-                    minHeight: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
-                    fontSize: '0.875rem',
-                    '&:hover, &.Mui-focusVisible': { backgroundColor: chrome.hover },
-                    '&.Mui-selected': { backgroundColor: alpha(chrome.accent, 0.12) },
-                    '&.Mui-selected:hover': { backgroundColor: alpha(chrome.accent, 0.18) },
+              slotProps: {
+                paper: {
+                  sx: {
+                    borderRadius: 0,
+                    border: `1px solid ${chrome.border}`,
+                    backgroundColor: chrome.surface,
+                    backgroundImage: 'none',
+                    color: chrome.text,
+                    '& .MuiMenuItem-root': {
+                      minHeight: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
+                      fontSize: '0.875rem',
+                      '&:hover, &.Mui-focusVisible': { backgroundColor: chrome.hover },
+                      '&.Mui-selected': { backgroundColor: alpha(chrome.accent, 0.12) },
+                      '&.Mui-selected:hover': { backgroundColor: alpha(chrome.accent, 0.18) },
+                    },
                   },
                 },
               },
@@ -112,16 +114,18 @@ const JobSearch: React.FC<JobSearchProps> = ({ experimentNumber, filename, isSea
             setError(null);
           }}
           error={Boolean(error)}
-          inputProps={{
-            'aria-label': searchType === 'experiment' ? 'Experiment number' : 'Run/file',
-            ...(searchType === 'experiment' ? { min: 0, step: 1 } : {}),
-            autoComplete: 'off',
-          }}
           sx={{
             minWidth: 0,
             '& .MuiOutlinedInput-root': {
               height: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
               fontSize: '0.875rem',
+            },
+          }}
+          slotProps={{
+            htmlInput: {
+              'aria-label': searchType === 'experiment' ? 'Experiment number' : 'Run/file',
+              ...(searchType === 'experiment' ? { min: 0, step: 1 } : {}),
+              autoComplete: 'off',
             },
           }}
         />

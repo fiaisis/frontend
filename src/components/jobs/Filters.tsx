@@ -44,29 +44,31 @@ const getFilterPaperSx = (theme: Theme): SystemStyleObject<Theme> => {
 };
 
 const menuProps = {
-  PaperProps: {
-    style: {
-      maxHeight: itemHeight * 4.5 + itemPaddingTop,
-      width: 250,
-    },
-    sx: (theme: Theme) => {
-      const filterChrome = getJobTableChromeColors(theme.palette.mode);
+  slotProps: {
+    paper: {
+      style: {
+        maxHeight: itemHeight * 4.5 + itemPaddingTop,
+        width: 250,
+      },
+      sx: (theme: Theme) => {
+        const filterChrome = getJobTableChromeColors(theme.palette.mode);
 
-      return {
-        ...getFilterPaperSx(theme),
-        '& .MuiMenuItem-root': {
-          minHeight: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
-          py: 0.25,
-          '&:hover, &.Mui-focusVisible': { backgroundColor: filterChrome.hover },
-          '&.Mui-selected': { backgroundColor: alpha(filterChrome.accent, 0.12) },
-          '&.Mui-selected:hover': { backgroundColor: alpha(filterChrome.accent, 0.18) },
-        },
-        '& .MuiCheckbox-root': {
-          color: alpha(filterChrome.text, 0.7),
-          '&.Mui-checked': { color: filterChrome.accent },
-        },
-        '& .MuiListItemText-primary': { fontSize: '0.875rem' },
-      };
+        return {
+          ...getFilterPaperSx(theme),
+          '& .MuiMenuItem-root': {
+            minHeight: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
+            py: 0.25,
+            '&:hover, &.Mui-focusVisible': { backgroundColor: filterChrome.hover },
+            '&.Mui-selected': { backgroundColor: alpha(filterChrome.accent, 0.12) },
+            '&.Mui-selected:hover': { backgroundColor: alpha(filterChrome.accent, 0.18) },
+          },
+          '& .MuiCheckbox-root': {
+            color: alpha(filterChrome.text, 0.7),
+            '&.Mui-checked': { color: filterChrome.accent },
+          },
+          '& .MuiListItemText-primary': { fontSize: '0.875rem' },
+        };
+      },
     },
   },
 };
@@ -133,7 +135,7 @@ const MultipleSelectCheckmarks: FC<{
   return (
     <FormControl fullWidth size={'small'}>
       <InputLabel id="demo-multiple-checkbox-label">{name}</InputLabel>
-      <Select
+      <Select<string[]>
         labelId="demo-multiple-checkbox-label"
         id="demo-multiple-checkbox"
         multiple
@@ -423,7 +425,15 @@ const FilterContainer: React.FC<{
   };
 
   return (
-    <Dialog open={visible} onClose={handleFiltersClose} maxWidth="lg" fullWidth PaperProps={{ sx: getFilterPaperSx }}>
+    <Dialog
+      open={visible}
+      onClose={handleFiltersClose}
+      maxWidth="lg"
+      fullWidth
+      slotProps={{
+        paper: { sx: getFilterPaperSx },
+      }}
+    >
       <DialogTitle
         sx={{
           px: 2,
@@ -490,7 +500,9 @@ const FilterContainer: React.FC<{
                         setAsUser(checked);
                         resetPageNumber();
                       }}
-                      inputProps={{ 'aria-label': 'View as user' }}
+                      slotProps={{
+                        input: { 'aria-label': 'View as user' },
+                      }}
                     />
                   }
                   label="View as user"

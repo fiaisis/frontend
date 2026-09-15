@@ -131,7 +131,13 @@ const Viewer2D: React.FC<Viewer2DProps> = ({
               ) : (
                 <ViewerState>
                   <Box sx={{ textAlign: 'center' }}>
-                    <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 1 }}>
+                    <Typography
+                      variant="subtitle1"
+                      sx={{
+                        fontWeight: 600,
+                        mb: 1,
+                      }}
+                    >
                       {emptyTitle}
                     </Typography>
                     <Typography variant="body2" sx={{ color: alpha(viewerChrome.text, 0.75) }}>

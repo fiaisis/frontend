@@ -72,7 +72,10 @@ const pageJob = (id: number): Job => ({ ...makeJob(id), outputs: JSON.stringify(
 const servePages = (pages: Job[][], count = 20): void => {
   vi.mocked(fiaApi.get).mockImplementation(async (url, config) => {
     if (url === '/jobs/count') return { data: { count } };
-    if (url === '/jobs') return { data: pages[Math.floor((config?.params.offset ?? 0) / 10)] ?? [] };
+    if (url === '/jobs') {
+      const params = config?.params as { offset?: number } | undefined;
+      return { data: pages[Math.floor((params?.offset ?? 0) / 10)] ?? [] };
+    }
     if (url.startsWith('/job/')) return { data: makeJob(Number(url.split('/').pop())) };
     throw new Error(`Unexpected API request: ${url}`);
   });
@@ -419,7 +422,8 @@ describe('Experiment viewer', { timeout: 30000 }, () => {
     const pendingJobs = deferred<{ data: Job[] }>();
     vi.mocked(fiaApi.get).mockImplementation(async (url, config) => {
       if (url === '/jobs/count') return { data: { count: 1 } };
-      return JSON.parse(config?.params.filters).filename === 'LOQ7' ? pendingJobs.promise : { data: [makeJob(8)] };
+      const params = config?.params as { filters: string };
+      return JSON.parse(params.filters).filename === 'LOQ7' ? pendingJobs.promise : { data: [makeJob(8)] };
     });
     renderViewer(searchLink('LOQ7'), searchLink('LOQ8'));
     await waitFor(() => expect(fiaApi.get).toHaveBeenCalledWith('/jobs', expect.anything()));
@@ -594,7 +598,8 @@ describe('Experiment viewer', { timeout: 30000 }, () => {
     servePages([[pageJob(10)]]);
     const respond = vi.mocked(fiaApi.get).getMockImplementation()!;
     vi.mocked(fiaApi.get).mockImplementation(async (url, config) => {
-      if (url === '/jobs' && config?.params.offset === 10) throw new Error('Page unavailable');
+      const params = config?.params as { offset?: number } | undefined;
+      if (url === '/jobs' && params?.offset === 10) throw new Error('Page unavailable');
       return respond(url, config);
     });
     renderViewer();

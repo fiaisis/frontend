@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "es5",
+    "target": "es2022",
     "lib": ["dom", "dom.iterable", "esnext"],
     "types": ["node"],
     "allowJs": true,
@@ -10,18 +10,19 @@
     "strict": true,
     "forceConsistentCasingInFileNames": true,
     "module": "esnext",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-    "jsx": "preserve",
-    "baseUrl": ".",
+    "jsx": "react-jsx",
     "paths": {
-      "@h5web/shared/*": ["src/h5web/packages/shared/src/*"],
-      "@h5web/shared": ["src/h5web/packages/shared/src/index.ts"],
-      "@h5web/app": ["src/h5web/packages/app/src/index.ts"],
-      "@h5web/lib": ["src/h5web/packages/lib/src/index.ts"]
+      "single-spa-react": ["./node_modules/single-spa-react/types/single-spa-react.d.ts"],
+      "@h5web/shared/*": ["./src/h5web/packages/shared/src/*"],
+      "@h5web/shared": ["./src/h5web/packages/shared/src/index.ts"],
+      "@h5web/app": ["./src/h5web/packages/app/src/index.ts"],
+      "@h5web/lib": ["./src/h5web/packages/lib/src/index.ts"]
     }
   },
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": ["src/h5web"]
 }

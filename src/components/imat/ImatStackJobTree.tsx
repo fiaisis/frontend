@@ -343,19 +343,21 @@ const ImatStackJobTree: React.FC<ImatStackJobTreeProps> = ({ selectedJobId, sele
                 setSearchError(null);
               }}
               MenuProps={{
-                PaperProps: {
-                  sx: {
-                    borderRadius: 0,
-                    border: `1px solid ${viewerChrome.border}`,
-                    backgroundColor: viewerChrome.surface,
-                    backgroundImage: 'none',
-                    color: viewerChrome.text,
-                    '& .MuiMenuItem-root': {
-                      minHeight: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
-                      fontSize: '0.875rem',
-                      '&:hover, &.Mui-focusVisible': { backgroundColor: viewerChrome.hover },
-                      '&.Mui-selected': { backgroundColor: alpha(viewerChrome.accent, 0.12) },
-                      '&.Mui-selected:hover': { backgroundColor: alpha(viewerChrome.accent, 0.18) },
+                slotProps: {
+                  paper: {
+                    sx: {
+                      borderRadius: 0,
+                      border: `1px solid ${viewerChrome.border}`,
+                      backgroundColor: viewerChrome.surface,
+                      backgroundImage: 'none',
+                      color: viewerChrome.text,
+                      '& .MuiMenuItem-root': {
+                        minHeight: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
+                        fontSize: '0.875rem',
+                        '&:hover, &.Mui-focusVisible': { backgroundColor: viewerChrome.hover },
+                        '&.Mui-selected': { backgroundColor: alpha(viewerChrome.accent, 0.12) },
+                        '&.Mui-selected:hover': { backgroundColor: alpha(viewerChrome.accent, 0.18) },
+                      },
                     },
                   },
                 },
@@ -373,11 +375,13 @@ const ImatStackJobTree: React.FC<ImatStackJobTreeProps> = ({ selectedJobId, sele
             onChange={(event) => setSearchValue(event.target.value)}
             size="small"
             error={Boolean(searchError)}
-            inputProps={{
-              'aria-label': 'Stack search value',
-              ...(searchType === 'experiment' ? { min: 1, step: 1 } : {}),
-            }}
             sx={{ minWidth: 0 }}
+            slotProps={{
+              htmlInput: {
+                'aria-label': 'Stack search value',
+                ...(searchType === 'experiment' ? { min: 1, step: 1 } : {}),
+              },
+            }}
           />
         </Box>
         {searchError && (
@@ -479,7 +483,9 @@ const ImatStackJobTree: React.FC<ImatStackJobTreeProps> = ({ selectedJobId, sele
                     <ListItemText
                       primary={groupLabel}
                       secondary={`${group.jobs.length} ${group.jobs.length === 1 ? 'stack' : 'stacks'}`}
-                      primaryTypographyProps={{ variant: 'body2', fontWeight: 600, noWrap: true }}
+                      slotProps={{
+                        primary: { variant: 'body2', noWrap: true, sx: { fontWeight: 600 } },
+                      }}
                     />
                   </ListItemButton>
                   <Collapse in={isExpanded} timeout="auto" unmountOnExit>
@@ -526,15 +532,18 @@ const ImatStackJobTree: React.FC<ImatStackJobTreeProps> = ({ selectedJobId, sele
                             <ListItemText
                               primary={getFilename(job)}
                               secondary={secondaryParts.join(' · ') || `Job ${job.id}`}
-                              primaryTypographyProps={{
-                                variant: 'body2',
-                                fontWeight: isSelected ? 600 : 400,
-                                noWrap: true,
-                              }}
-                              secondaryTypographyProps={{
-                                variant: 'caption',
-                                noWrap: true,
-                                title: secondaryParts.join(' · '),
+                              slotProps={{
+                                primary: {
+                                  variant: 'body2',
+                                  sx: { fontWeight: isSelected ? 600 : 400 },
+                                  noWrap: true,
+                                },
+
+                                secondary: {
+                                  variant: 'caption',
+                                  noWrap: true,
+                                  title: secondaryParts.join(' · '),
+                                },
                               }}
                             />
                           </ListItemButton>

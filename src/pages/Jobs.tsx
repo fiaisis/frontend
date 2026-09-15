@@ -125,27 +125,29 @@ const ImatViewSelect: React.FC<{
         '& .MuiSelect-icon': { color: chrome.accent },
       }}
       MenuProps={{
-        MenuListProps: { 'aria-label': 'IMAT views' },
-        PaperProps: {
-          sx: {
-            borderRadius: 0,
-            border: `1px solid ${chrome.border}`,
-            backgroundColor: chrome.surface,
-            backgroundImage: 'none',
-            color: chrome.text,
-            boxShadow: 'none',
-            '& .MuiMenuItem-root': {
-              minHeight: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
-              fontSize: '0.875rem',
-              '&:hover, &.Mui-focusVisible': { backgroundColor: chrome.hover },
-              '&.Mui-selected': {
-                color: chrome.accent,
-                backgroundColor: alpha(chrome.accent, 0.12),
+        slotProps: {
+          list: { 'aria-label': 'IMAT views' },
+          paper: {
+            sx: {
+              borderRadius: 0,
+              border: `1px solid ${chrome.border}`,
+              backgroundColor: chrome.surface,
+              backgroundImage: 'none',
+              color: chrome.text,
+              boxShadow: 'none',
+              '& .MuiMenuItem-root': {
+                minHeight: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
+                fontSize: '0.875rem',
+                '&:hover, &.Mui-focusVisible': { backgroundColor: chrome.hover },
+                '&.Mui-selected': {
+                  color: chrome.accent,
+                  backgroundColor: alpha(chrome.accent, 0.12),
+                },
+                '&.Mui-selected:hover, &.Mui-selected.Mui-focusVisible': {
+                  backgroundColor: alpha(chrome.accent, 0.18),
+                },
+                '&:focus-visible': { outline: `2px solid ${chrome.accent}`, outlineOffset: -2 },
               },
-              '&.Mui-selected:hover, &.Mui-selected.Mui-focusVisible': {
-                backgroundColor: alpha(chrome.accent, 0.18),
-              },
-              '&:focus-visible': { outline: `2px solid ${chrome.accent}`, outlineOffset: -2 },
             },
           },
         },

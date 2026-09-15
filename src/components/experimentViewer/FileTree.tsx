@@ -191,9 +191,9 @@ const FileTree: React.FC<FileTreeProps> = ({
               <FolderIcon fontSize="small" sx={{ flexShrink: 0, color: viewerChrome.accent }} />
               <Typography
                 variant="body2"
-                fontWeight="600"
                 noWrap
                 sx={{
+                  fontWeight: '600',
                   flex: 1,
                   minWidth: 0,
                   overflow: 'hidden',

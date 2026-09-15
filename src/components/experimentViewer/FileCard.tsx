@@ -233,7 +233,12 @@ const FileCard: React.FC<FileCardProps> = ({
                     mb: 1,
                   }}
                 >
-                  <Typography variant="caption" fontWeight={600}>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      fontWeight: 600,
+                    }}
+                  >
                     Slice selection (2D → 1D)
                   </Typography>
                   <ToggleButtonGroup

@@ -1,6 +1,6 @@
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { Box, Button, Paper, styled, Typography, useMediaQuery, useTheme } from '@mui/material';
-import Grid from '@mui/material/Grid2';
+import Grid from '@mui/material/Grid';
 import { type Theme } from '@mui/material/styles';
 import React from 'react';
 import { Trans, useTranslation } from 'react-i18next';
@@ -183,7 +183,12 @@ const Homepage = (): React.ReactElement => {
                     to perform automatic reductions for beamline instruments from the web.
                   </Trans>
                 </PaperDescription>
-                <Box marginTop="16px" marginBottom="8px">
+                <Box
+                  sx={{
+                    marginTop: '16px',
+                    marginBottom: '8px',
+                  }}
+                >
                   <Button
                     style={{
                       backgroundImage: `url(${GreenSwirl1Image})`,
@@ -251,7 +256,11 @@ const Homepage = (): React.ReactElement => {
                   <BluePaperHeading variant="h4">
                     {t("Browse a list of ISIS Neutron and Muon Source's instruments on the FIA platform")}
                   </BluePaperHeading>
-                  <Box marginTop="auto">
+                  <Box
+                    sx={{
+                      marginTop: 'auto',
+                    }}
+                  >
                     <Button
                       color="primary"
                       variant="contained"
@@ -280,7 +289,11 @@ const Homepage = (): React.ReactElement => {
                     'World-leading centre for research giving unique insights into the properties of materials on the atomic scale.'
                   )}
                 </PaperDescription>
-                <Box marginTop="auto">
+                <Box
+                  sx={{
+                    marginTop: 'auto',
+                  }}
+                >
                   <a href="https://www.isis.stfc.ac.uk/Pages/About.aspx" target="_blank" rel="noopener noreferrer">
                     <Button
                       color="primary"
@@ -309,7 +322,11 @@ const Homepage = (): React.ReactElement => {
                     "Read more info about ISIS's Target Stations 1 and 2, and learn about instruments by their scientific technique."
                   )}
                 </PaperDescription>
-                <Box marginTop="auto">
+                <Box
+                  sx={{
+                    marginTop: 'auto',
+                  }}
+                >
                   <a
                     href="https://www.isis.stfc.ac.uk/Pages/Instruments.aspx"
                     target="_blank"

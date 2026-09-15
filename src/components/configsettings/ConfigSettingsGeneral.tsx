@@ -261,7 +261,6 @@ const ConfigSettingsGeneral: React.FC<ConfigSettingsGeneralProps> = ({ children,
                             fullWidth
                             size="small"
                             label={subKey}
-                            inputProps={{ 'aria-label': `${key}: ${subKey}` }}
                             value={subValue}
                             onChange={(e) => {
                               const updatedNested = {
@@ -269,6 +268,9 @@ const ConfigSettingsGeneral: React.FC<ConfigSettingsGeneralProps> = ({ children,
                                 [subKey]: e.target.value,
                               };
                               handleFormInputChange(key, updatedNested);
+                            }}
+                            slotProps={{
+                              htmlInput: { 'aria-label': `${key}: ${subKey}` },
                             }}
                           />
                         ))}

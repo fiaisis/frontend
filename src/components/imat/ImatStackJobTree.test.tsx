@@ -124,9 +124,9 @@ describe('ImatStackJobTree', () => {
 
     await waitFor(() => {
       const lastOptions = vi.mocked(fiaApi.get).mock.calls.at(-1)?.[1];
-      expect(lastOptions?.params.filters).toBe(
-        JSON.stringify({ job_state_in: ['SUCCESSFUL'], experiment_number_in: [12345] })
-      );
+      expect(lastOptions?.params).toMatchObject({
+        filters: JSON.stringify({ job_state_in: ['SUCCESSFUL'], experiment_number_in: [12345] }),
+      });
     });
 
     await user.click(screen.getByRole('combobox', { name: 'Search by' }));
@@ -137,7 +137,9 @@ describe('ImatStackJobTree', () => {
 
     await waitFor(() => {
       const lastOptions = vi.mocked(fiaApi.get).mock.calls.at(-1)?.[1];
-      expect(lastOptions?.params.filters).toBe(JSON.stringify({ job_state_in: ['SUCCESSFUL'], filename: 'IMAT00042' }));
+      expect(lastOptions?.params).toMatchObject({
+        filters: JSON.stringify({ job_state_in: ['SUCCESSFUL'], filename: 'IMAT00042' }),
+      });
     });
   });
 
@@ -156,7 +158,7 @@ describe('ImatStackJobTree', () => {
     await user.click(await screen.findByRole('button', { name: 'Load more' }));
 
     await waitFor(() => {
-      expect(vi.mocked(fiaApi.get).mock.calls[1][1]?.params.offset).toBe(25);
+      expect(vi.mocked(fiaApi.get).mock.calls[1][1]?.params).toMatchObject({ offset: 25 });
       expect(screen.getByRole('button', { name: /Experiment 4000/i })).toBeInTheDocument();
     });
 

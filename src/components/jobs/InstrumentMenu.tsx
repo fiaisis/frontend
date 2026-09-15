@@ -12,6 +12,7 @@ import {
   InputAdornment,
   ListItemText,
   MenuItem,
+  MenuList,
   Popover,
   TextField,
   Typography,
@@ -192,7 +193,6 @@ const InstrumentMenu: React.FC<InstrumentMenuProps> = ({
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
               placeholder="Search for instrument"
-              inputProps={{ 'aria-label': 'Search for instrument' }}
               sx={{
                 minWidth: 0,
                 flex: '1 1 200px',
@@ -207,12 +207,16 @@ const InstrumentMenu: React.FC<InstrumentMenuProps> = ({
                   '&:hover fieldset, &.Mui-focused fieldset': { borderColor: chrome.accent },
                 },
               }}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon fontSize="small" sx={{ color: chrome.accent }} />
-                  </InputAdornment>
-                ),
+              slotProps={{
+                input: {
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon fontSize="small" sx={{ color: chrome.accent }} />
+                    </InputAdornment>
+                  ),
+                },
+
+                htmlInput: { 'aria-label': 'Search for instrument' },
               }}
             />
             {support && (
@@ -241,7 +245,9 @@ const InstrumentMenu: React.FC<InstrumentMenuProps> = ({
             )}
           </Box>
         </Box>
-        <Box
+        <MenuList
+          component="div"
+          disablePadding
           role="menu"
           aria-labelledby={labelledBy}
           data-scroll-region
@@ -282,9 +288,11 @@ const InstrumentMenu: React.FC<InstrumentMenuProps> = ({
                   <ListItemText
                     primary={instrument.name}
                     secondary={formatInstrumentTechniques(instrument)}
-                    primaryTypographyProps={{ fontSize: '0.875rem', fontWeight: 600 }}
-                    secondaryTypographyProps={{ noWrap: true, fontSize: '0.75rem', color: alpha(chrome.text, 0.75) }}
                     sx={{ mr: 1 }}
+                    slotProps={{
+                      primary: { sx: { fontSize: '0.875rem', fontWeight: 600 } },
+                      secondary: { noWrap: true, sx: { fontSize: '0.75rem', color: alpha(chrome.text, 0.75) } },
+                    }}
                   />
                   <IconButton
                     aria-label={`${favourite ? 'Remove' : 'Add'} ${instrument.name} ${
@@ -309,12 +317,17 @@ const InstrumentMenu: React.FC<InstrumentMenuProps> = ({
             })
           ) : (
             <Box sx={{ px: 2, py: 3, textAlign: 'center' }}>
-              <Typography variant="body2" color="text.secondary">
+              <Typography
+                variant="body2"
+                sx={{
+                  color: 'text.secondary',
+                }}
+              >
                 No instruments found
               </Typography>
             </Box>
           )}
-        </Box>
+        </MenuList>
       </Box>
     </Popover>
   );

@@ -323,8 +323,8 @@ describe('IMATViewer stack selection', () => {
       const listedPaths = vi
         .mocked(h5Api.get)
         .mock.calls.filter(([url]) => url === '/imat/list-images')
-        .map(([, options]) => options?.params.path);
-      expect(listedPaths).toEqual(['/data/new/run-2']);
+        .map(([, options]) => options?.params);
+      expect(listedPaths).toEqual([expect.objectContaining({ path: '/data/new/run-2' })]);
     });
   });
 

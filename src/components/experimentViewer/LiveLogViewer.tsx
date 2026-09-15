@@ -175,7 +175,14 @@ export const LiveLogViewer: React.FC<LiveLogViewerProps> = ({ open, onClose, ins
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
-          <Typography component="span" variant="body2" fontWeight={700} noWrap>
+          <Typography
+            component="span"
+            variant="body2"
+            noWrap
+            sx={{
+              fontWeight: 700,
+            }}
+          >
             Live logs: {instrumentName}
           </Typography>
           {!isConnected && !error && <CircularProgress size={16} />}
