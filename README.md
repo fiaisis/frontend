@@ -6,6 +6,12 @@ This repository is for the frontend web application side of [FIA](https://github
 
 ## Starting development
 
+Use Node.js 24.15 or newer in the Node 24 LTS line (or Node 26+) and the repository's pinned Yarn 3.3.0. CI and the frontend Docker build use Node 24.
+
+TypeScript 7 provides `yarn typecheck`. The `typescript` dependency aliases Microsoft's TypeScript 6 compatibility package so ESLint and other tools can continue using the compiler API. Keep both compiler dependencies when updating TypeScript.
+
+Run `yarn lint:check` to check the app and Cypress source without modifying files. ESLint uses `eslint.config.mjs`; compatibility adapters support the existing React, accessibility, and import rules on ESLint 10.
+
 ### Downloading the code
 
 To get started developing for the frontend, first you will need to have [Node.js](https://nodejs.org/en/download/package-manager) and [Yarn](https://classic.yarnpkg.com/en/docs/install) installed and set-up on your machine. When following the install wizards just keep to default settings. You will then want to clone the [SciGateway](https://github.com/ral-facilities/scigateway) repository. From now on stick to SciGateway's `release/v4.1.1` branch (worth noting that `develop` is the repository's default branch instead of "main" or "master").
@@ -84,6 +90,7 @@ Builds the app with Vite into `build/` for use as a SciGateway plugin. Do this w
 Notes:
 
 - The default build expects React and ReactDOM to be provided by the host (externals). If your host does not provide them, use `yarn build:standalone` to bundle React into `build/main.js`.
+- After `yarn build`, run `yarn test:build` to verify that the emitted plugin registers its routes and mounts with host-provided React. This checks the production bundle used by SciGateway, including browser module and asset URL compatibility.
 - On Windows, SciGateway may lock files in `build/` while serving them. Stop SciGateway before rebuilding to avoid `EPERM` errors.
 
 ### `yarn start`
