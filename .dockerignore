@@ -1,5 +1,7 @@
 .idea/
 node_modules
-.eslintrc.js
+build/
+coverage/
+.git/
 .env
 .github

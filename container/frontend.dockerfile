@@ -1,5 +1,5 @@
 # Stage 1: Build
-FROM node:lts-alpine3.19@sha256:ec0c413b1d84f3f7f67ec986ba885930c57b5318d2eb3abc6960ee05d4f2eb28 as build
+FROM node:24-alpine@sha256:50c8e8ca1d27439048670df5883f32d57cf81cff6233222c893fd0d9884cbd81 AS build
 
 WORKDIR /app
 
@@ -11,7 +11,7 @@ ENV VITE_FIA_PLOTTING_API_URL="/plottingapi"
 
 COPY . .
 
-RUN yarn install --frozen-lockfile
+RUN yarn install --immutable
 RUN yarn build
 
 # Stage 2: Serve
