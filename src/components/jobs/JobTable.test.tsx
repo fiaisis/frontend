@@ -1,6 +1,7 @@
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
+import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
 import {
@@ -150,7 +151,11 @@ const defaultProps = {
 };
 
 const renderTable = (overrides: Partial<typeof defaultProps> = {}): ReturnType<typeof render> =>
-  render(<JobTable {...defaultProps} {...overrides} />);
+  render(
+    <MemoryRouter>
+      <JobTable {...defaultProps} {...overrides} />
+    </MemoryRouter>
+  );
 
 const waitForLoadedJobs = async (): Promise<void> => {
   await waitFor(() => {

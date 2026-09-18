@@ -25,6 +25,7 @@ import {
   Checkbox,
   CircularProgress,
   IconButton,
+  Link as MuiLink,
   ListItemIcon,
   Menu,
   MenuItem,
@@ -52,8 +53,10 @@ import { JOB_TABLE_ROW_HEIGHT } from './constants';
 import { fiaApi } from '../../lib/api';
 import { getExperimentViewerUrl } from '../../lib/experimentViewerUrl';
 import { parseJobOutputs } from '../../lib/hooks';
+import { getRunReductionHistoryUrl } from '../../lib/reductionHistoryUrl';
 import { formatUtcForLocale } from '../../lib/timezone';
 import { Job, MantidVersionMap, outputFilter } from '../../lib/types';
+import SnackbarAlert from '../feedback/SnackbarAlert';
 
 const ellipsisTextSx: SxProps<Theme> = {
   display: 'block',
@@ -625,6 +628,7 @@ const ReductionDetailsContent: React.FC<{
   const handleResubmit = async (): Promise<void> => {
     resubmitJobId.current = job.id;
     setLoading(true);
+    setSnackbarOpen(false);
 
     // Fallback that clears spinner after 20s if nothing happens
     loadingTimeoutRef.current = window.setTimeout(() => {
@@ -718,7 +722,7 @@ const ReductionDetailsContent: React.FC<{
     <>
       <Snackbar
         open={snackbarOpen}
-        autoHideDuration={5000}
+        autoHideDuration={resubmitSuccessful.current ? null : 5000}
         onClose={(event, reason) => {
           if (reason !== 'clickaway') {
             setSnackbarOpen(false);
@@ -726,25 +730,21 @@ const ReductionDetailsContent: React.FC<{
         }}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
-        <Alert
-          sx={{
-            padding: '10px 14px',
-            fontSize: '1rem',
-            width: '100%',
-            maxWidth: '600px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            border: '1px solid',
-            borderRadius: '8px',
-            fontWeight: 'bold',
-          }}
+        <SnackbarAlert
           severity={resubmitSuccessful.current ? 'success' : 'error'}
+          onClose={() => setSnackbarOpen(false)}
         >
           {resubmitSuccessful.current
             ? `Resubmit started successfully for reduction ${resubmitJobId.current}`
             : `Resubmit could not be started for ${resubmitJobId.current} — please try again later or contact staff`}
-        </Alert>
+          {resubmitSuccessful.current && (
+            <Box sx={{ mt: 0.5 }}>
+              <MuiLink component={Link} to={getRunReductionHistoryUrl(job.run)} color="inherit" underline="always">
+                View reductions for this run
+              </MuiLink>
+            </Box>
+          )}
+        </SnackbarAlert>
       </Snackbar>
 
       <Snackbar
@@ -757,23 +757,9 @@ const ReductionDetailsContent: React.FC<{
         }}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
-        <Alert
-          sx={{
-            padding: '10px 14px',
-            fontSize: '1rem',
-            width: '100%',
-            maxWidth: '600px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            border: '1px solid',
-            borderRadius: '8px',
-            fontWeight: 'bold',
-          }}
-          severity="error"
-        >
+        <SnackbarAlert severity="error" onClose={() => setDownloadErrorOpen(false)}>
           {downloadErrorMessage}
-        </Alert>
+        </SnackbarAlert>
       </Snackbar>
 
       <Box
