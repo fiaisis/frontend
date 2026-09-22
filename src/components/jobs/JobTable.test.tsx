@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
@@ -184,6 +184,7 @@ describe('JobTable', () => {
 
   afterEach(() => {
     cleanup();
+    vi.useRealTimers();
     vi.restoreAllMocks();
   });
 
@@ -500,6 +501,95 @@ describe('JobTable', () => {
     expect(
       await screen.findByText('Resubmissions started successfully for all selected reductions')
     ).toBeInTheDocument();
+    const alert = screen.getByRole('alert');
+    expect(within(alert).getByRole('link', { name: 'View reductions for LOQ00012345.raw' })).toHaveAttribute(
+      'href',
+      `/reduction-history/LOQ?${new URLSearchParams({ filters: JSON.stringify({ filename: jobs[0].run.filename }) })}`
+    );
+    await user.click(within(alert).getByRole('button', { name: 'Close' }));
+    await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument());
+  });
+
+  test.each([
+    { outcome: 'all requests succeed', firstFails: false },
+    { outcome: 'the first request fails', firstFails: true },
+  ])('links successful bulk resubmissions when $outcome', async ({ firstFails }) => {
+    const error = new Error('Resubmit unavailable');
+    const logError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    if (firstFails) vi.mocked(fiaApi.post).mockRejectedValueOnce(error);
+    renderTable();
+    await waitForLoadedJobs();
+    vi.useFakeTimers();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Select all' }));
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Resubmit (2)' })));
+
+    expect(fiaApi.post).toHaveBeenCalledWith('/job/101/resubmit');
+    expect(fiaApi.post).toHaveBeenCalledWith('/job/102/resubmit');
+    const alert = screen.getByRole('alert');
+    expect(alert).toHaveTextContent(
+      firstFails
+        ? 'Some reductions could not be resubmitted'
+        : 'Resubmissions started successfully for all selected reductions'
+    );
+    const successfulJobs = firstFails ? [jobs[1]] : jobs;
+    expect(within(alert).getAllByRole('link')).toHaveLength(successfulJobs.length);
+    for (const job of successfulJobs) {
+      expect(
+        within(alert).getByRole('link', { name: `View reductions for ${job.run.filename.split('/').pop()}` })
+      ).toHaveAttribute(
+        'href',
+        `/reduction-history/LOQ?${new URLSearchParams({
+          filters: JSON.stringify({ filename: job.run.filename }),
+        })}`
+      );
+    }
+    if (firstFails) {
+      expect(
+        within(alert).queryByRole('link', { name: 'View reductions for LOQ00012345.raw' })
+      ).not.toBeInTheDocument();
+      expect(logError).toHaveBeenCalledWith('Failed to resubmit job 101', error);
+    }
+
+    act(() => vi.advanceTimersByTime(6000));
+    fireEvent.click(document.body);
+    expect(alert).toBeVisible();
+    fireEvent.click(within(alert).getByRole('button', { name: 'Close' }));
+    act(() => vi.advanceTimersByTime(300));
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  test('shows no links and automatically dismisses the alert when every bulk resubmission fails', async () => {
+    vi.mocked(fiaApi.post).mockRejectedValue(new Error('Resubmit unavailable'));
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    renderTable();
+    await waitForLoadedJobs();
+    vi.useFakeTimers();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Select all' }));
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Resubmit (2)' })));
+    const alert = screen.getByRole('alert');
+    expect(alert).toHaveTextContent('Some reductions could not be resubmitted');
+    expect(within(alert).queryByRole('link')).not.toBeInTheDocument();
+
+    act(() => vi.advanceTimersByTime(5000));
+    act(() => vi.advanceTimersByTime(300));
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  test('allows a bulk download error notification to be dismissed', async () => {
+    const user = userEvent.setup();
+    vi.mocked(fiaApi.post).mockRejectedValueOnce(new Error('Download unavailable'));
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    renderTable();
+    await waitForLoadedJobs();
+
+    await user.click(screen.getByRole('button', { name: 'Select row 101' }));
+    await user.click(screen.getByRole('button', { name: 'Download all (2)' }));
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent(/download/i);
+    await user.click(within(alert).getByRole('button', { name: 'Close' }));
+    await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument());
   });
 
   test('selects and deselects every visible row', async () => {
