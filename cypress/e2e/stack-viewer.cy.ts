@@ -46,7 +46,8 @@ describe('Stack viewer search', () => {
     });
     const sizeLabels = { small: '25%', medium: '50%', large: '75%', full: '100%', fit: 'fit' };
     Object.entries(sizeLabels).forEach(([size, label]) => {
-      cy.get(`button[aria-label="${label}"]`).click();
+      // Auto-scrolling overflow-hidden ancestors would shift the viewport coordinates being compared.
+      cy.get(`button[aria-label="${label}"]`).click({ scrollBehavior: false });
       cy.get(`button[aria-label="${label}"]`).should('have.attr', 'aria-pressed', 'true');
       selectors.forEach((selector, index) => {
         cy.get(selector).should(($element) => {
@@ -58,7 +59,7 @@ describe('Stack viewer search', () => {
       });
       cy.location('search').should(size === 'fit' ? 'not.contain' : 'contain', `viewerSize=${size}`);
     });
-    cy.get('button[aria-label="75%"]').click();
+    cy.get('button[aria-label="75%"]').click({ scrollBehavior: false });
     cy.reload();
     cy.wait('@stackImage');
     cy.get('button[aria-label="75%"]').should('have.attr', 'aria-pressed', 'true');
