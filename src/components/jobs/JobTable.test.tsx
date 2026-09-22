@@ -151,11 +151,7 @@ const defaultProps = {
 };
 
 const renderTable = (overrides: Partial<typeof defaultProps> = {}): ReturnType<typeof render> =>
-  render(
-    <MemoryRouter>
-      <JobTable {...defaultProps} {...overrides} />
-    </MemoryRouter>
-  );
+  render(<JobTable {...defaultProps} {...overrides} />, { wrapper: MemoryRouter });
 
 const waitForLoadedJobs = async (): Promise<void> => {
   await waitFor(() => {
