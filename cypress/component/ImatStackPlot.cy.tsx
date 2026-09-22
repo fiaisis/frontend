@@ -219,6 +219,10 @@ describe('IMAT stack plot sizing', () => {
   it('preserves magnification on resize and supports selection zoom and preset changes', () => {
     mount(<PlotHarness />);
     cy.contains('button', /^medium$/).click();
+    // Preset changes remount the canvas; wait for the new scene before sending input.
+    cy.get('canvas').should(($canvas) => {
+      expect(featureBounds($canvas[0]).width).to.be.closeTo(256, 3);
+    });
     zoomIn();
     let zoomedWidth: number;
     let canvasWidth: number;
@@ -264,6 +268,9 @@ describe('IMAT stack plot sizing', () => {
     mount(<PlotHarness />);
     cy.contains('button', /^full$/).click();
     const checkTooltip = (): void => {
+      cy.get('canvas').should(($canvas) => {
+        expect(featureBounds($canvas[0]).width).to.be.closeTo(512, 3);
+      });
       cy.get('canvas').trigger('pointermove', 'center', { eventConstructor: 'PointerEvent', buttons: 0 });
       cy.get(plotSelector)
         .contains(/x=102[34], y=51[12]/)
