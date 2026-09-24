@@ -6,6 +6,7 @@ import {
   ErrorOutline,
   HighlightOff,
   ImageAspectRatio,
+  MoreHoriz,
   OpenInNew,
   People,
   Replay,
@@ -356,6 +357,7 @@ const JobOutput: React.FC<{
           {downloadingSingle === output && (
             <CircularProgress size={20} color="inherit" aria-label={`Downloading ${output}`} sx={{ flexShrink: 0 }} />
           )}
+          <MoreHoriz fontSize="small" sx={{ flexShrink: 0 }} />
         </ButtonBase>
       ))}
       <Menu
