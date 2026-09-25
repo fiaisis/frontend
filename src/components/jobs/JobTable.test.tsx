@@ -53,6 +53,7 @@ vi.mock('./Row', () => ({
     error,
     onRetry,
     onClose,
+    refreshJobs,
   }: {
     open: boolean;
     jobId: number | null;
@@ -61,6 +62,7 @@ vi.mock('./Row', () => ({
     error: string | null;
     onRetry: () => void;
     onClose: () => void;
+    refreshJobs: () => void;
   }) =>
     open ? (
       <div role="dialog" aria-label="Reduction details">
@@ -72,6 +74,9 @@ vi.mock('./Row', () => ({
         )}
         <button type="button" onClick={onClose}>
           Close details
+        </button>
+        <button type="button" onClick={refreshJobs}>
+          Refresh jobs
         </button>
       </div>
     ) : null,
@@ -407,6 +412,59 @@ describe('JobTable', () => {
 
     expect(handleRowsPerPageChange).toHaveBeenCalledWith(50, 0);
     expect(handlePageChange).toHaveBeenCalledWith(1);
+  });
+
+  test.each<[string, Partial<React.ComponentProps<typeof JobTable>>]>([
+    ['page', { currentPage: 1 }],
+    ['rows per page', { rowsPerPage: 50 }],
+    ['sort column', { orderBy: 'run_start' }],
+    ['sort direction', { orderDirection: 'asc' }],
+    ['filters', { filters: { title: 'First' } }],
+    ['instrument', { selectedInstrument: 'ALL' }],
+    ['user view', { asUser: true }],
+  ])('resets vertical scroll when the %s changes', async (_label, changes) => {
+    const view = renderTable();
+    await waitForLoadedJobs();
+    const tableScroll = screen.getByTestId('reduction-history-table-scroll');
+    const tableContainer = screen.getByTestId('reduction-history-table-container');
+    tableScroll.scrollTop = 300;
+    tableContainer.scrollLeft = 100;
+
+    view.rerender(<JobTable {...defaultProps} {...changes} />);
+    await waitForLoadedJobs();
+
+    expect(tableScroll.scrollTop).toBe(0);
+    expect(tableContainer.scrollLeft).toBe(100);
+  });
+
+  test('preserves scroll for equivalent filters, selection, details and refreshed rows', async () => {
+    const user = userEvent.setup();
+    const view = renderTable({ filters: { title: 'First' } });
+    await waitForLoadedJobs();
+    const tableScroll = screen.getByTestId('reduction-history-table-scroll');
+    tableScroll.scrollTop = 300;
+
+    view.rerender(<JobTable {...defaultProps} filters={{ title: 'First' }} />);
+    expect(tableScroll.scrollTop).toBe(300);
+
+    await user.click(screen.getByRole('button', { name: 'Select row 101' }));
+    expect(screen.getByRole('button', { name: 'Deselect row 101' })).toBeInTheDocument();
+    expect(tableScroll.scrollTop).toBe(300);
+
+    view.rerender(<JobTable {...defaultProps} filters={{ title: 'First' }} selectedReductionId={101} />);
+    expect(await screen.findByText('Detail job 101')).toBeInTheDocument();
+    expect(tableScroll.scrollTop).toBe(300);
+
+    vi.mocked(fiaApi.get).mockResolvedValueOnce({
+      data: jobs.map((job) => ({ ...job, run: { ...job.run, title: `Refreshed ${job.id}` } })),
+    });
+    await user.click(screen.getByRole('button', { name: 'Refresh jobs' }));
+    expect(await screen.findByText('Refreshed 101')).toBeInTheDocument();
+    expect(tableScroll.scrollTop).toBe(300);
+
+    view.rerender(<JobTable {...defaultProps} filters={{ title: 'First' }} />);
+    expect(screen.queryByRole('dialog', { name: 'Reduction details' })).not.toBeInTheDocument();
+    expect(tableScroll.scrollTop).toBe(300);
   });
 
   test('shows active filters in the toolbar and supports removing one or clearing all', async () => {
