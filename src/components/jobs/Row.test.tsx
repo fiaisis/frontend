@@ -370,7 +370,7 @@ describe('Row and reduction details modal', () => {
     });
   });
 
-  test('resubmits from the inputs tab and refreshes after the completion delay', async () => {
+  test('resubmits, refreshes, and keeps a dismissible link to the run history', async () => {
     vi.useFakeTimers();
     const resubmitJob = vi.fn(async () => undefined);
     const refreshJobs = vi.fn();
@@ -384,6 +384,57 @@ describe('Row and reduction details modal', () => {
 
     expect(refreshJobs).toHaveBeenCalledTimes(1);
     expect(screen.getByText('Resubmit started successfully for reduction 42')).toBeInTheDocument();
+    const alert = screen.getByRole('alert');
+    const link = within(alert).getByRole('link', { name: 'View reductions for this run' });
+    const destination = `/reduction-history/LOQ?${new URLSearchParams({
+      filters: JSON.stringify({ filename: '/data/LOQ00012345.raw' }),
+    })}`;
+    expect(link).toHaveAttribute('href', destination);
+
+    act(() => vi.advanceTimersByTime(6000));
+    fireEvent.click(document.body);
+    expect(alert).toBeVisible();
+    fireEvent.click(link);
+    expect(screen.getByTestId('current-location').textContent).toBe(destination);
+
+    fireEvent.click(within(alert).getByRole('button', { name: 'Close' }));
+    act(() => vi.advanceTimersByTime(300));
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  test('shows no history link when resubmission fails and dismisses the error automatically', async () => {
+    vi.useFakeTimers();
+    const error = new Error('Resubmit unavailable');
+    const logError = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    const resubmitJob = vi.fn().mockRejectedValue(error);
+    renderModal({ resubmitJob });
+
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Resubmit' })));
+    act(() => vi.advanceTimersByTime(2000));
+
+    const alert = screen.getByRole('alert');
+    expect(alert).toHaveTextContent('Resubmit could not be started for 42');
+    expect(within(alert).queryByRole('link')).not.toBeInTheDocument();
+    expect(logError).toHaveBeenCalledWith('Error resubmitting job', error);
+
+    act(() => vi.advanceTimersByTime(5000));
+    act(() => vi.advanceTimersByTime(300));
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  test('allows a download error notification to be dismissed', async () => {
+    const user = userEvent.setup();
+    vi.mocked(fiaApi.post).mockRejectedValueOnce(new Error('Download unavailable'));
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    renderModal();
+
+    await user.click(screen.getByRole('tab', { name: 'Reduction outputs' }));
+    await user.click(screen.getByRole('button', { name: 'Download all' }));
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent(/download/i);
+
+    await user.click(within(alert).getByRole('button', { name: 'Close' }));
+    await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument());
   });
 
   test('shows failed stacktraces inside the reduction outputs tab', async () => {
