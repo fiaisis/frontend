@@ -24,6 +24,11 @@ const a11yProps = (index: number): { id: string; 'aria-controls': string } => ({
   id: `tab-${index}`,
   'aria-controls': `tabpanel-${index}`,
 });
+type SpecificationFieldValue = string | number | boolean | null | undefined | SpecificationFieldRecord;
+interface SpecificationFieldRecord {
+  [key: string]: SpecificationFieldValue;
+}
+
 interface ConfigSettingsGeneralProps {
   // Allow children to be passed for features specific to certain instruments
   children?: React.ReactNode;
@@ -35,7 +40,7 @@ const ConfigSettingsGeneral: React.FC<ConfigSettingsGeneralProps> = ({ children,
   const { instrumentName } = useParams<{ instrumentName: string }>();
   const [reductionStatus, setReductionStatus] = useState<'ON' | 'OFF'>('ON');
   const [jsonContent, setJsonContent] = useState<string>('{}');
-  const [formFields, setFormFields] = useState<{ [key: string]: string | Record<string, string> }>({}); // Dynamic form fields
+  const [formFields, setFormFields] = useState<SpecificationFieldRecord>({}); // Dynamic form fields
   const [enabledStatus, setEnabledStatus] = useState<boolean>(true); // State for "enabled" tag
   const [tabValue, setTabValue] = useState(0);
   const [unsavedChanges, setUnsavedChanges] = useState(false); // State for tracking changes
@@ -77,10 +82,31 @@ const ConfigSettingsGeneral: React.FC<ConfigSettingsGeneralProps> = ({ children,
       console.error('Error parsing JSON:', error);
     }
   };
+  // Recursively update a field in nested object by path
+  const updateNestedField = (
+    current: SpecificationFieldRecord,
+    path: string[],
+    value: SpecificationFieldValue
+  ): SpecificationFieldRecord => {
+    if (path.length === 0) return current;
+    const [head, ...tail] = path;
+    if (tail.length === 0) {
+      return { ...current, [head]: value };
+    }
+    const currentChild = current[head];
+    const nextCurrent: SpecificationFieldRecord =
+      typeof currentChild === 'object' && currentChild !== null && !Array.isArray(currentChild)
+        ? (currentChild as SpecificationFieldRecord)
+        : {};
+    return {
+      ...current,
+      [head]: updateNestedField(nextCurrent, tail, value),
+    };
+  };
   // Sync JSON when form fields are edited
-  const syncJsonWithForm = (updatedFields: { [key: string]: string | Record<string, string> }): void => {
+  const syncJsonWithForm = (updatedFields: SpecificationFieldRecord): void => {
     try {
-      const json = JSON.parse(jsonContent);
+      const json = JSON.parse(jsonContent) as Record<string, unknown>;
       Object.keys(updatedFields).forEach((key) => {
         json[key] = updatedFields[key];
       });
@@ -89,8 +115,16 @@ const ConfigSettingsGeneral: React.FC<ConfigSettingsGeneralProps> = ({ children,
       console.error('Error syncing JSON with form:', error);
     }
   };
-  const handleFormInputChange = (key: string, value: string | Record<string, string>): void => {
-    const updatedFields = { ...formFields, [key]: value };
+  const handleFormFieldChange = (path: string[], rawValue: string, previousValue: SpecificationFieldValue): void => {
+    let nextValue: SpecificationFieldValue = rawValue;
+    if (typeof previousValue === 'boolean') {
+      if (rawValue.toLowerCase() === 'true') {
+        nextValue = true;
+      } else if (rawValue.toLowerCase() === 'false') {
+        nextValue = false;
+      }
+    }
+    const updatedFields = updateNestedField(formFields, path, nextValue);
     setFormFields(updatedFields);
     syncJsonWithForm(updatedFields);
     setUnsavedChanges(true);
@@ -129,6 +163,47 @@ const ConfigSettingsGeneral: React.FC<ConfigSettingsGeneralProps> = ({ children,
         setApplyMessage('Error applying spec changes');
       });
   };
+
+  const renderFormField = (key: string, value: SpecificationFieldValue, path: string[]): React.ReactNode => {
+    if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+      return (
+        <Box key={path.join('.')} sx={{ minWidth: 0, border: `1px solid ${configChrome.border}` }}>
+          <Typography
+            variant="body2"
+            component="h4"
+            sx={{
+              px: 1.5,
+              py: 1,
+              fontWeight: 700,
+              overflowWrap: 'anywhere',
+              backgroundColor: configChrome.header,
+              borderBottom: `1px solid ${configChrome.border}`,
+            }}
+          >
+            {key}
+          </Typography>
+          <Box sx={{ display: 'grid', gap: 1.5, p: 1.5 }}>
+            {Object.entries(value).map(([childKey, childValue]) =>
+              renderFormField(childKey, childValue, [...path, childKey])
+            )}
+          </Box>
+        </Box>
+      );
+    }
+
+    return (
+      <TextField
+        key={path.join('.')}
+        fullWidth
+        size="small"
+        label={key}
+        inputProps={{ 'aria-label': path.join(': ') }}
+        value={value === null || value === undefined ? '' : String(value)}
+        onChange={(e) => handleFormFieldChange(path, e.target.value, value)}
+      />
+    );
+  };
+
   return (
     <Box
       sx={{ width: '100%', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', color: configChrome.text }}
@@ -236,58 +311,7 @@ const ConfigSettingsGeneral: React.FC<ConfigSettingsGeneralProps> = ({ children,
           <TabPanel value={tabValue} index={0}>
             <Box sx={{ display: 'grid', gap: 1.5 }}>
               {/* Dynamically generated form fields */}
-              {Object.entries(formFields).map(([key, value]) => {
-                if (typeof value === 'object' && value !== null) {
-                  return (
-                    <Box key={key} sx={{ minWidth: 0, border: `1px solid ${configChrome.border}` }}>
-                      <Typography
-                        variant="body2"
-                        component="h4"
-                        sx={{
-                          px: 1.5,
-                          py: 1,
-                          fontWeight: 700,
-                          overflowWrap: 'anywhere',
-                          backgroundColor: configChrome.header,
-                          borderBottom: `1px solid ${configChrome.border}`,
-                        }}
-                      >
-                        {key}
-                      </Typography>
-                      <Box sx={{ display: 'grid', gap: 1.5, p: 1.5 }}>
-                        {Object.entries(value).map(([subKey, subValue]) => (
-                          <TextField
-                            key={subKey}
-                            fullWidth
-                            size="small"
-                            label={subKey}
-                            inputProps={{ 'aria-label': `${key}: ${subKey}` }}
-                            value={subValue}
-                            onChange={(e) => {
-                              const updatedNested = {
-                                ...((formFields[key] as Record<string, string>) ?? {}),
-                                [subKey]: e.target.value,
-                              };
-                              handleFormInputChange(key, updatedNested);
-                            }}
-                          />
-                        ))}
-                      </Box>
-                    </Box>
-                  );
-                } else {
-                  return (
-                    <TextField
-                      key={key}
-                      fullWidth
-                      size="small"
-                      label={key}
-                      value={value}
-                      onChange={(e) => handleFormInputChange(key, e.target.value)}
-                    />
-                  );
-                }
-              })}
+              {Object.entries(formFields).map(([key, value]) => renderFormField(key, value, [key]))}
             </Box>
           </TabPanel>
           {/* Advanced panel */}
