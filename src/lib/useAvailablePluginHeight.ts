@@ -25,10 +25,10 @@ const getViewportBottom = (): number => {
 };
 
 const getAvailableContainerBottom = (container: HTMLElement): number => {
-  // SciGateway sets a viewport-based max-height. Measuring its current bottom
-  // feeds the frontend's height back into the calculation, preventing the page
-  // from growing again after a resize. Use SciGateway's CSS maximum height to
-  // get right size
+  // SciGateway sets a viewport-based max-height. Its Measurment feeds the
+  // frontend's height back into the calculation, preventing the page from
+  // growing again after a resize. Use SciGateway's CSS maximum height to get
+  // right size.
 
   const bounds = container.getBoundingClientRect();
   const style = window.getComputedStyle(container);
