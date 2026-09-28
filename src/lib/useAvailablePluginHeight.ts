@@ -24,6 +24,28 @@ const getViewportBottom = (): number => {
   return window.innerHeight;
 };
 
+const getAvailableContainerBottom = (container: HTMLElement): number => {
+  // SciGateway sets a viewport-based max-height. Measuring its current bottom
+  // feeds the frontend's height back into the calculation, preventing the page
+  // from growing again after a resize. Use SciGateway's CSS maximum height to
+  // get right size
+
+  const bounds = container.getBoundingClientRect();
+  const style = window.getComputedStyle(container);
+
+  if (!style.maxHeight.endsWith('px')) return bounds.bottom;
+
+  const boxHeight =
+    style.boxSizing === 'border-box'
+      ? 0
+      : [style.paddingTop, style.paddingBottom, style.borderTopWidth, style.borderBottomWidth].reduce(
+          (total, value) => total + (Number.parseFloat(value) || 0),
+          0
+        );
+
+  return bounds.top + Number.parseFloat(style.maxHeight) + boxHeight;
+};
+
 export const useAvailablePluginHeight = <T extends HTMLElement = HTMLDivElement>(): {
   rootRef: React.RefObject<T>;
   availableHeight: string;
@@ -40,7 +62,7 @@ export const useAvailablePluginHeight = <T extends HTMLElement = HTMLDivElement>
     const rootTopAtScrollOrigin =
       root.getBoundingClientRect().top + (scrollContainer ? scrollContainer.scrollTop : window.scrollY);
     const contentBottom = scrollContainer
-      ? Math.min(scrollContainer.getBoundingClientRect().bottom, viewportBottom)
+      ? Math.min(getAvailableContainerBottom(scrollContainer), viewportBottom)
       : viewportBottom;
     const nextHeight = `${Math.max(0, Math.floor(contentBottom - rootTopAtScrollOrigin))}px`;
 
