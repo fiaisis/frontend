@@ -22,7 +22,7 @@
     "@types/node": "26.1.1",
     "@types/react": "18.3.11",
     "@types/react-dom": "18.3.5",
-    "axios": "^1.18.1",
+    "axios": "^1.20.0",
     "dayjs": "^1.11.21",
     "express": "5.2.1",
     "express-ws": "5.0.2",
