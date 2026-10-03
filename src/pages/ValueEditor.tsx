@@ -1,10 +1,10 @@
 import Editor from '@monaco-editor/react';
 import Replay from '@mui/icons-material/Replay';
 import {
-  Alert,
   Box,
   Button,
   CircularProgress,
+  Link,
   MenuItem,
   Select,
   SelectChangeEvent,
@@ -16,14 +16,16 @@ import {
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { useHistory, useParams } from 'react-router-dom';
+import { Link as RouterLink, useHistory, useParams } from 'react-router-dom';
 
+import SnackbarAlert from '../components/feedback/SnackbarAlert';
 import { getJobTableChromeColors, JOB_TABLE_TOOLBAR_CONTROL_HEIGHT } from '../components/jobs/constants';
 import NavArrows from '../components/navigation/NavArrows';
 import PageHeader from '../components/navigation/PageHeader';
 import { getPageHeaderControlSx } from '../components/navigation/pageHeaderStyles';
 import { fiaApi } from '../lib/api';
 import { isValidInstrument } from '../lib/instrumentData';
+import { getRunReductionHistoryUrl } from '../lib/reductionHistoryUrl';
 import { MantidVersionMap } from '../lib/types';
 import { useAvailablePluginHeight } from '../lib/useAvailablePluginHeight';
 
@@ -81,7 +83,9 @@ const ValueEditor: React.FC = () => {
   const [scriptValue, setScriptValue] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
   const [instrumentName, setInstrumentName] = useState<string | null>(null);
+  const [runFilename, setRunFilename] = useState('');
   const rerunSuccessful = useRef<boolean | null>(null);
+  const [rerunJobId, setRerunJobId] = useState<number | null>(null);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const userModified = useRef(false);
 
@@ -97,6 +101,7 @@ const ValueEditor: React.FC = () => {
         if (data?.run?.instrument_name) {
           setInstrumentName(data.run.instrument_name);
         }
+        setRunFilename(data?.run?.filename ?? '');
       })
       .catch((err) => console.error('Error fetching reductions:', err))
       .finally(() => setLoading(false));
@@ -147,10 +152,15 @@ const ValueEditor: React.FC = () => {
     if (!runnerVersion) return;
 
     setLoading(true);
+    setSnackbarOpen(false);
+    setRerunJobId(null);
     const runnerImage = `ghcr.io/fiaisis/mantid@${runnerVersion}`;
     fiaApi
-      .post('/job/rerun', { job_id: jobId, runner_image: runnerImage, script: scriptValue })
-      .then(() => (rerunSuccessful.current = true))
+      .post<number>('/job/rerun', { job_id: jobId, runner_image: runnerImage, script: scriptValue })
+      .then(({ data }) => {
+        rerunSuccessful.current = true;
+        setRerunJobId(data);
+      })
       .catch((err) => {
         console.error('Failed to rerun job:', err);
         rerunSuccessful.current = false;
@@ -247,7 +257,7 @@ const ValueEditor: React.FC = () => {
               >
                 <Snackbar
                   open={snackbarOpen}
-                  autoHideDuration={5000}
+                  autoHideDuration={rerunSuccessful.current ? null : 5000}
                   onClose={(event, reason) => {
                     if (reason !== 'clickaway') {
                       setSnackbarOpen(false);
@@ -256,26 +266,31 @@ const ValueEditor: React.FC = () => {
                   disableWindowBlurListener={false}
                   anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
                 >
-                  <Alert
-                    sx={{
-                      padding: '10px 14px',
-                      fontSize: '1rem',
-                      width: '100%',
-                      maxWidth: '600px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      border: '1px solid',
-                      borderRadius: 0,
-                      boxShadow: 'none',
-                      fontWeight: 'bold',
-                    }}
+                  <SnackbarAlert
                     severity={rerunSuccessful.current ? 'success' : 'error'}
+                    onClose={() => setSnackbarOpen(false)}
                   >
-                    {rerunSuccessful.current
-                      ? `Rerun started successfully for reduction ${jobId}`
-                      : `Rerun could not be started for ${jobId} — please try again later or contact staff`}
-                  </Alert>
+                    {rerunSuccessful.current ? (
+                      <>
+                        Rerun started successfully for reduction {rerunJobId}.
+                        <Box sx={{ mt: 0.5 }}>
+                          <Link
+                            component={RouterLink}
+                            to={getRunReductionHistoryUrl(
+                              { instrument_name: instrumentName ?? urlInstrumentName, filename: runFilename },
+                              rerunJobId
+                            )}
+                            color="inherit"
+                            underline="always"
+                          >
+                            View reduction
+                          </Link>
+                        </Box>
+                      </>
+                    ) : (
+                      `Rerun could not be started for ${jobId} — please try again later or contact staff`
+                    )}
+                  </SnackbarAlert>
                 </Snackbar>
                 <Typography id="runner-version-label" variant="body2" sx={{ whiteSpace: 'nowrap', fontWeight: 500 }}>
                   Runner version
