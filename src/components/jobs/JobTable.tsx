@@ -180,6 +180,14 @@ const JobTable: React.FC<{
   const countQuery = `filters=${JSON.stringify(filters)}`;
   const queryPath = selectedInstrument === 'ALL' ? '/jobs' : `/instrument/${selectedInstrument}/jobs`;
   const countQueryPath = selectedInstrument === 'ALL' ? '/jobs/count' : `/instrument/${selectedInstrument}/jobs/count`;
+
+  useLayoutEffect(() => {
+    // Start each new results view at the top.
+    if (tableScrollRef.current) {
+      tableScrollRef.current.scrollTop = 0;
+    }
+  }, [queryPath, query]);
+
   const fetchJobs = useFetchJobs(queryPath, query, setJobs);
   const fetchTotalCount = useFetchTotalCount(countQueryPath, countQuery, setTotalRows);
   const [isBulkResubmitting, setIsBulkResubmitting] = useState(false);

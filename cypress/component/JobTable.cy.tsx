@@ -1,9 +1,10 @@
 import { Box } from '@mui/material';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { mount } from 'cypress/react';
-import React from 'react';
+import React, { useState } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 
+import { JobRowsPerPage } from '../../src/components/jobs/constants';
 import JobTable from '../../src/components/jobs/JobTable';
 import { Job } from '../../src/lib/types';
 
@@ -33,6 +34,41 @@ const job: Job = {
     raw_frames: 110,
     instrument_name: 'LOQ',
   },
+};
+
+const PaginatedJobTable = ({ initialRows }: { initialRows: JobRowsPerPage }): React.ReactElement => {
+  const [page, setPage] = useState(1);
+  const [rows, setRows] = useState(initialRows);
+  const onAction = (): void => {};
+
+  return (
+    <MemoryRouter>
+      <Box sx={{ height: 'calc(100vh - 16px)' }}>
+        <JobTable
+          selectedInstrument="ALL"
+          currentPage={page}
+          handlePageChange={setPage}
+          asUser={false}
+          setAsUser={onAction}
+          rowsPerPage={rows}
+          handleRowsPerPageChange={(newRows, newPage) => {
+            setRows(newRows);
+            setPage(newPage);
+          }}
+          filters={{}}
+          handleSort={onAction}
+          orderBy="start"
+          orderDirection="desc"
+          filtersApplied={false}
+          openFilters={onAction}
+          handleFiltersChange={onAction}
+          selectedReductionId={null}
+          openReductionDetails={onAction}
+          closeReductionDetails={onAction}
+        />
+      </Box>
+    </MemoryRouter>
+  );
 };
 
 const expectColumnAlignment = (expectedGutter?: number): void => {
@@ -132,6 +168,54 @@ describe('Reduction history column alignment', () => {
 
       cy.viewport(1437, 900);
       expectColumnAlignment();
+    });
+  });
+});
+
+describe('Reduction history pagination scroll', () => {
+  const scenarios: { label: string; button: string; rows: JobRowsPerPage; first: number; last: number }[] = [
+    { label: 'next page', button: 'Go to next page', rows: 25, first: 51, last: 75 },
+    { label: 'previous page', button: 'Go to previous page', rows: 25, first: 1, last: 25 },
+    { label: 'numbered page', button: 'Go to page 4', rows: 25, first: 76, last: 100 },
+    { label: 'increasing rows per page', button: '50 rows per page', rows: 25, first: 1, last: 50 },
+    { label: 'decreasing rows per page', button: '25 rows per page', rows: 50, first: 51, last: 75 },
+  ];
+
+  scenarios.forEach(({ label, button, rows, first, last }) => {
+    it(`resets to the top after ${label}`, () => {
+      cy.viewport(1280, 720);
+      cy.intercept('GET', '**/api/jobs/runners', { body: {} });
+      cy.intercept('GET', '**/api/jobs/count?*', { body: { count: 200 } });
+      cy.intercept('GET', '**/api/jobs?*', (request) => {
+        const params = new URL(request.url).searchParams;
+        const offset = Number(params.get('offset'));
+        const limit = Number(params.get('limit'));
+        request.reply({
+          body: Array.from({ length: limit }, (_, index) => ({
+            ...job,
+            id: offset + index + 1,
+            run: { ...job.run, title: `Reduction ${offset + index + 1}` },
+          })),
+        });
+      }).as('getJobs');
+
+      mount(<PaginatedJobTable initialRows={rows} />);
+      cy.wait('@getJobs');
+      cy.get(tableScrollSelector)
+        .find('tbody tr')
+        .first()
+        .should('contain.text', `Reduction ${rows + 1}`);
+      cy.get(tableScrollSelector).scrollTo(0, 300);
+      cy.get(tableScrollSelector).should('have.prop', 'scrollTop', 300);
+
+      cy.get(`button[aria-label="${button}"]`).click();
+
+      cy.get('[data-testid="reduction-history-displayed-rows"]').should(
+        'have.text',
+        `Showing ${first}-${last} of 200 reductions`
+      );
+      cy.get(tableScrollSelector).find('tbody tr').first().should('contain.text', `Reduction ${first}`);
+      cy.get(tableScrollSelector).should('have.prop', 'scrollTop', 0);
     });
   });
 });
