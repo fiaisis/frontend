@@ -472,7 +472,9 @@ describe('Experiment viewer', { timeout: 30000 }, () => {
 
       await waitFor(() => expect(screen.getByTestId('plot-data')).toHaveTextContent(selectedFilename));
       expect(fiaApi.get).toHaveBeenCalledWith('/job/7');
-      expect(screen.getByRole('button', { name: /LOQ7.nxs/ })).toHaveAttribute('aria-expanded', 'true');
+      await waitFor(() =>
+        expect(screen.getByRole('button', { name: /LOQ7.nxs/ })).toHaveAttribute('aria-expanded', 'true')
+      );
       expect(screen.getByRole('checkbox', { name: selectedFilename })).toBeChecked();
       expect(screen.getByRole('checkbox', { name: 'other.nxs' })).not.toBeChecked();
       expect(screen.getByRole('tab', { name: '1D view' })).toHaveAttribute('aria-selected', 'true');
