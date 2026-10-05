@@ -1,4 +1,4 @@
-import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 import { Link, MemoryRouter, Route, useHistory, useLocation } from 'react-router-dom';
@@ -37,6 +37,7 @@ vi.mock('../components/experimentViewer/Viewer2D', () => ({
 
 const selectedFilename = 'result & scan #1.nxs';
 const experimentPath = '/experiment-viewer?instrument=LOQ&experiment=12345';
+const reductionLink = (jobId = 7): string => `${experimentPath}&jobId=${jobId}`;
 const outputLink = (filename = selectedFilename, jobId = 7): string =>
   `${experimentPath}&${new URLSearchParams({ jobId: String(jobId), file: filename })}`;
 const searchLink = (filename: string, instrument?: string): string =>
@@ -144,6 +145,193 @@ describe('Experiment viewer', { timeout: 30000 }, () => {
   afterEach(() => {
     cleanup();
     vi.restoreAllMocks();
+  });
+
+  describe('reduction-only links', () => {
+    test.each(['.h5', '.hdf5', '.nxs', '.nxspe'])(
+      'opens only the linked reduction and plots its first supported %s output',
+      async (extension) => {
+        const firstOutput = `first & scan #1${extension}`;
+        vi.mocked(fiaApi.get).mockResolvedValue({
+          data: { ...makeJob(), outputs: JSON.stringify(['report.txt', firstOutput, 'second.nxs']) },
+        });
+        renderViewer(reductionLink());
+
+        await waitFor(() => expect(fetchData1D).toHaveBeenCalledWith(`/data/${firstOutput}`, '/primary', undefined));
+        expect(fiaApi.get).toHaveBeenCalledExactlyOnceWith('/job/7');
+        expect(screen.getByRole('button', { name: /LOQ7.nxs/, current: true })).toHaveAttribute(
+          'aria-expanded',
+          'true'
+        );
+        expect(screen.getByRole('checkbox', { name: firstOutput })).toBeChecked();
+        expect(screen.getByRole('checkbox', { name: 'second.nxs' })).not.toBeChecked();
+        expect(screen.queryByText('report.txt')).not.toBeInTheDocument();
+        expect(discoverFileStructure).toHaveBeenCalledExactlyOnceWith(firstOutput, `/data/${firstOutput}`);
+        expect(fetchData1D).toHaveBeenCalledTimes(1);
+        expect(screen.queryByText('Opened reduction')).not.toBeInTheDocument();
+        expect(screen.queryByText('Experiment reductions')).not.toBeInTheDocument();
+        expect(screen.queryByText('No jobs listed')).not.toBeInTheDocument();
+        expect(screen.queryByRole('navigation', { name: 'Experiment viewer job pages' })).not.toBeInTheDocument();
+        expect(screen.getByRole('form', { name: 'Search reduction jobs' })).toBeVisible();
+      }
+    );
+
+    test.each(['[]', '["report.txt"]'])(
+      'shows the selected reduction with no supported outputs: %s',
+      async (outputs) => {
+        vi.mocked(fiaApi.get).mockResolvedValue({ data: { ...makeJob(), outputs } });
+        renderViewer(reductionLink());
+        expect(await screen.findByText('No supported output files for this reduction.')).toBeVisible();
+        expect(screen.getByRole('button', { name: /LOQ7.nxs/ })).toHaveAttribute('aria-expanded', 'true');
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+        expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+        expect(fetchFilePath).not.toHaveBeenCalled();
+        expect(discoverFileStructure).not.toHaveBeenCalled();
+        expect(fetchData1D).not.toHaveBeenCalled();
+      }
+    );
+
+    test.each([
+      { label: 'first dataset without a primary', selected: dataset('/fallback'), slice: undefined },
+      {
+        label: 'first slice of a multidimensional primary',
+        selected: dataset('/image', { shape: [2, 3], is1D: false, is2D: true, isPrimary: true }),
+        slice: 0,
+      },
+    ])('plots the $label', async ({ selected, slice }) => {
+      vi.mocked(discoverFileStructure).mockResolvedValue(structure('other.nxs', [selected]));
+      renderViewer(reductionLink());
+      await waitFor(() => expect(fetchData1D).toHaveBeenCalledWith('/data/other.nxs', selected.path, slice));
+      expect(screen.getByRole('tab', { name: '1D view' })).toHaveAttribute('aria-selected', 'true');
+    });
+
+    test.each(['id', 'instrument', 'experiment'] as const)(
+      'rejects a reduction with a mismatched %s',
+      async (mismatch) => {
+        const job = makeJob();
+        if (mismatch === 'id') job.id = 8;
+        else if (mismatch === 'instrument') job.run.instrument_name = 'SANS2D';
+        else job.run.experiment_number = 99999;
+        vi.mocked(fiaApi.get).mockResolvedValue({ data: job });
+        renderViewer(reductionLink());
+        expect(await screen.findByRole('alert')).toHaveTextContent(
+          'The selected reduction does not belong to this experiment.'
+        );
+        expect(screen.queryByRole('button', { current: true })).not.toBeInTheDocument();
+        expect(fetchFilePath).not.toHaveBeenCalled();
+        expect(fetchData1D).not.toHaveBeenCalled();
+      }
+    );
+
+    test.each(['reduction', 'file path', 'datasets', 'plot'] as const)(
+      'reports a %s failure without selecting a different output',
+      async (stage) => {
+        vi.spyOn(console, 'error').mockImplementation(() => undefined);
+        const failure = new Error('Unavailable');
+        if (stage === 'reduction') vi.mocked(fiaApi.get).mockRejectedValue(failure);
+        if (stage === 'file path') vi.mocked(fetchFilePath).mockRejectedValueOnce(failure);
+        if (stage === 'datasets') vi.mocked(discoverFileStructure).mockRejectedValueOnce(failure);
+        if (stage === 'plot') vi.mocked(fetchData1D).mockRejectedValueOnce(failure);
+        renderViewer(reductionLink());
+        expect(await screen.findByRole('alert')).toHaveTextContent(
+          stage === 'datasets'
+            ? 'Failed to load datasets for other.nxs.'
+            : stage === 'plot'
+              ? 'Failed to fetch data.'
+              : 'The selected reduction could not be loaded.'
+        );
+        await waitFor(() => expect(screen.queryByRole('progressbar')).not.toBeInTheDocument());
+        expect(screen.getByTestId('plot-data')).toHaveTextContent('[]');
+        expect(discoverFileStructure).not.toHaveBeenCalledWith(selectedFilename, `/data/${selectedFilename}`);
+        expect(fetchData1D).toHaveBeenCalledTimes(stage === 'plot' ? 1 : 0);
+      }
+    );
+
+    test('reports an output without numeric datasets without selecting another file', async () => {
+      vi.mocked(discoverFileStructure).mockResolvedValue(structure('other.nxs', []));
+      renderViewer(reductionLink());
+      expect(await screen.findByRole('alert')).toHaveTextContent('No numeric datasets found in other.nxs.');
+      expect(discoverFileStructure).toHaveBeenCalledTimes(1);
+      expect(fetchData1D).not.toHaveBeenCalled();
+    });
+
+    test.each(['search', 'clear', 'instrument'] as const)('exits reduction-only viewing on %s', async (action) => {
+      const user = userEvent.setup();
+      servePages([[pageJob(10)]]);
+      renderViewer(reductionLink());
+      await waitFor(() => expect(screen.getByTestId('plot-data')).toHaveTextContent('other.nxs'));
+      await user.click(
+        screen.getByRole('button', {
+          name: action === 'search' ? 'Search' : action === 'clear' ? 'Clear experiment number' : 'Browse instruments',
+        })
+      );
+      expect(screen.getByTestId('page-location')).not.toHaveTextContent('jobId=');
+      expect(screen.queryByRole('button', { current: true })).not.toBeInTheDocument();
+      expect(screen.getByTestId('plot-data')).toHaveTextContent('[]');
+      if (action !== 'search') await user.click(screen.getByRole('button', { name: 'Search' }));
+      expect(await screen.findByRole('button', { name: /LOQ10.nxs/ })).toBeVisible();
+      expect(screen.getByRole('navigation', { name: 'Experiment viewer job pages' })).toBeVisible();
+    });
+
+    test('restores the reduction on navigation and browser history without overriding manual selection', async () => {
+      const user = userEvent.setup();
+      renderViewer(reductionLink(), reductionLink());
+      await waitFor(() => expect(screen.getByTestId('plot-data')).toHaveTextContent('other.nxs'));
+      await user.click(screen.getByRole('checkbox', { name: 'other.nxs' }));
+      expect(screen.getByTestId('plot-data')).toHaveTextContent('[]');
+      await user.click(screen.getByRole('link', { name: 'Open another output' }));
+      await waitFor(() => expect(screen.getByTestId('plot-data')).toHaveTextContent('other.nxs'));
+      await user.click(screen.getByRole('link', { name: 'Viewer home' }));
+      await user.click(screen.getByRole('button', { name: 'Back' }));
+      await waitFor(() => expect(screen.getByTestId('plot-data')).toHaveTextContent('other.nxs'));
+      expect(screen.queryByText('Experiment reductions')).not.toBeInTheDocument();
+      await user.click(screen.getByRole('button', { name: 'Forward' }));
+      expect(screen.queryByRole('button', { current: true })).not.toBeInTheDocument();
+      expect(screen.getByTestId('plot-data')).toHaveTextContent('[]');
+    });
+
+    test.each(['reduction', 'file path', 'datasets', 'plot'] as const)(
+      'ignores a stale %s response after navigating to another reduction',
+      async (stage) => {
+        const user = userEvent.setup();
+        const pending = deferred<void>();
+        vi.mocked(fiaApi.get).mockImplementation(async (url) => {
+          if (url === '/job/7') {
+            if (stage === 'reduction') await pending.promise;
+            return { data: makeJob() };
+          }
+          if (url === '/job/8') return { data: { ...makeJob(8), outputs: '["new.nxs"]' } };
+          throw new Error(`Unexpected API request: ${url}`);
+        });
+        vi.mocked(fetchFilePath).mockImplementation(async (filename) => {
+          if (stage === 'file path' && filename === 'other.nxs') await pending.promise;
+          return `/data/${filename}`;
+        });
+        vi.mocked(discoverFileStructure).mockImplementation(async (filename) => {
+          if (stage === 'datasets' && filename === 'other.nxs') await pending.promise;
+          return structure(filename);
+        });
+        vi.mocked(fetchData1D).mockImplementation(async (filename) => {
+          if (stage === 'plot' && filename === '/data/other.nxs') await pending.promise;
+          return [1, 2, 3];
+        });
+        renderViewer(reductionLink(), reductionLink(8));
+        await waitFor(() => {
+          if (stage === 'reduction') expect(fiaApi.get).toHaveBeenCalledWith('/job/7');
+          if (stage === 'file path') expect(fetchFilePath).toHaveBeenCalledWith('other.nxs', 'LOQ', 12345);
+          if (stage === 'datasets') expect(discoverFileStructure).toHaveBeenCalledWith('other.nxs', '/data/other.nxs');
+          if (stage === 'plot') expect(fetchData1D).toHaveBeenCalledWith('/data/other.nxs', '/primary', undefined);
+        });
+        await user.click(screen.getByRole('link', { name: 'Open another output' }));
+        await waitFor(() => expect(screen.getByTestId('plot-data')).toHaveTextContent('new.nxs'));
+        await act(async () => pending.resolve());
+        expect(screen.getByRole('checkbox', { name: 'new.nxs' })).toBeChecked();
+        expect(screen.queryByRole('button', { name: /LOQ7.nxs/ })).not.toBeInTheDocument();
+        expect(screen.getByTestId('plot-data')).not.toHaveTextContent('other.nxs');
+        expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+      }
+    );
   });
 
   test('leaves both tabs unselected until a search starts, including after selecting an instrument', async () => {
@@ -437,7 +625,7 @@ describe('Experiment viewer', { timeout: 30000 }, () => {
 
   test('reuses a reduction on the first page and retains the full experiment controls without duplicate rows', async () => {
     const user = userEvent.setup();
-    servePages([[makeJob(), pageJob(10)], [pageJob(11)]]);
+    servePages([[pageJob(10), makeJob()], [pageJob(11)]]);
     renderViewer();
     await waitFor(() => expect(screen.getByTestId('plot-data')).toHaveTextContent(selectedFilename));
     expect(fiaApi.get).not.toHaveBeenCalledWith('/job/7');
@@ -445,20 +633,26 @@ describe('Experiment viewer', { timeout: 30000 }, () => {
     expect(screen.getByRole('spinbutton', { name: 'Experiment number' })).toHaveValue(12345);
     expect(screen.getByRole('navigation', { name: 'Experiment viewer job pages' })).toBeVisible();
     expect(screen.getAllByRole('button', { name: /LOQ7.nxs/ })).toHaveLength(1);
-    expect(
-      within(screen.getByRole('region', { name: 'Opened reduction' })).getByRole('checkbox', { name: selectedFilename })
-    ).toBeChecked();
+    const openedReduction = screen.getByRole('button', { name: /LOQ7.nxs/, current: true });
+    expect(openedReduction).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getAllByRole('button', { name: /LOQ\d+\.nxs/ })).toEqual([
+      openedReduction,
+      screen.getByRole('button', { name: /LOQ10.nxs/ }),
+    ]);
+    expect(screen.queryByText('Opened reduction')).not.toBeInTheDocument();
+    expect(screen.queryByText('Experiment reductions')).not.toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: selectedFilename })).toBeChecked();
     expect(screen.getByRole('button', { name: /LOQ10.nxs/ })).toBeVisible();
     expect(screen.getByText('Showing 1-10 of 20 jobs')).toBeVisible();
     expect(discoverFileStructure).toHaveBeenCalledTimes(1);
 
     await user.click(screen.getByRole('button', { name: 'Go to page 2' }));
     await screen.findByRole('button', { name: /LOQ11.nxs/ });
-    expect(screen.queryByRole('region', { name: 'Opened reduction' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { current: true })).not.toBeInTheDocument();
     expect(screen.getByTestId('plot-data')).toHaveTextContent('[]');
     await user.click(screen.getByRole('button', { name: 'Go to page 1' }));
     expect(await screen.findByRole('checkbox', { name: selectedFilename })).not.toBeChecked();
-    expect(screen.queryByRole('region', { name: 'Opened reduction' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { current: true })).not.toBeInTheDocument();
     expect(discoverFileStructure).toHaveBeenCalledTimes(1);
   });
 
@@ -489,7 +683,7 @@ describe('Experiment viewer', { timeout: 30000 }, () => {
       expect(screen.getByRole('checkbox', { name: selectedFilename })).not.toBeChecked();
       expect(screen.getByRole('checkbox', { name: 'other.nxs' })).not.toBeChecked();
       expect(screen.getByTestId('plot-data')).toHaveTextContent('[]');
-      expect(screen.queryByRole('region', { name: 'Opened reduction' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { current: true })).not.toBeInTheDocument();
       expect(fetchData1D).toHaveBeenCalledTimes(plotRequests);
       expect(discoverFileStructure).toHaveBeenCalledTimes(2);
       await user.click(screen.getByRole('button', { name: 'Go to page 1' }));
@@ -514,8 +708,7 @@ describe('Experiment viewer', { timeout: 30000 }, () => {
       );
       renderViewer();
       await waitFor(() => expect(fetchData1D).toHaveBeenCalledWith(`/data/${selectedFilename}`, '/primary', 0));
-      const opened = within(await screen.findByRole('region', { name: 'Opened reduction' }));
-      await user.click(await opened.findByRole('combobox', { name: /Dataset/ }));
+      await user.click(await screen.findByRole('combobox', { name: /Dataset/ }));
       await user.click(screen.getByRole('option', { name: /\/another/ }));
       await user.type(screen.getByRole('textbox', { name: 'Slice indices' }), '2');
       await waitFor(() => expect(fetchData1D).toHaveBeenLastCalledWith(`/data/${selectedFilename}`, '/another', 2));
@@ -554,7 +747,7 @@ describe('Experiment viewer', { timeout: 30000 }, () => {
           screen.getByRole('button', { name: action === 'clear' ? 'Clear experiment number' : 'Browse instruments' })
         );
       }
-      await waitFor(() => expect(screen.queryByRole('region', { name: 'Opened reduction' })).not.toBeInTheDocument());
+      await waitFor(() => expect(screen.queryByRole('button', { current: true })).not.toBeInTheDocument());
       expect(screen.getByTestId('page-location')).not.toHaveTextContent('jobId=');
       expect(screen.getByTestId('page-location')).not.toHaveTextContent('file=');
       expect(screen.getByTestId('plot-data')).toHaveTextContent('[]');
@@ -575,7 +768,7 @@ describe('Experiment viewer', { timeout: 30000 }, () => {
     expect(screen.getByTestId('plot-data')).toHaveTextContent('[]');
     await user.click(screen.getByRole('button', { name: 'Go to page 2' }));
     await waitFor(() => expect(screen.queryByRole('progressbar', { name: 'Loading jobs' })).not.toBeInTheDocument());
-    expect(screen.queryByRole('region', { name: 'Opened reduction' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { current: true })).not.toBeInTheDocument();
     // Following the same URL again starts a fresh navigation, like a refresh.
     await user.click(screen.getByRole('link', { name: 'Open another output' }));
     await waitFor(() => expect(screen.getByRole('checkbox', { name: selectedFilename })).toBeChecked());
@@ -584,7 +777,7 @@ describe('Experiment viewer', { timeout: 30000 }, () => {
     await user.click(screen.getByRole('button', { name: 'Back' }));
     await waitFor(() => expect(screen.getByTestId('plot-data')).toHaveTextContent(selectedFilename));
     await user.click(screen.getByRole('button', { name: 'Forward' }));
-    expect(screen.queryByRole('region', { name: 'Opened reduction' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { current: true })).not.toBeInTheDocument();
     expect(screen.getByTestId('plot-data')).toHaveTextContent('[]');
   });
 
@@ -605,13 +798,13 @@ describe('Experiment viewer', { timeout: 30000 }, () => {
     const plotRequests = vi.mocked(fetchData1D).mock.calls.length;
     await user.click(screen.getByRole('button', { name: 'Go to page 2' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Failed to load jobs from server');
-    expect(screen.queryByRole('region', { name: 'Opened reduction' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { current: true })).not.toBeInTheDocument();
     expect(screen.getByTestId('plot-data')).toHaveTextContent('[]');
     expect(fetchData1D).toHaveBeenCalledTimes(plotRequests);
     await user.click(screen.getByRole('button', { name: 'Go to page 1' }));
     await screen.findByRole('button', { name: /LOQ10.nxs/ });
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-    expect(screen.queryByRole('region', { name: 'Opened reduction' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { current: true })).not.toBeInTheDocument();
     expect(screen.getByTestId('plot-data')).toHaveTextContent('[]');
   });
 
@@ -626,8 +819,9 @@ describe('Experiment viewer', { timeout: 30000 }, () => {
       if (state === 'failed') expect(screen.getByRole('alert')).toHaveTextContent('Failed to load jobs from server');
       else expect(screen.queryByRole('alert')).not.toBeInTheDocument();
       expect(screen.queryByRole('navigation', { name: 'Experiment viewer job pages' })).not.toBeInTheDocument();
-      expect(screen.getByRole('region', { name: 'Opened reduction' })).toBeVisible();
+      expect(screen.getByRole('button', { name: /LOQ7.nxs/, current: true })).toBeVisible();
       expect(screen.getByRole('button', { name: 'Browse instruments' })).toBeEnabled();
+      expect(screen.queryByText('No jobs listed')).not.toBeInTheDocument();
     }
   );
 
@@ -660,7 +854,7 @@ describe('Experiment viewer', { timeout: 30000 }, () => {
     const plotRequests = vi.mocked(fetchData1D).mock.calls.length;
     await user.click(screen.getByRole('button', { name: 'Clear experiment number' }));
     expect(screen.getByTestId('md-view')).toBeEmptyDOMElement();
-    expect(screen.queryByRole('region', { name: 'Opened reduction' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { current: true })).not.toBeInTheDocument();
     expect(screen.getByTestId('page-location').textContent).toBe('/experiment-viewer?instrument=LOQ');
     await user.click(screen.getByRole('button', { name: 'Search' }));
     await screen.findByRole('button', { name: /LOQ7.nxs/ });
@@ -689,7 +883,7 @@ describe('Experiment viewer', { timeout: 30000 }, () => {
       await user.click(screen.getByRole('button', { name: 'Clear experiment number' }));
       await act(async () => pending.resolve());
       expect(screen.getByTestId('plot-data')).toHaveTextContent('[]');
-      expect(screen.queryByRole('region', { name: 'Opened reduction' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { current: true })).not.toBeInTheDocument();
       expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
       expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     }
@@ -753,12 +947,12 @@ describe('Experiment viewer', { timeout: 30000 }, () => {
       });
       await user.click(screen.getByRole('button', { name: 'Go to page 2' }));
       await screen.findByRole('button', { name: /LOQ11.nxs/ });
-      expect(screen.queryByRole('region', { name: 'Opened reduction' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { current: true })).not.toBeInTheDocument();
       expect(screen.queryByRole('progressbar', { name: 'Loading experiment data' })).not.toBeInTheDocument();
       await user.click(screen.getByRole('button', { name: 'Go to page 1' }));
       await screen.findByRole('button', { name: /LOQ10.nxs/ });
       await act(async () => pending.resolve());
-      expect(screen.queryByRole('region', { name: 'Opened reduction' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { current: true })).not.toBeInTheDocument();
       expect(screen.queryByRole('button', { name: /LOQ7.nxs/ })).not.toBeInTheDocument();
       expect(screen.getByTestId('plot-data')).toHaveTextContent('[]');
       expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
@@ -898,7 +1092,11 @@ describe('Experiment viewer', { timeout: 30000 }, () => {
 
   test.each([
     `${experimentPath}&jobId=invalid&file=result.nxs`,
-    `${experimentPath}&jobId=7`,
+    `${experimentPath}&jobId=0`,
+    `${experimentPath}&jobId=invalid`,
+    `${experimentPath}&jobId=9007199254740992`,
+    `${experimentPath}&jobId=7&file=`,
+    `${experimentPath}&jobId=7&file=report.txt`,
     `${experimentPath}&file=result.nxs`,
     '/experiment-viewer?instrument=LOQ&jobId=7&file=result.nxs',
   ])('rejects an incomplete or invalid selection but keeps ordinary browsing at %s', async (path) => {
@@ -934,7 +1132,7 @@ describe('Experiment viewer', { timeout: 30000 }, () => {
         'The selected reduction does not belong to this experiment.'
       );
       expect(screen.getByRole('button', { name: /LOQ10.nxs/ })).toBeVisible();
-      expect(screen.queryByRole('region', { name: 'Opened reduction' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { current: true })).not.toBeInTheDocument();
       expect(discoverFileStructure).not.toHaveBeenCalled();
     }
   );

@@ -123,6 +123,63 @@ describe('Reduction history page', () => {
     }).as('getRunners');
   });
 
+  it('opens only the selected reduction and automatically plots its first supported output', () => {
+    cy.viewport(1280, 720);
+    const job = { ...allJobsResponse[0], outputs: '["report.txt", "first.nxs", "second.nxs"]' };
+    cy.intercept('GET', /\/api\/jobs\/count\?.*$/, { body: { count: 1 } }).as('historyCount');
+    cy.intercept('GET', /\/api\/jobs\?.*$/, { body: [job] }).as('historyJobs');
+    cy.intercept('GET', '**/api/job/101', { body: job }).as('selectedReduction');
+    cy.intercept('GET', '**/find_file/**', (request) => {
+      request.reply({ body: `/data/${request.query.filename}` });
+    });
+    cy.intercept({ method: 'GET', pathname: '/plottingapi/paths' }, { body: ['/primary'] });
+    cy.intercept(
+      { method: 'GET', pathname: '/plottingapi/meta' },
+      {
+        body: {
+          kind: 'dataset',
+          name: 'primary',
+          path: '/primary',
+          shape: [3],
+          type: { class: 'Float', size: 32 },
+          attributes: [{ name: 'signal', value: 1 }],
+        },
+      }
+    );
+    cy.intercept({ method: 'GET', pathname: '/plottingapi/data' }, { body: [1, 2, 3] }).as('plotData');
+
+    cy.visitFia('/fia/reduction-history');
+    cy.wait(['@getRunners', '@historyCount', '@historyJobs']);
+    cy.contains('All instruments reduction').click();
+    cy.get('[data-testid="reduction-details-modal"]').within(() => {
+      cy.contains('a', 'Experiment viewer')
+        .should('have.attr', 'href', '/fia/experiment-viewer?instrument=LOQ&experiment=12345&jobId=101')
+        .click();
+    });
+
+    cy.wait('@selectedReduction');
+    cy.wait('@plotData').then(({ request }) => {
+      expect(request.query.file).to.equal('/data/first.nxs');
+      expect(request.query.path).to.equal('/primary');
+    });
+    cy.location('search').should('eq', '?instrument=LOQ&experiment=12345&jobId=101');
+    cy.get('aside[aria-label="Experiment viewer files"]').within(() => {
+      cy.contains('button', '/archive/LOQ00012345.nxs')
+        .should('have.attr', 'aria-expanded', 'true')
+        .and('have.attr', 'aria-current', 'true');
+      cy.contains('label', 'first.nxs').find('input[type="checkbox"]').should('be.checked');
+      cy.contains('label', 'second.nxs').find('input[type="checkbox"]').should('not.be.checked');
+    });
+    cy.contains('Opened reduction').should('not.exist');
+    cy.contains('Experiment reductions').should('not.exist');
+    cy.contains('No jobs listed').should('not.exist');
+    cy.contains('Select a file to view 1D data').should('not.exist');
+    cy.get('[aria-label="Experiment viewer job pages"]').should('not.exist');
+    cy.get('@historyCount.all').should('have.length', 1);
+    cy.get('@historyJobs.all').should('have.length', 1);
+    cy.get('@plotData.all').should('have.length', 1);
+  });
+
   it('loads with mocked auth-aware API responses and supports instrument scoping', () => {
     cy.intercept('GET', /\/api\/jobs\/count\?.*$/, (req) => {
       expect(req.headers.authorization).to.match(/^Bearer(?: .+)?$/);
