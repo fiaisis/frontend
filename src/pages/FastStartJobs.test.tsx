@@ -121,7 +121,7 @@ describe('FastStartJobs', () => {
       fireEvent.click(detailsTab);
     }
     expect(within(modal).getByText('Fast start')).toBeInTheDocument();
-    expect(within(modal).getByText('ghcr.io/fiaisis/llsp:latest')).toBeInTheDocument();
+    expect(within(modal).queryByText('Runner image:')).not.toBeInTheDocument();
 
     const outputsTab = within(modal).queryByRole('tab', { name: 'Job outputs' });
     if (outputsTab) {

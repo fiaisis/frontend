@@ -4,7 +4,6 @@ import {
   ContentCopy,
   ErrorOutline,
   HighlightOff,
-  ImageAspectRatio,
   Schedule,
   Tag,
   VpnKey,
@@ -444,11 +443,6 @@ const FastStartJobDetailsContent: React.FC<{ job: Job }> = ({ job }) => {
       icon: <WorkOutline fontSize="small" />,
       label: 'Job type:',
       value: 'Fast start',
-    },
-    {
-      icon: <ImageAspectRatio fontSize="small" />,
-      label: 'Runner image:',
-      value: job.runner_image || 'N/A',
     },
     {
       icon: <Schedule fontSize="small" />,
