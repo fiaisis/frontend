@@ -34,6 +34,10 @@ vi.mock('./pages/Jobs', () => ({
   default: () => <h1>Jobs</h1>,
 }));
 
+vi.mock('./pages/FastStartJobs', () => ({
+  default: () => <h1>Fast start jobs</h1>,
+}));
+
 vi.mock('./pages/ValueEditor', () => ({
   default: () => <h1>Value editor</h1>,
 }));
@@ -144,6 +148,16 @@ describe('App', () => {
 
     renderAt('/fia/reduction-history/IMAT/stack-viewer');
     expect(screen.getByRole('heading', { name: 'Jobs' })).toBeInTheDocument();
+  });
+
+  test('routes to the fast start jobs page and instrument subroutes', () => {
+    renderAt('/fia/fast-start-jobs');
+    expect(screen.getByRole('heading', { name: 'Fast start jobs' })).toBeInTheDocument();
+
+    cleanup();
+
+    renderAt('/fia/fast-start-jobs/LOQ');
+    expect(screen.getByRole('heading', { name: 'Fast start jobs' })).toBeInTheDocument();
   });
 
   test('redirects the old instruments route to the renamed route', async () => {

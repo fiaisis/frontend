@@ -407,6 +407,7 @@ const JobOutput: React.FC<{
           External viewer
         </MenuItem>
         {menu &&
+          job.run?.instrument_name &&
           job.run.instrument_name !== 'IMAT' &&
           outputFilter.some((extension) => menu.output.endsWith(extension)) && (
             <MenuItem
@@ -660,7 +661,7 @@ const ReductionDetailsContent: React.FC<{
     {
       icon: <VpnKey fontSize="small" />,
       label: 'Experiment number:',
-      value: job.run.experiment_number || '—',
+      value: job.run?.experiment_number || '—',
     },
     {
       icon: <WorkOutline fontSize="small" />,
@@ -669,6 +670,7 @@ const ReductionDetailsContent: React.FC<{
         ? job.type
             .replace('JobType.', '')
             .toLowerCase()
+            .replace(/_/g, ' ')
             .replace(/^\w/, (c) => c.toUpperCase())
         : '—',
     },
@@ -714,7 +716,7 @@ const ReductionDetailsContent: React.FC<{
     },
   ];
   const showStackViewer = job.run?.instrument_name === 'IMAT' && job.state === 'SUCCESSFUL';
-  const showExperimentViewer = job.run?.instrument_name !== 'IMAT';
+  const showExperimentViewer = Boolean(job.run?.instrument_name && job.run.instrument_name !== 'IMAT');
 
   return (
     <>
@@ -885,7 +887,12 @@ const ReductionDetailsContent: React.FC<{
                     variant="outlined"
                     size="small"
                     component={Link}
-                    to={`/reduction-history/${job.run.instrument_name}/value-editor-${job.id}`}
+                    to={
+                      job.run?.instrument_name
+                        ? `/reduction-history/${job.run.instrument_name}/value-editor-${job.id}`
+                        : '#'
+                    }
+                    disabled={!job.run?.instrument_name}
                     startIcon={<Edit />}
                     onClick={() =>
                       ReactGA.event({
@@ -1021,7 +1028,7 @@ const ReductionDetailsContent: React.FC<{
                         Stack viewer
                       </Button>
                     )}
-                    {showExperimentViewer && (
+                    {showExperimentViewer && job.run && (
                       <Button
                         variant="outlined"
                         size="small"

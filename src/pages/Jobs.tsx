@@ -160,12 +160,32 @@ const ImatViewSelect: React.FC<{
   );
 };
 
-const Jobs: React.FC = (): ReactElement => {
+const getUserRole = (): 'staff' | 'user' | null => {
+  if (typeof window === 'undefined') return null;
+  const token = localStorage.getItem('scigateway:token');
+  if (!token) return null;
+  try {
+    const decoded = jwtDecode<{ role?: 'staff' | 'user' }>(token);
+    return decoded.role || 'user';
+  } catch (error) {
+    console.error('Error decoding token:', error);
+    return null;
+  }
+};
+
+export interface JobsProps {
+  mode?: 'reduction-history' | 'fast-start-jobs';
+  userViewEnabled?: boolean;
+}
+
+const Jobs: React.FC<JobsProps> = ({ mode = 'reduction-history', userViewEnabled = true }): ReactElement => {
   const { rootRef: reductionHistoryRootRef, availableHeight: reductionHistoryHeight } = useAvailablePluginHeight();
   const { instrumentName } = useParams<{ instrumentName?: string }>();
   const history = useHistory();
   const location = useLocation<ReductionHistoryLocationState>();
-  const isImat = (instrumentName || '').toUpperCase() === 'IMAT';
+  const isFastStartMode = mode === 'fast-start-jobs';
+  const basePath = isFastStartMode ? '/fast-start-jobs' : '/reduction-history';
+  const isImat = !isFastStartMode && (instrumentName || '').toUpperCase() === 'IMAT';
   const isImatViewPath = location.pathname.endsWith('/latest-image') || location.pathname.endsWith('/stack-viewer');
   const imatView = React.useMemo(
     () => (isImat ? getImatViewFromPath(location.pathname) : 0),
@@ -189,11 +209,12 @@ const Jobs: React.FC = (): ReactElement => {
     const storedValue = localStorage.getItem('asUser');
     return storedValue ? JSON.parse(storedValue) : false;
   });
-  const [userRole, setUserRole] = useState<'staff' | 'user' | null>(null);
+  const [userRole, setUserRole] = useState<'staff' | 'user' | null>(getUserRole);
   const [orderDirection, setOrderDirection] = useState<'asc' | 'desc'>('desc');
   const [orderBy, setOrderBy] = useState<string>('run_start');
   const [filtersOpen, setFiltersOpen] = React.useState<boolean>(false);
   const showReductionHistoryTable = !isImat || imatView === 0;
+  const userViewRestricted = isFastStartMode && !userViewEnabled && (userRole !== 'staff' || asUser);
   const rawReductionId = React.useMemo(
     () => new URLSearchParams(location.search).get(REDUCTION_DETAILS_QUERY_PARAM),
     [location.search]
@@ -214,18 +235,6 @@ const Jobs: React.FC = (): ReactElement => {
       state: location.state,
     });
   }, [history, location.pathname, location.search, location.state, rawReductionId, selectedReductionId]);
-
-  const getUserRole = (): 'staff' | 'user' | null => {
-    const token = localStorage.getItem('scigateway:token');
-    if (!token) return null;
-    try {
-      const decoded = jwtDecode<{ role?: 'staff' | 'user' }>(token);
-      return decoded.role || 'user';
-    } catch (error) {
-      console.error('Error decoding token:', error);
-      return null;
-    }
-  };
 
   // Keep table state mirrored in the browser URL so views are shareable
   const updateQueryParams = React.useCallback(
@@ -312,7 +321,7 @@ const Jobs: React.FC = (): ReactElement => {
     }
     const search = params.toString();
     history.push({
-      pathname: newInstrument === 'ALL' ? `/reduction-history` : `/reduction-history/${newInstrument}`,
+      pathname: newInstrument === 'ALL' ? basePath : `${basePath}/${newInstrument}`,
       search: search ? `?${search}` : '',
     });
   };
@@ -516,7 +525,7 @@ const Jobs: React.FC = (): ReactElement => {
   return (
     <Box
       ref={reductionHistoryRootRef}
-      data-testid="reduction-history-page"
+      data-testid={isFastStartMode ? 'fast-start-jobs-page' : 'reduction-history-page'}
       sx={{
         display: 'flex',
         flexDirection: 'column',
@@ -528,7 +537,7 @@ const Jobs: React.FC = (): ReactElement => {
       }}
     >
       <PageHeader
-        data-testid="reduction-history-page-header"
+        data-testid={isFastStartMode ? 'fast-start-jobs-page-header' : 'reduction-history-page-header'}
         breadcrumbs={
           <NavArrows
             omitLastCrumbCount={isImat && imatView !== 0 ? 1 : 0}
@@ -572,8 +581,10 @@ const Jobs: React.FC = (): ReactElement => {
             selectedReductionId={selectedReductionId}
             openReductionDetails={handleOpenReductionDetails}
             closeReductionDetails={handleCloseReductionDetails}
+            fastStartOnly={isFastStartMode}
+            userViewRestricted={userViewRestricted}
             configControl={
-              selectedInstrument !== 'ALL' ? (
+              !isFastStartMode && selectedInstrument !== 'ALL' ? (
                 <InstrumentConfigDrawer
                   drawerOpen={configDrawerOpen}
                   setDrawerOpen={setConfigDrawerOpen}

@@ -548,4 +548,56 @@ describe('JobTable', () => {
     view.rerender(<JobTable {...defaultProps} />);
     expect(screen.getByText('Reductions for LOQ will appear here once they are available.')).toBeInTheDocument();
   });
+
+  test('queries only fast start jobs when fastStartOnly is enabled', async () => {
+    renderTable({
+      fastStartOnly: true,
+      filters: { title: 'Fast run' },
+      filtersApplied: true,
+    });
+
+    await waitForLoadedJobs();
+
+    const expectedFilters = JSON.stringify({
+      title: 'Fast run',
+      job_type_in: ['FAST_START'],
+    });
+    expect(fiaApi.get).toHaveBeenCalledWith(
+      expect.stringContaining(
+        `/instrument/LOQ/jobs?limit=25&offset=0&order_by=start&order_direction=desc&include_run=true&filters=${expectedFilters}&as_user=false&include_fast_start_jobs=true`
+      )
+    );
+    expect(fiaApi.get).toHaveBeenCalledWith(
+      `/instrument/LOQ/jobs/count?filters=${expectedFilters}&include_fast_start_jobs=true`
+    );
+    expect(within(screen.getByTestId('active-filter-chips')).getByText('Title: Fast run')).toBeInTheDocument();
+    expect(within(screen.getByTestId('active-filter-chips')).queryByText(/FAST_START/)).not.toBeInTheDocument();
+  });
+
+  test('skips fetching and displays a staff-only or view-as-user message when userViewRestricted is true', async () => {
+    const view = renderTable({
+      fastStartOnly: true,
+      userViewRestricted: true,
+      asUser: false,
+    });
+
+    expect(await screen.findByText('Fast start jobs are staff only')).toBeInTheDocument();
+    expect(screen.getByText('Fast start jobs are currently only available to staff.')).toBeInTheDocument();
+    expect(
+      vi
+        .mocked(fiaApi.get)
+        .mock.calls.map(([url]) => String(url))
+        .filter((url) => url.includes('/jobs?') || url.includes('/jobs/count'))
+    ).toHaveLength(0);
+
+    view.rerender(<JobTable {...defaultProps} fastStartOnly userViewRestricted asUser filtersApplied />);
+
+    expect(await screen.findByText('Fast start jobs are unavailable in user view')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Fast start jobs are not yet associated with user accounts. Disable "View as user" to view them.'
+      )
+    ).toBeInTheDocument();
+    expect(within(screen.getByTestId('active-filter-chips')).getByText('View as user')).toBeInTheDocument();
+  });
 });
