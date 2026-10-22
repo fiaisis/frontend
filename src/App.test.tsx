@@ -150,13 +150,8 @@ describe('App', () => {
     expect(screen.getByRole('heading', { name: 'Jobs' })).toBeInTheDocument();
   });
 
-  test('routes to the fast start jobs page and instrument subroutes', () => {
+  test('routes to the fast start jobs page', () => {
     renderAt('/fia/fast-start-jobs');
-    expect(screen.getByRole('heading', { name: 'Fast start jobs' })).toBeInTheDocument();
-
-    cleanup();
-
-    renderAt('/fia/fast-start-jobs/LOQ');
     expect(screen.getByRole('heading', { name: 'Fast start jobs' })).toBeInTheDocument();
   });
 

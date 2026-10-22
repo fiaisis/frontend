@@ -114,9 +114,6 @@ const App: FC = () => {
             <Route exact path="/fast-start-jobs">
               <FastStartJobs />
             </Route>
-            <Route exact path="/fast-start-jobs/:instrumentName">
-              <FastStartJobs />
-            </Route>
             <Route exact path="/experiment-viewer">
               <ExperimentViewer />
             </Route>

@@ -117,8 +117,6 @@ const JobTable: React.FC<{
   openReductionDetails: (jobId: number) => void;
   closeReductionDetails: () => void;
   configControl?: React.ReactNode;
-  fastStartOnly?: boolean;
-  userViewRestricted?: boolean;
 }> = ({
   selectedInstrument,
   currentPage,
@@ -138,8 +136,6 @@ const JobTable: React.FC<{
   openReductionDetails,
   closeReductionDetails,
   configControl,
-  fastStartOnly = false,
-  userViewRestricted = false,
 }) => {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [totalRows, setTotalRows] = useState<number>(0);
@@ -180,13 +176,8 @@ const JobTable: React.FC<{
 
   const offset = currentPage * rowsPerPage;
 
-  const requestFilters = React.useMemo(
-    () => (fastStartOnly ? { ...filters, job_type_in: ['FAST_START'] } : filters),
-    [fastStartOnly, filters]
-  );
-  const includeFastStartParam = fastStartOnly ? '&include_fast_start_jobs=true' : '';
-  const query = `limit=${rowsPerPage}&offset=${offset}&order_by=${orderBy}&order_direction=${orderDirection}&include_run=true&filters=${JSON.stringify(requestFilters)}&as_user=${asUser}${includeFastStartParam}`;
-  const countQuery = `filters=${JSON.stringify(requestFilters)}${includeFastStartParam}`;
+  const query = `limit=${rowsPerPage}&offset=${offset}&order_by=${orderBy}&order_direction=${orderDirection}&include_run=true&filters=${JSON.stringify(filters)}&as_user=${asUser}`;
+  const countQuery = `filters=${JSON.stringify(filters)}`;
   const queryPath = selectedInstrument === 'ALL' ? '/jobs' : `/instrument/${selectedInstrument}/jobs`;
   const countQueryPath = selectedInstrument === 'ALL' ? '/jobs/count' : `/instrument/${selectedInstrument}/jobs/count`;
   const fetchJobs = useFetchJobs(queryPath, query, setJobs);
@@ -214,7 +205,7 @@ const JobTable: React.FC<{
   const detailJob = selectedTableJob ?? (loadedDetailJob?.id === selectedReductionId ? loadedDetailJob : null);
 
   useEffect(() => {
-    if (selectedReductionId === null || userViewRestricted) {
+    if (selectedReductionId === null) {
       setLoadedDetailJob(null);
       setDetailLoading(false);
       setDetailError(null);
@@ -256,7 +247,7 @@ const JobTable: React.FC<{
       });
 
     return () => controller.abort();
-  }, [detailReloadToken, hasLoadedCounts, selectedReductionId, selectedTableJob, userViewRestricted]);
+  }, [detailReloadToken, hasLoadedCounts, selectedReductionId, selectedTableJob]);
 
   useEffect(() => {
     // Keep async response from touching state once the component unmounts.
@@ -336,14 +327,6 @@ const JobTable: React.FC<{
     if (!Number.isInteger(currentPage) || currentPage < 0) {
       return;
     }
-    if (userViewRestricted) {
-      setJobs([]);
-      setTotalRows(0);
-      setIsLoading(false);
-      setHasLoadedCounts(true);
-      setDelayPassed(true);
-      return;
-    }
     const fetchAll = async (): Promise<void> => {
       setIsLoading(true);
       try {
@@ -355,7 +338,7 @@ const JobTable: React.FC<{
     };
     setHasLoadedCounts(false);
     fetchAll();
-  }, [currentPage, fetchJobs, fetchTotalCount, maxPageIndex, userViewRestricted]);
+  }, [currentPage, fetchJobs, fetchTotalCount, maxPageIndex]);
 
   useEffect(() => {
     // Clear selections when the View as user toggle changes
@@ -367,9 +350,7 @@ const JobTable: React.FC<{
   useEffect(() => {
     let timeoutId: number;
 
-    if (userViewRestricted) {
-      setDelayPassed(true);
-    } else if (!isLoading && jobs.length === 0) {
+    if (!isLoading && jobs.length === 0) {
       timeoutId = window.setTimeout(() => {
         setDelayPassed(true);
       }, 500);
@@ -378,7 +359,7 @@ const JobTable: React.FC<{
     }
 
     return () => clearTimeout(timeoutId);
-  }, [isLoading, jobs, userViewRestricted]);
+  }, [isLoading, jobs]);
 
   useEffect(() => {
     // Clear selections when the View as user toggle changes
@@ -391,7 +372,6 @@ const JobTable: React.FC<{
   }, [currentPage]);
 
   const refreshJobs = (): void => {
-    if (userViewRestricted) return;
     void Promise.resolve(fetchJobs());
     void Promise.resolve(fetchTotalCount);
   };
@@ -536,20 +516,11 @@ const JobTable: React.FC<{
   const someCurrentJobsSelected = selectedJobIds.length > 0 && selectedJobIds.length < jobs.length;
   const activeFilterLabels = getActiveFilterLabels(filters);
   const activeFilterCount = activeFilterLabels.length + (asUser ? 1 : 0);
-  const emptyStateHeading = userViewRestricted
-    ? asUser
-      ? 'Fast start jobs are unavailable in user view'
-      : 'Fast start jobs are staff only'
-    : 'No reductions found';
-  const emptyStateMessage = userViewRestricted
-    ? asUser
-      ? 'Fast start jobs are not yet associated with user accounts. Disable "View as user" to view them.'
-      : 'Fast start jobs are currently only available to staff.'
-    : filtersApplied
-      ? 'Try adjusting or clearing your filters.'
-      : selectedInstrument === 'ALL'
-        ? 'Reductions will appear here once they are available.'
-        : `Reductions for ${selectedInstrument} will appear here once they are available.`;
+  const emptyStateMessage = filtersApplied
+    ? 'Try adjusting or clearing your filters.'
+    : selectedInstrument === 'ALL'
+      ? 'Reductions will appear here once they are available.'
+      : `Reductions for ${selectedInstrument} will appear here once they are available.`;
 
   const removeFilter = (key: keyof JobQueryFilters): void => {
     const nextFilters = { ...filters };
@@ -1058,7 +1029,7 @@ const JobTable: React.FC<{
                           }}
                         >
                           <Typography variant="h6" color={theme.palette.text.primary}>
-                            {emptyStateHeading}
+                            No reductions found
                           </Typography>
                           <Typography variant="body2" color={theme.palette.text.secondary}>
                             {emptyStateMessage}

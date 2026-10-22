@@ -437,31 +437,4 @@ describe('Row and reduction details modal', () => {
     fireEvent.click(backdrop as HTMLElement);
     expect(onClose).toHaveBeenCalledTimes(3);
   });
-
-  test('renders fast start jobs without a run record cleanly in the row and details modal', async () => {
-    const user = userEvent.setup();
-    const fastStartJob = makeJob({
-      id: 77,
-      type: 'JobType.FAST_START',
-      run: null as unknown as Job['run'],
-      outputs: "['fast_output.nxs']",
-    });
-
-    renderRow(fastStartJob);
-    expect(screen.getByRole('row', { name: 'View reduction 77 details' })).toBeInTheDocument();
-    cleanup();
-
-    renderModal({ jobId: 77, job: fastStartJob });
-
-    const valueEditorLink = screen.getByRole('link', { name: /Value editor/ });
-    expect(valueEditorLink).toHaveAttribute('aria-disabled', 'true');
-
-    await user.click(screen.getByRole('tab', { name: 'Run details' }));
-    const runDetails = screen.getByRole('table', { name: 'Run details' });
-    expect(within(runDetails).getByText('Fast start')).toBeInTheDocument();
-
-    await user.click(screen.getByRole('tab', { name: 'Reduction outputs' }));
-    expect(screen.getByText('fast_output.nxs')).toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: /Experiment viewer/ })).not.toBeInTheDocument();
-  });
 });
