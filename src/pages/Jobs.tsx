@@ -211,7 +211,7 @@ const Jobs: React.FC<JobsProps> = ({ mode = 'reduction-history', userViewEnabled
   });
   const [userRole, setUserRole] = useState<'staff' | 'user' | null>(getUserRole);
   const [orderDirection, setOrderDirection] = useState<'asc' | 'desc'>('desc');
-  const [orderBy, setOrderBy] = useState<string>('run_start');
+  const [orderBy, setOrderBy] = useState<string>(isFastStartMode ? 'id' : 'run_start');
   const [filtersOpen, setFiltersOpen] = React.useState<boolean>(false);
   const showReductionHistoryTable = !isImat || imatView === 0;
   const userViewRestricted = isFastStartMode && !userViewEnabled && (userRole !== 'staff' || asUser);
