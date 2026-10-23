@@ -1,10 +1,11 @@
 import Editor from '@monaco-editor/react';
 import { DescriptionOutlined, Save } from '@mui/icons-material';
-import { Alert, Box, Button, CircularProgress, Snackbar, Typography, useTheme } from '@mui/material';
+import { Box, Button, CircularProgress, Snackbar, Typography, useTheme } from '@mui/material';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useHistory, useParams } from 'react-router-dom';
 
 import { LiveLogViewer } from '../components/experimentViewer/LiveLogViewer';
+import SnackbarAlert from '../components/feedback/SnackbarAlert';
 import { getJobTableChromeColors } from '../components/jobs/constants';
 import InstrumentSelector from '../components/jobs/InstrumentSelector';
 import NavArrows from '../components/navigation/NavArrows';
@@ -278,13 +279,9 @@ const LiveValueEditor: React.FC = () => {
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
         {saveResult ? (
-          <Alert
-            onClose={() => setSnackbarOpen(false)}
-            severity={saveResult.success ? 'success' : 'error'}
-            sx={{ width: '100%', borderRadius: 0, border: '1px solid', borderColor: 'currentColor', boxShadow: 'none' }}
-          >
+          <SnackbarAlert onClose={() => setSnackbarOpen(false)} severity={saveResult.success ? 'success' : 'error'}>
             {saveResult.message}
-          </Alert>
+          </SnackbarAlert>
         ) : undefined}
       </Snackbar>
     </Box>
