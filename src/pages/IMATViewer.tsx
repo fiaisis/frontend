@@ -1,5 +1,5 @@
 import '@h5web/lib/styles.css';
-import { DomainWidget, HeatmapVis, RgbVis, ScaleType, Toolbar, useSafeDomain } from '@h5web/lib';
+import { DomainWidget, RgbVis, ScaleType, Toolbar, useSafeDomain } from '@h5web/lib';
 import {
   Alert,
   Box,
@@ -20,13 +20,16 @@ import { useHistory, useLocation } from 'react-router-dom';
 
 import { getViewerPlotSx } from '../components/experimentViewer/styles';
 import ImatStackJobTree from '../components/imat/ImatStackJobTree';
+import ImatStackPlot from '../components/imat/ImatStackPlot';
 import { getJobTableChromeColors, JOB_TABLE_TOOLBAR_CONTROL_HEIGHT } from '../components/jobs/constants';
 import NavArrows from '../components/navigation/NavArrows';
 import PageHeader from '../components/navigation/PageHeader';
 import { viewerColumnsSx, viewerContentSx } from '../components/viewer/layout';
+import toolbarStyles from '../h5web/packages/lib/src/toolbar/Toolbar.module.css';
 import { fiaApi, h5Api } from '../lib/api';
 import { parseJobOutputs } from '../lib/hooks';
 
+import type { ViewerSize } from '../components/imat/ImatStackPlot';
 import type { Job } from '../lib/types';
 import type { CustomDomain, Domain } from '@h5web/lib';
 
@@ -54,9 +57,9 @@ type IMATViewerProps = {
   showNav?: boolean;
 };
 
-type ViewerSize = 'fit' | 'small' | 'medium' | 'large' | 'full';
-
 const VIEWER_SIZES: readonly ViewerSize[] = ['fit', 'small', 'medium', 'large', 'full'];
+// Equal side widths keep the image details centred in the toolbar.
+const STACK_TOOLBAR_SIDE_WIDTH = 240;
 const STACK_INTENSITY_DOMAIN: Domain = [0, 65535];
 
 const isViewerSize = (value: string | null): value is ViewerSize =>
@@ -138,9 +141,9 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
   const [selectedJobLoading, setSelectedJobLoading] = React.useState(false);
   const [selectedJobError, setSelectedJobError] = React.useState<string | null>(null);
   const [stackImages, setStackImages] = React.useState<string[]>([]);
+  const [stackListLoaded, setStackListLoaded] = React.useState(false);
   const [currentImageIndex, setCurrentImageIndex] = React.useState(initialImageIndex);
   const [stackDataset, setStackDataset] = React.useState<StackImatImageDataset | null>(null);
-  const [stackLoading, setStackLoading] = React.useState(false);
   const [stackError, setStackError] = React.useState<string | null>(null);
   const [directoryPath, setDirectoryPath] = React.useState<string | null>(null);
   const [isSliding, setIsSliding] = React.useState(false);
@@ -185,6 +188,7 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
 
   const handleSelectJob = React.useCallback(
     (job: Job): void => {
+      if (job.id !== selectedJobRef.current?.id) setStackListLoaded(false);
       setSelectedJob(job);
       setSelectedJobError(null);
       setCurrentImageIndex(0);
@@ -298,8 +302,6 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
 
   const stackDisplayWidth = stackDataset?.originalWidth || stackDataset?.sampledWidth || 0;
   const stackDisplayHeight = stackDataset?.originalHeight || stackDataset?.sampledHeight || 0;
-  const stackImageScale =
-    viewerSize === 'small' ? 0.25 : viewerSize === 'medium' ? 0.5 : viewerSize === 'large' ? 0.75 : 1;
 
   const stackAspectRatio = React.useMemo(() => {
     if (stackDisplayHeight === 0) return 1;
@@ -348,8 +350,8 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
   React.useEffect(() => {
     if (mode !== 'stack') return;
     setStackImages([]);
+    setStackListLoaded(false);
     setStackDataset(null);
-    setStackLoading(false);
     setDirectoryPath(null);
     setStackError(null);
     setIsSliding(false);
@@ -365,7 +367,6 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
 
     const resolvePath = async (): Promise<void> => {
       try {
-        setStackLoading(true);
         setStackError(null);
 
         const filename = selectedJob.run?.filename?.split(/[\\/]/).pop() || '';
@@ -406,8 +407,6 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
       } catch (err: unknown) {
         if (controller.signal.aborted || (axios.isAxiosError(err) && err.code === 'ERR_CANCELED')) return;
         setStackError('Failed to resolve output directory');
-      } finally {
-        if (!controller.signal.aborted) setStackLoading(false);
       }
     };
     void resolvePath();
@@ -421,7 +420,6 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
 
     const fetchList = async (): Promise<void> => {
       try {
-        setStackLoading(true);
         setStackError(null);
         const response = await h5Api.get<string[]>('/imat/list-images', {
           params: { path: directoryPath },
@@ -432,11 +430,10 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
           new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' }).compare
         );
         setStackImages(sortedData);
+        setStackListLoaded(true);
       } catch (err: unknown) {
         if (controller.signal.aborted || (axios.isAxiosError(err) && err.code === 'ERR_CANCELED')) return;
         setStackError('Failed to list images in stack');
-      } finally {
-        if (!controller.signal.aborted) setStackLoading(false);
       }
     };
     void fetchList();
@@ -448,7 +445,6 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
     async (index: number, downsample: number, signal: AbortSignal): Promise<void> => {
       if (!directoryPath || !stackImages[index]) return;
       try {
-        setStackLoading(true);
         setStackError(null);
         const response = await h5Api.get<ArrayBuffer>('/imat/image', {
           responseType: 'arraybuffer',
@@ -484,8 +480,6 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
       } catch (err: unknown) {
         if (signal.aborted || (axios.isAxiosError(err) && err.code === 'ERR_CANCELED')) return;
         setStackError('Failed to load stack image');
-      } finally {
-        if (!signal.aborted) setStackLoading(false);
       }
     },
     [directoryPath, stackImages]
@@ -536,14 +530,11 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
     replaceViewerQueryParam('viewerSize', value, 'fit');
   };
 
-  const stackDomainWidgetStyles = {
-    gridArea: 'intensity',
-    justifySelf: { xs: 'stretch', md: 'end' },
-    width: '100%',
-    maxWidth: 500,
+  const stackToolbarStyles = {
     minWidth: 0,
+    height: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
     color: viewerChrome.text,
-    '--h5w-toolbar--height': '2.25rem',
+    '--h5w-toolbar--height': `${JOB_TABLE_TOOLBAR_CONTROL_HEIGHT}px`,
     '--h5w-toolbar--bgColor': viewerChrome.surface,
     '--h5w-toolbar-label--color': viewerChrome.text,
     '--h5w-toolbar-separator--color': viewerChrome.border,
@@ -569,6 +560,8 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
     '--h5w-domainSlider-dataTrack--shadowColor': 'transparent',
     '--h5w-domainSlider-thumb--bgColor': viewerChrome.accent,
     '--h5w-domainSlider-thumb-auto--bgColor': viewerChrome.surface,
+    [`& .${toolbarStyles.toolbar}`]: { px: 0 },
+    [`& .${toolbarStyles.controls}`]: { justifyContent: 'space-between' },
     '& button, & button > span': { borderRadius: 0 },
     '& button:focus-visible': { outline: `2px solid ${viewerChrome.accent}`, outlineOffset: -2 },
     '& [role="dialog"] > div': { border: `1px solid ${viewerChrome.border}`, boxShadow: 'none' },
@@ -680,111 +673,103 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
                 aria-label="Stack viewer controls"
                 sx={{ ...panelSx, flexShrink: 0 }}
               >
-                <Box
-                  sx={{
-                    display: 'grid',
-                    gridTemplateColumns: {
-                      xs: 'minmax(0, 1fr)',
-                      md: 'minmax(0, 1fr) auto',
-                      xl: 'minmax(0, 1fr) auto minmax(0, 1fr)',
-                    },
-                    gridTemplateAreas: {
-                      xs: '"image" "size" "intensity"',
-                      md: '"image size" "intensity intensity"',
-                      xl: '"image size intensity"',
-                    },
-                    alignItems: 'center',
-                    gap: 1.5,
-                    p: 1.5,
-                  }}
-                >
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 1,
-                      flexWrap: 'wrap',
-                      minWidth: 0,
-                      gridArea: 'image',
-                    }}
-                  >
-                    <Typography variant="body2" sx={{ flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>
-                      Image {selectedJob && stackImages.length > 0 ? currentImageIndex + 1 : 0} of{' '}
-                      {selectedJob ? stackImages.length : 0}
-                    </Typography>
-
-                    <Typography
-                      variant="caption"
+                <Box sx={stackToolbarStyles}>
+                  <Toolbar>
+                    <ToggleButtonGroup
+                      value={viewerSize}
+                      exclusive
+                      onChange={handleViewerSizeChange}
+                      size="small"
+                      aria-label="viewer size"
+                      disabled={!selectedJob || stackImages.length === 0}
                       sx={{
-                        color: alpha(viewerChrome.text, 0.75),
-                        minWidth: 0,
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
+                        width: STACK_TOOLBAR_SIDE_WIDTH,
+                        maxWidth: '100%',
+                        borderRadius: 0,
+                        '& .MuiToggleButton-root': {
+                          flex: '1 1 0',
+                          minWidth: 0,
+                          px: 0.75,
+                          height: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
+                          borderRadius: 0,
+                          borderWidth: '0 1px',
+                          borderColor: viewerChrome.border,
+                          color: viewerChrome.text,
+                          textTransform: 'none',
+                          '&:first-of-type, &:first-of-type.Mui-disabled': { borderLeft: 0 },
+                          '&:hover': { backgroundColor: viewerChrome.hover, color: viewerChrome.accent },
+                          '&:focus-visible': { outline: `2px solid ${viewerChrome.accent}`, outlineOffset: -2 },
+                          '&.Mui-selected': {
+                            color: viewerChrome.accent,
+                            backgroundColor: alpha(viewerChrome.accent, 0.12),
+                            boxShadow: `inset 0 -2px 0 ${viewerChrome.accent}`,
+                            fontWeight: 700,
+                          },
+                          '&.Mui-selected:hover': { backgroundColor: alpha(viewerChrome.accent, 0.18) },
+                          '&.Mui-disabled': {
+                            color: alpha(viewerChrome.text, 0.42),
+                            backgroundColor: viewerChrome.header,
+                            borderWidth: '0 1px',
+                            borderColor: viewerChrome.border,
+                            boxShadow: 'none',
+                          },
+                        },
                       }}
                     >
-                      {selectedJob ? stackImages[currentImageIndex] : ''}
-                    </Typography>
-                  </Box>
+                      <ToggleButton value="fit" aria-label="fit" title="Fit the image to the viewing area">
+                        Fit
+                      </ToggleButton>
+                      <ToggleButton value="small" aria-label="25%" title="25% of original image size">
+                        25%
+                      </ToggleButton>
+                      <ToggleButton value="medium" aria-label="50%" title="50% of original image size">
+                        50%
+                      </ToggleButton>
+                      <ToggleButton value="large" aria-label="75%" title="75% of original image size">
+                        75%
+                      </ToggleButton>
+                      <ToggleButton value="full" aria-label="100%" title="100% of original image size">
+                        100%
+                      </ToggleButton>
+                    </ToggleButtonGroup>
 
-                  <ToggleButtonGroup
-                    value={viewerSize}
-                    exclusive
-                    onChange={handleViewerSizeChange}
-                    size="small"
-                    aria-label="viewer size"
-                    disabled={!selectedJob}
-                    sx={{
-                      gridArea: 'size',
-                      justifySelf: { xs: 'stretch', sm: 'start', md: 'end', xl: 'center' },
-                      width: { xs: '100%', sm: 400 },
-                      maxWidth: '100%',
-                      borderRadius: 0,
-                      '& .MuiToggleButton-root': {
-                        flex: '1 1 0',
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 1,
+                        width: { xs: 140, sm: 180, lg: 240 },
                         minWidth: 0,
-                        px: 0.75,
-                        height: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
-                        borderRadius: 0,
-                        borderColor: viewerChrome.border,
-                        color: viewerChrome.text,
-                        textTransform: 'none',
-                        '&:hover': { backgroundColor: viewerChrome.hover, color: viewerChrome.accent },
-                        '&:focus-visible': { outline: `2px solid ${viewerChrome.accent}`, outlineOffset: -2 },
-                        '&.Mui-selected': {
-                          color: viewerChrome.accent,
-                          backgroundColor: alpha(viewerChrome.accent, 0.12),
-                          boxShadow: `inset 0 -2px 0 ${viewerChrome.accent}`,
-                          fontWeight: 700,
-                        },
-                        '&.Mui-selected:hover': { backgroundColor: alpha(viewerChrome.accent, 0.18) },
-                        '&.Mui-disabled': {
-                          color: alpha(viewerChrome.text, 0.42),
-                          backgroundColor: viewerChrome.header,
-                          boxShadow: 'none',
-                        },
-                      },
-                    }}
-                  >
-                    <ToggleButton value="fit" aria-label="fit">
-                      Fit
-                    </ToggleButton>
-                    <ToggleButton value="small" aria-label="small">
-                      Small
-                    </ToggleButton>
-                    <ToggleButton value="medium" aria-label="medium">
-                      Medium
-                    </ToggleButton>
-                    <ToggleButton value="large" aria-label="large">
-                      Large
-                    </ToggleButton>
-                    <ToggleButton value="full" aria-label="full">
-                      Full
-                    </ToggleButton>
-                  </ToggleButtonGroup>
+                      }}
+                    >
+                      {selectedJob && stackImages.length > 0 && (
+                        <>
+                          <Typography
+                            variant="body2"
+                            sx={{ flexShrink: 0, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}
+                          >
+                            Image {currentImageIndex + 1} of {stackImages.length}
+                          </Typography>
 
-                  <Box sx={stackDomainWidgetStyles}>
-                    <Toolbar>
+                          <Typography
+                            variant="caption"
+                            title={stackImages[currentImageIndex]}
+                            sx={{
+                              color: alpha(viewerChrome.text, 0.75),
+                              minWidth: 0,
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {stackImages[currentImageIndex]}
+                          </Typography>
+                        </>
+                      )}
+                    </Box>
+
+                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', width: STACK_TOOLBAR_SIDE_WIDTH }}>
                       <DomainWidget
                         dataDomain={STACK_INTENSITY_DOMAIN}
                         customDomain={stackCustomIntensityDomain}
@@ -792,8 +777,8 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
                         disabled={!selectedJob || !stackDataset}
                         onCustomDomainChange={setStackCustomIntensityDomain}
                       />
-                    </Toolbar>
-                  </Box>
+                    </Box>
+                  </Toolbar>
                 </Box>
 
                 <Box
@@ -866,7 +851,6 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
                   }}
                 >
                   <Box
-                    key={viewerSize}
                     sx={{
                       ...getViewerPlotSx(theme),
                       width: '100%',
@@ -876,37 +860,26 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
                       border: `1px solid ${viewerChrome.border}`,
                       borderRadius: 0,
                       boxSizing: 'border-box',
-                      overflow: viewerSize === 'fit' ? 'hidden' : 'auto',
+                      overflow: 'hidden',
                       mx: 'auto',
                       flexShrink: 0,
                     }}
                   >
                     {stackDataset ? (
-                      <HeatmapVis
+                      <ImatStackPlot
                         dataArray={stackArray!}
-                        aspect="equal"
-                        flipYAxis
-                        style={{
-                          width:
-                            viewerSize === 'fit' || !stackDisplayWidth ? '100%' : stackDisplayWidth * stackImageScale,
-                          height:
-                            viewerSize === 'fit' || !stackDisplayHeight ? '100%' : stackDisplayHeight * stackImageScale,
-                          marginInline: 'auto',
-                        }}
+                        originalWidth={stackDisplayWidth}
+                        originalHeight={stackDisplayHeight}
+                        viewerSize={viewerSize}
                         domain={safeStackIntensityDomain}
                       />
-                    ) : stackLoading ? (
+                    ) : !stackError && (!stackListLoaded || stackImages.length > 0) ? (
                       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-                        <CircularProgress />
+                        <CircularProgress aria-label="Loading stack image" />
                       </Box>
                     ) : (
                       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-                        <Typography color="inherit">
-                          {stackError ??
-                            (stackImages.length === 0
-                              ? 'No images found in this job stack.'
-                              : 'Loading stack images...')}
-                        </Typography>
+                        <Typography color="inherit">{stackError ?? 'No images found in this job stack.'}</Typography>
                       </Box>
                     )}
                   </Box>

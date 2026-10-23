@@ -495,7 +495,7 @@ describe('Reduction history page', () => {
       .within(() => {
         cy.get('input[aria-label="Stack image"]').should('be.disabled');
         cy.get('button[aria-label="fit"]').should('be.disabled');
-        cy.contains('Image 0 of 0').should('be.visible');
+        cy.contains('Image 0 of 0').should('not.exist');
       });
     cy.contains('Select a stack to view its images').should('be.visible');
     cy.location('search').should('eq', '');
