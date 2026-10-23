@@ -6,14 +6,14 @@ import React from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 
-import BackgroundImage from '../images/background.jpg';
+import BackgroundImage from '../images/background.jpg?no-inline';
 import Decal1Svg from '../images/decal1.svg?raw';
 import Decal2DarkSvg from '../images/decal2-dark.svg?raw';
 import Decal2DarkHCSvg from '../images/decal2-darkhc.svg?raw';
 import Decal2Svg from '../images/decal2.svg?raw';
-import FacilityImage from '../images/facility.jpg';
-import GreenSwirl1Image from '../images/green-swirl1.png';
-import GreenSwirl2Image from '../images/green-swirl2.png';
+import FacilityImage from '../images/facility.jpg?no-inline';
+import GreenSwirl1Image from '../images/green-swirl1.png?no-inline';
+import GreenSwirl2Image from '../images/green-swirl2.png?no-inline';
 
 // ?raw on SVGs tells Vite to skip the URL/file handling and instead give
 // the file contents as a plain string at build time

@@ -53,4 +53,13 @@ describe('instrumentData', () => {
       'Total scattering',
     ]);
   });
+
+  test('configures valid image URLs for instruments', () => {
+    const instrumentsWithImages = instruments.filter((inst) => inst.image);
+    expect(instrumentsWithImages.length).toBeGreaterThan(0);
+    instrumentsWithImages.forEach((inst) => {
+      expect(inst.image?.url).toBeDefined();
+      expect(inst.image?.url).toMatch(/\.(jpg|jpeg|png)(\?.*)?$/);
+    });
+  });
 });

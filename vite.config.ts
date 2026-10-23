@@ -8,6 +8,7 @@ import path from 'path';
 const bundleReact = process.env.BUNDLE_REACT === 'true';
 
 export default defineConfig({
+  base: process.env.VITE_PLUGIN_URL ? `${process.env.VITE_PLUGIN_URL}/` : '/',
   plugins: [react()],
   resolve: {
     alias: [

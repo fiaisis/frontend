@@ -1,6 +1,6 @@
 // Resolve plugin logo at runtime
-const logoDarkMode = new URL('./images/fia-light-text-logo.png', import.meta.url).href;
-const logoLightMode = new URL('./images/fia-dark-text-logo.png', import.meta.url).href;
+const logoDarkMode = new URL('./images/fia-light-text-logo.png?no-inline', import.meta.url).href;
+const logoLightMode = new URL('./images/fia-dark-text-logo.png?no-inline', import.meta.url).href;
 
 export function createRoute(
   section: string,
