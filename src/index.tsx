@@ -85,10 +85,18 @@ createRoute(
   false
 );
 createRoute(
+  'Browse',
+  'Fast start jobs',
+  '/fia/fast-start-jobs',
+  4,
+  'Click here to see a list of all fast start jobs.',
+  false
+);
+createRoute(
   'Viewers',
   'Experiment viewer',
   '/fia/experiment-viewer',
-  4,
+  5,
   'View and visualize HDF5 data files from reduction jobs.',
   false
 );
@@ -96,11 +104,11 @@ createRoute(
   'Viewers',
   'IMAT stack viewer',
   '/fia/reduction-history/IMAT/stack-viewer',
-  5,
+  6,
   'View IMAT image stacks.',
   false
 );
-createRoute('Viewers', 'Live data viewer', '/fia/live-data', 6, 'View live data from instruments in real-time.', false);
+createRoute('Viewers', 'Live data viewer', '/fia/live-data', 7, 'View live data from instruments in real-time.', false);
 
 // Single-SPA bootstrap methods have no idea what type of inputs may be
 // pushed down from the parent app
