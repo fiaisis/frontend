@@ -47,8 +47,8 @@ describe('value editor runners', () => {
   });
 
   test.each([
-    ['IMAT', '/jobs/runners/mantidimaging', 'ghcr.io/mantidproject/mantidimaging', 'Mantid Imaging'],
-    ['imat', '/jobs/runners/mantidimaging', 'ghcr.io/mantidproject/mantidimaging', 'Mantid Imaging'],
+    ['IMAT', '/jobs/runners/mantidimaging', 'ghcr.io/fiaisis/mantidimaging', 'Mantid Imaging'],
+    ['imat', '/jobs/runners/mantidimaging', 'ghcr.io/fiaisis/mantidimaging', 'Mantid Imaging'],
     ['LOQ', '/jobs/runners', 'ghcr.io/fiaisis/mantid', 'Mantid'],
   ])('uses the correct runner endpoint, names and image for %s', async (instrument, endpoint, repository, name) => {
     const user = userEvent.setup();
@@ -56,7 +56,7 @@ describe('value editor runners', () => {
       if (url === '/job/42') {
         return { data: { script: { value: 'reduce()' }, run: { instrument_name: instrument } } };
       }
-      if (url === endpoint) return { data: { 'sha256:first': '1.0.0', 'sha256:second': '2.0.0' } };
+      if (url === endpoint) return { data: { 'sha256:first': '3.1.1', 'sha256:second': '3.1.0' } };
       throw new Error(`Unexpected request: ${url}`);
     });
 
@@ -64,14 +64,14 @@ describe('value editor runners', () => {
 
     const selectorLabel = name === 'Mantid Imaging' ? 'Mantid Imaging version' : 'Runner version';
     const selector = screen.getByRole('combobox', { name: selectorLabel });
-    await waitFor(() => expect(selector).toHaveTextContent(`${name} 1.0.0`));
+    await waitFor(() => expect(selector).toHaveTextContent(`${name} 3.1.1`));
     expect(fiaApi.get).toHaveBeenCalledWith(endpoint);
     expect(fiaApi.get).not.toHaveBeenCalledWith(
       endpoint === '/jobs/runners' ? '/jobs/runners/mantidimaging' : '/jobs/runners'
     );
 
     await user.click(selector);
-    await user.click(screen.getByRole('option', { name: `${name} 2.0.0` }));
+    await user.click(screen.getByRole('option', { name: `${name} 3.1.0` }));
     const editor = await screen.findByRole('textbox', { name: 'Reduction script' });
     await user.clear(editor);
     await user.type(editor, 'updated_reduction()');

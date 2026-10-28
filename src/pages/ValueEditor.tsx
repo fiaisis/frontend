@@ -71,7 +71,7 @@ const ValueEditor: React.FC = () => {
   const { instrumentName: urlInstrumentName, jobId } = useParams<{ instrumentName: string; jobId: string }>();
   const isImat = urlInstrumentName.toUpperCase() === 'IMAT';
   const runnerEndpoint = isImat ? '/jobs/runners/mantidimaging' : '/jobs/runners';
-  const runnerRepository = isImat ? 'ghcr.io/mantidproject/mantidimaging' : 'ghcr.io/fiaisis/mantid';
+  const runnerRepository = isImat ? 'ghcr.io/fiaisis/mantidimaging' : 'ghcr.io/fiaisis/mantid';
   const runnerName = isImat ? 'Mantid Imaging' : 'Mantid';
   const history = useHistory();
 
