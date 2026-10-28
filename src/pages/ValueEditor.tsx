@@ -290,7 +290,7 @@ const ValueEditor: React.FC = () => {
                   </Alert>
                 </Snackbar>
                 <Typography id="runner-version-label" variant="body2" sx={{ whiteSpace: 'nowrap', fontWeight: 500 }}>
-                  {isImat ? 'Mantid Imaging version' : 'Runner version'}
+                  Runner version
                 </Typography>
                 <Select
                   id="runner-version"

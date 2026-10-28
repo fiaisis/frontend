@@ -62,8 +62,7 @@ describe('value editor runners', () => {
 
     renderEditor(instrument);
 
-    const selectorLabel = name === 'Mantid Imaging' ? 'Mantid Imaging version' : 'Runner version';
-    const selector = screen.getByRole('combobox', { name: selectorLabel });
+    const selector = screen.getByRole('combobox', { name: 'Runner version' });
     await waitFor(() => expect(selector).toHaveTextContent(`${name} 3.1.1`));
     expect(fiaApi.get).toHaveBeenCalledWith(endpoint);
     expect(fiaApi.get).not.toHaveBeenCalledWith(
@@ -95,7 +94,7 @@ describe('value editor runners', () => {
       renderEditor('IMAT');
 
       await screen.findByRole('textbox', { name: 'Reduction script' });
-      expect(screen.getByRole('combobox', { name: 'Mantid Imaging version' })).toHaveAttribute('aria-disabled', 'true');
+      expect(screen.getByRole('combobox', { name: 'Runner version' })).toHaveAttribute('aria-disabled', 'true');
       expect(screen.getByRole('button', { name: 'Rerun with changes' })).toBeDisabled();
       expect(fiaApi.post).not.toHaveBeenCalled();
     }
@@ -111,7 +110,7 @@ describe('value editor runners', () => {
     renderEditor('IMAT');
 
     await screen.findByRole('textbox', { name: 'Reduction script' });
-    expect(screen.getByRole('combobox', { name: 'Mantid Imaging version' })).toHaveAttribute('aria-disabled', 'true');
+    expect(screen.getByRole('combobox', { name: 'Runner version' })).toHaveAttribute('aria-disabled', 'true');
     expect(screen.getByRole('button', { name: 'Rerun with changes' })).toBeDisabled();
   });
 
@@ -130,7 +129,7 @@ describe('value editor runners', () => {
 
     act(() => history.push('/reduction-history/IMAT/value-editor-42'));
 
-    expect(screen.getByRole('combobox', { name: 'Mantid Imaging version' })).not.toHaveTextContent('6.9.0');
+    expect(screen.getByRole('combobox', { name: 'Runner version' })).not.toHaveTextContent('6.9.0');
     expect(screen.getByRole('button', { name: 'Rerun with changes' })).toBeDisabled();
     await act(async () => finishImaging({ data: { 'sha256:imaging': '3.0.0' } }));
     expect(screen.getByRole('combobox')).toHaveTextContent('Mantid Imaging 3.0.0');
