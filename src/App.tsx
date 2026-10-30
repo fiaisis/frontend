@@ -15,6 +15,7 @@ import Instruments from './pages/Instruments';
 import Jobs from './pages/Jobs';
 import LiveData from './pages/LiveData';
 import LiveValueEditor from './pages/LiveValueEditor';
+import PageTitle from './components/PageTitle';
 import ValueEditor from './pages/ValueEditor';
 
 // Initialize Google Analytics with the given tracking ID
@@ -82,7 +83,8 @@ const App: FC = () => {
       <GlobalStyles>
         <Router basename="/fia">
           <ScrollToTop />
-          <Switch>
+          <PageTitle>
+            <Switch>
             <Route exact path="/">
               <Homepage />
             </Route>
@@ -136,6 +138,7 @@ const App: FC = () => {
             {/* Catch-all that redirects unmatched routes to the homepage*/}
             <Route render={() => <Redirect to="/" />} />
           </Switch>
+          </PageTitle>
         </Router>
       </GlobalStyles>
     </LocalizationProvider>
