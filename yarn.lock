@@ -14011,12 +14011,12 @@ __metadata:
   linkType: hard
 
 "launch-editor@npm:^2.14.1, launch-editor@npm:^2.6.0":
-  version: 2.14.1
-  resolution: "launch-editor@npm:2.14.1"
+  version: 2.14.2
+  resolution: "launch-editor@npm:2.14.2"
   dependencies:
     picocolors: ^1.1.1
-    shell-quote: ^1.8.4
-  checksum: 232ea8a80146e7fec6c8ece7ebb600d58a82e9938f36111194980188d276935f424754b18e37d5b098f596d30580def723b231e093c27c3bcd703418278afc4c
+    shell-quote: ^1.10.0
+  checksum: fc5e7cfc8732f20f76e75746aaafdb14b0d1c3dd646a73be3f0576a5928ac8ef80efbf445332de295e79f7d1fb9b32811950ee75cb630308e8db613e5d8c735f
   languageName: node
   linkType: hard
 
@@ -18409,7 +18409,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"shell-quote@npm:^1.7.3, shell-quote@npm:^1.8.4":
+"shell-quote@npm:^1.10.0, shell-quote@npm:^1.7.3":
   version: 1.12.0
   resolution: "shell-quote@npm:1.12.0"
   checksum: bbb3b6b244069da4114c5c0d2192786ff146123e1c29c298348871a3b8219cf45bdc9540c2f948e8874e2f7309186480a7ac0097159d0958aaafec25c5074731
@@ -19242,11 +19242,11 @@ __metadata:
   linkType: hard
 
 "systeminformation@npm:^5.31.1":
-  version: 5.33.0
-  resolution: "systeminformation@npm:5.33.0"
+  version: 5.33.19
+  resolution: "systeminformation@npm:5.33.19"
   bin:
     systeminformation: lib/cli.js
-  checksum: 9b0178b2b5f4f76abded61bf4b43022b4f55c9d9735b9238f07a594cdc6d19a04eb0096f04f3f0f7d72cd246f3b9cfd087b4e1570469008a632d6796507b227b
+  checksum: 41163e185dab339adb7b64eed53cc05d6e9208dd9b466ee9af646deeaeb9863ee447ad056a1f44d446fd78cae7c64546fbd9f4faa1a4bc01227fe1872f790ca4
   conditions: (os=darwin | os=linux | os=win32 | os=freebsd | os=openbsd | os=netbsd | os=sunos | os=android)
   languageName: node
   linkType: hard
