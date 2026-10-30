@@ -69,6 +69,10 @@ const ValueEditor: React.FC = () => {
   const [runnerVersion, setRunnerVersion] = useState<string>('');
   const [runners, setRunners] = useState<MantidVersionMap>({});
   const { instrumentName: urlInstrumentName, jobId } = useParams<{ instrumentName: string; jobId: string }>();
+  const isImat = urlInstrumentName.toUpperCase() === 'IMAT';
+  const runnerEndpoint = isImat ? '/jobs/runners/mantidimaging' : '/jobs/runners';
+  const runnerRepository = isImat ? 'ghcr.io/fiaisis/mantidimaging' : 'ghcr.io/fiaisis/mantid';
+  const runnerName = isImat ? 'Mantid Imaging' : 'Mantid';
   const history = useHistory();
 
   // Redirect if an instrument is specified in the URL but it's not a valid instrument name
@@ -106,11 +110,17 @@ const ValueEditor: React.FC = () => {
     fetchReduction();
   }, [fetchReduction]);
 
-  const fetchRunners = useCallback(async (): Promise<void> => {
+  useEffect(() => {
+    let isMounted = true;
+    setRunners({});
+    setRunnerVersion('');
+
     fiaApi
-      .get('/jobs/runners')
+      .get(runnerEndpoint)
       .then((res) => res.data)
       .then((data) => {
+        if (!isMounted) return;
+
         if (!data || typeof data !== 'object' || Array.isArray(data)) {
           console.error('Unexpected runner version response format:', data);
           setRunners({});
@@ -128,12 +138,14 @@ const ValueEditor: React.FC = () => {
           setRunnerVersion('');
         }
       })
-      .catch((err) => console.error('Failed to fetch runner versions:', err));
-  }, []);
+      .catch((err) => {
+        if (isMounted) console.error('Failed to fetch runner versions:', err);
+      });
 
-  useEffect(() => {
-    fetchRunners();
-  }, [fetchReduction, fetchRunners]);
+    return () => {
+      isMounted = false;
+    };
+  }, [runnerEndpoint]);
 
   const handleChange = (event: React.SyntheticEvent, newValue: number): void => {
     setValue(newValue);
@@ -147,7 +159,7 @@ const ValueEditor: React.FC = () => {
     if (!runnerVersion) return;
 
     setLoading(true);
-    const runnerImage = `ghcr.io/fiaisis/mantid@${runnerVersion}`;
+    const runnerImage = `${runnerRepository}@${runnerVersion}`;
     fiaApi
       .post('/job/rerun', { job_id: jobId, runner_image: runnerImage, script: scriptValue })
       .then(() => (rerunSuccessful.current = true))
@@ -288,7 +300,7 @@ const ValueEditor: React.FC = () => {
                   disabled={Object.keys(runners).length === 0}
                   size="small"
                   sx={{
-                    width: { xs: '100%', sm: 180 },
+                    width: { xs: '100%', sm: isImat ? 240 : 180 },
                     minWidth: 0,
                     height: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
                     borderRadius: 0,
@@ -331,7 +343,7 @@ const ValueEditor: React.FC = () => {
                 >
                   {Object.entries(runners).map(([sha, version]) => (
                     <MenuItem key={sha} value={sha}>
-                      Mantid {version}
+                      {runnerName} {version}
                     </MenuItem>
                   ))}
                 </Select>
