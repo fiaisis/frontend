@@ -7,6 +7,11 @@ import Viewer2D from '../../src/components/experimentViewer/Viewer2D';
 
 const signal = [0, 0, 1, 0, 0];
 
+const axisTicks = (axis: 'abscissa' | 'ordinate'): Cypress.Chainable<JQuery<SVGTextElement>> =>
+  cy.get<SVGTextElement>(`svg[data-type="${axis}"] .visx-axis-tick text`);
+
+const readAxisLabels = (ticks: JQuery<SVGTextElement>): string[] => Array.from(ticks, (tick) => tick.textContent ?? '');
+
 // Measure the plotted feature itself: axis labels alone can change even when
 // a graphics-library regression prevents the canvas from actually zooming.
 const featureBounds = (canvas: HTMLCanvasElement, heatmap: boolean): [number, number] => {
@@ -79,6 +84,14 @@ describe('Viewer zoom and pan', () => {
       }
 
       let original: [number, number];
+      let originalXLabels: string[];
+      let originalYLabels: string[];
+      axisTicks('abscissa').then((ticks) => {
+        originalXLabels = readAxisLabels(ticks);
+      });
+      axisTicks('ordinate').then((ticks) => {
+        originalYLabels = readAxisLabels(ticks);
+      });
       cy.get('canvas')
         .first()
         .should(($canvas) => {
@@ -89,6 +102,8 @@ describe('Viewer zoom and pan', () => {
         cy.get('canvas').first().trigger('wheel', 'center', { eventConstructor: 'WheelEvent', deltaY: -100 });
       }
       cy.contains('button', 'Reset zoom').should('be.visible');
+      axisTicks('abscissa').should((ticks) => expect(readAxisLabels(ticks)).not.to.deep.equal(originalXLabels));
+      axisTicks('ordinate').should((ticks) => expect(readAxisLabels(ticks)).not.to.deep.equal(originalYLabels));
       cy.get('canvas')
         .first()
         .should(($canvas) => {
@@ -153,6 +168,8 @@ describe('Viewer zoom and pan', () => {
           expect(right).to.be.closeTo(original[1], 0.01);
         });
       cy.contains('button', 'Reset zoom').should('not.be.visible');
+      axisTicks('abscissa').should((ticks) => expect(readAxisLabels(ticks)).to.deep.equal(originalXLabels));
+      axisTicks('ordinate').should((ticks) => expect(readAxisLabels(ticks)).to.deep.equal(originalYLabels));
     });
   }
 });

@@ -24,11 +24,12 @@ import type { FileConfig, Job } from '../../lib/types';
 interface FileTreeProps {
   jobs: Job[];
   openedJob?: Job;
+  showExperimentJobs?: boolean;
   isLoadingOpenedJob?: boolean;
   files: FileConfig[];
   isLoading?: boolean;
   showEmptyState?: boolean;
-  initialSelection?: { jobId: number; filename: string };
+  initialSelection?: { jobId: number; filename?: string };
   viewTabs?: React.ReactNode;
   searchControls?: React.ReactNode;
   currentPage?: number;
@@ -49,6 +50,7 @@ interface FileTreeProps {
 const FileTree: React.FC<FileTreeProps> = ({
   jobs,
   openedJob,
+  showExperimentJobs = true,
   isLoadingOpenedJob = false,
   files,
   isLoading = false,
@@ -135,7 +137,7 @@ const FileTree: React.FC<FileTreeProps> = ({
   const filteredJobs = pageJobs.filter((job) => job.id !== openedJob?.id);
   const emptyJobsCount = jobsWithOutputs.filter((job) => job.outputsArray.length === 0).length;
   const pageCount = pageSize > 0 ? Math.ceil(totalJobs / pageSize) : 0;
-  const showPagination = Boolean(onPageChange && totalJobs > pageSize && pageCount > 1);
+  const showPagination = showExperimentJobs && Boolean(onPageChange && totalJobs > pageSize && pageCount > 1);
   const showJobControls =
     showPagination || emptyJobsCount > 0 || Boolean(onAutoSelectPrimaryChange && (jobs.length > 0 || openedJob));
   const firstVisibleJob = totalJobs === 0 ? 0 : currentPage * pageSize + 1;
@@ -143,6 +145,7 @@ const FileTree: React.FC<FileTreeProps> = ({
 
   const renderJob = (job: Job): JSX.Element => {
     const outputs = getJobOutputs(job);
+    const isOpenedJob = job.id === openedJob?.id;
     return (
       <Accordion
         square
@@ -160,9 +163,11 @@ const FileTree: React.FC<FileTreeProps> = ({
       >
         <AccordionSummary
           expandIcon={<ExpandMoreIcon fontSize="small" />}
+          aria-current={isOpenedJob ? true : undefined}
           sx={{
             minHeight: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
-            backgroundColor: viewerChrome.header,
+            backgroundColor: isOpenedJob ? alpha(viewerChrome.accent, 0.08) : viewerChrome.header,
+            boxShadow: isOpenedJob ? `inset 3px 0 0 ${viewerChrome.accent}` : 'none',
             '&:hover, &.Mui-focusVisible': { backgroundColor: viewerChrome.hover },
             '&:focus-visible': { outline: `2px solid ${viewerChrome.accent}`, outlineOffset: -2 },
             pl: 1.5,
@@ -223,6 +228,11 @@ const FileTree: React.FC<FileTreeProps> = ({
         </AccordionSummary>
         <AccordionDetails sx={{ p: 0.75 }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+            {!showExperimentJobs && outputs.length === 0 && (
+              <Typography variant="body2" sx={{ p: 1 }}>
+                No supported output files for this reduction.
+              </Typography>
+            )}
             {outputs.map((output, outputIndex) => {
               const fileIndex = getFileIndex(output);
               const file = getFileConfig(output);
@@ -365,39 +375,32 @@ const FileTree: React.FC<FileTreeProps> = ({
           scrollbarColor: `${viewerChrome.border} ${viewerChrome.header}`,
         }}
       >
-        {(openedJob || isLoadingOpenedJob) && (
-          <Box component="section" aria-label="Opened reduction">
-            <Typography variant="subtitle2" sx={{ px: 1.5, py: 1, borderBottom: `1px solid ${viewerChrome.border}` }}>
-              Opened reduction
-            </Typography>
-            {isLoadingOpenedJob && (
-              <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
-                <CircularProgress size={24} aria-label="Loading opened reduction" />
-              </Box>
-            )}
-            {openedJob && renderJob(openedJob)}
+        {isLoadingOpenedJob && (
+          <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
+            <CircularProgress size={24} aria-label="Loading opened reduction" />
           </Box>
         )}
 
-        {(openedJob || isLoadingOpenedJob) && (
-          <Typography variant="subtitle2" sx={{ px: 1.5, py: 1, borderBottom: `1px solid ${viewerChrome.border}` }}>
-            Experiment reductions
-          </Typography>
-        )}
+        {openedJob && renderJob(openedJob)}
 
-        {isLoading && (
+        {showExperimentJobs && isLoading && (
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', minHeight: 96 }}>
             <CircularProgress size={32} aria-label="Loading jobs" />
           </Box>
         )}
 
-        {!isLoading && showEmptyState && pageJobs.length === 0 && (
-          <Typography variant="body2" align="center" sx={{ p: 3, color: alpha(viewerChrome.text, 0.75) }}>
-            {jobs.length === 0 ? 'No jobs listed' : 'No jobs with files'}
-          </Typography>
-        )}
+        {showExperimentJobs &&
+          !openedJob &&
+          !isLoadingOpenedJob &&
+          !isLoading &&
+          showEmptyState &&
+          pageJobs.length === 0 && (
+            <Typography variant="body2" align="center" sx={{ p: 3, color: alpha(viewerChrome.text, 0.75) }}>
+              {jobs.length === 0 ? 'No jobs listed' : 'No jobs with files'}
+            </Typography>
+          )}
 
-        {filteredJobs.map(renderJob)}
+        {showExperimentJobs && filteredJobs.map(renderJob)}
       </Box>
     </Box>
   );
