@@ -62,8 +62,7 @@ A `dev-plugin-settings.json` file is also needed in SciGateway's `micro-frontend
 Unless you have a working API and data viewer set up locally, point the frontend at the staging services (requires site VPN). Vite uses `VITE_*` environment variables. See [`.env`](.env) for examples:
 
 - `VITE_FIA_REST_API_URL`
-- `VITE_FIA_DATA_VIEWER_URL`
-- `VITE_PLUGIN_URL` (used for certain asset URLs)
+- `VITE_PLUGIN_URL` (used by SciGateway for certain asset URLs)
 - `VITE_DEV_MODE` (optional)
 
 If you want to run the experiment viewer, you must have the plotting service running locally as remote server restricts access from the outside.

@@ -10,8 +10,6 @@
     "@emotion/styled": "11.14.1",
     "@h5web/app": "17.0.0-beta.1",
     "@h5web/lib": "17.0.0-beta.1",
-    "@material-ui/core": "^4.12.4",
-    "@material-ui/icons": "^4.11.3",
     "@monaco-editor/react": "^4.6.0",
     "@mui/icons-material": "^6.0.0",
     "@mui/material": "^6.0.0",
@@ -41,7 +39,6 @@
     "react-monaco-editor": "^0.55.0",
     "react-reflex": "4.2.7",
     "react-router-dom": "5.3.0",
-    "react-scripts": "5.0.0",
     "single-spa-react": "4.6.1",
     "three": "0.182.0",
     "typescript": "5.7.x",
@@ -76,7 +73,6 @@
     "serve:backend": "node server/server.js",
     "analyze": "yarn build && source-map-explorer build/main.*",
     "prepare": "husky",
-    "eject": "react-scripts eject",
     "cypress:open": "cypress open",
     "cypress:run": "cypress run",
     "cypress:open:e2e": "cypress open --e2e",
@@ -86,9 +82,6 @@
     "run-frontend": "yarn build && cd ../scigateway && yarn dev",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
-  },
-  "eslintConfig": {
-    "extends": "react-app"
   },
   "browserslist": [
     ">0.2%",
@@ -119,6 +112,7 @@
     "eslint-plugin-prettier": "5.5.6",
     "html-webpack-plugin": "^5.6.7",
     "husky": "9.1.7",
+    "jsdom": "16.7.0",
     "lint-staged": "17.1.0",
     "prettier": "3.9.5",
     "serve": "14.2.6",
