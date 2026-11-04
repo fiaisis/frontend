@@ -9,8 +9,24 @@ import { h5Api } from '../../lib/api';
 vi.mock('@h5web/lib', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@h5web/lib')>()),
   HeatmapVis: () => <div data-testid="heatmap" />,
+  LineVis: () => <div data-testid="line" />,
   Toolbar: ({ children }: React.PropsWithChildren) => <div role="toolbar">{children}</div>,
 }));
+
+const jsonBuffer = (value: unknown): ArrayBuffer =>
+  new TextEncoder().encode(JSON.stringify(value)).buffer as ArrayBuffer;
+
+const stringAttr = (name: string): { name: string; shape: never[]; type: Record<string, unknown> } => ({
+  name,
+  shape: [],
+  type: { class: 3, dtype: '|S8', size: 8, cset: 0, strpad: 0, vlen: false },
+});
+
+const intAttr = (name: string): { name: string; shape: never[]; type: Record<string, unknown> } => ({
+  name,
+  shape: [],
+  type: { class: 0, dtype: '<i4', size: 4, order: 0, sign: 1 },
+});
 
 const metadata = new TextEncoder().encode(
   JSON.stringify({
@@ -144,4 +160,98 @@ test('keeps disabled controls after a dataset request fails', async () => {
   expect(screen.getByLabelText('Plot controls')).toBeDisabled();
   expect(screen.getAllByRole('toolbar')).toHaveLength(1);
   expect(screen.queryByTestId('heatmap')).not.toBeInTheDocument();
+});
+
+test('labels dimension buttons and slice sliders from the NeXus axis datasets on heatmap and line tabs', async () => {
+  const user = userEvent.setup();
+  const axisDatasets = [
+    { name: 'D0', shape: [5] },
+    { name: 'D1', shape: [5] },
+    { name: 'D2', shape: [5] },
+    { name: 'D3', shape: [3] },
+  ].map(({ name, shape }) => ({
+    name,
+    kind: 'dataset',
+    shape,
+    type: { class: 1, dtype: '<f8', size: 8, order: 0 },
+    chunks: null,
+    filters: null,
+    attributes: [stringAttr('long_name'), stringAttr('short_name'), stringAttr('units')],
+  }));
+
+  const dataGroup = {
+    name: 'data',
+    kind: 'group',
+    attributes: [stringAttr('NX_class'), stringAttr('default_slice')],
+    children: [
+      ...axisDatasets,
+      {
+        name: 'signal',
+        kind: 'dataset',
+        shape: [2, 4, 4, 4],
+        type: { class: 1, dtype: '<f8', size: 8, order: 0 },
+        chunks: null,
+        filters: null,
+        attributes: [stringAttr('axes'), stringAttr('long_name'), intAttr('signal')],
+      },
+    ],
+  };
+
+  const rootGroup = {
+    name: '/',
+    kind: 'group',
+    attributes: [stringAttr('NX_class')],
+    children: [
+      {
+        name: 'MDHistoWorkspace',
+        kind: 'group',
+        attributes: [stringAttr('NX_class')],
+        children: [dataGroup],
+      },
+    ],
+  };
+
+  const attrsByPath: Record<string, Record<string, unknown>> = {
+    '/': { NX_class: 'NXroot' },
+    '/MDHistoWorkspace': { NX_class: 'NXentry' },
+    '/MDHistoWorkspace/data': { NX_class: 'NXdata', default_slice: ['1', '2', '.', '.'] },
+    '/MDHistoWorkspace/data/signal': { axes: 'D3:D2:D1:D0', long_name: 'S(Q,E) (a.u.)', signal: 1 },
+    '/MDHistoWorkspace/data/D0': { long_name: 'H (rtu)', short_name: 'H', units: 'rtu' },
+    '/MDHistoWorkspace/data/D1': { long_name: 'K (rtu)', short_name: 'K', units: 'rtu' },
+    '/MDHistoWorkspace/data/D2': { long_name: 'L (rtu)', short_name: 'L', units: 'rtu' },
+    '/MDHistoWorkspace/data/D3': { long_name: 'Energy transfer (meV)', short_name: 'E', units: 'meV' },
+  };
+
+  vi.spyOn(h5Api, 'get').mockImplementation(async (url, config) => {
+    const path = (config?.params as { path?: string } | undefined)?.path ?? '/';
+    if (url === '/meta/') {
+      if (path === '/MDHistoWorkspace/data') return { data: jsonBuffer(dataGroup) };
+      if (path === '/MDHistoWorkspace') return { data: jsonBuffer(rootGroup.children[0]) };
+      return { data: jsonBuffer(rootGroup) };
+    }
+    if (url === '/attr/') {
+      return { data: jsonBuffer(attrsByPath[path] ?? {}) };
+    }
+    if (path === '/MDHistoWorkspace/data/D3') return { data: new Float64Array(3).buffer };
+    if (path.startsWith('/MDHistoWorkspace/data/D')) return { data: new Float64Array(5).buffer };
+    return { data: new Float64Array(16).buffer };
+  });
+
+  render(<Viewer2D filepath="/live/MERlives_30meV_1to1_mdhisto.nxs" />);
+  expect(await screen.findByTestId('heatmap')).toBeInTheDocument();
+
+  const xGroup = screen.getByRole('radiogroup', { name: 'Dimension as x axis' });
+  const yGroup = screen.getByRole('radiogroup', { name: 'Dimension as y axis' });
+  expect(within(xGroup).getByRole('radio', { name: 'H' })).toHaveAttribute('aria-checked', 'true');
+  expect(within(xGroup).getByRole('radio', { name: 'E' })).toHaveAttribute('title', 'Energy transfer (meV)');
+  expect(within(yGroup).getByRole('radio', { name: 'K' })).toHaveAttribute('aria-checked', 'true');
+  expect(within(xGroup).queryByRole('radio', { name: 'D0' })).not.toBeInTheDocument();
+  expect(document.getElementById('fia-slider-0-label')).toHaveTextContent('E');
+  expect(document.getElementById('fia-slider-1-label')).toHaveTextContent('L');
+
+  await user.click(screen.getByRole('tab', { name: 'NX Line' }));
+  expect(await screen.findByTestId('line')).toBeInTheDocument();
+  expect(document.getElementById('fia-slider-0-label')).toHaveTextContent('E');
+  expect(document.getElementById('fia-slider-1-label')).toHaveTextContent('L');
+  expect(document.getElementById('fia-slider-2-label')).toHaveTextContent('K');
 });

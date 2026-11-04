@@ -1,6 +1,7 @@
 import { Box } from '@mui/material';
 import React, { useCallback, useState, useSyncExternalStore } from 'react';
 
+import { withFiaContainers } from './fiaVisContainers';
 import ViewerToolbarFallback from './ViewerToolbarFallback';
 import { useDataContext } from '../../h5web/packages/app/src/providers/DataProvider';
 import { useActiveVis } from '../../h5web/packages/app/src/visualizer/hooks';
@@ -90,7 +91,7 @@ const DatasetVisualizer: React.FC<{ path: string }> = ({ path }) => {
   }
 
   // Reset the selected visualization when changing the resolved entity.
-  return <DatasetVisualization key={resolution.entity.path} {...resolution} />;
+  return <DatasetVisualization key={resolution.entity.path} {...withFiaContainers(resolution)} />;
 };
 
 export default DatasetVisualizer;
