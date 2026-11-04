@@ -1,11 +1,12 @@
 import { type DimensionMapping } from '@h5web/shared/vis-models';
-import { cleanup, render, screen, within, type RenderResult } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, within, type RenderResult } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { type AxisDisplay } from './axisLabels';
 import FiaDimensionMapper from './FiaDimensionMapper';
+import FiaSlicingSlider from './FiaSlicingSlider';
 
 const DIMS = [50, 100, 100, 100];
 // Signal (C) order for a MERLIN mdhisto: energy, L, K, H.
@@ -96,5 +97,89 @@ describe('FiaDimensionMapper', () => {
 
   test('rejects dimensions and mapping of different lengths', () => {
     expect(() => renderMapper({ dims: [50, 100] })).toThrow('Expected dimensions and mapping arrays of same length');
+  });
+
+  test('inverts x and y when choosing the dimension currently mapped to the other axis, and ignores clicking the already selected dimension', async () => {
+    const onChange = vi.fn();
+    renderMapper({ onChange });
+
+    const xGroup = screen.getByRole('radiogroup', { name: 'Dimension as x axis' });
+    // H is already selected on x -> no-op
+    await userEvent.click(within(xGroup).getByRole('radio', { name: 'H' }));
+    expect(onChange).not.toHaveBeenCalled();
+
+    // K is currently y -> swaps x and y
+    await userEvent.click(within(xGroup).getByRole('radio', { name: 'K' }));
+    expect(onChange).toHaveBeenCalledWith([18, 49, 'x', 'y']);
+  });
+
+  test('updates the slice index when a slice slider is moved and forwards canSliceFast', async () => {
+    vi.useFakeTimers();
+    const onChange = vi.fn();
+    const canSliceFast = vi.fn(() => true);
+    renderMapper({ onChange, canSliceFast });
+
+    const sliders = screen.getAllByRole('slider');
+    fireEvent.focus(sliders[0]);
+    fireEvent.keyDown(document, { key: 'ArrowUp' });
+    fireEvent.keyUp(document, { key: 'ArrowUp' });
+
+    expect(canSliceFast).toHaveBeenCalledWith([19, 49, 'y', 'x']);
+    act(() => {
+      vi.advanceTimersByTime(50);
+    });
+    expect(onChange).toHaveBeenCalledWith([19, 49, 'y', 'x']);
+    vi.useRealTimers();
+  });
+
+  test('omits the slider track when a sliced dimension has length 1 and omits the y row for 1D mapping', () => {
+    renderMapper({
+      dims: [1, 100],
+      dimLabels: [LABELS[0], LABELS[3]],
+      dimMapping: [0, 'x'],
+    });
+
+    expect(screen.queryByRole('radiogroup', { name: 'Dimension as y axis' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('slider')).not.toBeInTheDocument();
+    expect(document.getElementById('fia-slider-0-label')).toHaveTextContent('E');
+  });
+});
+
+describe('FiaSlicingSlider', () => {
+  test('throws when given a non-positive dimension length', () => {
+    expect(() =>
+      render(<FiaSlicingSlider dimension={0} length={0} initialValue={0} label="E" onChange={vi.fn()} />)
+    ).toThrow('Expected non-empty dimension');
+  });
+
+  test('uses the longer debounce delay when isFastSlice returns false', () => {
+    vi.useFakeTimers();
+    const onChange = vi.fn();
+    render(
+      <FiaSlicingSlider
+        dimension={0}
+        length={10}
+        initialValue={2}
+        label="E"
+        title="Energy transfer (meV)"
+        isFastSlice={() => false}
+        onChange={onChange}
+      />
+    );
+
+    const slider = screen.getByRole('slider');
+    fireEvent.focus(slider);
+    fireEvent.keyDown(document, { key: 'ArrowUp' });
+    fireEvent.keyUp(document, { key: 'ArrowUp' });
+    act(() => {
+      vi.advanceTimersByTime(50);
+    });
+    expect(onChange).not.toHaveBeenCalled();
+
+    act(() => {
+      vi.advanceTimersByTime(250);
+    });
+    expect(onChange).toHaveBeenCalledWith(3);
+    vi.useRealTimers();
   });
 });

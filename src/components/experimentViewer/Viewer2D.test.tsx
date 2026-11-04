@@ -182,7 +182,12 @@ test('labels dimension buttons and slice sliders from the NeXus axis datasets on
   const dataGroup = {
     name: 'data',
     kind: 'group',
-    attributes: [stringAttr('NX_class'), stringAttr('default_slice')],
+    attributes: [
+      stringAttr('NX_class'),
+      stringAttr('default_slice'),
+      stringAttr('auxiliary_signals'),
+      stringAttr('SILX_style'),
+    ],
     children: [
       ...axisDatasets,
       {
@@ -193,6 +198,15 @@ test('labels dimension buttons and slice sliders from the NeXus axis datasets on
         chunks: null,
         filters: null,
         attributes: [stringAttr('axes'), stringAttr('long_name'), intAttr('signal')],
+      },
+      {
+        name: 'num_events',
+        kind: 'dataset',
+        shape: [2, 4, 4, 4],
+        type: { class: 1, dtype: '<f8', size: 8, order: 0 },
+        chunks: null,
+        filters: null,
+        attributes: [],
       },
     ],
   };
@@ -214,7 +228,12 @@ test('labels dimension buttons and slice sliders from the NeXus axis datasets on
   const attrsByPath: Record<string, Record<string, unknown>> = {
     '/': { NX_class: 'NXroot' },
     '/MDHistoWorkspace': { NX_class: 'NXentry' },
-    '/MDHistoWorkspace/data': { NX_class: 'NXdata', default_slice: ['1', '2', '.', '.'] },
+    '/MDHistoWorkspace/data': {
+      NX_class: 'NXdata',
+      default_slice: ['1', '2', '.', '.'],
+      auxiliary_signals: ['num_events'],
+      SILX_style: JSON.stringify({ signal_scale_type: 'log' }),
+    },
     '/MDHistoWorkspace/data/signal': { axes: 'D3:D2:D1:D0', long_name: 'S(Q,E) (a.u.)', signal: 1 },
     '/MDHistoWorkspace/data/D0': { long_name: 'H (rtu)', short_name: 'H', units: 'rtu' },
     '/MDHistoWorkspace/data/D1': { long_name: 'K (rtu)', short_name: 'K', units: 'rtu' },
@@ -254,4 +273,115 @@ test('labels dimension buttons and slice sliders from the NeXus axis datasets on
   expect(document.getElementById('fia-slider-0-label')).toHaveTextContent('E');
   expect(document.getElementById('fia-slider-1-label')).toHaveTextContent('L');
   expect(document.getElementById('fia-slider-2-label')).toHaveTextContent('K');
+});
+
+test('renders complex NeXus signals on the heatmap tab with named dimension controls', async () => {
+  const dataGroup = {
+    name: 'data',
+    kind: 'group',
+    attributes: [stringAttr('NX_class')],
+    children: [
+      {
+        name: 'D0',
+        kind: 'dataset',
+        shape: [3],
+        type: { class: 1, dtype: '<f8', size: 8, order: 0 },
+        chunks: null,
+        filters: null,
+        attributes: [stringAttr('long_name'), stringAttr('short_name')],
+      },
+      {
+        name: 'D1',
+        kind: 'dataset',
+        shape: [3],
+        type: { class: 1, dtype: '<f8', size: 8, order: 0 },
+        chunks: null,
+        filters: null,
+        attributes: [stringAttr('long_name'), stringAttr('short_name')],
+      },
+      {
+        name: 'signal',
+        kind: 'dataset',
+        shape: [2, 2],
+        type: {
+          class: 6,
+          size: 8,
+          members: {
+            r: { class: 1, dtype: '<f4', size: 4, order: 0 },
+            i: { class: 1, dtype: '<f4', size: 4, order: 0 },
+          },
+        },
+        chunks: null,
+        filters: null,
+        attributes: [stringAttr('axes'), intAttr('signal')],
+      },
+    ],
+  };
+
+  const attrsByPath: Record<string, Record<string, unknown>> = {
+    '/': { NX_class: 'NXdata' },
+    '/signal': { axes: 'D1:D0', signal: 1 },
+    '/D0': { long_name: 'H (rtu)', short_name: 'H' },
+    '/D1': { long_name: 'K (rtu)', short_name: 'K' },
+  };
+
+  vi.spyOn(h5Api, 'get').mockImplementation(async (url, config) => {
+    const path = (config?.params as { path?: string } | undefined)?.path ?? '/';
+    if (url === '/meta/') return { data: jsonBuffer(dataGroup) };
+    if (url === '/attr/') return { data: jsonBuffer(attrsByPath[path] ?? {}) };
+    if (path === '/signal') {
+      return {
+        data: jsonBuffer([
+          [1, 0],
+          [0, 1],
+          [1, 1],
+          [2, 0],
+        ]),
+      };
+    }
+    return { data: new Float64Array(3).buffer };
+  });
+
+  render(<Viewer2D filepath="/live/complex.nxs" />);
+  expect(await screen.findByTestId('heatmap')).toBeInTheDocument();
+  const xGroup = screen.getByRole('radiogroup', { name: 'Dimension as x axis' });
+  expect(within(xGroup).getByRole('radio', { name: 'H' })).toHaveAttribute('aria-checked', 'true');
+});
+
+test('shows an error when signal and error dataset dimensions do not match on the line tab', async () => {
+  vi.spyOn(console, 'error').mockImplementation(() => undefined);
+  const dataGroup = {
+    name: 'data',
+    kind: 'group',
+    attributes: [stringAttr('NX_class')],
+    children: [
+      {
+        name: 'signal',
+        kind: 'dataset',
+        shape: [4],
+        type: { class: 1, dtype: '<f8', size: 8, order: 0 },
+        chunks: null,
+        filters: null,
+        attributes: [intAttr('signal')],
+      },
+      {
+        name: 'signal_errors',
+        kind: 'dataset',
+        shape: [3],
+        type: { class: 1, dtype: '<f8', size: 8, order: 0 },
+        chunks: null,
+        filters: null,
+        attributes: [],
+      },
+    ],
+  };
+
+  vi.spyOn(h5Api, 'get').mockImplementation(async (url) => {
+    if (url === '/meta/') return { data: jsonBuffer(dataGroup) };
+    if (url === '/attr/') return { data: jsonBuffer({ NX_class: 'NXdata', signal: 1 }) };
+    return { data: new Float64Array(4).buffer };
+  });
+
+  render(<Viewer2D filepath="/live/mismatch.nxs" />);
+  expect(await screen.findByText(/Signal and errors dimensions don't match/)).toBeInTheDocument();
 });

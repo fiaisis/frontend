@@ -1,6 +1,14 @@
-import { describe, expect, test } from 'vitest';
+import { type ProvidedEntity } from '@h5web/shared/hdf5-models';
+import { describe, expect, test, vi } from 'vitest';
 
-import { getAxisDisplay, getHoverLabel } from './axisLabels';
+import { getAxisDisplay, getAxisDisplays, getHoverLabel } from './axisLabels';
+import FiaNxHeatmapContainer from './FiaNxHeatmapContainer';
+import FiaNxLineContainer from './FiaNxLineContainer';
+import { withFiaContainers } from './fiaVisContainers';
+import { type AttrValuesStore } from '../../h5web/packages/app/src/providers/models';
+import { CORE_VIS, Vis } from '../../h5web/packages/app/src/vis-packs/core/visualizations';
+import { type AxisDef } from '../../h5web/packages/app/src/vis-packs/nexus/models';
+import { NX_DATA_VIS, NxDataVis } from '../../h5web/packages/app/src/vis-packs/nexus/visualizations';
 
 describe('getAxisDisplay', () => {
   test('uses short_name and long_name when the file provides them', () => {
@@ -46,5 +54,66 @@ describe('getHoverLabel', () => {
 
   test('returns nothing for a dimension with no axis', () => {
     expect(getHoverLabel(undefined)).toBeUndefined();
+  });
+});
+
+describe('getAxisDisplays', () => {
+  test('maps defined axis defs through the attribute store and leaves undefined entries untouched', () => {
+    const d3 = { name: 'D3', path: '/data/D3' };
+    const d0 = { name: 'D0', path: '/data/D0' };
+    const store = {
+      get: vi.fn((dataset: unknown) =>
+        dataset === d3
+          ? { short_name: 'E', long_name: 'Energy transfer (meV)' }
+          : { short_name: 'H', long_name: 'H (rtu)' }
+      ),
+    } as unknown as AttrValuesStore;
+
+    const defs = [
+      { dataset: d3, label: 'Energy transfer (meV)', unit: 'meV' },
+      undefined,
+      { dataset: d0, label: 'H (rtu)', unit: 'rtu' },
+    ] as unknown as (AxisDef | undefined)[];
+
+    expect(getAxisDisplays(defs, store)).toEqual([
+      { short: 'E', long: 'Energy transfer (meV)' },
+      undefined,
+      { short: 'H', long: 'H (rtu)' },
+    ]);
+  });
+});
+
+describe('withFiaContainers', () => {
+  const entity = { name: 'data', path: '/data' } as ProvidedEntity;
+
+  test('replaces NxHeatmap and NxLine containers and updates primaryVis when it was one of them', () => {
+    const heatmap = NX_DATA_VIS[NxDataVis.NxHeatmap];
+    const line = NX_DATA_VIS[NxDataVis.NxLine];
+    const rgb = NX_DATA_VIS[NxDataVis.NxRGB];
+
+    const result = withFiaContainers({
+      entity,
+      supportedVis: [line, heatmap, rgb],
+      primaryVis: heatmap,
+    });
+
+    expect(result.supportedVis[0].Container).toBe(FiaNxLineContainer);
+    expect(result.supportedVis[1].Container).toBe(FiaNxHeatmapContainer);
+    expect(result.supportedVis[2]).toBe(rgb);
+    expect(result.primaryVis).toBe(result.supportedVis[1]);
+  });
+
+  test('leaves unrelated visualizations and a non-matching primaryVis untouched', () => {
+    const raw = CORE_VIS[Vis.Raw];
+    const matrix = CORE_VIS[Vis.Matrix];
+
+    const result = withFiaContainers({
+      entity,
+      supportedVis: [raw],
+      primaryVis: matrix,
+    });
+
+    expect(result.supportedVis[0]).toBe(raw);
+    expect(result.primaryVis).toBe(matrix);
   });
 });
