@@ -26,7 +26,13 @@ describe('Monaco is served by the plugin instead of the jsDelivr CDN', () => {
 
     cy.window().then((win) => {
       const urls = fetchedMonacoUrls(win);
-      const cdn = urls.filter((url) => url.includes('cdn.jsdelivr.net'));
+      const cdn = urls.filter((url) => {
+        try {
+          return new URL(url, win.location.origin).hostname === 'cdn.jsdelivr.net';
+        } catch {
+          return false;
+        }
+      });
       const local = urls.filter((url) => url.includes('/monaco/vs/'));
 
       expect(cdn, `expected no jsDelivr requests, fetched: ${JSON.stringify(urls.slice(0, 8))}`).to.have.length(0);
