@@ -106,10 +106,14 @@ CDN, which would mean a third party decides which Monaco version users get (the 
 version, independent of our `monaco-editor` dependency) and the editors break whenever that CDN is
 unreachable. Instead, we serve the AMD build of the `monaco-editor` package we already depend on.
 
-- `scripts/copy-monaco.mjs` copies `node_modules/monaco-editor/min/vs` to `public/monaco/vs`. It runs
-  automatically from `yarn start`/`yarn dev`/`yarn build`/`yarn preview` and the Cypress component
-  scripts, and can be run on its own with `yarn copy-monaco`. It is a no-op when the copy already
-  matches the installed package version, and `public/monaco` is generated, so it is not tracked by Git.
+- `scripts/copy-monaco.mjs` copies `node_modules/monaco-editor/min/vs` to `public/monaco/vs`. It is
+  registered in `vite.config.ts` as `monacoAssetsPlugin()`, so it runs whenever Vite resolves its
+  config — `vite dev`, `vite build`, Vitest and the Cypress component dev server all get the assets
+  without any `package.json` wiring (CI starts Cypress directly). It can also be run on its own with
+  `yarn copy-monaco`. It is a no-op when the copy already matches the installed package version, and
+  `public/monaco` is generated, so it is not tracked by Git. Staging happens at config-resolution
+  time rather than in `buildStart`, because the Cypress component dev server serves as soon as it
+  listens and a request arriving mid-copy gets the SPA fallback HTML instead of the script.
 - `src/lib/monaco.ts` points the loader at that copy (`loader.config({ paths: { vs } })`), using Vite's
   base URL so it resolves to `/monaco/vs` standalone and `/f-i-a/monaco/vs` inside SciGateway. It is
   imported for its side effect from `src/index.tsx`.

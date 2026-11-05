@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
+import { monacoAssetsPlugin } from './scripts/copy-monaco.mjs';
 
 // Vite config to build as a micro-frontend exposing `window.fia`.
 // React and ReactDOM are treated as externals (provided by host or CDN),
@@ -9,7 +10,10 @@ const bundleReact = process.env.BUNDLE_REACT === 'true';
 
 export default defineConfig({
   base: process.env.VITE_PLUGIN_URL ? `${process.env.VITE_PLUGIN_URL}/` : '/',
-  plugins: [react()],
+  // monacoAssetsPlugin stages public/monaco/vs (the self-hosted Monaco build the script editors
+  // load — see src/lib/monaco.ts). It is a plugin rather than a `package.json` step so that every
+  // Vite entry point gets it, including the Cypress component dev server, which CI starts directly.
+  plugins: [react(), monacoAssetsPlugin()],
   resolve: {
     alias: [
       // Use the pinned H5Web source for access to internal viewer components.

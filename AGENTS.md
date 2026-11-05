@@ -85,13 +85,15 @@ that data interactively:
   viewer components.
 - **Monaco Editor** (`@monaco-editor/react`, `monaco-editor`): embedded script editor. Monaco is **served
   by this plugin, not loaded from a CDN** — `scripts/copy-monaco.mjs` copies the AMD build of the
-  `monaco-editor` package into `public/monaco/vs` (run automatically by `start`/`dev`/`build`/`preview`
-  and the Cypress component scripts, or manually with `yarn copy-monaco`; the directory is generated and
-  gitignored), and `src/lib/monaco.ts` points the loader at it via `loader.config({ paths: { vs } })`.
+  `monaco-editor` package into `public/monaco/vs`, and is registered in `vite.config.ts` as
+  `monacoAssetsPlugin()` so it runs whenever Vite resolves its config (dev, build, Vitest and the
+  Cypress component dev server — CI invokes Cypress directly rather than through a `package.json`
+  script); `yarn copy-monaco` runs it by hand, and the directory is generated and gitignored.
+  `src/lib/monaco.ts` points the loader at it via `loader.config({ paths: { vs } })`.
   `cypress/component/MonacoSelfHosted.cy.tsx` guards this: it fails if Monaco is fetched from
-  `cdn.jsdelivr.net` again. Always use the Monaco instance given to `onMount(editor, monaco)`; a value
-  import of `monaco-editor` bundles a second, disconnected copy (type-only imports are fine). See
-  `README.md` for details.
+  `cdn.jsdelivr.net` again, or if those assets stop being served as scripts. Always use the Monaco
+  instance given to `onMount(editor, monaco)`; a value import of `monaco-editor` bundles a second,
+  disconnected copy (type-only imports are fine). See `README.md` for details.
 - **i18next** / **react-i18next**: internationalization.
 - **Axios**: HTTP client (`src/lib/api.ts`).
 - **Vitest** (not Jest, despite `@types/jest` and `setupTests.ts` lingering in the tree — see
@@ -126,7 +128,8 @@ cypress/                      Cypress test suite
 
 server/                       Standalone Node/Express server (`yarn serve:backend`)
 scripts/                      Build-time helper scripts run from `package.json` (currently
-                               `copy-monaco.mjs`, which stages the self-hosted Monaco assets)
+                               `copy-monaco.mjs`, which stages the self-hosted Monaco assets — also
+                               imported by `vite.config.ts` as a plugin, so nothing else has to invoke it)
 container/                    Deployment assets for two separate images — one Dockerfile that builds
                                and serves this plugin via nginx (`ghcr.io/fiaisis/frontend`), and a
                                second Dockerfile + JSON/HTML/image overrides that layer FIA branding,
@@ -152,9 +155,10 @@ versions. Read it before adding dependencies or changing build/test/lint command
   **Berry 3.3.0**, pinned by `yarnPath` in `.yarnrc.yml` (with `nodeLinker: node-modules` and a Berry
   format `yarn.lock`) — the `packageManager: yarn@1.22.22` field in `package.json` is stale and is not
   what `yarn --version` reports. Two practical consequences: CI's `yarn install --immutable` is a Berry
-  flag, and **Berry does not run `pre<script>`/`post<script>` lifecycle hooks**, so anything that must
-  happen before a build (e.g. `node scripts/copy-monaco.mjs`) is written inline in the script command
-  rather than in a `prebuild` hook.
+  flag, and **Berry does not run `pre<script>`/`post<script>` lifecycle hooks**, so work that must
+  happen around a build cannot rely on a `prebuild` hook. This is one reason the Monaco asset staging
+  is a Vite plugin (`monacoAssetsPlugin` in `vite.config.ts`) rather than a script or hook: it also
+  covers tools invoked directly, such as CI's Cypress component run.
 - The `scripts` block is the authoritative list of available commands (`start`/`dev`, `build`,
   `build:standalone`, `test`, `cypress:*`, `lint:js`, `format`, etc.) — prefer running these over
   invoking the underlying tools (`vite`, `vitest`, `cypress`, `eslint`) directly with ad hoc flags.
