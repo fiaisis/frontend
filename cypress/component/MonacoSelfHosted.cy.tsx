@@ -3,8 +3,8 @@ import { mount } from 'cypress/react';
 import React from 'react';
 
 // Configures the Monaco loader to use the copy this repo serves from public/monaco/vs. Component
-// tests do not go through src/index.tsx (the plugin entry), so this module is imported here (which
-// runs that configuration for its side effect as a side effect) and also provides the path it set.
+// tests do not go through src/index.tsx (the plugin entry), so the module is imported here — which
+// runs that configuration for its side effect — and it also provides the path that was configured.
 import { MONACO_VS_PATH } from '../../src/lib/monaco';
 
 /** Every Monaco URL the page has fetched, from the browser's own resource-timing buffer. */
@@ -41,24 +41,25 @@ describe('Monaco is served by the plugin instead of the jsDelivr CDN', () => {
     cy.get('.monaco-editor .view-lines').should('be.visible');
   };
 
-  it('fetches Monaco from the plugin origin and never from the CDN', () => {
+  it('fetches Monaco from the plugin origin and never from a third party', () => {
     mountEditor();
 
     cy.window().then((win) => {
       const urls = fetchedMonacoUrls(win);
-      const cdn = urls.filter((url) => {
-        try {
-          return new URL(url, win.location.origin).hostname === 'cdn.jsdelivr.net';
-        } catch {
-          return false;
-        }
-      });
-      const local = urls.filter((url) => url.includes('/monaco/vs/'));
+      // Compare parsed URLs rather than looking for the CDN's name in the string: that catches Monaco
+      // being served from anything other than this app (jsDelivr today, another host after a
+      // refactor), and does not rely on a substring match being exhaustive.
+      const parsed = urls.map((url) => new URL(url, win.location.origin));
+      const foreign = parsed.filter((url) => url.origin !== win.location.origin);
+      const selfHosted = parsed.filter((url) => url.pathname.startsWith(`${MONACO_VS_PATH}/`));
 
-      expect(cdn, `expected no jsDelivr requests, fetched: ${JSON.stringify(urls.slice(0, 8))}`).to.have.length(0);
       expect(
-        local.length,
-        `expected local monaco/vs requests, fetched: ${JSON.stringify(urls.slice(0, 8))}`
+        foreign.map((url) => url.href),
+        `expected no cross-origin Monaco requests, fetched: ${JSON.stringify(urls.slice(0, 8))}`
+      ).to.have.length(0);
+      expect(
+        selfHosted.length,
+        `expected requests under ${MONACO_VS_PATH}, fetched: ${JSON.stringify(urls.slice(0, 8))}`
       ).to.be.greaterThan(0);
     });
   });
