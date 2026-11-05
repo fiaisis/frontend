@@ -83,6 +83,7 @@ Builds the app with Vite into `build/` for use as a SciGateway plugin. Do this w
 Notes:
 
 - The default build expects React and ReactDOM to be provided by the host (externals). If your host does not provide them, use `yarn build:standalone` to bundle React into `build/main.js`.
+- The Monaco AMD build is copied into `build/monaco/vs` as part of the build (see [Monaco editor assets](#monaco-editor-assets)); this adds around 24 MB to `build/` and to the container image.
 - On Windows, SciGateway may lock files in `build/` while serving them. Stop SciGateway before rebuilding to avoid `EPERM` errors.
 
 ### `yarn start`
@@ -96,6 +97,28 @@ Runs the Vite dev server on http://localhost:3000.
 
 - `yarn preview`: Serves the built `build/` output for local checks.
 - `yarn serve:build`: Builds and previews on port 5001.
+
+### Monaco editor assets
+
+The script editors (reduction scripts and live-data scripts) use Monaco. By default
+[`@monaco-editor/react`](https://github.com/suren-atoyan/monaco-react) loads Monaco from the jsDelivr
+CDN, which would mean a third party decides which Monaco version users get (the loader pins its own
+version, independent of our `monaco-editor` dependency) and the editors break whenever that CDN is
+unreachable. Instead, we serve the AMD build of the `monaco-editor` package we already depend on.
+
+- `scripts/copy-monaco.mjs` copies `node_modules/monaco-editor/min/vs` to `public/monaco/vs`. It runs
+  automatically from `yarn start`/`yarn dev`/`yarn build`/`yarn preview` and the Cypress component
+  scripts, and can be run on its own with `yarn copy-monaco`. It is a no-op when the copy already
+  matches the installed package version, and `public/monaco` is generated, so it is not tracked by Git.
+- `src/lib/monaco.ts` points the loader at that copy (`loader.config({ paths: { vs } })`), using Vite's
+  base URL so it resolves to `/monaco/vs` standalone and `/f-i-a/monaco/vs` inside SciGateway. It is
+  imported for its side effect from `src/index.tsx`.
+- Nothing is downloaded until an editor actually mounts, so pages without an editor pay nothing.
+- `cypress/component/MonacoSelfHosted.cy.tsx` fails if Monaco is ever fetched from the CDN again.
+- When editing code that touches the editor, use the Monaco instance passed to
+  `onMount(editor, monaco)`. Do not `import * as monaco from 'monaco-editor'` in application code: a
+  value import bundles a second copy of Monaco and gives you an instance that cannot see the models the
+  editor is displaying. Type-only imports (`import type * as monaco from 'monaco-editor'`) are fine.
 
 ## Container files
 

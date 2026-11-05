@@ -3,6 +3,9 @@ import React from 'react';
 import ReactDOMLegacy from 'react-dom';
 import * as ReactDOMClient from 'react-dom/client';
 import './index.css';
+// Must be imported for its side effect before any Monaco editor mounts: it points the loader at the
+// copy of Monaco we ship ourselves instead of the jsDelivr CDN (see src/lib/monaco.ts).
+import './lib/monaco';
 import singleSpaReact from 'single-spa-react';
 
 import App from './App';
