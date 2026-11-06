@@ -83,7 +83,17 @@ that data interactively:
   `src/.gitmodules`): low-level HDF5/NeXus viewer components, aliased in `vite.config.ts` so the
   `@h5web/*` npm packages' supporting code is used alongside the submodule's source for internal
   viewer components.
-- **Monaco Editor** (`@monaco-editor/react`, `react-monaco-editor`): embedded script editor.
+- **Monaco Editor** (`@monaco-editor/react`, `monaco-editor`): embedded script editor. Monaco is **served
+  by this plugin, not loaded from a CDN** — `scripts/copy-monaco.mjs` copies the AMD build of the
+  `monaco-editor` package into `public/monaco/vs`, and is registered in `vite.config.ts` as
+  `monacoAssetsPlugin()` so it runs whenever Vite resolves its config (dev, build, Vitest and the
+  Cypress component dev server — CI invokes Cypress directly rather than through a `package.json`
+  script); `yarn copy-monaco` runs it by hand, and the directory is generated and gitignored.
+  `src/lib/monaco.ts` points the loader at it via `loader.config({ paths: { vs } })`.
+  `cypress/component/MonacoSelfHosted.cy.tsx` guards this: it fails if Monaco is fetched from
+  `cdn.jsdelivr.net` again, or if those assets stop being served as scripts. Always use the Monaco
+  instance given to `onMount(editor, monaco)`; a value import of `monaco-editor` bundles a second,
+  disconnected copy (type-only imports are fine). See `README.md` for details.
 - **i18next** / **react-i18next**: internationalization.
 - **Axios**: HTTP client (`src/lib/api.ts`).
 - **Vitest** (not Jest, despite `@types/jest` and `setupTests.ts` lingering in the tree — see
@@ -117,6 +127,9 @@ cypress/                      Cypress test suite
   fixtures/                   Binary/data fixtures for viewer tests
 
 server/                       Standalone Node/Express server (`yarn serve:backend`)
+scripts/                      Build-time helper scripts run from `package.json` (currently
+                               `copy-monaco.mjs`, which stages the self-hosted Monaco assets — also
+                               imported by `vite.config.ts` as a plugin, so nothing else has to invoke it)
 container/                    Deployment assets for two separate images — one Dockerfile that builds
                                and serves this plugin via nginx (`ghcr.io/fiaisis/frontend`), and a
                                second Dockerfile + JSON/HTML/image overrides that layer FIA branding,
@@ -138,8 +151,14 @@ versions. Read it before adding dependencies or changing build/test/lint command
 
 - `engines.node` constrains the supported Node.js version range — check it (not this document)
   before assuming a Node version.
-- `packageManager` pins an exact Yarn (Classic, v1) version; use `yarn`, not `npm`, for all
-  dependency management (`yarn install --immutable` in CI, matching `.github/workflows/`).
+- **Yarn, not npm**, for all dependency management. Note that the Yarn version actually used is
+  **Berry 3.3.0**, pinned by `yarnPath` in `.yarnrc.yml` (with `nodeLinker: node-modules` and a Berry
+  format `yarn.lock`) — the `packageManager: yarn@1.22.22` field in `package.json` is stale and is not
+  what `yarn --version` reports. Two practical consequences: CI's `yarn install --immutable` is a Berry
+  flag, and **Berry does not run `pre<script>`/`post<script>` lifecycle hooks**, so work that must
+  happen around a build cannot rely on a `prebuild` hook. This is one reason the Monaco asset staging
+  is a Vite plugin (`monacoAssetsPlugin` in `vite.config.ts`) rather than a script or hook: it also
+  covers tools invoked directly, such as CI's Cypress component run.
 - The `scripts` block is the authoritative list of available commands (`start`/`dev`, `build`,
   `build:standalone`, `test`, `cypress:*`, `lint:js`, `format`, etc.) — prefer running these over
   invoking the underlying tools (`vite`, `vitest`, `cypress`, `eslint`) directly with ad hoc flags.
@@ -296,7 +315,9 @@ policy — treat `.env` and `README.md` as the source of truth, and re-verify di
 only one of them is "this plugin":
 
 1. **`ghcr.io/fiaisis/frontend`** (`container/frontend.dockerfile`) — always built on every push to
-   `main`. This is the actual FIA plugin bundle served by nginx.
+   `main`. This is the actual FIA plugin bundle served by nginx. It needs no extra steps for the
+   self-hosted Monaco assets: the Dockerfile copies all of `build/`, which already contains
+   `build/monaco/vs` (adds roughly 24 MB to the image).
 2. **`ghcr.io/fiaisis/scigateway`** (`container/scigateway.dockerfile`) — only rebuilt when specific
    paths change (`container/scigateway.dockerfile`, `container/settings.json`,
    `container/default.json`, `container/images/**`, `container/favicon.ico`, `container/index.html`,
