@@ -394,8 +394,13 @@ configuration, before considering the change complete:
 
 ## Managing issues
 
-This repo has no local `.github/ISSUE_TEMPLATE/`; GitHub serves the org-wide default template from
-`fiaisis/.github` instead. Always use it rather than inventing an ad hoc issue format:
+Do **not** create a new issue on your own (e.g. just to have a number to put in a PR's `Closes #`
+line) unless the user explicitly asks you to create one. If no existing issue number is evident for
+a PR, ask the user what issue or epic reference to put in the PR description instead.
+
+When the user *does* ask you to create an issue, this repo has no local `.github/ISSUE_TEMPLATE/`;
+GitHub serves the org-wide default template from `fiaisis/.github` instead. Always use it rather
+than inventing an ad hoc issue format:
 
 ```shell
 gh issue create --template Issue
@@ -445,8 +450,9 @@ consequences:
    height issue`, `Add more icon to reduction outputs`). Do not use `snake_case` for PR titles.
 3. **PR description**: use the org-wide default template from `fiaisis/.github`
    (`.github/pull_request_template.md` — no local override in this repo), which is just
-   `Closes # <Issue Number>` followed by a `## Description` section. Ask the user for the issue
-   number if one isn't evident from the task, or confirm there is none to link.
+   `Closes # <Issue Number>` followed by a `## Description` section. If no existing issue number is
+   evident from the task, ask the user what issue or epic reference to use — do **not** create an
+   issue that doesn't exist just to link it.
 4. **AI-assistance label**: attach a label to the PR indicating that it was made with the assistance
    of AI. Check existing labels first with `gh label list` (e.g. `AI` or `AI_code` in this org) and
    apply the matching label via `gh pr create --label <label>` or

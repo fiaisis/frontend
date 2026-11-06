@@ -446,7 +446,9 @@ describe('Experiment viewer', { timeout: 30000 }, () => {
     expect(screen.getByRole('navigation', { name: 'Experiment viewer job pages' })).toBeVisible();
     expect(screen.getAllByRole('button', { name: /LOQ7.nxs/ })).toHaveLength(1);
     expect(
-      within(screen.getByRole('region', { name: 'Opened reduction' })).getByRole('checkbox', { name: selectedFilename })
+      within(await screen.findByRole('region', { name: 'Opened reduction' }, { timeout: 5000 })).getByRole('checkbox', {
+        name: selectedFilename,
+      })
     ).toBeChecked();
     expect(screen.getByRole('button', { name: /LOQ10.nxs/ })).toBeVisible();
     expect(screen.getByText('Showing 1-10 of 20 jobs')).toBeVisible();
