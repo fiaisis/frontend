@@ -69,17 +69,18 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
       !jobId ||
       !/^[1-9]\d*$/.test(jobId) ||
       !Number.isSafeInteger(Number(jobId)) ||
-      !requestedFile ||
-      !outputFilter.some((extension) => requestedFile.endsWith(extension)));
+      (requestedFile !== null && !outputFilter.some((extension) => requestedFile.endsWith(extension))));
   const hasInitialSelection = hasSelection && !invalidSelection;
+  const isReductionOnly = hasInitialSelection && requestedFile === null;
   const { rootRef: viewerRootRef, availableHeight: viewerHeight } = useAvailablePluginHeight();
   // Input-file searches and output selection use different query parameters.
   const searchFilename = searchExperimentNumber === null ? query.get('filename')?.trim() || null : null;
   const hasExperimentNumber = experimentNumber !== null;
   const searchInstrument = instrumentName ?? null;
   const isSearchActive =
-    query.get('search') !== 'false' &&
-    (query.get('search') === 'true' || searchExperimentNumber !== null || Boolean(searchFilename));
+    isReductionOnly ||
+    (query.get('search') !== 'false' &&
+      (query.get('search') === 'true' || searchExperimentNumber !== null || Boolean(searchFilename)));
 
   useEffect(() => {
     if (
@@ -110,7 +111,7 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
   const [loadingOpenedJob, setLoadingOpenedJob] = useState(false);
   const [loadingPlotData, setLoadingPlotData] = useState(false);
   const [loadingFileSelection, setLoadingFileSelection] = useState(false);
-  const [initialSelection, setInitialSelection] = useState<{ jobId: number; filename: string }>();
+  const [initialSelection, setInitialSelection] = useState<{ jobId: number; filename?: string }>();
   const filesRequestId = useRef(0);
   const pageRequestId = useRef(0);
   const filePaths = useRef(new Map<string, Promise<string>>());
@@ -259,6 +260,12 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
       );
     };
     const loadPage = async (): Promise<void> => {
+      if (isReductionOnly) {
+        // Open the linked reduction directly, without loading the experiment list.
+        rememberInitialPage([]);
+        setLoadingJobs(false);
+        return;
+      }
       if (!isSearchActive) {
         setLoadingJobs(false);
         return;
@@ -327,6 +334,7 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
     navigationKey,
     currentPage,
     isSearchActive,
+    isReductionOnly,
     searchInstrument,
     searchExperimentNumber,
     searchFilename,
@@ -338,7 +346,6 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
     if (
       !hasInitialSelection ||
       !jobId ||
-      !requestedFile ||
       initialPageJobs?.key !== navigationKey ||
       currentPage !== 0 ||
       dismissedSelectionKey === navigationKey
@@ -363,21 +370,25 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
         const outputs = getJobOutputs(job);
         setOpenedJob(toTreeJob(job));
         setLoadingOpenedJob(false);
-        const hasOutput = outputs.includes(requestedFile);
-        if (!hasOutput) setSelectionError('The selected output is no longer available.');
+        const selectedFile = requestedFile ?? outputs[0];
+        const hasOutput = selectedFile !== undefined && outputs.includes(selectedFile);
+        if (isReductionOnly) setInitialSelection({ jobId: job.id, filename: selectedFile });
+        if (requestedFile !== null && !hasOutput) setSelectionError('The selected output is no longer available.');
         if (hasOutput) setLoadingFileSelection(true);
-        const nextFiles = await getFilesForJobs([job], hasOutput ? requestedFile : undefined);
+        const nextFiles = await getFilesForJobs([job], hasOutput ? selectedFile : undefined);
         if (!isCurrent) return;
-        setOpenedFiles(nextFiles.map((file) => ({ ...file, enabled: hasOutput && file.filename === requestedFile })));
+        setOpenedFiles(nextFiles.map((file) => ({ ...file, enabled: hasOutput && file.filename === selectedFile })));
         if (hasOutput) {
-          setInitialSelection({ jobId: job.id, filename: requestedFile });
-          const file = nextFiles.find((candidate) => candidate.filename === requestedFile)!;
+          setInitialSelection({ jobId: job.id, filename: selectedFile });
+          const file = nextFiles.find((candidate) => candidate.filename === selectedFile)!;
           await discoverDatasets(file, true, true);
         }
       } catch (error) {
         if (!isCurrent) return;
         console.error('Error opening reduction output:', error);
-        setSelectionError('The selected output could not be loaded.');
+        setSelectionError(
+          isReductionOnly ? 'The selected reduction could not be loaded.' : 'The selected output could not be loaded.'
+        );
       } finally {
         if (isCurrent) {
           setLoadingOpenedJob(false);
@@ -395,6 +406,7 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
     currentPage,
     dismissedSelectionKey,
     hasInitialSelection,
+    isReductionOnly,
     jobId,
     requestedFile,
     instrumentName,
@@ -651,6 +663,7 @@ const ExperimentViewer: React.FC = (): JSX.Element => {
               }
               jobs={jobs}
               openedJob={openedJob}
+              showExperimentJobs={!isReductionOnly}
               isLoadingOpenedJob={loadingOpenedJob}
               files={files}
               initialSelection={initialSelection}

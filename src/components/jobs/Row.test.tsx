@@ -217,7 +217,7 @@ describe('Row and reduction details modal', () => {
     await user.click(screen.getByRole('tab', { name: 'Reduction outputs' }));
     expect(screen.getByRole('link', { name: /Experiment viewer/ })).toHaveAttribute(
       'href',
-      '/experiment-viewer?instrument=LOQ&experiment=12345'
+      '/experiment-viewer?instrument=LOQ&experiment=12345&jobId=42'
     );
     expect(screen.getByText('result.nxs')).toBeInTheDocument();
     expect(screen.getByText('report.txt')).toBeInTheDocument();
@@ -273,14 +273,14 @@ describe('Row and reduction details modal', () => {
     );
   });
 
-  test('opens the selected output in Experiment viewer and keeps the whole-experiment footer link', async () => {
+  test('opens the selected output in Experiment viewer and scopes the footer link to its reduction', async () => {
     const user = userEvent.setup();
     const filename = 'result & scan #1.nxs';
     renderModal({ job: makeJob({ outputs: `['${filename}']` }) });
     await user.click(screen.getByRole('tab', { name: 'Reduction outputs' }));
     expect(screen.getByRole('link', { name: 'Experiment viewer' })).toHaveAttribute(
       'href',
-      '/experiment-viewer?instrument=LOQ&experiment=12345'
+      '/experiment-viewer?instrument=LOQ&experiment=12345&jobId=42'
     );
 
     await user.click(screen.getByRole('button', { name: `Actions for ${filename}` }));

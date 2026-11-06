@@ -1029,6 +1029,7 @@ const ReductionDetailsContent: React.FC<{
                         to={getExperimentViewerUrl({
                           instrument: job.run.instrument_name,
                           experiment: job.run.experiment_number,
+                          jobId: job.id,
                         })}
                         startIcon={<Visibility />}
                         onClick={() =>
