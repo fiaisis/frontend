@@ -162,7 +162,7 @@ test('keeps disabled controls after a dataset request fails', async () => {
   expect(screen.queryByTestId('heatmap')).not.toBeInTheDocument();
 });
 
-test('labels dimension buttons and slice sliders from the NeXus axis datasets on heatmap and line tabs', async () => {
+test('labels NeXus dimensions and preserves the selected heatmap and line tabs across rerenders and refreshes', async () => {
   const user = userEvent.setup();
   const axisDatasets = [
     { name: 'D0', shape: [5] },
@@ -256,7 +256,8 @@ test('labels dimension buttons and slice sliders from the NeXus axis datasets on
     return { data: new Float64Array(16).buffer };
   });
 
-  render(<Viewer2D filepath="/live/MERlives_30meV_1to1_mdhisto.nxs" />);
+  const filepath = '/live/MERlives_30meV_1to1_mdhisto.nxs';
+  const { rerender } = render(<Viewer2D filepath={filepath} />);
   expect(await screen.findByTestId('heatmap')).toBeInTheDocument();
 
   const xGroup = screen.getByRole('radiogroup', { name: 'Dimension as x axis' });
@@ -273,6 +274,27 @@ test('labels dimension buttons and slice sliders from the NeXus axis datasets on
   expect(document.getElementById('fia-slider-0-label')).toHaveTextContent('E');
   expect(document.getElementById('fia-slider-1-label')).toHaveTextContent('L');
   expect(document.getElementById('fia-slider-2-label')).toHaveTextContent('K');
+
+  let refreshKey = 0;
+  for (const [tabName, plotTestId] of [
+    ['NX Heatmap', 'heatmap'],
+    ['NX Line', 'line'],
+  ]) {
+    await user.click(screen.getByRole('tab', { name: tabName }));
+    expect(await screen.findByTestId(plotTestId)).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: tabName })).toHaveAttribute('aria-selected', 'true');
+
+    rerender(<Viewer2D filepath={filepath} refreshKey={refreshKey} />);
+    expect(screen.getByRole('tab', { name: tabName })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByTestId(plotTestId)).toBeInTheDocument();
+
+    refreshKey += 1;
+    rerender(<Viewer2D filepath={filepath} refreshKey={refreshKey} />);
+    await waitFor(() => {
+      expect(screen.getByTestId(plotTestId)).toBeVisible();
+      expect(screen.getByRole('tab', { name: tabName })).toHaveAttribute('aria-selected', 'true');
+    });
+  }
 });
 
 test('renders complex NeXus signals on the heatmap tab with named dimension controls', async () => {
