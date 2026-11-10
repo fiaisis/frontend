@@ -10,11 +10,13 @@ import InstrumentSelector from '../components/jobs/InstrumentSelector';
 import NavArrows from '../components/navigation/NavArrows';
 import PageHeader from '../components/navigation/PageHeader';
 import { getPageHeaderControlSx } from '../components/navigation/pageHeaderStyles';
+import ScriptDiagnosticsStatus from '../components/script/ScriptDiagnosticsStatus';
 import { fiaApi } from '../lib/api';
 import { instruments as allInstruments } from '../lib/instrumentData';
 import { LIVE_SUPPORTED_INSTRUMENTS_FALLBACK } from '../lib/instrumentSupport';
 import { fetchLiveDataInstruments } from '../lib/plottingServiceAPI';
 import { useAvailablePluginHeight } from '../lib/useAvailablePluginHeight';
+import { useScriptEditor } from '../lib/useScriptEditor';
 
 const LiveValueEditor: React.FC = () => {
   const { rootRef, availableHeight } = useAvailablePluginHeight();
@@ -36,6 +38,13 @@ const LiveValueEditor: React.FC = () => {
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [showLiveLogViewer, setShowLiveLogViewer] = useState(false);
   const userModified = useRef(false);
+
+  // Python checking for the live script. Advisory: "Save script" stays clickable whatever it says, since
+  // the checker cannot model facility code and a wrong verdict must not be able to stop a live setup being
+  // saved. Disabled while the stored script is still loading.
+  const { diagnostics: scriptDiagnostics, onMount: onScriptEditorMount } = useScriptEditor(scriptValue, {
+    enabled: !loading,
+  });
   useEffect(() => {
     let active = true;
     const loadInstruments = async (): Promise<void> => {
@@ -188,6 +197,10 @@ const LiveValueEditor: React.FC = () => {
             >
               {instrumentName} Live data script
             </Typography>
+
+            <Box sx={{ minWidth: 0 }}>
+              <ScriptDiagnosticsStatus diagnostics={scriptDiagnostics} />
+            </Box>
             <Box
               role="group"
               aria-label="Script actions"
@@ -245,6 +258,7 @@ const LiveValueEditor: React.FC = () => {
                       userModified.current = true;
                     }
                   }}
+                  onMount={onScriptEditorMount}
                   height="100%"
                   defaultLanguage="python"
                   value={scriptValue}
