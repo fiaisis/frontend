@@ -89,9 +89,13 @@ that data interactively:
   `monacoAssetsPlugin()` so it runs whenever Vite resolves its config (dev, build, Vitest and the
   Cypress component dev server — CI invokes Cypress directly rather than through a `package.json`
   script); `yarn copy-monaco` runs it by hand, and the directory is generated and gitignored.
-  `src/lib/monaco.ts` points the loader at it via `loader.config({ paths: { vs } })`.
+  `src/lib/monaco.ts` points the loader at it via `loader.config({ paths: { vs } })`, with the path
+  resolved by `src/lib/monacoPath.ts` so the assets follow `main.js` rather than the page (see "Plugin
+  assets come from the plugin's origin" under "General working practices").
   `cypress/component/MonacoSelfHosted.cy.tsx` guards this: it fails if Monaco is fetched from
-  `cdn.jsdelivr.net` again, or if those assets stop being served as scripts. Always use the Monaco
+  `cdn.jsdelivr.net` again, or if those assets stop being served as scripts — but it serves everything
+  from one origin, so it cannot catch a cross-origin path bug (`src/lib/monacoPath.test.ts` does).
+  Always use the Monaco
   instance given to `onMount(editor, monaco)`; a value import of `monaco-editor` bundles a second,
   disconnected copy (type-only imports are fine). See `README.md` for details.
 - **i18next** / **react-i18next**: internationalization.
@@ -512,6 +516,28 @@ Double- and triple-check the context name before running anything against a prod
   sanctioned mechanism for customizing the deployed SciGateway host for FIA.
 - Keep dependency versions and the `h5web` submodule pointer consistent with the existing pinning
   style in `package.json` / `src/.gitmodules`.
+
+### Plugin assets come from the plugin's origin
+
+In "Mode 2" (running inside SciGateway) the plugin is served by its own static server on port 5001 while
+the page belongs to the host on 3000/3001, so anything this bundle lazily fetches by URL must resolve
+against the plugin's own origin — port 5001 serves `build/`, which is where those assets are copied. Do
+not resolve such a URL from `import.meta.env.BASE_URL`: that is relative to the *document*, which in this
+setup is the host, and the host answers an unknown path with its SPA fallback — `200 OK`,
+`text/html`, `index.html`. An asset failure that looks like a successful load is far harder to spot than a
+404, and this already bit Monaco's AMD loader: the editor sat on "Loading…" indefinitely, with no error
+in the console, while every API call on the page returned 200. `src/lib/monacoPath.ts` resolves against
+the bundle's own URL instead (`document.currentScript`, which is populated because SciGateway loads
+plugins by injecting a real `<script src>` in `state/actions/loadMicroFrontends.tsx`), falling back to
+`BASE_URL` when the bundle cannot identify itself.
+
+So when an editor hangs in this setup, check in this order — all three are doable without a browser:
+
+1. Staging's API access log (`kubectl logs -n fia -l app=fia-api --context staging`): if the page's `GET`s
+   are present and 200, the API, auth and CORS are not the problem.
+2. `curl -i http://localhost:3001/<asset path>` — `text/html` means the host is serving its fallback for a
+   file it does not have.
+3. The same path on port 5001, which should be `application/javascript`.
 
 ## Keeping this document up to date
 

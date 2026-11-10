@@ -18,6 +18,11 @@ describe('Monaco loader configuration', () => {
     vi.resetModules();
   });
 
+  afterEach(() => {
+    // `currentScript` is read-only in a real DOM; tests that fake it must not leak it to the next import.
+    delete (document as { currentScript?: unknown }).currentScript;
+  });
+
   test('points the AMD loader at the monaco/vs copy served by the plugin itself', async () => {
     const { MONACO_VS_PATH } = await import('./monaco');
 
@@ -29,11 +34,24 @@ describe('Monaco loader configuration', () => {
     const { MONACO_VS_PATH } = await import('./monaco');
 
     expect(MONACO_VS_PATH).not.toContain('cdn.jsdelivr.net');
-    expect(MONACO_VS_PATH).not.toContain('http');
-    // `base` is '/' when VITE_PLUGIN_URL is unset (development and tests), and '/f-i-a/' when the
-    // plugin is built for SciGateway — both are served by this repo's own assets.
+    // A test module is not a `<script>`, so this exercises the fallback branch: `base` is '/' when
+    // VITE_PLUGIN_URL is unset, '/f-i-a/' when the plugin is built for SciGateway.
     expect(MONACO_VS_PATH).toBe(`${import.meta.env.BASE_URL}monaco/vs`);
     expect(MONACO_VS_PATH).toBe('/monaco/vs');
+  });
+
+  test('takes the assets with the bundle when a host on another origin loads it', async () => {
+    // The SciGateway case: this repo serves main.js on :5001 while the page belongs to the host on :3001.
+    // Configured from the document, the loader request would go to :3001, which answers with index.html
+    // and hangs the editor silently. See monacoPath.ts.
+    const script = document.createElement('script');
+    script.src = 'http://localhost:5001/main.js';
+    Object.defineProperty(document, 'currentScript', { value: script, configurable: true });
+
+    const { MONACO_VS_PATH } = await import('./monaco');
+
+    expect(MONACO_VS_PATH).toBe('http://localhost:5001/monaco/vs');
+    expect(configMock).toHaveBeenCalledWith({ paths: { vs: 'http://localhost:5001/monaco/vs' } });
   });
 });
 
