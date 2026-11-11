@@ -1,6 +1,7 @@
 import { Box } from '@mui/material';
 import React, { useCallback, useState, useSyncExternalStore } from 'react';
 
+import EditableColourBarBounds from './EditableColourBarBounds';
 import { withFiaContainers } from './fiaVisContainers';
 import ViewerToolbarFallback from './ViewerToolbarFallback';
 import { useDataContext } from '../../h5web/packages/app/src/providers/DataProvider';
@@ -66,7 +67,11 @@ const DatasetVisualization: React.FC<ResolvedVisualization> = ({ entity, support
         {!hasToolbar && <ViewerToolbarFallback vis={activeVis} />}
       </div>
       <div className={styles.visArea}>
-        <Container entity={entity} toolbarContainer={toolbarContainer ?? undefined} />
+        {/* Wraps the visualization so that H5Web's colour-bar limits can be edited in place. The
+            wrapper generates no box, so the visualization keeps its own `visArea` grid areas. */}
+        <EditableColourBarBounds>
+          <Container entity={entity} toolbarContainer={toolbarContainer ?? undefined} />
+        </EditableColourBarBounds>
       </div>
     </div>
   );
