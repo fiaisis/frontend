@@ -22,10 +22,12 @@ import { getJobTableChromeColors, JOB_TABLE_TOOLBAR_CONTROL_HEIGHT } from '../co
 import NavArrows from '../components/navigation/NavArrows';
 import PageHeader from '../components/navigation/PageHeader';
 import { getPageHeaderControlSx } from '../components/navigation/pageHeaderStyles';
+import ScriptDiagnosticsStatus from '../components/script/ScriptDiagnosticsStatus';
 import { fiaApi } from '../lib/api';
 import { isValidInstrument } from '../lib/instrumentData';
 import { MantidVersionMap } from '../lib/types';
 import { useAvailablePluginHeight } from '../lib/useAvailablePluginHeight';
+import { useScriptEditor } from '../lib/useScriptEditor';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -84,6 +86,14 @@ const ValueEditor: React.FC = () => {
   const rerunSuccessful = useRef<boolean | null>(null);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const userModified = useRef(false);
+
+  // Python checking for the script tab. Advisory: nothing here touches the "Rerun with changes" button's
+  // disabled state, because the checker cannot model facility code and would otherwise block scripts that
+  // run perfectly well. Disabled while the job is still loading, so the first check is about the real script
+  // rather than the empty editor shown before it arrives.
+  const { diagnostics: scriptDiagnostics, onMount: onScriptEditorMount } = useScriptEditor(scriptValue, {
+    enabled: !loading,
+  });
 
   const fetchReduction = useCallback(async (): Promise<void> => {
     setLoading(true);
@@ -228,6 +238,10 @@ const ValueEditor: React.FC = () => {
             >
               {instrumentName ?? urlInstrumentName} Job {jobId} values
             </Typography>
+
+            <Box sx={{ minWidth: 0 }}>
+              <ScriptDiagnosticsStatus diagnostics={scriptDiagnostics} />
+            </Box>
 
             <Box
               role="group"
@@ -412,6 +426,7 @@ const ValueEditor: React.FC = () => {
                     userModified.current = true; // Indicates that the user has modified the script
                   }
                 }}
+                onMount={onScriptEditorMount}
                 height="100%"
                 defaultLanguage="python"
                 value={scriptValue}
