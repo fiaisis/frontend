@@ -7,8 +7,8 @@ import { analyseScript, type Diagnostic, type DiagnosticsFailure, isWithinSizeCa
  *
  * Advisory only: nothing here gates saving or "Rerun with changes". Validation disagrees with Mantid
  * occasionally — the runner accepts things the lint does not like, and a live-data script is not the same
- * dialect as a reduction script — and an editor that refused to run a script on the strength of a guess
- * would be worse than no editor at all.
+ * dialect as a reduction script — and refusing to run a script on the strength of a guess is worse than
+ * not checking at all.
  */
 
 /** Long enough that a burst of typing is one request, short enough that a fix shows up immediately. */
@@ -24,11 +24,8 @@ export type DiagnosticsStatus = 'idle' | 'checking' | 'valid' | 'problems' | Dia
 
 export interface ScriptDiagnostics {
   status: DiagnosticsStatus;
-  /**
-   * The diagnostics for the last script that was actually analysed, which is not necessarily the one on
-   * screen: a reply for text the user has replaced is discarded, and a fresh script keeps the previous
-   * squiggles until its own reply lands.
-   */
+  /** The last script that was actually analysed, which is not necessarily the one on screen: replies about
+   * replaced text are discarded, and a new script keeps the old squiggles until its own reply lands. */
   diagnostics: Diagnostic[];
   /** Whether CPython would accept the script, or null when nothing has answered yet. */
   parses: boolean | null;
@@ -40,8 +37,8 @@ export interface ScriptDiagnostics {
 
 export interface ScriptDiagnosticsState extends ScriptDiagnostics {
   /**
-   * Ask again about the script currently on screen. The editors call this on save, so that a user who
-   * fixes a script and immediately reruns it is not shown the verdict for the previous text.
+   * Ask again about the script on screen. The editors call this on save, so someone who fixes a script and
+   * immediately reruns it is not shown the verdict for the previous text.
    */
   refresh: () => void;
 }
@@ -95,8 +92,7 @@ export const useScriptDiagnostics = (
 
       analyseScript(value, controller.signal)
         .then((outcome) => {
-          // Either the user typed again, or this component is gone: in both cases this reply is about a
-          // script nobody is looking at, and the hash the service echoed back is how we know.
+          // Either the user typed again or this component is gone; the echoed hash is how we know.
           if (requestId.current !== id) {
             return;
           }
@@ -114,8 +110,7 @@ export const useScriptDiagnostics = (
             const seconds = outcome.retryAfterSeconds ?? DEFAULT_BACKOFF_SECONDS;
             backoffUntil.current = Date.now() + seconds * 1000;
           }
-          // Anything else is our problem, not the user's: keep the markers already on screen, because
-          // dropping them would claim the script had nothing wrong with it.
+          // Anything else is our problem, not the user's: dropping the markers would claim the script is clean.
           setState((current) => ({
             ...current,
             status: outcome.failure,

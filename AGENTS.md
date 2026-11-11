@@ -90,11 +90,11 @@ that data interactively:
   Cypress component dev server — CI invokes Cypress directly rather than through a `package.json`
   script); `yarn copy-monaco` runs it by hand, and the directory is generated and gitignored.
   `src/lib/monaco.ts` points the loader at it via `loader.config({ paths: { vs } })`, with the path
-  resolved by `src/lib/monacoPath.ts` so the assets follow `main.js` rather than the page (see "Plugin
+  resolved in `src/lib/monaco.ts` so the assets follow `main.js` rather than the page (see "Plugin
   assets come from the plugin's origin" under "General working practices").
   `cypress/component/MonacoSelfHosted.cy.tsx` guards this: it fails if Monaco is fetched from
   `cdn.jsdelivr.net` again, or if those assets stop being served as scripts — but it serves everything
-  from one origin, so it cannot catch a cross-origin path bug (`src/lib/monacoPath.test.ts` does).
+  from one origin, so it cannot catch a cross-origin path bug (`src/lib/monaco.test.ts` does).
   Always use the Monaco
   instance given to `onMount(editor, monaco)`; a value import of `monaco-editor` bundles a second,
   disconnected copy (type-only imports are fine). See `README.md` for details.
@@ -526,7 +526,7 @@ not resolve such a URL from `import.meta.env.BASE_URL`: that is relative to the 
 setup is the host, and the host answers an unknown path with its SPA fallback — `200 OK`,
 `text/html`, `index.html`. An asset failure that looks like a successful load is far harder to spot than a
 404, and this already bit Monaco's AMD loader: the editor sat on "Loading…" indefinitely, with no error
-in the console, while every API call on the page returned 200. `src/lib/monacoPath.ts` resolves against
+in the console, while every API call on the page returned 200. `src/lib/monaco.ts` resolves against
 the bundle's own URL instead (`document.currentScript`, which is populated because SciGateway loads
 plugins by injecting a real `<script src>` in `state/actions/loadMicroFrontends.tsx`), falling back to
 `BASE_URL` when the bundle cannot identify itself.

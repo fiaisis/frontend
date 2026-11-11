@@ -8,16 +8,10 @@ import type { ScriptDiagnosticsState } from './useScriptDiagnostics';
 import type { OnMount } from '@monaco-editor/react';
 
 /**
- * Everything a Monaco editor needs to check the Python in it, behind one mount callback.
+ * Everything an editor needs to check its Python, behind one `onMount`.
  *
- * The two halves are separate on purpose — `useScriptDiagnostics` knows about the service and nothing about
- * Monaco, `useScriptMarkers` the other way round — but an editor can only be given one `onMount`, and focus
- * is something only Monaco itself can report, so the composition has to live somewhere. Here keeps both
- * editors down to one import and one prop.
- *
- * Advisory throughout. Nothing in here is consulted before saving or rerunning, and nothing in here can
- * prevent either: the checker cannot model facility code, so it is sometimes wrong about a name being
- * unknown, and a gate built on that would stop scripts that run fine.
+ * The two halves stay separate — the service and Monaco know nothing about each other — but an editor takes
+ * one mount callback, and only Monaco can report focus. Advisory: nothing here can block a save or a rerun.
  */
 export type ScriptEditorControls = {
   diagnostics: ScriptDiagnosticsState;
@@ -41,9 +35,8 @@ export const useScriptEditor = (
     (editor: ScriptEditorInstance, monaco: ScriptMonaco) => {
       attachMarkers(editor, monaco);
 
-      // Focus is what tells the hook to check sooner after the user stops typing, and Monaco reports it —
-      // the editor library exposes no onFocus/onBlur props, and a window-level listener would fire for
-      // every other widget on the page.
+      // The editor library exposes no onFocus/onBlur props, and a window-level listener would fire for every
+      // other widget on the page.
       subscriptionsRef.current.push(
         editor.onDidFocusEditorWidget(() => setBlurred(false)),
         editor.onDidBlurEditorWidget(() => setBlurred(true))
@@ -52,8 +45,7 @@ export const useScriptEditor = (
     [attachMarkers]
   );
 
-  // `onMount`'s return value is ignored by the editor library, so the subscriptions it opens have to be
-  // closed from an effect.
+  // `onMount`'s return value is ignored by the editor library, so the subscriptions it opens close here.
   useEffect(
     () => () => {
       subscriptionsRef.current.forEach((subscription) => subscription.dispose());

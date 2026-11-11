@@ -3,23 +3,16 @@ import { fiaApi } from './api';
 /**
  * The script analysis wire contract, as the browser sees it.
  *
- * The canonical definition is `script_lsp/models.py` in `../mantid-python-script-lsp`; `fia-api`
- * validates the request and forwards the response body and status code untouched, so this file is the
- * other half of the mirror. Renaming a field there means renaming it here, and nothing else.
- *
- * Field names stay snake_case rather than being prettified, so that the object parsed off the socket is
- * the object held in state and passed to the marker bridge: a rename step would be one more place for a
- * mismatch to hide, and the response is unvalidated JSON by the time it reaches us (see
- * `parseAnalysisResponse`).
+ * `script_lsp/models.py` in `../mantid-python-script-lsp` is canonical; FIA-API validates the request and
+ * forwards the response body and status untouched, so this is the other half of the mirror. Names stay
+ * snake_case rather than being prettified: one less place for a mismatch to hide, and the response is
+ * unvalidated JSON by the time it reaches us (see `parseAnalysisResponse`).
  */
 
 export type DiagnosticSeverity = 'error' | 'warning';
 
-/**
- * `compile` is CPython's own verdict, i.e. what the runner will do with the script, and the only source
- * that means "this will not run". `jedi` parses broken code to find more than the first mistake.
- * `pyflakes` is the undefined-name lint, run only when the script parses.
- */
+/** `compile` is CPython's own verdict and the only source that means "this will not run"; `jedi` parses
+ * broken code to find more than the first mistake; `pyflakes` is the undefined-name lint. */
 export type DiagnosticSource = 'compile' | 'jedi' | 'pyflakes';
 
 /** One problem with the script, already positioned the way Monaco counts. */
@@ -27,12 +20,11 @@ export interface Diagnostic {
   message: string;
   severity: DiagnosticSeverity;
   source: DiagnosticSource;
-  /** 1-based. */
+  // Monaco's units: 1-based lines, 1-based columns counted in UTF-16 code units (not what Python gives),
+  // and an exclusive end. The service converts; nothing here re-derives them.
   start_line: number;
-  /** 1-based, counted in UTF-16 code units, which is what Monaco wants and not what Python gives. */
   start_column: number;
   end_line: number;
-  /** Exclusive, the way Monaco reads it. */
   end_column: number;
 }
 
@@ -46,11 +38,8 @@ export interface AnalysisResponse {
   truncated: boolean;
 }
 
-/**
- * Restated from `MAX_SCRIPT_BYTES` in both services, which must agree with each other. Over this the
- * editors do not send at all: a script this big is not something a squiggle can help with, and it should
- * not cost a parse to find that out.
- */
+/** Restated from `MAX_SCRIPT_BYTES` in both services, which must agree. Over it the editors do not send at
+ * all: a script this big is not something a squiggle can help with. */
 export const MAX_SCRIPT_BYTES = 200_000;
 
 /** Why we could not say anything about the script, distinct because the editor reacts differently. */
@@ -80,13 +69,10 @@ export const byteLength = (text: string): number => new TextEncoder().encode(tex
 export const isWithinSizeCap = (text: string): boolean => byteLength(text) <= MAX_SCRIPT_BYTES;
 
 /**
- * A digest of the script, used to notice that a reply has arrived for text the user has since replaced.
- *
- * SHA-256 when the platform offers it, FNV-1a in 64 bits when it does not: `crypto.subtle` is missing on
- * non-secure origins, and the plugin is embedded in a host we do not control. This is not a security
- * boundary — neither service trusts this value with anything. The cache in `fia-api` is keyed on its own
- * SHA-256 of the content, computed server-side, and this digest is only echoed back so that the caller
- * can throw away an out-of-date reply, so a collision would at worst discard one response.
+ * A digest of the script, echoed back so a reply about text the user has replaced can be thrown away.
+ * SHA-256 where offered, cyrb53 where not: `crypto.subtle` is missing on non-secure origins and the plugin
+ * is embedded in a host we do not control. Trusted with nothing — FIA-API keys its cache on its own
+ * server-side SHA-256 — so a collision would at worst discard one response.
  */
 export const contentHash = async (text: string): Promise<string> => {
   const subtle = globalThis.crypto?.subtle;
@@ -97,13 +83,7 @@ export const contentHash = async (text: string): Promise<string> => {
   return cyrb53(text);
 };
 
-/**
- * A 53-bit hash in ordinary arithmetic, which is what is left with `target: es5` ruling out BigInt.
- *
- * Only reached where `crypto.subtle` is missing. 53 bits is far more than comparing two scripts in one
- * session needs, and this value is trusted with nothing: the cache in `fia-api` is keyed on its own
- * SHA-256 of the content, computed server-side.
- */
+/** A 53-bit hash in ordinary arithmetic, which is what is left with `target: es5` ruling out BigInt. */
 const cyrb53 = (text: string): string => {
   let h1 = 0xdeadbeef;
   let h2 = 0x41c5cebe;
@@ -135,13 +115,10 @@ const isPositioned = (value: unknown): value is Diagnostic => {
 };
 
 /**
- * Recognise an `AnalysisResponse`, or return null.
- *
- * `fia-api` forwards the service's JSON without modelling it, so nothing between the two services and
- * this function has checked what arrives. A FastAPI 404 (`{"detail":"Not Found"}`), a gateway's HTML
- * error page, or a field renamed on one side all have to be answered here rather than at the point where
- * the editor reads `diagnostics.length` and finds `undefined`. Returning null means "treat this as the
- * service being unavailable", which keeps the markers the editor already has.
+ * Recognise an `AnalysisResponse`, or return null. FIA-API forwards the service's JSON without modelling it,
+ * so a FastAPI 404, a gateway's HTML error page, or a field renamed on one side all have to be answered here
+ * rather than where the editor reads `diagnostics.length`. Null means "treat the service as unavailable",
+ * which keeps the markers already on screen.
  */
 export const parseAnalysisResponse = (value: unknown): AnalysisResponse | null => {
   if (!isRecord(value) || typeof value['parses'] !== 'boolean' || !Array.isArray(value['diagnostics'])) {
@@ -191,11 +168,8 @@ const retryAfterSeconds = (headers: unknown): number | null => {
 };
 
 /**
- * Ask for a script to be analysed.
- *
- * Never throws for a reason the editor could act on: every rejection becomes an `ok: false` outcome so a
- * validation outage cannot surface as an unhandled error in the middle of typing. It does reject when the
- * caller aborts, because that is the caller deciding it no longer wants an answer.
+ * Ask for a script to be analysed. Never throws for a reason an editor could act on, so a validation outage
+ * cannot surface as an unhandled error mid-typing; it does reject when the caller aborts.
  */
 export const analyseScript = async (content: string, signal?: AbortSignal): Promise<DiagnosticsOutcome> => {
   const hash = await contentHash(content);

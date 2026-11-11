@@ -11,15 +11,11 @@ import type { SvgIconComponent } from '@mui/icons-material';
 import type { Theme } from '@mui/material/styles';
 
 /**
- * The one line that says what the Python checker thinks, and whether it managed to think at all.
+ * The one line saying what the Python checker thinks, and whether it managed to think at all.
  *
- * Advisory by construction: it sits next to the Save and "Rerun with changes" buttons and disables neither.
- * The checker cannot model facility code, so it is sometimes wrong about a name being unknown, and a gate
- * built on that would stop valid scripts from running — which is the failure mode that would make people
- * route around the tool.
- *
- * The "not thinking" states are shown rather than hidden. A user who sees nothing at all cannot tell a
- * script that passed from a service that never answered, and quietly degraded validation is worse than
+ * Advisory by construction: it sits next to Save and "Rerun with changes" and disables neither, because the
+ * checker cannot model facility code and a gate on its opinion would stop valid scripts running.
+ * The "not thinking" states are shown rather than hidden — quietly degraded validation is worse than
  * visibly absent validation.
  */
 
@@ -33,8 +29,8 @@ type Presentation = {
   colour: PresentationColour;
 };
 
-// `action` in the MUI palette is a set of states rather than a colour, so it has no `main` to read; the
-// states that are not a verdict get ordinary secondary text and no colour at all.
+// MUI's `action` palette is a set of states rather than a colour with a `main` to read, so the states that
+// are not a verdict get ordinary secondary text.
 const colourFor = (theme: Theme, colour: PresentationColour): string =>
   colour === 'muted' ? theme.palette.text.secondary : theme.palette[colour].main;
 
@@ -57,8 +53,8 @@ const presentationFor = (diagnostics: ScriptDiagnostics): Presentation | null =>
         colour: 'success',
       };
     case 'problems':
-      // The distinction that matters before pressing Save: a syntax error means the runner stops before it
-      // starts, an undefined name only matters if the line is ever reached.
+      // The distinction that matters before pressing Save: a syntax error stops the runner before it
+      // starts; an undefined name only matters if the line is ever reached.
       return diagnostics.parses
         ? {
             icon: BugReportOutlinedIcon,
@@ -127,8 +123,8 @@ const ScriptDiagnosticsStatus: React.FC<{ diagnostics: ScriptDiagnostics }> = ({
     <Typography
       variant="caption"
       component="span"
-      // Announced when the verdict changes, which is the only way a screen reader user learns that the
-      // checker found a syntax error in what they have just typed.
+      // Announced when the verdict changes, which is the only way a screen reader user learns a syntax
+      // error turned up in what they just typed.
       role="status"
       aria-live="polite"
       title={presentation.detail}
