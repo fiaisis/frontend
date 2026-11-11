@@ -344,10 +344,34 @@ Both images, once built, have their staging manifests (`components/frontend/` an
   ```
   Coverage excludes `src/h5web/**`, `cypress/**`, and a handful of entrypoint/setup files — see
   `vitest.config.ts` for the exact list before assuming a file should/shouldn't be covered.
+- **Run tests in narrow, time-boxed batches while iterating.** Some specs hang rather than fail (they
+  await backend requests that only get answered by a stub which is missing or already settled), so a
+  whole-suite `yarn test` can sit idle until `vitest.config.ts`'s 15 s `testTimeout`/`hookTimeout`
+  eventually fails each one — long enough to look like a stalled session. Prefer running just the
+  files affected by the change, with an explicit shell timeout well below that cumulative worst case:
+  ```shell
+  # the file under test, plus the specs that cover the components it changed
+  timeout 240 npx vitest run --no-coverage src/components/experimentViewer/Viewer2D.test.tsx
+  ```
+  Save the un-timed full `yarn test` (with coverage, for the coverage-parity check below) for once the
+  change is otherwise complete, and run it from a terminal you can interrupt.
+- **Do not believe a large parallel batch run until you have reproduced it.** These specs mount H5Web
+  (three.js) or MUI menus, so running every test file at once oversubscribes the machine and
+  timing-sensitive `waitFor`/`userEvent` specs start timing out in files nothing you touched — observed
+  on a 23-file batch: nine failures in `Viewer2D`, `jobs/Filters` and `jobs/InstrumentSelector` that
+  all pass when each file is run on its own. Re-run any file a batch blames, on its own, before
+  chasing a regression; and if a file hangs, `git stash` your change and re-run it against `main` (as
+  of writing, `src/pages/LiveData.test.tsx` and `src/pages/ExperimentViewer.test.tsx` can hang past
+  their timeouts even on a clean checkout of `main` on a loaded machine) so you do not attribute a
+  pre-existing environment problem to your work.
 - **Cypress component tests** (Vite dev server, no running app needed):
   ```shell
   yarn cypress:run:component
+  timeout 600 npx cypress run --component --spec cypress/component/ColourBarLimits.cy.tsx  # one spec
   ```
+  As with Vitest, prefer a single `--spec` (and a shell `timeout`) while iterating — a component spec
+  starts a Vite dev server per run and retries every failing command for 4 s, so whole-suite runs are
+  slow and a spec stuck on a missing element is slow in the same way.
 - **Cypress E2E tests** (require a running dev server at `http://127.0.0.1:3000`, matching
   `cypress.config.ts`'s `baseUrl`; CI starts one via `yarn start --host 127.0.0.1 --port 3000 --strictPort`):
   ```shell
@@ -370,13 +394,26 @@ configuration, before considering the change complete:
 2. **Add or update Cypress E2E specs** under `cypress/e2e/` when the change affects a user-facing
    flow that suite already exercises (stub backend calls with `cy.intercept(...)` as existing specs
    do).
-3. **Run the linter and build** (`yarn lint:js`, `yarn format:check`, `yarn build`) and fix
-   everything reported — there is no CI bot that auto-commits formatting fixes for this repo, unlike
-   the Python services.
-4. **Run the full test suite with coverage** (`yarn test`) and confirm coverage has not regressed
-   compared to `main` (CI uploads `coverage/lcov.info` to Codecov; locally, compare the terminal
-   coverage table `yarn test` prints before and after your change). Also run the Cypress component
-   and E2E suites (`yarn cypress:run:component`, `yarn cypress:run:e2e`) for UI-affecting changes.
+3. **Run the linter and build** (`yarn lint:js`, `yarn build`) and fix everything reported. No CI
+   workflow runs `lint:js` or `format:check` at all — CI builds, unit-tests and runs Cypress — so
+   those checks only happen when someone runs them, and the `prettier/prettier` ESLint rule (which
+   runs with `endOfLine: 'auto'`) is the formatting signal to trust. Three gotchas:
+   - `yarn lint:js` only covers `./src`; lint specs under `cypress/` by passing their paths to
+     `npx eslint` explicitly.
+   - Husky's `lint-staged` hook *does* run `eslint --fix` and `prettier --config .prettierrc --write`
+     over staged `src/**` and `cypress/**` files and re-stages them, so committed code ends up
+     formatted even if you skipped the checks — expect commit-time edits and re-run anything the hook
+     reformatted.
+   - `yarn format:check` reports **every** tracked file as unformatted because `.prettierrc` pins
+     `endOfLine: "crlf"` while the checkout is LF. Treat that as a repo-wide baseline failure rather
+     than a signal about your change, and do not "fix" it with `yarn format`: `.gitattributes`
+     (`* text=auto`) normalises the index to LF anyway, so the only result is a working tree of
+     CRLF files that differs from the rest of the checkout.
+4. **Run the full test suite with coverage** (`yarn test`, time-boxed as described under "Testing")
+   and confirm coverage has not regressed compared to `main` (CI uploads `coverage/lcov.info` to
+   Codecov; locally, compare the terminal coverage table `yarn test` prints before and after your
+   change). Also run the Cypress component and E2E suites (`yarn cypress:run:component`,
+   `yarn cypress:run:e2e`) for UI-affecting changes.
 
 ---
 
