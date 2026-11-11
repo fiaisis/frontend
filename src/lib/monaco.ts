@@ -1,37 +1,61 @@
+/**
+ * Self-hosted Monaco: the types an editor is handed, and where its AMD assets are fetched from.
+ *
+ * Two decisions live here because both are easy to undo by accident, and both cost days to diagnose:
+ *
+ * 1. Monaco is served by this plugin, never from the jsDelivr CDN `@monaco-editor/react` defaults to, so a
+ *    third party cannot decide which version users get. `scripts/copy-monaco.mjs` stages it into
+ *    `public/monaco/vs`, and the build copies it into `build/monaco/vs` beside `main.js`.
+ * 2. The asset path follows `main.js`, not the page. Inside SciGateway the plugin is served by its own
+ *    static server (port 5001 in development) while the document belongs to the host, and a host asked for
+ *    a file it does not have answers with its SPA fallback — `200 OK`, `text/html`, `index.html`. That
+ *    looks like a successful load, never defines `monaco`, and raises nothing, so the editor sits on
+ *    "Loading..." forever while every API call on the page returns 200. `BASE_URL` is relative to the
+ *    document, so it is the fallback here, not the answer.
+ *
+ * Types come from `@monaco-editor/react`, never from `monaco-editor`: a value import of that package bundles
+ * a second, disconnected Monaco into `main.js`, whose `setModelMarkers` cannot see the models the editor is
+ * showing. Import this module for types with `import type`, which erases and keeps the loader's side effect
+ * with the entry point.
+ */
 import { loader } from '@monaco-editor/react';
 
-import { currentScriptSrc, monacoVsPathFor } from './monacoPath';
+import type { Monaco, OnMount } from '@monaco-editor/react';
+
+export type ScriptMonaco = Monaco;
+export type ScriptEditorInstance = Parameters<OnMount>[0];
+/** What `getModel()` returns, null included: an editor can legitimately be without a model. */
+export type ScriptModel = ReturnType<ScriptEditorInstance['getModel']>;
+export type ScriptMarkerData = Parameters<ScriptMonaco['editor']['setModelMarkers']>[2][number];
 
 /**
- * Path that `@monaco-editor/react`'s AMD loader script is served from.
+ * Where to ask for `monaco/vs`.
  *
- * By default the loader injects `<script src="https://cdn.jsdelivr.net/npm/monaco-editor@X/min/vs/
- * loader.js">`, which means the editor's version and availability are controlled by a third-party CDN
- * (`X` is pinned by `@monaco-editor/loader`, not by our `monaco-editor` dependency). We ship the AMD
- * build of the `monaco-editor` package ourselves instead — `scripts/copy-monaco.mjs` copies it to
- * `public/monaco/vs`, which Vite serves in development and copies into `build/monaco/vs` on build —
- * and this module points the loader at that copy.
- *
- * The path is resolved by `monacoVsPathFor` rather than read straight off `import.meta.env.BASE_URL`,
- * because `BASE_URL` is relative to the *document* and the bundle is not always served from the document's
- * origin: a locally built plugin loaded by a SciGateway host comes from this repo's static server, and
- * asking the host for `/monaco/vs/loader.js` gets its SPA fallback (`200`, `text/html`) instead of the
- * loader, which hangs the editor with no error anywhere. See `monacoPath.ts` for the full reasoning.
- *
- * Where the assets are cross-origin to the page — that local Mode 2 case only — Monaco's language workers
- * may be refused, since a worker script has to be same-origin with the document; Monaco substitutes an
- * error worker, so the editor still functions with degraded background work. In the deployed plugin the
- * bundle, its assets and the page share an origin, so neither the loader nor the workers are affected.
- *
- * Importing this module has a side effect (it configures the loader) but performs no network request:
- * Monaco is only fetched when an `<Editor>` actually mounts.
- *
- * Note for future edits: keep using the Monaco instance handed to `onMount(editor, monaco)` (or the
- * `window.monaco` global). Do not `import * as monaco from 'monaco-editor'` in application code — a
- * value import bundles a second copy of Monaco into `build/main.js` and gives you a different instance
- * whose `setModelMarkers` does not see the models the editor is showing. Type-only imports
- * (`import type * as monaco from 'monaco-editor'`) are fine because they are erased at build time.
+ * An absolute `BASE_URL` is a build-time statement that the assets live somewhere other than beside the
+ * bundle, so it wins. Otherwise the bundle's own URL, because that is where the assets were copied to.
+ * Otherwise `BASE_URL`, which is correct when the bundle cannot identify itself.
  */
+export const monacoVsPathFor = (baseUrl: string, scriptSrc: string | null): string => {
+  if (/^https?:\/\//i.test(baseUrl)) {
+    return `${baseUrl.replace(/\/+$/, '')}/monaco/vs`;
+  }
+  if (scriptSrc !== null) {
+    return new URL('monaco/vs', scriptSrc).href;
+  }
+  return `${baseUrl}monaco/vs`;
+};
+
+/**
+ * The URL this bundle was fetched from, or null when it cannot say. `document.currentScript` is the script
+ * being evaluated, which for a global bundle injected as `<script src>` by the host is `main.js` itself;
+ * it is null for an ES module import, hence the fallback above.
+ */
+export const currentScriptSrc = (): string | null => {
+  const script = document.currentScript;
+  return script instanceof HTMLScriptElement && script.src !== '' ? script.src : null;
+};
+
 export const MONACO_VS_PATH = monacoVsPathFor(import.meta.env.BASE_URL, currentScriptSrc());
 
+/** Configures the loader; fetches nothing until an `<Editor>` mounts. */
 loader.config({ paths: { vs: MONACO_VS_PATH } });

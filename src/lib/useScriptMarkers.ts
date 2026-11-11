@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef } from 'react';
 
 import { clearScriptMarkers, setScriptMarkers } from './scriptMarkers';
 
-import type { ScriptEditorInstance, ScriptMonaco } from './monacoTypes';
+import type { ScriptEditorInstance, ScriptMonaco } from './monaco';
 import type { ScriptDiagnostics } from './useScriptDiagnostics';
 import type { OnMount } from '@monaco-editor/react';
 

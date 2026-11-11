@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { useScriptDiagnostics } from './useScriptDiagnostics';
 import { useScriptMarkers } from './useScriptMarkers';
 
-import type { ScriptMonaco } from './monacoTypes';
+import type { ScriptMonaco } from './monaco';
 import type { Diagnostic } from './scriptDiagnostics';
 import type { Mock } from 'vitest';
 

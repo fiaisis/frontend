@@ -1,4 +1,4 @@
-import type { ScriptMarkerData, ScriptModel, ScriptMonaco } from './monacoTypes';
+import type { ScriptMarkerData, ScriptModel, ScriptMonaco } from './monaco';
 import type { Diagnostic } from './scriptDiagnostics';
 
 /**

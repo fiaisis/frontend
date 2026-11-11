@@ -2,7 +2,7 @@ import { describe, expect, test, vi } from 'vitest';
 
 import { clearScriptMarkers, MARKER_OWNER, setScriptMarkers, toMarkers } from './scriptMarkers';
 
-import type { ScriptMonaco } from './monacoTypes';
+import type { ScriptMonaco } from './monaco';
 import type { Diagnostic } from './scriptDiagnostics';
 
 const diagnostic = (overrides: Partial<Diagnostic> = {}): Diagnostic => ({

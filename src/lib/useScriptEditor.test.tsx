@@ -5,7 +5,7 @@ import { fiaApi } from './api';
 import { DEBOUNCE_BLURRED_MS, DEBOUNCE_TYPING_MS } from './useScriptDiagnostics';
 import { useScriptEditor } from './useScriptEditor';
 
-import type { ScriptMonaco } from './monacoTypes';
+import type { ScriptMonaco } from './monaco';
 import type { Mock } from 'vitest';
 
 vi.mock('./api', () => ({

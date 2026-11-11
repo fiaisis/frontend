@@ -4,6 +4,7 @@ import { join } from 'node:path';
 
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
+import { currentScriptSrc, monacoVsPathFor } from './monaco';
 import { copyMonaco, shouldStageMonacoAssets } from '../../scripts/copy-monaco.mjs';
 
 const { configMock } = vi.hoisted(() => ({ configMock: vi.fn() }));
@@ -43,7 +44,7 @@ describe('Monaco loader configuration', () => {
   test('takes the assets with the bundle when a host on another origin loads it', async () => {
     // The SciGateway case: this repo serves main.js on :5001 while the page belongs to the host on :3001.
     // Configured from the document, the loader request would go to :3001, which answers with index.html
-    // and hangs the editor silently. See monacoPath.ts.
+    // and hangs the editor silently.
     const script = document.createElement('script');
     script.src = 'http://localhost:5001/main.js';
     Object.defineProperty(document, 'currentScript', { value: script, configurable: true });
@@ -52,6 +53,66 @@ describe('Monaco loader configuration', () => {
 
     expect(MONACO_VS_PATH).toBe('http://localhost:5001/monaco/vs');
     expect(configMock).toHaveBeenCalledWith({ paths: { vs: 'http://localhost:5001/monaco/vs' } });
+  });
+});
+
+describe('resolving where the assets are served from', () => {
+  test('uses the document origin when developing standalone', () => {
+    expect(monacoVsPathFor('/', null)).toBe('/monaco/vs');
+  });
+
+  test('keeps the prefix VITE_PLUGIN_URL sets', () => {
+    expect(monacoVsPathFor('/f-i-a/', null)).toBe('/f-i-a/monaco/vs');
+  });
+
+  test('follows the bundle when a host on another origin loads it', () => {
+    expect(monacoVsPathFor('/', 'http://localhost:5001/main.js')).toBe('http://localhost:5001/monaco/vs');
+  });
+
+  test('resolves against the bundle in its deployed subdirectory, cache-buster and all', () => {
+    expect(monacoVsPathFor('/f-i-a/', 'https://dev.reduce.isis.cclrc.ac.uk/f-i-a/main.js?v=455c32e')).toBe(
+      'https://dev.reduce.isis.cclrc.ac.uk/f-i-a/monaco/vs'
+    );
+  });
+
+  test('honours a build-time absolute base over wherever the bundle came from', () => {
+    expect(monacoVsPathFor('https://assets.example/fia/', 'http://localhost:5001/main.js')).toBe(
+      'https://assets.example/fia/monaco/vs'
+    );
+    expect(monacoVsPathFor('https://assets.example/fia', null)).toBe('https://assets.example/fia/monaco/vs');
+  });
+});
+
+describe('the URL the bundle was fetched from', () => {
+  const setCurrentScript = (value: Element | null): void => {
+    // Read-only in a real DOM, so it has to be defined rather than assigned.
+    Object.defineProperty(document, 'currentScript', { value, configurable: true });
+  };
+
+  afterEach(() => {
+    delete (document as { currentScript?: unknown }).currentScript;
+  });
+
+  test('is null when the bundle cannot identify itself', () => {
+    setCurrentScript(null);
+    expect(currentScriptSrc()).toBeNull();
+  });
+
+  test('is the URL it was fetched from', () => {
+    const script = document.createElement('script');
+    script.src = 'http://localhost:5001/main.js';
+    setCurrentScript(script);
+    expect(currentScriptSrc()).toBe('http://localhost:5001/main.js');
+  });
+
+  test('is null for anything that is not a script with a src', () => {
+    setCurrentScript(document.createElement('div'));
+    expect(currentScriptSrc()).toBeNull();
+
+    const inline = document.createElement('script');
+    inline.textContent = 'window.fia = {}';
+    setCurrentScript(inline);
+    expect(currentScriptSrc()).toBeNull();
   });
 });
 

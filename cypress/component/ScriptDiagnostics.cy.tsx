@@ -6,7 +6,7 @@ import ScriptDiagnosticsStatus from '../../src/components/script/ScriptDiagnosti
 import '../../src/lib/monaco'; // Configures the self-hosted loader; component tests skip src/index.tsx.
 import { useScriptEditor } from '../../src/lib/useScriptEditor';
 
-import type { ScriptEditorInstance, ScriptMonaco } from '../../src/lib/monacoTypes';
+import type { ScriptEditorInstance, ScriptMonaco } from '../../src/lib/monaco';
 
 /**
  * The checker's findings, applied to a real Monaco model.

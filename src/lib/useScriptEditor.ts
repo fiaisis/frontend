@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useScriptDiagnostics } from './useScriptDiagnostics';
 import { useScriptMarkers } from './useScriptMarkers';
 
-import type { ScriptEditorInstance, ScriptMonaco } from './monacoTypes';
+import type { ScriptEditorInstance, ScriptMonaco } from './monaco';
 import type { ScriptDiagnosticsState } from './useScriptDiagnostics';
 import type { OnMount } from '@monaco-editor/react';
 
