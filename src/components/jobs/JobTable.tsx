@@ -8,12 +8,12 @@ import {
   Replay,
 } from '@mui/icons-material';
 import {
-  Alert,
   Badge,
   Box,
   Button,
   Chip,
   CircularProgress,
+  Link,
   Pagination,
   PaginationItem,
   Paper,
@@ -31,6 +31,7 @@ import {
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import React, { useEffect, useLayoutEffect, useState, useRef } from 'react';
+import { Link as RouterLink } from 'react-router-dom';
 
 import {
   getJobTableChromeColors,
@@ -49,7 +50,9 @@ import Row, { ReductionDetailsModal } from './Row';
 import { fiaApi } from '../../lib/api';
 import { useFetchJobs, useFetchTotalCount } from '../../lib/hooks';
 import { parseJobOutputs } from '../../lib/hooks';
+import { getRunReductionHistoryUrl } from '../../lib/reductionHistoryUrl';
 import { Job, JobQueryFilters, MantidVersionMap } from '../../lib/types';
+import SnackbarAlert from '../feedback/SnackbarAlert';
 
 const formatDisplayedRows = ({ from, to, count }: { from: number; to: number; count: number }): string => {
   const total = count === -1 ? `more than ${to}` : count.toString();
@@ -185,6 +188,7 @@ const JobTable: React.FC<{
   const [isBulkResubmitting, setIsBulkResubmitting] = useState(false);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [bulkResubmitSuccessful, setBulkResubmitSuccessful] = useState(true);
+  const [resubmittedJobs, setResubmittedJobs] = useState<Job[]>([]);
   const [selectedJobIds, setSelectedJobIds] = useState<number[]>([]);
   const totalDownloadableFiles = jobs
     .filter((job) => selectedJobIds.includes(job.id))
@@ -387,7 +391,9 @@ const JobTable: React.FC<{
 
   const handleBulkResubmit = async (): Promise<void> => {
     setIsBulkResubmitting(true);
+    setSnackbarOpen(false);
     let allSuccessful = true;
+    const successfulJobs: Job[] = [];
 
     const jobsToResubmit = jobs.filter((job) => selectedJobIds.includes(job.id));
 
@@ -395,6 +401,7 @@ const JobTable: React.FC<{
       console.log(`Resubmitting job ${job.id}`);
       try {
         await resubmitJob(job);
+        successfulJobs.push(job);
       } catch (error) {
         console.error(`Failed to resubmit job ${job.id}`, error);
         allSuccessful = false;
@@ -402,6 +409,7 @@ const JobTable: React.FC<{
     }
 
     setBulkResubmitSuccessful(allSuccessful);
+    setResubmittedJobs(successfulJobs);
     setSnackbarOpen(true);
     refreshJobs();
     setIsBulkResubmitting(false);
@@ -540,29 +548,15 @@ const JobTable: React.FC<{
         }}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
-        <Alert
-          sx={{
-            padding: '10px 14px',
-            fontSize: '1rem',
-            width: '100%',
-            maxWidth: '600px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            border: '1px solid',
-            borderRadius: '8px',
-            fontWeight: 'bold',
-          }}
-          severity="error"
-        >
+        <SnackbarAlert severity="error" onClose={() => setDownloadErrorOpen(false)}>
           {downloadErrorMessage}
-        </Alert>
+        </SnackbarAlert>
       </Snackbar>
 
       <Box sx={{ position: 'relative', width: '100%', height: '100%', minHeight: 0 }}>
         <Snackbar
           open={snackbarOpen}
-          autoHideDuration={5000}
+          autoHideDuration={resubmittedJobs.length > 0 ? null : 5000}
           onClose={(event, reason) => {
             if (reason !== 'clickaway') {
               setSnackbarOpen(false);
@@ -570,25 +564,29 @@ const JobTable: React.FC<{
           }}
           anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
         >
-          <Alert
-            sx={{
-              padding: '10px 14px',
-              fontSize: '1rem',
-              width: '100%',
-              maxWidth: '600px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              border: '1px solid',
-              borderRadius: '8px',
-              fontWeight: 'bold',
-            }}
-            severity={bulkResubmitSuccessful ? 'success' : 'error'}
-          >
+          <SnackbarAlert severity={bulkResubmitSuccessful ? 'success' : 'error'} onClose={() => setSnackbarOpen(false)}>
             {bulkResubmitSuccessful
               ? `Resubmissions started successfully for all selected reductions`
               : `Some reductions could not be resubmitted — please check the console for details`}
-          </Alert>
+            {resubmittedJobs.length > 0 && (
+              <Box
+                sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, mt: 0.5, maxHeight: 160, overflowY: 'auto' }}
+              >
+                {resubmittedJobs.map((job) => (
+                  <Link
+                    key={job.id}
+                    component={RouterLink}
+                    to={getRunReductionHistoryUrl(job.run)}
+                    color="inherit"
+                    underline="always"
+                    sx={{ overflowWrap: 'anywhere' }}
+                  >
+                    View reductions for {job.run.filename.split('/').pop()}
+                  </Link>
+                ))}
+              </Box>
+            )}
+          </SnackbarAlert>
         </Snackbar>
 
         <Paper
