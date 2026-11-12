@@ -128,6 +128,9 @@ const NavArrows: React.FC<NavArrowsProps> = ({
           if (label === 'reduction-history') {
             label = 'Reduction history';
           }
+          if (label === 'fast-start-jobs') {
+            label = 'Fast start jobs';
+          }
           if (label === 'experiment-viewer') {
             label = 'Experiment viewer';
           }

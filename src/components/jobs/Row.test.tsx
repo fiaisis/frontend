@@ -437,4 +437,19 @@ describe('Row and reduction details modal', () => {
     fireEvent.click(backdrop as HTMLElement);
     expect(onClose).toHaveBeenCalledTimes(3);
   });
+
+  test('renders safely when job.run is null', async () => {
+    const user = userEvent.setup();
+    const runlessJob = makeJob({ run: null });
+
+    renderRow(runlessJob);
+    expect(screen.getByRole('row', { name: 'View reduction 42 details' })).toBeInTheDocument();
+
+    renderModal({ job: runlessJob });
+    expect(screen.getByRole('heading', { name: 'Reduction 42' })).toBeInTheDocument();
+    expect(screen.getByText(/Unknown instrument · Experiment — · Untitled reduction/)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('tab', { name: 'Run details' }));
+    expect(screen.getByText('Experiment number:')).toBeInTheDocument();
+  });
 });

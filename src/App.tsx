@@ -10,6 +10,7 @@ import { clearFailedAuthRequestsQueue, retryFailedAuthRequests } from './lib/api
 import { findScrollableAncestor } from './lib/useAvailablePluginHeight';
 import DataViewer from './pages/DataViewer';
 import ExperimentViewer from './pages/ExperimentViewer';
+import FastStartJobs from './pages/FastStartJobs';
 import Homepage from './pages/Homepage';
 import Instruments from './pages/Instruments';
 import Jobs from './pages/Jobs';
@@ -109,6 +110,9 @@ const App: FC = () => {
             </Route>
             <Route path="/reduction-history/:instrumentName/value-editor-:jobId">
               <ValueEditor />
+            </Route>
+            <Route exact path="/fast-start-jobs">
+              <FastStartJobs />
             </Route>
             <Route exact path="/experiment-viewer">
               <ExperimentViewer />
