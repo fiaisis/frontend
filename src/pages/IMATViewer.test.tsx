@@ -17,11 +17,14 @@ vi.mock('@h5web/lib', () => ({
       Colourbar range
     </button>
   ),
-  HeatmapVis: () => <div data-testid="heatmap" />,
   RgbVis: () => <div data-testid="rgb-image" />,
   ScaleType: { Linear: 'linear' },
   Toolbar: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   useSafeDomain: (domain: [number, number]) => [domain],
+}));
+
+vi.mock('../components/imat/ImatStackPlot', () => ({
+  default: () => <div data-testid="heatmap" />,
 }));
 
 vi.mock('../components/imat/ImatStackJobTree', () => ({
@@ -137,7 +140,7 @@ describe('IMATViewer stack selection', () => {
     expect(screen.getByText('Select a stack to view its images')).toBeInTheDocument();
     const toolbar = screen.getByRole('group', { name: 'Stack viewer controls' });
     expect(toolbar).toBeInTheDocument();
-    expect(screen.getByText('Image 0 of 0')).toBeInTheDocument();
+    expect(screen.queryByText('Image 0 of 0')).not.toBeInTheDocument();
     expect(screen.getByRole('slider', { name: 'Stack image' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'fit' })).toBeDisabled();
     expect(screen.getByTestId('domain-widget')).toBeDisabled();
@@ -160,7 +163,7 @@ describe('IMATViewer stack selection', () => {
     expect(screen.getByTestId('location').textContent).toBe(path);
     expect(screen.queryByTestId('heatmap')).not.toBeInTheDocument();
     expect(screen.getByRole('group', { name: 'Stack viewer controls' })).toBe(toolbar);
-    expect(screen.getByText('Image 0 of 0')).toBeInTheDocument();
+    expect(screen.queryByText('Image 0 of 0')).not.toBeInTheDocument();
     expect(screen.getByRole('slider', { name: 'Stack image' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'fit' })).toBeDisabled();
     expect(screen.getByTestId('domain-widget')).toBeDisabled();
@@ -185,6 +188,75 @@ describe('IMATViewer stack selection', () => {
     expect(await screen.findByTestId('heatmap')).toBeInTheDocument();
   });
 
+  test('keeps the loading indicator visible between listing a stack and displaying its first image', async () => {
+    const user = userEvent.setup();
+    const renderedText: string[] = [];
+    let finishList!: (response: { data: string[] }) => void;
+    const listing = new Promise<{ data: string[] }>((resolve) => {
+      finishList = resolve;
+    });
+    let finishImage!: () => void;
+    const imageReady = new Promise<void>((resolve) => {
+      finishImage = resolve;
+    });
+    const responds = vi.mocked(h5Api.get).getMockImplementation()!;
+    vi.mocked(h5Api.get).mockImplementation(async (url, options) => {
+      if (url === '/imat/list-images') return listing;
+      if (url === '/imat/image') await imageReady;
+      return responds(url, options);
+    });
+    render(
+      <MemoryRouter initialEntries={['/reduction-history/IMAT/stack-viewer']}>
+        <React.Profiler id="stack-loading" onRender={() => renderedText.push(document.body.textContent ?? '')}>
+          <IMATViewer mode="stack" showNav={false} />
+        </React.Profiler>
+      </MemoryRouter>
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Select another stack' }));
+    expect(screen.getByRole('progressbar', { name: 'Loading stack image' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'fit' })).toBeDisabled();
+
+    await act(async () => finishList({ data: ['frame-1.tif'] }));
+    expect(screen.getByRole('progressbar', { name: 'Loading stack image' })).toBeVisible();
+    await waitFor(() =>
+      expect(h5Api.get).toHaveBeenCalledWith('/imat/image', expect.objectContaining({ responseType: 'arraybuffer' }))
+    );
+    expect(screen.getByRole('progressbar', { name: 'Loading stack image' })).toBeVisible();
+
+    await act(async () => finishImage());
+    expect(await screen.findByTestId('heatmap')).toBeVisible();
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+    expect(renderedText.join('\n')).not.toMatch(/No images found|No image available|Loading stack images/);
+  });
+
+  test.each(['empty', 'failed'] as const)(
+    'shows the %s list result without leaving a loading indicator',
+    async (result) => {
+      const user = userEvent.setup();
+      const responds = vi.mocked(h5Api.get).getMockImplementation()!;
+      vi.mocked(h5Api.get).mockImplementation(async (url, options) => {
+        if (url === '/imat/list-images') {
+          if (result === 'failed') throw new Error('offline');
+          return { data: [] };
+        }
+        return responds(url, options);
+      });
+      renderViewer('/reduction-history/IMAT/stack-viewer');
+      await user.click(screen.getByRole('button', { name: 'Select another stack' }));
+
+      expect(
+        await screen.findByText(
+          result === 'empty' ? 'No images found in this job stack.' : 'Failed to list images in stack'
+        )
+      ).toBeVisible();
+      expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+      for (const name of ['fit', '25%', '50%', '75%', '100%']) {
+        expect(screen.getByRole('button', { name })).toBeDisabled();
+      }
+    }
+  );
+
   test.each(['search', 'output link'])(
     'clears a displayed stack selected through %s and leaves it cleared after reload',
     async (source) => {
@@ -200,7 +272,7 @@ describe('IMATViewer stack selection', () => {
       await user.click(screen.getByRole('button', { name: 'Clear' }));
       expect(screen.queryByTestId('heatmap')).not.toBeInTheDocument();
       expect(screen.getByText('Select a stack to view its images')).toBeVisible();
-      expect(screen.getByText('Image 0 of 0')).toBeVisible();
+      expect(screen.queryByText('Image 0 of 0')).not.toBeInTheDocument();
       expect(screen.getByRole('slider', { name: 'Stack image' })).toBeDisabled();
       expect(screen.getByTestId('domain-widget')).toBeDisabled();
       const clearedPath = screen.getByTestId('location').textContent!;
@@ -251,7 +323,7 @@ describe('IMATViewer stack selection', () => {
       });
       expect(screen.getByText('Selected job: none')).toBeVisible();
       expect(screen.queryByTestId('heatmap')).not.toBeInTheDocument();
-      expect(screen.getByText('Image 0 of 0')).toBeVisible();
+      expect(screen.queryByText('Image 0 of 0')).not.toBeInTheDocument();
       expect(screen.queryByRole('alert')).not.toBeInTheDocument();
       expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
       expect(screen.getByTestId('location')).not.toHaveTextContent('jobId=');
