@@ -1,4 +1,5 @@
-import { Edit, UploadFile } from '@mui/icons-material';
+import Edit from '@mui/icons-material/Edit';
+import UploadFile from '@mui/icons-material/UploadFile';
 import { Box, Button, Typography, useTheme } from '@mui/material';
 import React from 'react';
 

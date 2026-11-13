@@ -1,23 +1,21 @@
-import {
-  CheckCircleOutline,
-  Close,
-  Download,
-  Edit,
-  ErrorOutline,
-  HighlightOff,
-  ImageAspectRatio,
-  MoreHoriz,
-  OpenInNew,
-  People,
-  Replay,
-  Schedule,
-  Schema,
-  StackedBarChart,
-  Visibility,
-  VpnKey,
-  WarningAmber,
-  WorkOutline,
-} from '@mui/icons-material';
+import CheckCircleOutline from '@mui/icons-material/CheckCircleOutline';
+import Close from '@mui/icons-material/Close';
+import Download from '@mui/icons-material/Download';
+import Edit from '@mui/icons-material/Edit';
+import ErrorOutline from '@mui/icons-material/ErrorOutline';
+import HighlightOff from '@mui/icons-material/HighlightOff';
+import ImageAspectRatio from '@mui/icons-material/ImageAspectRatio';
+import MoreHoriz from '@mui/icons-material/MoreHoriz';
+import OpenInNew from '@mui/icons-material/OpenInNew';
+import People from '@mui/icons-material/People';
+import Replay from '@mui/icons-material/Replay';
+import Schedule from '@mui/icons-material/Schedule';
+import Schema from '@mui/icons-material/Schema';
+import StackedBarChart from '@mui/icons-material/StackedBarChart';
+import Visibility from '@mui/icons-material/Visibility';
+import VpnKey from '@mui/icons-material/VpnKey';
+import WarningAmber from '@mui/icons-material/WarningAmber';
+import WorkOutline from '@mui/icons-material/WorkOutline';
 import {
   Alert,
   Box,

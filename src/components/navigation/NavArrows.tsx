@@ -1,4 +1,5 @@
-import { HomeOutlined, NavigateNext } from '@mui/icons-material';
+import HomeOutlined from '@mui/icons-material/HomeOutlined';
+import NavigateNext from '@mui/icons-material/NavigateNext';
 import { Breadcrumbs, Typography, Link as MuiLink, breadcrumbsClasses, Theme } from '@mui/material';
 import React from 'react';
 import { useLocation, Link as RouterLink } from 'react-router-dom';

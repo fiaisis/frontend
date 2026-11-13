@@ -1,5 +1,6 @@
 import Editor from '@monaco-editor/react';
-import { DescriptionOutlined, Save } from '@mui/icons-material';
+import DescriptionOutlined from '@mui/icons-material/DescriptionOutlined';
+import Save from '@mui/icons-material/Save';
 import { Alert, Box, Button, CircularProgress, Snackbar, Typography, useTheme } from '@mui/material';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useHistory, useParams } from 'react-router-dom';

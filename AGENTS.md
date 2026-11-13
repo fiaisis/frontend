@@ -344,6 +344,24 @@ Both images, once built, have their staging manifests (`components/frontend/` an
   ```
   Coverage excludes `src/h5web/**`, `cypress/**`, and a handful of entrypoint/setup files — see
   `vitest.config.ts` for the exact list before assuming a file should/shouldn't be covered.
+- **Never import the `@mui/icons-material` barrel** — take each icon from its own module
+  (`import Edit from '@mui/icons-material/Edit'`), which is what the rest of the app already does.
+  The barrel re-exports ~10,600 components: Rollup tree-shakes it happily in `yarn build`, but Vitest
+  walks it module by module, which measured **177 s before a test file ran its first test** with the
+  worker sitting idle. That is enough to make a page spec look hung — switching six files to deep
+  imports took `src/pages/LiveData.test.tsx` from ~166 s per run to 16 s — and `.eslintrc.js` now
+  blocks the barrel with `no-restricted-imports`. The same caution applies to any dependency whose
+  barrel is thousands of small modules: check the `import` figure in Vitest's `Duration` line before
+  blaming a test.
+- **Read Vitest's `Duration` line, and do not trust an oversubscribed batch.** It reports
+  `transform`/`setup`/`import`/`tests`: a big `import` is a module-graph problem (immediately above),
+  a big `tests` figure is genuine work. Some specs legitimately need 5–12 s each against the 15 s
+  `testTimeout`, so running every test file at once — Vitest spawns a worker per core — starves them
+  and fails files nothing you touched; the fix is to re-run what a batch blames, with
+  `--no-file-parallelism`, before chasing a regression:
+  ```shell
+  timeout 240 npx vitest run --no-coverage --no-file-parallelism src/components/jobs/Row.test.tsx
+  ```
 - **Cypress component tests** (Vite dev server, no running app needed):
   ```shell
   yarn cypress:run:component
