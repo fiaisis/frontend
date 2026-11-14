@@ -157,6 +157,7 @@ describe('Reduction history page', () => {
     }).as('getLoqJobs');
 
     cy.visitFia('/fia/reduction-history');
+    cy.title().should('eq', 'Reduction history | FIA');
 
     cy.wait('@getRunners');
     cy.wait('@getAllCount');
@@ -176,6 +177,7 @@ describe('Reduction history page', () => {
     cy.wait('@getLoqJobs');
 
     cy.location('pathname').should('eq', '/fia/reduction-history/LOQ');
+    cy.title().should('eq', 'Reduction history | FIA');
     cy.get('[aria-label="breadcrumb"]').within(() => {
       cy.contains('[aria-current="page"]', 'LOQ').should('be.visible');
     });
@@ -436,12 +438,15 @@ describe('Reduction history page', () => {
     cy.screenshot('imat-view-menu-desktop', { capture: 'viewport' });
     cy.contains('[role="option"]', 'Stack viewer').click();
     cy.location('pathname').should('eq', '/fia/reduction-history/IMAT/stack-viewer');
+    cy.title().should('eq', 'IMAT stack viewer | FIA');
     cy.get(viewSelect).should('contain', 'Stack viewer').click();
     cy.contains('[role="option"]', 'Latest image').click();
     cy.location('pathname').should('eq', '/fia/reduction-history/IMAT/latest-image');
+    cy.title().should('eq', 'IMAT latest image | FIA');
     cy.get(viewSelect).should('contain', 'Latest image').click();
     cy.contains('[role="option"]', 'Reduction history').click();
     cy.location('pathname').should('eq', '/fia/reduction-history/IMAT');
+    cy.title().should('eq', 'Reduction history | FIA');
 
     cy.viewport(375, 812);
     cy.get('[role="group"][aria-label="Page controls"]').should(($controls) => {

@@ -5,6 +5,7 @@ import React, { FC } from 'react';
 import ReactGA from 'react-ga4';
 import { BrowserRouter as Router, Redirect, Route, Switch, useLocation } from 'react-router-dom';
 
+import PageTitle from './components/navigation/PageTitle';
 import GlobalStyles from './GlobalStyles';
 import { clearFailedAuthRequestsQueue, retryFailedAuthRequests } from './lib/api';
 import { findScrollableAncestor } from './lib/useAvailablePluginHeight';
@@ -84,51 +85,65 @@ const App: FC = () => {
           <ScrollToTop />
           <Switch>
             <Route exact path="/">
+              <PageTitle title="Home page" />
               <Homepage />
             </Route>
             <Route exact path="/instruments">
               <Redirect to="/isis-instruments" />
             </Route>
             <Route exact path="/isis-instruments">
+              <PageTitle title="ISIS instruments" />
               <Instruments />
             </Route>
             <Route path="/isis-instruments">
               <Redirect to="/isis-instruments" />
             </Route>
             <Route exact path="/reduction-history">
+              <PageTitle title="Reduction history" />
               <Jobs />
             </Route>
             <Route exact path="/reduction-history/:instrumentName">
+              <PageTitle title="Reduction history" />
               <Jobs />
             </Route>
             <Route exact path="/reduction-history/:instrumentName/latest-image">
+              <PageTitle title="IMAT latest image" />
               <Jobs />
             </Route>
             <Route exact path="/reduction-history/:instrumentName/stack-viewer">
+              <PageTitle title="IMAT stack viewer" />
               <Jobs />
             </Route>
             <Route path="/reduction-history/:instrumentName/value-editor-:jobId">
+              <PageTitle title="Reduction editor" />
               <ValueEditor />
             </Route>
             <Route exact path="/experiment-viewer">
+              <PageTitle title="Experiment viewer" />
               <ExperimentViewer />
             </Route>
             <Route path="/live-data/:instrumentName/edit-script">
+              <PageTitle title="Live script editor" />
               <LiveValueEditor />
             </Route>
             <Route exact path="/live-data">
+              <PageTitle title="Live data viewer" />
               <LiveData />
             </Route>
             <Route exact path="/live-data/:instrumentName">
+              <PageTitle title="Live data viewer" />
               <LiveData />
             </Route>
             <Route path="/data-viewer/view/generic/experiment_number/:experimentNumber/:filename">
+              <PageTitle title="Data viewer" />
               <DataViewer />
             </Route>
             <Route path="/data-viewer/view/generic/user_number/:userNumber/:filename">
+              <PageTitle title="Data viewer" />
               <DataViewer />
             </Route>
             <Route path="/data-viewer/view/:instrument/:experimentNumber/:filename">
+              <PageTitle title="Data viewer" />
               <DataViewer />
             </Route>
             {/* Blank route for login page*/}
