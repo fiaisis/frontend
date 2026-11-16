@@ -114,11 +114,19 @@ unreachable. Instead, we serve the AMD build of the `monaco-editor` package we a
   `public/monaco` is generated, so it is not tracked by Git. Staging happens at config-resolution
   time rather than in `buildStart`, because the Cypress component dev server serves as soon as it
   listens and a request arriving mid-copy gets the SPA fallback HTML instead of the script.
-- `src/lib/monaco.ts` points the loader at that copy (`loader.config({ paths: { vs } })`), using Vite's
-  base URL so it resolves to `/monaco/vs` standalone and `/f-i-a/monaco/vs` inside SciGateway. It is
-  imported for its side effect from `src/index.tsx`.
+- `src/lib/monaco.ts` points the loader at that copy (`loader.config({ paths: { vs } })`) and is imported
+  for its side effect from `src/index.tsx`. The path is resolved in the same module: the assets
+  follow `main.js` rather than the page, because they are copied into `build/` beside it. So it is
+  `/monaco/vs` standalone, `/f-i-a/monaco/vs` inside a deployed SciGateway, and
+  `http://localhost:5001/monaco/vs` when a SciGateway on one port loads a locally built plugin from
+  another (`VITE_PLUGIN_URL`, if set to an absolute URL, still wins). Resolving against the page instead
+  is what makes "Running inside SciGateway" hang: the host has no such file and answers with its SPA
+  fallback — `200 OK`, `index.html` — so the loader never defines `monaco` and the editor sits on its
+  loading placeholder without ever raising an error.
 - Nothing is downloaded until an editor actually mounts, so pages without an editor pay nothing.
-- `cypress/component/MonacoSelfHosted.cy.tsx` fails if Monaco is ever fetched from the CDN again.
+- `cypress/component/MonacoSelfHosted.cy.tsx` fails if Monaco is ever fetched from the CDN again. It
+  serves everything from one origin, so it cannot see the cross-origin case above; `src/lib/monaco.test.ts`
+  covers that instead.
 - When editing code that touches the editor, use the Monaco instance passed to
   `onMount(editor, monaco)`. Do not `import * as monaco from 'monaco-editor'` in application code: a
   value import bundles a second copy of Monaco and gives you an instance that cannot see the models the

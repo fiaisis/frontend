@@ -89,9 +89,13 @@ that data interactively:
   `monacoAssetsPlugin()` so it runs whenever Vite resolves its config (dev, build, Vitest and the
   Cypress component dev server — CI invokes Cypress directly rather than through a `package.json`
   script); `yarn copy-monaco` runs it by hand, and the directory is generated and gitignored.
-  `src/lib/monaco.ts` points the loader at it via `loader.config({ paths: { vs } })`.
+  `src/lib/monaco.ts` points the loader at it via `loader.config({ paths: { vs } })`, with the path
+  resolved in `src/lib/monaco.ts` so the assets follow `main.js` rather than the page (see "Plugin
+  assets come from the plugin's origin" under "General working practices").
   `cypress/component/MonacoSelfHosted.cy.tsx` guards this: it fails if Monaco is fetched from
-  `cdn.jsdelivr.net` again, or if those assets stop being served as scripts. Always use the Monaco
+  `cdn.jsdelivr.net` again, or if those assets stop being served as scripts — but it serves everything
+  from one origin, so it cannot catch a cross-origin path bug (`src/lib/monaco.test.ts` does).
+  Always use the Monaco
   instance given to `onMount(editor, monaco)`; a value import of `monaco-editor` bundles a second,
   disconnected copy (type-only imports are fine). See `README.md` for details.
 - **i18next** / **react-i18next**: internationalization.
@@ -353,19 +357,38 @@ Both images, once built, have their staging manifests (`components/frontend/` an
   blocks the barrel with `no-restricted-imports`. The same caution applies to any dependency whose
   barrel is thousands of small modules: check the `import` figure in Vitest's `Duration` line before
   blaming a test.
+- **Run tests in narrow, time-boxed batches while iterating.** Slow imports and tests waiting on
+  mocked backend requests can both make a suite appear stalled. Prefer running just the files
+  affected by the change, with an explicit shell timeout below the cumulative worst case of
+  `vitest.config.ts`'s 15 s `testTimeout`/`hookTimeout`:
+  ```shell
+  # the file under test, plus the specs that cover the components it changed
+  timeout 240 npx vitest run --no-coverage src/components/experimentViewer/Viewer2D.test.tsx
+  ```
+  Save the full `yarn test` (with coverage, for the coverage-parity check below) for once the change
+  is otherwise complete, and time-box it from a terminal you can interrupt.
 - **Read Vitest's `Duration` line, and do not trust an oversubscribed batch.** It reports
-  `transform`/`setup`/`import`/`tests`: a big `import` is a module-graph problem (immediately above),
-  a big `tests` figure is genuine work. Some specs legitimately need 5–12 s each against the 15 s
-  `testTimeout`, so running every test file at once — Vitest spawns a worker per core — starves them
-  and fails files nothing you touched; the fix is to re-run what a batch blames, with
-  `--no-file-parallelism`, before chasing a regression:
+  `transform`/`setup`/`import`/`tests`: a big `import` points to the module graph (see the icon-barrel
+  warning above), while a big `tests` figure means time spent executing tests. Specs mounting H5Web
+  (three.js) or MUI menus can be timing-sensitive, so running many files in parallel can cause
+  failures in files nothing you touched — observed on a 23-file batch: nine failures in `Viewer2D`,
+  `jobs/Filters` and `jobs/InstrumentSelector` that all passed when run individually. Re-run any
+  file a batch blames on its own, or use `--no-file-parallelism`, before chasing a regression:
   ```shell
   timeout 240 npx vitest run --no-coverage --no-file-parallelism src/components/jobs/Row.test.tsx
   ```
+  If an isolated run still appears hung, compare it against `main` before attributing the problem
+  to your change. The previous apparent hangs in `LiveData.test.tsx` and `ExperimentViewer.test.tsx`
+  were traced to the icon-barrel import; `ExperimentViewer` also has substantial test execution
+  time after that import is fixed.
 - **Cypress component tests** (Vite dev server, no running app needed):
   ```shell
   yarn cypress:run:component
+  timeout 600 npx cypress run --component --spec cypress/component/ColourBarLimits.cy.tsx  # one spec
   ```
+  As with Vitest, prefer a single `--spec` (and a shell `timeout`) while iterating — a component spec
+  starts a Vite dev server per run and retries every failing command for 4 s, so whole-suite runs are
+  slow and a spec stuck on a missing element is slow in the same way.
 - **Cypress E2E tests** (require a running dev server at `http://127.0.0.1:3000`, matching
   `cypress.config.ts`'s `baseUrl`; CI starts one via `yarn start --host 127.0.0.1 --port 3000 --strictPort`):
   ```shell
@@ -388,13 +411,26 @@ configuration, before considering the change complete:
 2. **Add or update Cypress E2E specs** under `cypress/e2e/` when the change affects a user-facing
    flow that suite already exercises (stub backend calls with `cy.intercept(...)` as existing specs
    do).
-3. **Run the linter and build** (`yarn lint:js`, `yarn format:check`, `yarn build`) and fix
-   everything reported — there is no CI bot that auto-commits formatting fixes for this repo, unlike
-   the Python services.
-4. **Run the full test suite with coverage** (`yarn test`) and confirm coverage has not regressed
-   compared to `main` (CI uploads `coverage/lcov.info` to Codecov; locally, compare the terminal
-   coverage table `yarn test` prints before and after your change). Also run the Cypress component
-   and E2E suites (`yarn cypress:run:component`, `yarn cypress:run:e2e`) for UI-affecting changes.
+3. **Run the linter and build** (`yarn lint:js`, `yarn build`) and fix everything reported. No CI
+   workflow runs `lint:js` or `format:check` at all — CI builds, unit-tests and runs Cypress — so
+   those checks only happen when someone runs them, and the `prettier/prettier` ESLint rule (which
+   runs with `endOfLine: 'auto'`) is the formatting signal to trust. Three gotchas:
+   - `yarn lint:js` only covers `./src`; lint specs under `cypress/` by passing their paths to
+     `npx eslint` explicitly.
+   - Husky's `lint-staged` hook *does* run `eslint --fix` and `prettier --config .prettierrc --write`
+     over staged `src/**` and `cypress/**` files and re-stages them, so committed code ends up
+     formatted even if you skipped the checks — expect commit-time edits and re-run anything the hook
+     reformatted.
+   - `yarn format:check` reports **every** tracked file as unformatted because `.prettierrc` pins
+     `endOfLine: "crlf"` while the checkout is LF. Treat that as a repo-wide baseline failure rather
+     than a signal about your change, and do not "fix" it with `yarn format`: `.gitattributes`
+     (`* text=auto`) normalises the index to LF anyway, so the only result is a working tree of
+     CRLF files that differs from the rest of the checkout.
+4. **Run the full test suite with coverage** (`yarn test`, time-boxed as described under "Testing")
+   and confirm coverage has not regressed compared to `main` (CI uploads `coverage/lcov.info` to
+   Codecov; locally, compare the terminal coverage table `yarn test` prints before and after your
+   change). Also run the Cypress component and E2E suites (`yarn cypress:run:component`,
+   `yarn cypress:run:e2e`) for UI-affecting changes.
 
 ---
 
@@ -530,6 +566,28 @@ Double- and triple-check the context name before running anything against a prod
   sanctioned mechanism for customizing the deployed SciGateway host for FIA.
 - Keep dependency versions and the `h5web` submodule pointer consistent with the existing pinning
   style in `package.json` / `src/.gitmodules`.
+
+### Plugin assets come from the plugin's origin
+
+In "Mode 2" (running inside SciGateway) the plugin is served by its own static server on port 5001 while
+the page belongs to the host on 3000/3001, so anything this bundle lazily fetches by URL must resolve
+against the plugin's own origin — port 5001 serves `build/`, which is where those assets are copied. Do
+not resolve such a URL from `import.meta.env.BASE_URL`: that is relative to the *document*, which in this
+setup is the host, and the host answers an unknown path with its SPA fallback — `200 OK`,
+`text/html`, `index.html`. An asset failure that looks like a successful load is far harder to spot than a
+404, and this already bit Monaco's AMD loader: the editor sat on "Loading…" indefinitely, with no error
+in the console, while every API call on the page returned 200. `src/lib/monaco.ts` resolves against
+the bundle's own URL instead (`document.currentScript`, which is populated because SciGateway loads
+plugins by injecting a real `<script src>` in `state/actions/loadMicroFrontends.tsx`), falling back to
+`BASE_URL` when the bundle cannot identify itself.
+
+So when an editor hangs in this setup, check in this order — all three are doable without a browser:
+
+1. Staging's API access log (`kubectl logs -n fia -l app=fia-api --context staging`): if the page's `GET`s
+   are present and 200, the API, auth and CORS are not the problem.
+2. `curl -i http://localhost:3001/<asset path>` — `text/html` means the host is serving its fallback for a
+   file it does not have.
+3. The same path on port 5001, which should be `application/javascript`.
 
 ## Keeping this document up to date
 

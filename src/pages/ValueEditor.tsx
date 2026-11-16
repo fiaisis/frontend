@@ -22,10 +22,12 @@ import { getJobTableChromeColors, JOB_TABLE_TOOLBAR_CONTROL_HEIGHT } from '../co
 import NavArrows from '../components/navigation/NavArrows';
 import PageHeader from '../components/navigation/PageHeader';
 import { getPageHeaderControlSx } from '../components/navigation/pageHeaderStyles';
+import ScriptDiagnosticsStatus from '../components/script/ScriptDiagnosticsStatus';
 import { fiaApi } from '../lib/api';
 import { isValidInstrument } from '../lib/instrumentData';
 import { MantidVersionMap } from '../lib/types';
 import { useAvailablePluginHeight } from '../lib/useAvailablePluginHeight';
+import { useScriptEditor } from '../lib/useScriptEditor';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -69,6 +71,10 @@ const ValueEditor: React.FC = () => {
   const [runnerVersion, setRunnerVersion] = useState<string>('');
   const [runners, setRunners] = useState<MantidVersionMap>({});
   const { instrumentName: urlInstrumentName, jobId } = useParams<{ instrumentName: string; jobId: string }>();
+  const isImat = urlInstrumentName.toUpperCase() === 'IMAT';
+  const runnerEndpoint = isImat ? '/jobs/runners/mantidimaging' : '/jobs/runners';
+  const runnerRepository = isImat ? 'ghcr.io/fiaisis/mantidimaging' : 'ghcr.io/fiaisis/mantid';
+  const runnerName = isImat ? 'Mantid Imaging' : 'Mantid';
   const history = useHistory();
 
   // Redirect if an instrument is specified in the URL but it's not a valid instrument name
@@ -84,6 +90,14 @@ const ValueEditor: React.FC = () => {
   const rerunSuccessful = useRef<boolean | null>(null);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const userModified = useRef(false);
+
+  // Python checking for the script tab. Advisory: nothing here touches the "Rerun with changes" button's
+  // disabled state, because the checker cannot model facility code and would otherwise block scripts that
+  // run perfectly well. Disabled while the job is still loading, so the first check is about the real script
+  // rather than the empty editor shown before it arrives.
+  const { diagnostics: scriptDiagnostics, onMount: onScriptEditorMount } = useScriptEditor(scriptValue, {
+    enabled: !loading,
+  });
 
   const fetchReduction = useCallback(async (): Promise<void> => {
     setLoading(true);
@@ -106,11 +120,17 @@ const ValueEditor: React.FC = () => {
     fetchReduction();
   }, [fetchReduction]);
 
-  const fetchRunners = useCallback(async (): Promise<void> => {
+  useEffect(() => {
+    let isMounted = true;
+    setRunners({});
+    setRunnerVersion('');
+
     fiaApi
-      .get('/jobs/runners')
+      .get(runnerEndpoint)
       .then((res) => res.data)
       .then((data) => {
+        if (!isMounted) return;
+
         if (!data || typeof data !== 'object' || Array.isArray(data)) {
           console.error('Unexpected runner version response format:', data);
           setRunners({});
@@ -128,12 +148,14 @@ const ValueEditor: React.FC = () => {
           setRunnerVersion('');
         }
       })
-      .catch((err) => console.error('Failed to fetch runner versions:', err));
-  }, []);
+      .catch((err) => {
+        if (isMounted) console.error('Failed to fetch runner versions:', err);
+      });
 
-  useEffect(() => {
-    fetchRunners();
-  }, [fetchReduction, fetchRunners]);
+    return () => {
+      isMounted = false;
+    };
+  }, [runnerEndpoint]);
 
   const handleChange = (event: React.SyntheticEvent, newValue: number): void => {
     setValue(newValue);
@@ -147,7 +169,7 @@ const ValueEditor: React.FC = () => {
     if (!runnerVersion) return;
 
     setLoading(true);
-    const runnerImage = `ghcr.io/fiaisis/mantid@${runnerVersion}`;
+    const runnerImage = `${runnerRepository}@${runnerVersion}`;
     fiaApi
       .post('/job/rerun', { job_id: jobId, runner_image: runnerImage, script: scriptValue })
       .then(() => (rerunSuccessful.current = true))
@@ -229,6 +251,10 @@ const ValueEditor: React.FC = () => {
               {instrumentName ?? urlInstrumentName} Job {jobId} values
             </Typography>
 
+            <Box sx={{ minWidth: 0 }}>
+              <ScriptDiagnosticsStatus diagnostics={scriptDiagnostics} />
+            </Box>
+
             <Box
               role="group"
               aria-label="Reduction controls"
@@ -288,7 +314,7 @@ const ValueEditor: React.FC = () => {
                   disabled={Object.keys(runners).length === 0}
                   size="small"
                   sx={{
-                    width: { xs: '100%', sm: 180 },
+                    width: { xs: '100%', sm: isImat ? 240 : 180 },
                     minWidth: 0,
                     height: JOB_TABLE_TOOLBAR_CONTROL_HEIGHT,
                     borderRadius: 0,
@@ -331,7 +357,7 @@ const ValueEditor: React.FC = () => {
                 >
                   {Object.entries(runners).map(([sha, version]) => (
                     <MenuItem key={sha} value={sha}>
-                      Mantid {version}
+                      {runnerName} {version}
                     </MenuItem>
                   ))}
                 </Select>
@@ -412,6 +438,7 @@ const ValueEditor: React.FC = () => {
                     userModified.current = true; // Indicates that the user has modified the script
                   }
                 }}
+                onMount={onScriptEditorMount}
                 height="100%"
                 defaultLanguage="python"
                 value={scriptValue}

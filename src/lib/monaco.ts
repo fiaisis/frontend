@@ -1,29 +1,49 @@
+/**
+ * Self-hosted Monaco: the types an editor is handed, and where its AMD assets come from.
+ *
+ * Never from the jsDelivr CDN `@monaco-editor/react` defaults to: `scripts/copy-monaco.mjs` stages the
+ * package's AMD build into `public/monaco/vs` and the build copies it beside `main.js`. The path then
+ * follows `main.js` rather than the page, because inside SciGateway the plugin is served by its own static
+ * server while the document belongs to the host — and a host asked for a file it lacks answers with its SPA
+ * fallback (`200 OK`, `index.html`), so the loader never defines `monaco`, nothing throws, and the editor
+ * sits on "Loading..." forever with a healthy-looking network tab.
+ *
+ * Types come from `@monaco-editor/react`, never `monaco-editor`: a value import bundles a second,
+ * disconnected Monaco whose `setModelMarkers` cannot see the model on screen.
+ */
 import { loader } from '@monaco-editor/react';
 
-/**
- * Path that `@monaco-editor/react`'s AMD loader script is served from.
- *
- * By default the loader injects `<script src="https://cdn.jsdelivr.net/npm/monaco-editor@X/min/vs/
- * loader.js">`, which means the editor's version and availability are controlled by a third-party CDN
- * (`X` is pinned by `@monaco-editor/loader`, not by our `monaco-editor` dependency). We ship the AMD
- * build of the `monaco-editor` package ourselves instead — `scripts/copy-monaco.mjs` copies it to
- * `public/monaco/vs`, which Vite serves in development and copies into `build/monaco/vs` on build —
- * and this module points the loader at that copy.
- *
- * `import.meta.env.BASE_URL` mirrors the `base` option in `vite.config.ts`, so the path resolves to
- * `/monaco/vs` when developing standalone and `/f-i-a/monaco/vs` for the plugin bundle served by
- * SciGateway. Both are same-origin, so Monaco can create its web workers without any extra
- * `worker-src`/CORS handling.
- *
- * Importing this module has a side effect (it configures the loader) but performs no network request:
- * Monaco is only fetched when an `<Editor>` actually mounts.
- *
- * Note for future edits: keep using the Monaco instance handed to `onMount(editor, monaco)` (or the
- * `window.monaco` global). Do not `import * as monaco from 'monaco-editor'` in application code — a
- * value import bundles a second copy of Monaco into `build/main.js` and gives you a different instance
- * whose `setModelMarkers` does not see the models the editor is showing. Type-only imports
- * (`import type * as monaco from 'monaco-editor'`) are fine because they are erased at build time.
- */
-export const MONACO_VS_PATH = `${import.meta.env.BASE_URL}monaco/vs`;
+import type { Monaco, OnMount } from '@monaco-editor/react';
 
+export type ScriptMonaco = Monaco;
+export type ScriptEditorInstance = Parameters<OnMount>[0];
+/** What `getModel()` returns, null included: an editor can legitimately be without a model. */
+export type ScriptModel = ReturnType<ScriptEditorInstance['getModel']>;
+export type ScriptMarkerData = Parameters<ScriptMonaco['editor']['setModelMarkers']>[2][number];
+
+/**
+ * Where to ask for `monaco/vs`: an absolute `BASE_URL` is a build-time statement that the assets live
+ * somewhere other than beside the bundle, so it wins; otherwise the bundle's own URL, which is where they
+ * were copied; otherwise `BASE_URL`, correct when the bundle cannot say where it came from.
+ */
+export const monacoVsPathFor = (baseUrl: string, scriptSrc: string | null): string => {
+  if (/^https?:\/\//i.test(baseUrl)) {
+    return `${baseUrl.replace(/\/+$/, '')}/monaco/vs`;
+  }
+  if (scriptSrc !== null) {
+    return new URL('monaco/vs', scriptSrc).href;
+  }
+  return `${baseUrl}monaco/vs`;
+};
+
+/** The URL this bundle was fetched from, or null. `document.currentScript` is `main.js` when a host injects
+ * it as `<script src>`, and null for an ES module import — hence the fallback above. */
+export const currentScriptSrc = (): string | null => {
+  const script = document.currentScript;
+  return script instanceof HTMLScriptElement && script.src !== '' ? script.src : null;
+};
+
+export const MONACO_VS_PATH = monacoVsPathFor(import.meta.env.BASE_URL, currentScriptSrc());
+
+/** Configures the loader; fetches nothing until an `<Editor>` mounts. */
 loader.config({ paths: { vs: MONACO_VS_PATH } });

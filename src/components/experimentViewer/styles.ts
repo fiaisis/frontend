@@ -1,6 +1,7 @@
 import { alpha, type Theme } from '@mui/material/styles';
 import { type SystemStyleObject } from '@mui/system';
 
+import { BOUND_CLASS_SELECTORS } from './colourBarBounds';
 import resetZoomButtonStyles from '../../h5web/packages/lib/src/toolbar/floating/ResetZoomButton.module.css';
 import toolbarStyles from '../../h5web/packages/lib/src/toolbar/Toolbar.module.css';
 import toolbarControlStyles from '../../h5web/packages/lib/src/toolbar/utils.module.css';
@@ -112,6 +113,15 @@ export const getViewerPlotSx = (theme: Theme): SystemStyleObject<Theme> => {
     ...(theme.palette.mode === 'dark' && {
       '--h5w-line--color': chrome.accent,
       '--h5w-line--colorAux': 'orange, lightgreen, red, violet, gold',
+    }),
+    // H5Web draws the colour-scale limits as plain labels, but `EditableColourBarBounds` lets them be
+    // double-clicked into inputs, so they have to look like the control they are. The selectors are
+    // built from H5Web's own CSS module and are empty if upstream renames the labels.
+    ...(BOUND_CLASS_SELECTORS.length > 0 && {
+      [BOUND_CLASS_SELECTORS.map((selector) => `& ${selector}`).join(', ')]: {
+        cursor: 'pointer',
+        userSelect: 'none' as const,
+      },
     }),
     [`& .${toolbarStyles.toolbar}`]: { borderBottom: `1px solid ${chrome.border}`, boxSizing: 'border-box' },
     [`& .${toolbarControlStyles.btnLike}`]: { borderRadius: 0 },
