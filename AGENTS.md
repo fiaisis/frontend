@@ -348,26 +348,39 @@ Both images, once built, have their staging manifests (`components/frontend/` an
   ```
   Coverage excludes `src/h5web/**`, `cypress/**`, and a handful of entrypoint/setup files — see
   `vitest.config.ts` for the exact list before assuming a file should/shouldn't be covered.
-- **Run tests in narrow, time-boxed batches while iterating.** Some specs hang rather than fail (they
-  await backend requests that only get answered by a stub which is missing or already settled), so a
-  whole-suite `yarn test` can sit idle until `vitest.config.ts`'s 15 s `testTimeout`/`hookTimeout`
-  eventually fails each one — long enough to look like a stalled session. Prefer running just the
-  files affected by the change, with an explicit shell timeout well below that cumulative worst case:
+- **Never import the `@mui/icons-material` barrel** — take each icon from its own module
+  (`import Edit from '@mui/icons-material/Edit'`), which is what the rest of the app already does.
+  The barrel re-exports ~10,600 components: Rollup tree-shakes it happily in `yarn build`, but Vitest
+  walks it module by module, which measured **177 s before a test file ran its first test** with the
+  worker sitting idle. That is enough to make a page spec look hung — switching six files to deep
+  imports took `src/pages/LiveData.test.tsx` from ~166 s per run to 16 s — and `.eslintrc.js` now
+  blocks the barrel with `no-restricted-imports`. The same caution applies to any dependency whose
+  barrel is thousands of small modules: check the `import` figure in Vitest's `Duration` line before
+  blaming a test.
+- **Run tests in narrow, time-boxed batches while iterating.** Slow imports and tests waiting on
+  mocked backend requests can both make a suite appear stalled. Prefer running just the files
+  affected by the change, with an explicit shell timeout below the cumulative worst case of
+  `vitest.config.ts`'s 15 s `testTimeout`/`hookTimeout`:
   ```shell
   # the file under test, plus the specs that cover the components it changed
   timeout 240 npx vitest run --no-coverage src/components/experimentViewer/Viewer2D.test.tsx
   ```
-  Save the un-timed full `yarn test` (with coverage, for the coverage-parity check below) for once the
-  change is otherwise complete, and run it from a terminal you can interrupt.
-- **Do not believe a large parallel batch run until you have reproduced it.** These specs mount H5Web
-  (three.js) or MUI menus, so running every test file at once oversubscribes the machine and
-  timing-sensitive `waitFor`/`userEvent` specs start timing out in files nothing you touched — observed
-  on a 23-file batch: nine failures in `Viewer2D`, `jobs/Filters` and `jobs/InstrumentSelector` that
-  all pass when each file is run on its own. Re-run any file a batch blames, on its own, before
-  chasing a regression; and if a file hangs, `git stash` your change and re-run it against `main` (as
-  of writing, `src/pages/LiveData.test.tsx` and `src/pages/ExperimentViewer.test.tsx` can hang past
-  their timeouts even on a clean checkout of `main` on a loaded machine) so you do not attribute a
-  pre-existing environment problem to your work.
+  Save the full `yarn test` (with coverage, for the coverage-parity check below) for once the change
+  is otherwise complete, and time-box it from a terminal you can interrupt.
+- **Read Vitest's `Duration` line, and do not trust an oversubscribed batch.** It reports
+  `transform`/`setup`/`import`/`tests`: a big `import` points to the module graph (see the icon-barrel
+  warning above), while a big `tests` figure means time spent executing tests. Specs mounting H5Web
+  (three.js) or MUI menus can be timing-sensitive, so running many files in parallel can cause
+  failures in files nothing you touched — observed on a 23-file batch: nine failures in `Viewer2D`,
+  `jobs/Filters` and `jobs/InstrumentSelector` that all passed when run individually. Re-run any
+  file a batch blames on its own, or use `--no-file-parallelism`, before chasing a regression:
+  ```shell
+  timeout 240 npx vitest run --no-coverage --no-file-parallelism src/components/jobs/Row.test.tsx
+  ```
+  If an isolated run still appears hung, compare it against `main` before attributing the problem
+  to your change. The previous apparent hangs in `LiveData.test.tsx` and `ExperimentViewer.test.tsx`
+  were traced to the icon-barrel import; `ExperimentViewer` also has substantial test execution
+  time after that import is fixed.
 - **Cypress component tests** (Vite dev server, no running app needed):
   ```shell
   yarn cypress:run:component

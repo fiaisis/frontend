@@ -1,12 +1,10 @@
-import {
-  CheckBox,
-  Download,
-  FilterList,
-  IndeterminateCheckBox,
-  CheckBoxOutlineBlank,
-  Close,
-  Replay,
-} from '@mui/icons-material';
+import CheckBox from '@mui/icons-material/CheckBox';
+import CheckBoxOutlineBlank from '@mui/icons-material/CheckBoxOutlineBlank';
+import Close from '@mui/icons-material/Close';
+import Download from '@mui/icons-material/Download';
+import FilterList from '@mui/icons-material/FilterList';
+import IndeterminateCheckBox from '@mui/icons-material/IndeterminateCheckBox';
+import Replay from '@mui/icons-material/Replay';
 import {
   Alert,
   Badge,

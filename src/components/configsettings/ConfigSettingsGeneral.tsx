@@ -1,5 +1,5 @@
 import MonacoEditor from '@monaco-editor/react';
-import { Info } from '@mui/icons-material';
+import Info from '@mui/icons-material/Info';
 import { Box, Button, IconButton, Tab, Tabs, TextField, Tooltip, Typography, useTheme } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import React, { useEffect, useState } from 'react';
