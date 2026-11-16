@@ -210,6 +210,11 @@ In dev mode, Vite proxies `/api`, `/auth`, `/plottingapi`, and `/data-viewer` to
 `https://dev.reduce.isis.cclrc.ac.uk` (see `vite.config.ts`) unless you point those services at
 something else — this requires site VPN access for the proxied dev backend.
 
+Port `3000` is also the port the SciGateway host uses in Mode 2, so the two modes are mutually
+exclusive. Check nothing is already listening (`ss -ltn | grep -E ':3000|:5001'`) before starting
+either; a stale instance from a previous session is the usual cause of a "blank plugin" or an
+`EADDRINUSE` failure.
+
 #### Mode 2: Running FIA inside the `scigateway` host application
 
 1. **Locate or clone `scigateway`**:
@@ -260,24 +265,64 @@ something else — this requires site VPN access for the proxied dev backend.
    ```
    *(This also runs `scigateway`'s `postinstall` hook `yarn copy-cdn-fallbacks`, which copies
    `react.production.min.js` and `react-dom.production.min.js` into `public/` so externals resolve.)*
-4. **Build `frontend` and launch `scigateway`**:
-   - From this repo (`frontend`), you can build and launch `../scigateway` in one step:
-     ```shell
-     yarn run-frontend   # runs: yarn build && cd ../scigateway && yarn dev
-     ```
-   - Or run the steps separately:
-     ```shell
-     yarn build
-     cd ../scigateway && yarn dev
-     ```
-     `yarn dev` in `scigateway` uses `concurrently` to start `yarn serve:plugins` (serving
-     `frontend/build/main.js` on `http://localhost:5001/main.js`), `node server/auth-server.js`, and
-     the SciGateway Vite host on `http://localhost:3000`.
-   - Whenever you modify code in `frontend`, re-run `yarn build` so `build/main.js` updates (on
-     Windows, stop `scigateway` before rebuilding if `serve:plugins` locks files in `build/`).
-   - Note: `yarn build:standalone` additionally bundles React/ReactDOM into `build/main.js` for
-     hosts that do not provide them as externals (the default `yarn build` treats `react` and
-     `react-dom` as externals provided by `scigateway`).
+4. **Build `frontend` and launch `scigateway`** — `yarn run-frontend` is the preferred command for a
+   working local instance, and it is the command to re-run after every change to `frontend` sources
+   (it always rebuilds first):
+
+   ```shell
+   yarn run-frontend   # runs: yarn build && cd ../scigateway && yarn dev
+   ```
+
+   `yarn dev` in `scigateway` uses `concurrently` to start three processes: `yarn serve:plugins`
+   (a static server for `frontend/build/`, so `build/main.js` is served on
+   `http://localhost:5001/main.js`), `node server/auth-server.js`, and the SciGateway Vite host on
+   `http://localhost:3000`. To reuse an existing `build/` instead of rebuilding, run the two steps
+   separately:
+
+   ```shell
+   yarn build
+   cd ../scigateway && yarn dev
+   ```
+
+   Because `serve:plugins` serves `build/` from disk on every request, a plain `yarn build` followed
+   by a browser reload is enough to pick up `frontend` changes without restarting `scigateway` (on
+   Windows, stop `scigateway` before rebuilding if `serve:plugins` locks files in `build/`).
+   `yarn build:standalone` additionally bundles React/ReactDOM into `build/main.js` for hosts that
+   do not provide them as externals (the default `yarn build` treats `react` and `react-dom` as
+   externals provided by `scigateway`).
+
+   One of the three processes is meant to exit: with `authUrl` pointed at the real FIA dev auth
+   service, `node server/auth-server.js` prints `authUrl is not set to example auth server URL so not
+   starting example auth server` and exits with code `0`. That is SciGateway's bundled example auth
+   server standing down rather than a crash — the plugin server on `5001` and the host on `3000` are
+   the two processes that have to stay up.
+
+#### Endpoints to test a running instance
+
+Both origins have to be up at once: the host on `:3000` fetches `http://localhost:5001/main.js` and
+mounts `window.fia` under the `/fia` router basename in `src/App.tsx`. **Browse the plugin through
+`:3000`** — `:5001` serves only the bundle (no SPA fallback, no host chrome), which is the local
+equivalent of the rule in "Plugin assets come from the plugin's origin" below. A request to `:5001`
+that does not return `200` means the `location` in `dev-plugin-settings.json` is wrong or `yarn build`
+never wrote `build/main.js`.
+
+| URL | What it is |
+| --- | --- |
+| `http://localhost:5001/main.js` | The bundle currently on disk — use it to confirm the host is loading *your* latest `yarn build` |
+| `http://localhost:3000/` | SciGateway host shell; sends you to the `authUrl` login (`dev.reduce.isis.cclrc.ac.uk/auth`), so live data needs site VPN and RAL credentials |
+| `http://localhost:3000/fia/` | FIA plugin home (`Homepage`) |
+| `http://localhost:3000/fia/instruments` | Instruments page |
+| `http://localhost:3000/fia/reduction-history` | Reduction history across instruments |
+| `http://localhost:3000/fia/reduction-history/<INSTRUMENT>` | Per-instrument jobs/reductions table |
+| `http://localhost:3000/fia/reduction-history/IMAT/stack-viewer?jobId=<ID>` | IMAT stack viewer; `&imageIndex=<n>` selects the frame, `&viewerSize=fit\|small\|medium\|large\|full` the preset |
+| `http://localhost:3000/fia/reduction-history/IMAT/latest-image` | The reduction-history page's "Latest image" tab for IMAT |
+| `http://localhost:3000/fia/experiment-viewer` | Experiment (reduction outputs) viewer |
+| `http://localhost:3000/fia/live-data/<INSTRUMENT>` | Live-reduction logs and plots |
+| `http://localhost:3000/fia/data-viewer/view/<INSTRUMENT>/<EXPERIMENT>/<FILE.nxs>` | H5Web NeXus/HDF5 viewer for one reduced file |
+
+Routes are SPA routes: `curl`ing any `/fia/...` path returns the host's `index.html` with a `200`
+regardless of whether the route exists, so use that only to check the host is serving — confirm
+real behaviour in the browser or with the Cypress specs in `cypress/e2e/`.
 
 ### Environment variables (`VITE_*`)
 Read via `import.meta.env` and documented in `.env` (not readable by this agent due to sandbox
@@ -507,11 +552,12 @@ consequences:
    `Closes # <Issue Number>` followed by a `## Description` section. If no existing issue number is
    evident from the task, ask the user what issue or epic reference to use — do **not** create an
    issue that doesn't exist just to link it.
-4. **AI-assistance label**: attach a label to the PR indicating that it was made with the assistance
-   of AI. Check existing labels first with `gh label list` (e.g. `AI` or `AI_code` in this org) and
-   apply the matching label via `gh pr create --label <label>` or
-   `gh pr edit <number> --add-label <label>`; if the repo does not have an AI label yet, create one
-   first (`gh label create "AI" --description "Created with the assistance of AI"`).
+4. **AI-assistance label**: attach the `AI` label to the PR indicating that it was made with the
+   assistance of AI, via `gh pr create --label AI` or `gh pr edit <number> --add-label AI`. Check
+   existing labels first with `gh label list`: `AI_code` is an **old, archived label** that still
+   appears on historical PRs — do not apply it to new PRs. If the repo does not have an `AI` label
+   yet, create one first
+   (`gh label create "AI" --description "Created with the assistance of AI"`).
 
 ## Handling Dependabot PRs
 
