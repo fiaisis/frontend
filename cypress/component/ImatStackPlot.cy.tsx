@@ -15,7 +15,12 @@ const modes: ViewerSize[] = ['fit', 'small', 'medium', 'large', 'full'];
 const plotSelector = 'figure[aria-label="IMAT stack image"]';
 const frameSelectors = ['svg[data-type="abscissa"]', 'svg[data-type="ordinate"]', `.${colorBarStyles.colorBar}`];
 
-function PlotHarness({ originalWidth = 2048, originalHeight = 1024 }): React.ReactElement {
+function PlotHarness({
+  originalWidth = 4096,
+  originalHeight = 2048,
+  sampledWidth = 2048,
+  sampledHeight = 1024,
+}): React.ReactElement {
   const [viewerSize, setViewerSize] = useState<ViewerSize>('fit');
   const [mode, setMode] = useState<'light' | 'dark'>('light');
   const [domain, setDomain] = useState<Domain>([0, 65535]);
@@ -23,8 +28,8 @@ function PlotHarness({ originalWidth = 2048, originalHeight = 1024 }): React.Rea
   const [preview, setPreview] = useState(false);
   const theme = useMemo(() => createTheme({ palette: { mode } }), [mode]);
   const dataArray = useMemo(() => {
-    const rows = preview ? 32 : 64;
-    const cols = rows * 2;
+    const rows = preview ? sampledHeight / 2 : sampledHeight;
+    const cols = preview ? sampledWidth / 2 : sampledWidth;
     const values = new Float32Array(rows * cols).fill(frame);
     for (let y = (rows * 3) / 8; y < (rows * 5) / 8; y += 1) {
       for (let x = (cols * 3) / 8; x < (cols * 5) / 8; x += 1) {
@@ -32,7 +37,7 @@ function PlotHarness({ originalWidth = 2048, originalHeight = 1024 }): React.Rea
       }
     }
     return ndarray(values, [rows, cols]);
-  }, [frame, preview]);
+  }, [frame, preview, sampledHeight, sampledWidth]);
 
   return (
     <ThemeProvider theme={theme}>
@@ -47,7 +52,10 @@ function PlotHarness({ originalWidth = 2048, originalHeight = 1024 }): React.Rea
         <button onClick={() => setFrame(frame + 1)}>Next frame</button>
         <button onClick={() => setPreview(!preview)}>Preview</button>
       </div>
-      <Box sx={{ ...getViewerPlotSx(theme), width: '100%', height: 500, overflow: 'hidden' }}>
+      <Box
+        data-testid="plot-container"
+        sx={{ ...getViewerPlotSx(theme), width: '100%', height: 500, overflow: 'hidden' }}
+      >
         <ImatStackPlot
           dataArray={dataArray}
           originalWidth={originalWidth}
@@ -100,8 +108,10 @@ const waitForRender = (): void => {
 };
 
 const panRight = (): void => {
+  waitForRender();
   cy.get('canvas').then(($canvas) => {
     const { width, height } = $canvas[0].getBoundingClientRect();
+    cy.wrap($canvas).realMouseMove(width * 0.5, height * 0.5);
     cy.wrap($canvas).realMouseDown({ x: width * 0.5, y: height * 0.5 });
     cy.wrap($canvas).realMouseMove(width * 0.55, height * 0.5);
     cy.wrap($canvas).realMouseUp({ x: width * 0.55, y: height * 0.5 });
@@ -140,6 +150,10 @@ describe('IMAT stack plot sizing', () => {
       cy.get(plotSelector).should(($plot) => {
         expect($plot[0].scrollWidth).to.equal($plot[0].clientWidth);
         expect($plot[0].scrollHeight).to.equal($plot[0].clientHeight);
+        const parent = $plot[0].parentElement!.getBoundingClientRect();
+        const plot = $plot[0].getBoundingClientRect();
+        expect(plot.width).to.equal(parent.width);
+        expect(plot.height).to.equal(parent.height);
       });
     });
     cy.get(plotSelector).screenshot('imat-full-light', { disableTimersAndAnimations: false });
@@ -156,7 +170,7 @@ describe('IMAT stack plot sizing', () => {
 
   for (const size of modes) {
     it(`zooms smoothly and resets to the selected ${size} size`, () => {
-      mount(<PlotHarness originalWidth={512} originalHeight={256} />);
+      mount(<PlotHarness sampledWidth={512} sampledHeight={256} />);
       cy.contains('button', new RegExp(`^${size}$`)).click();
       let original: ReturnType<typeof featureBounds>;
       cy.get('canvas').should(($canvas) => {
@@ -180,7 +194,36 @@ describe('IMAT stack plot sizing', () => {
     });
   }
 
-  it('pans oversized images, preserves the view across frames and previews, and resets after pan alone', () => {
+  for (const size of ['large', 'full']) {
+    it(`zooms out from an oversized ${size} preset to Fit and resets to the preset`, () => {
+      mount(<PlotHarness />);
+      let fitted: ReturnType<typeof featureBounds>;
+      let preset: ReturnType<typeof featureBounds>;
+      cy.get('canvas').should(($canvas) => {
+        fitted = featureBounds($canvas[0]);
+      });
+      cy.contains('button', new RegExp(`^${size}$`)).click();
+      cy.get('canvas').should(($canvas) => {
+        preset = featureBounds($canvas[0]);
+        expect(preset.width).to.be.greaterThan(fitted.width);
+      });
+      for (let step = 0; step < 40; step += 1) {
+        cy.get('canvas').trigger('wheel', 'center', { eventConstructor: 'WheelEvent', deltaY: 100 });
+      }
+      cy.get('canvas').should(($canvas) => {
+        const zoomedOut = featureBounds($canvas[0]);
+        expect(zoomedOut.width).to.be.closeTo(fitted.width, 2);
+        expect(zoomedOut.height).to.be.closeTo(fitted.height, 2);
+        expect(zoomedOut.left).to.be.closeTo(fitted.left, 2);
+      });
+      cy.contains('button', 'Reset zoom').click();
+      cy.get('canvas').should(($canvas) => {
+        expect(featureBounds($canvas[0]).width).to.be.closeTo(preset.width, 2);
+      });
+    });
+  }
+
+  it('pans oversized images, preserves the view across frames, and resets after pan alone', () => {
     mount(<PlotHarness />);
     cy.contains('button', /^full$/).click();
     let original: ReturnType<typeof featureBounds>;
@@ -201,7 +244,7 @@ describe('IMAT stack plot sizing', () => {
     cy.get('svg[data-type="abscissa"]').should(($axis) => {
       expect($axis.text()).not.to.equal(axisText);
     });
-    ['Next frame', 'Preview', 'Preview', 'Intensity'].forEach((action) => {
+    ['Next frame', 'Intensity'].forEach((action) => {
       cy.contains('button', action).click();
       waitForRender();
       cy.get('canvas').should(($canvas) => {
@@ -255,7 +298,7 @@ describe('IMAT stack plot sizing', () => {
   });
 
   it('falls back to sampled dimensions when original dimensions are missing', () => {
-    mount(<PlotHarness originalWidth={0} originalHeight={0} />);
+    mount(<PlotHarness originalWidth={0} originalHeight={0} sampledWidth={128} sampledHeight={64} />);
     cy.contains('button', /^full$/).click();
     cy.get('canvas').should(($canvas) => {
       const feature = featureBounds($canvas[0]);
@@ -267,18 +310,20 @@ describe('IMAT stack plot sizing', () => {
   it('keeps original pixel coordinates and tooltip values aligned during previews', () => {
     mount(<PlotHarness />);
     cy.contains('button', /^full$/).click();
-    const checkTooltip = (): void => {
+    const checkTooltip = (featureWidth: number): void => {
       cy.get('canvas').should(($canvas) => {
-        expect(featureBounds($canvas[0]).width).to.be.closeTo(512, 3);
+        expect(featureBounds($canvas[0]).width).to.be.closeTo(featureWidth, 3);
       });
       cy.get('canvas').trigger('pointermove', 'center', { eventConstructor: 'PointerEvent', buttons: 0 });
       cy.get(plotSelector)
-        .contains(/x=102[34], y=51[12]/)
+        .contains(/x=204[78], y=102[34]/)
         .should('be.visible');
       cy.get(plotSelector).find('strong').should('contain.text', '65535');
     };
-    checkTooltip();
+    checkTooltip(512);
     cy.contains('button', 'Preview').click();
-    checkTooltip();
+    checkTooltip(256);
+    cy.contains('button', 'Preview').click();
+    checkTooltip(512);
   });
 });

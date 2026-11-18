@@ -18,12 +18,14 @@ describe('Stack viewer search', () => {
     cy.intercept('GET', '**/instrument/IMAT/jobs*', { body: [] });
     cy.intercept('GET', '**/find_file/**', { body: '/data' });
     cy.intercept('GET', '**/imat/list-images*', { body: ['frame-1.tif'] });
+    const frame = new Uint16Array(1024 * 512);
+    for (let row = 192; row < 320; row += 1) frame.fill(65535, row * 1024 + 384, row * 1024 + 640);
     cy.intercept('GET', '**/imat/image*', {
-      body: Cypress.Buffer.from(new Uint16Array([1, 2, 3, 4, 5, 6, 7, 8]).buffer),
+      body: frame.buffer,
       headers: {
         'content-type': 'application/octet-stream',
-        'x-image-width': '4',
-        'x-image-height': '2',
+        'x-image-width': '1024',
+        'x-image-height': '512',
         'x-original-width': '2048',
         'x-original-height': '1024',
       },
@@ -31,6 +33,12 @@ describe('Stack viewer search', () => {
     cy.visitFia('/fia/reduction-history/IMAT/stack-viewer?jobId=42');
     cy.wait('@stackImage');
     const plot = 'figure[aria-label="IMAT stack image"]';
+    cy.get(plot).should(($plot) => {
+      const viewingArea = $plot[0].parentElement!.parentElement!.getBoundingClientRect();
+      const bounds = $plot[0].getBoundingClientRect();
+      expect(bounds.width, 'plot fills the available width').to.be.closeTo(viewingArea.width - 2, 1);
+      expect(bounds.height, 'plot fills the available height').to.be.closeTo(viewingArea.height - 2, 1);
+    });
     const selectors = [
       `${plot} svg[data-type="abscissa"]`,
       `${plot} svg[data-type="ordinate"]`,
@@ -64,6 +72,21 @@ describe('Stack viewer search', () => {
     cy.wait('@stackImage');
     cy.get('button[aria-label="75%"]').should('have.attr', 'aria-pressed', 'true');
     cy.get(plot).should('be.visible');
+    cy.get(`${plot} canvas`).should(($canvas) => {
+      const canvas = $canvas[0];
+      const copy = canvas.ownerDocument.createElement('canvas');
+      copy.width = canvas.width;
+      copy.height = canvas.height;
+      const context = copy.getContext('2d')!;
+      context.drawImage(canvas, 0, 0);
+      const pixels = context.getImageData(0, Math.floor(copy.height / 2), copy.width, 1).data;
+      let yellowPixels = 0;
+      for (let offset = 0; offset < pixels.length; offset += 4) {
+        if (pixels[offset] > 200 && pixels[offset + 1] > 180 && pixels[offset + 2] < 100) yellowPixels += 1;
+      }
+      const featureWidth = (yellowPixels * canvas.getBoundingClientRect().width) / copy.width;
+      expect(featureWidth, '75% uses the loaded image dimensions').to.be.closeTo(192, 2);
+    });
     cy.screenshot('imat-stack-large-page');
   });
 

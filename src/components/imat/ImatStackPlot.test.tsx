@@ -86,6 +86,10 @@ const renderPlot = (overrides: Partial<PlotProps> = {}): { update: (changes?: Pa
   return { update };
 };
 
+const loadedFrame = ndarray(new Float32Array(1024 * 2048), [1024, 2048]);
+const renderCameraPlot = (overrides: Partial<PlotProps> = {}): ReturnType<typeof renderPlot> =>
+  renderPlot({ dataArray: loadedFrame, originalWidth: 4096, originalHeight: 2048, ...overrides });
+
 const wheel = (deltaY: number, worldPt = new Vector3()): void => {
   act(() => scene.wheel({ sourceEvent: new WheelEvent('wheel', { deltaY }), worldPt }));
 };
@@ -114,7 +118,7 @@ describe('IMAT stack camera controls', () => {
     ['large', 2 / 3],
     ['full', 0.5],
   ])('centres the image at the %s preset', (viewerSize, expectedScale) => {
-    renderPlot({ viewerSize });
+    renderCameraPlot({ viewerSize });
     expect(scene.camera.scale.toArray()).toEqual([expectedScale, expectedScale, 1]);
     expect(scene.camera.position.toArray()).toEqual([0, 0, 10]);
     expect(scene.camera.matrixWorld.elements[0]).toBeCloseTo(expectedScale);
@@ -124,13 +128,13 @@ describe('IMAT stack camera controls', () => {
 
   test('accounts for the limiting viewport dimension', () => {
     scene.visSize = { width: 800, height: 800 };
-    renderPlot();
+    renderCameraPlot();
     expect(scene.camera.scale.x).toBe(800 / 1024);
     expect(scene.camera.scale.y).toBe(800 / 1024);
   });
 
-  test('zooms around the pointer and cannot zoom out beyond the selected preset', () => {
-    const plot = renderPlot();
+  test('zooms around the pointer and lets oversized presets zoom out to Fit', () => {
+    const plot = renderCameraPlot();
     wheel(-100, new Vector3(100, 50));
     expect(scene.camera.scale.x).toBeCloseTo(0.475);
     expect(scene.camera.position.x).toBeCloseTo(5);
@@ -139,14 +143,31 @@ describe('IMAT stack camera controls', () => {
     expect(screen.getByRole('button', { name: 'Reset zoom' })).toBeVisible();
 
     wheel(100, new Vector3(100, 50));
-    wheel(100, new Vector3(100, 50));
     expect(scene.camera.scale.x).toBeCloseTo(0.5);
     expect(scene.camera.position.x).toBeCloseTo(0);
     expect(scene.camera.position.y).toBeCloseTo(0);
+
+    wheel(100);
+    expect(scene.camera.scale.x).toBeGreaterThan(0.5);
+    for (let step = 0; step < 30; step += 1) wheel(100);
+    expect(scene.camera.scale.x).toBe(1);
+    plot.update();
+    fireEvent.click(screen.getByRole('button', { name: 'Reset zoom' }));
+    expect(scene.camera.scale.x).toBe(0.5);
   });
 
+  test.each<ViewerSize>(['fit', 'small', 'medium'])(
+    'does not enlarge the %s preset when scrolling out',
+    (viewerSize) => {
+      renderCameraPlot({ viewerSize });
+      const initialScale = scene.camera.scale.x;
+      wheel(100);
+      expect(scene.camera.scale.x).toBe(initialScale);
+    }
+  );
+
   test('ignores wheel input when another interaction owns it or there is no vertical movement', () => {
-    renderPlot();
+    renderCameraPlot();
     scene.shouldZoom.mockReturnValue(false);
     wheel(-100);
     scene.shouldZoom.mockReturnValue(true);
@@ -156,7 +177,7 @@ describe('IMAT stack camera controls', () => {
   });
 
   test('preserves extra magnification when the viewport is resized', () => {
-    const plot = renderPlot({ viewerSize: 'medium' });
+    const plot = renderCameraPlot({ viewerSize: 'medium' });
     wheel(-100);
     scene.visSize = { width: 2048, height: 1024 };
     plot.update();
@@ -166,13 +187,25 @@ describe('IMAT stack camera controls', () => {
     expect(scene.camera.scale.toArray()).toEqual([2, 2, 1]);
   });
 
+  test('does not jump back in when scrolling after a zoomed-out view is resized', () => {
+    const plot = renderCameraPlot();
+    for (let step = 0; step < 30; step += 1) wheel(100);
+    scene.visSize = { width: 2048, height: 1024 };
+    plot.update();
+    expect(scene.camera.scale.x).toBe(2);
+    wheel(100);
+    expect(scene.camera.scale.x).toBe(2);
+    wheel(-100);
+    expect(scene.camera.scale.x).toBeCloseTo(1.9);
+  });
+
   test.each([
     { name: 'horizontal zoom', scale: [0.25, 0.5], position: [0, 0] },
     { name: 'vertical zoom', scale: [0.5, 0.25], position: [0, 0] },
     { name: 'horizontal pan', scale: [0.5, 0.5], position: [20, 0] },
     { name: 'vertical pan', scale: [0.5, 0.5], position: [0, -20] },
   ])('resets after $name alone', ({ scale, position }) => {
-    const plot = renderPlot();
+    const plot = renderCameraPlot();
     scene.camera.scale.set(scale[0], scale[1], 1);
     scene.camera.position.set(position[0], position[1], 10);
     plot.update();
@@ -183,15 +216,15 @@ describe('IMAT stack camera controls', () => {
     expect(screen.getByText('Reset zoom').closest('button')).not.toBeVisible();
   });
 
-  test('preserves zoom and pan across frames, previews and intensity changes but resets on preset changes', () => {
-    const plot = renderPlot();
+  test('preserves zoom and pan across frames and intensity changes but resets on preset changes', () => {
+    const plot = renderCameraPlot();
     wheel(-100);
     scene.camera.position.set(12, -8, 10);
-    const preview = ndarray(new Float32Array([21, 42]), [1, 2]);
-    plot.update({ dataArray: preview, domain: [0, 50] });
+    const nextFrame = ndarray(new Float32Array(1024 * 2048).fill(42), [1024, 2048]);
+    plot.update({ dataArray: nextFrame, domain: [0, 50] });
     expect(scene.camera.scale.x).toBeCloseTo(0.475);
     expect(scene.camera.position.toArray()).toEqual([12, -8, 10]);
-    expect(scene.heatmap).toHaveBeenLastCalledWith(expect.objectContaining({ values: preview, domain: [0, 50] }));
+    expect(scene.heatmap).toHaveBeenLastCalledWith(expect.objectContaining({ values: nextFrame, domain: [0, 50] }));
     expect(scene.colorBar).toHaveBeenLastCalledWith(expect.objectContaining({ domain: [0, 50] }));
 
     plot.update({ viewerSize: 'small' });
@@ -199,15 +232,22 @@ describe('IMAT stack camera controls', () => {
     expect(scene.camera.position.toArray()).toEqual([0, 0, 10]);
   });
 
+  test('bases preview sizes on the loaded dimensions while retaining additional zoom', () => {
+    const plot = renderCameraPlot();
+    wheel(-100);
+    plot.update({ dataArray: ndarray(new Float32Array(512 * 1024), [512, 1024]) });
+    expect(scene.camera.scale.x).toBeCloseTo(0.95);
+    plot.update({ dataArray: loadedFrame });
+    expect(scene.camera.scale.x).toBeCloseTo(0.475);
+  });
+
   test.each([0, Number.NaN, Number.POSITIVE_INFINITY])('waits for valid viewport dimensions (%s)', (size) => {
     scene.visSize = { width: size, height: size };
-    const plot = renderPlot();
+    const plot = renderCameraPlot();
     expect(scene.camera.scale.toArray()).toEqual([1, 1, 1]);
     expect(scene.invalidate).not.toHaveBeenCalled();
-    if (size === 0) {
-      wheel(-100);
-      expect(scene.moveCameraTo).not.toHaveBeenCalled();
-    }
+    wheel(-100);
+    expect(scene.moveCameraTo).not.toHaveBeenCalled();
     scene.visSize = { width: 1024, height: 512 };
     plot.update();
     expect(scene.camera.scale.x).toBe(0.5);
