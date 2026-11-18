@@ -303,11 +303,6 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
   const stackDisplayWidth = stackDataset?.originalWidth || stackDataset?.sampledWidth || 0;
   const stackDisplayHeight = stackDataset?.originalHeight || stackDataset?.sampledHeight || 0;
 
-  const stackAspectRatio = React.useMemo(() => {
-    if (stackDisplayHeight === 0) return 1;
-    return stackDisplayWidth / stackDisplayHeight;
-  }, [stackDisplayHeight, stackDisplayWidth]);
-
   // Fetch Latest Image
   React.useEffect(() => {
     if (mode !== 'latest') return;
@@ -719,16 +714,16 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
                       <ToggleButton value="fit" aria-label="fit" title="Fit the image to the viewing area">
                         Fit
                       </ToggleButton>
-                      <ToggleButton value="small" aria-label="25%" title="25% of original image size">
+                      <ToggleButton value="small" aria-label="25%" title="25% of loaded image size">
                         25%
                       </ToggleButton>
-                      <ToggleButton value="medium" aria-label="50%" title="50% of original image size">
+                      <ToggleButton value="medium" aria-label="50%" title="50% of loaded image size">
                         50%
                       </ToggleButton>
-                      <ToggleButton value="large" aria-label="75%" title="75% of original image size">
+                      <ToggleButton value="large" aria-label="75%" title="75% of loaded image size">
                         75%
                       </ToggleButton>
-                      <ToggleButton value="full" aria-label="100%" title="100% of original image size">
+                      <ToggleButton value="full" aria-label="100%" title="100% of loaded image size">
                         100%
                       </ToggleButton>
                     </ToggleButtonGroup>
@@ -854,8 +849,8 @@ const IMATViewer: React.FC<IMATViewerProps> = ({ mode, showNav = true }) => {
                     sx={{
                       ...getViewerPlotSx(theme),
                       width: '100%',
-                      aspectRatio: stackAspectRatio,
-                      maxHeight: '100%',
+                      height: '100%',
+                      minHeight: 0,
                       position: 'relative',
                       border: `1px solid ${viewerChrome.border}`,
                       borderRadius: 0,

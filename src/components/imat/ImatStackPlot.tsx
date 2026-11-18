@@ -44,8 +44,6 @@ function StackViewControls({ viewerSize, imageWidth, imageHeight }: ViewProps): 
   const shouldZoom = useInteraction('Zoom', { button: 'Wheel' });
   const previousScale = useRef<number>();
 
-  // H5Web's camera scale is inverse magnification. The frame and axis gutters
-  // stay fixed; only the image's footprint in CSS pixels changes with the preset.
   const presetScale =
     viewerSize === 'fit'
       ? 1
@@ -76,10 +74,12 @@ function StackViewControls({ viewerSize, imageWidth, imageHeight }: ViewProps): 
 
   useWheelCapture();
   useCanvasEvent('wheel', ({ sourceEvent, worldPt }) => {
-    if (!shouldZoom(sourceEvent) || sourceEvent.deltaY === 0 || presetScale <= 0) return;
+    if (!shouldZoom(sourceEvent) || sourceEvent.deltaY === 0 || !Number.isFinite(presetScale) || presetScale <= 0)
+      return;
 
     const oldScale = camera.scale.x;
-    const nextScale = Math.min(presetScale, oldScale * (sourceEvent.deltaY < 0 ? ZOOM_FACTOR : 1 / ZOOM_FACTOR));
+    const maxScale = Math.max(1, presetScale, oldScale);
+    const nextScale = Math.min(maxScale, oldScale * (sourceEvent.deltaY < 0 ? ZOOM_FACTOR : 1 / ZOOM_FACTOR));
     const ratio = nextScale / oldScale;
     camera.scale.set(nextScale, nextScale, 1);
     moveCameraTo(worldPt.clone().add(camera.position.clone().sub(worldPt).multiplyScalar(ratio)));
@@ -149,7 +149,7 @@ function ImatStackPlot({ dataArray, originalWidth, originalHeight, viewerSize, d
         abscissaConfig={abscissaConfig}
         ordinateConfig={ordinateConfig}
       >
-        <StackViewControls viewerSize={viewerSize} imageWidth={imageWidth} imageHeight={imageHeight} />
+        <StackViewControls viewerSize={viewerSize} imageWidth={cols} imageHeight={rows} />
         <TooltipMesh
           guides="both"
           renderTooltip={(x, y) => {
