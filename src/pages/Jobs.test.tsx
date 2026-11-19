@@ -120,6 +120,12 @@ describe('Jobs', () => {
     expect(screen.getByRole('button', { name: 'Edit config' })).toBeEnabled();
   });
 
+  test('enables the IMAT instrument config', () => {
+    renderJobs('/reduction-history/IMAT');
+
+    expect(screen.getByRole('button', { name: 'Edit config' })).toBeEnabled();
+  });
+
   test('opens linkable reduction details and closes them through browser history', async () => {
     const user = userEvent.setup();
 
