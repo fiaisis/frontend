@@ -368,9 +368,10 @@ only one of them is "this plugin":
    self-hosted Monaco assets: the Dockerfile copies all of `build/`, which already contains
    `build/monaco/vs` (adds roughly 24 MB to the image).
 2. **`ghcr.io/fiaisis/scigateway`** (`container/scigateway.dockerfile`) — only rebuilt when specific
-   paths change (`container/scigateway.dockerfile`, `container/settings.json`,
-   `container/default.json`, `container/images/**`, `container/favicon.ico`, `container/index.html`,
-   checked via `dorny/paths-filter`). This image layers FIA's branding/default settings/help pages
+   paths change (`container/scigateway.dockerfile`, `container/scigateway-page-title.js`,
+   `container/settings.json`, `container/default.json`, `container/images/**`,
+   `container/favicon.ico`, `container/index.html`, checked via `dorny/paths-filter`). This image
+   layers FIA's branding/default settings/help pages
    on top of the **upstream** SciGateway application — it does **not** contain this repo's own
    plugin code, and editing it is **not** the same as developing inside `../scigateway`'s own
    source (which `README.md` explicitly warns against). Only touch these `container/` files when

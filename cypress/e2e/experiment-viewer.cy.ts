@@ -51,6 +51,7 @@ describe('Experiment viewer search', () => {
 
   it('searches and clears below the tabs while keeping the selected instrument', () => {
     cy.visitFia('/fia/experiment-viewer?instrument=LOQ');
+    cy.title().should('eq', 'Experiment viewer | FIA');
     cy.get('[aria-label="Page controls"]').find('form, input[type="number"]').should('not.exist');
     cy.contains('[aria-label="Page controls"] button', 'Browse instruments').should('be.visible');
     cy.get('aside[aria-label="Experiment viewer files"]').find(searchForm).should('be.visible');
@@ -63,6 +64,7 @@ describe('Experiment viewer search', () => {
     cy.get(experimentInput).type('12345{enter}');
     cy.location('pathname').should('eq', '/fia/experiment-viewer');
     cy.location('search').should('eq', '?instrument=LOQ&experiment=12345');
+    cy.title().should('eq', 'Experiment viewer | FIA');
     cy.wait('@jobCount').then(({ request }) => {
       const filters = JSON.parse(new URL(request.url).searchParams.get('filters')!);
       expect(filters.instrument_in).to.deep.equal(['LOQ']);

@@ -60,7 +60,11 @@ function renderAt(path: string): void {
 }
 
 describe('App', () => {
+  let originalTitle: string;
+
   beforeEach(() => {
+    originalTitle = document.title;
+    document.title = 'SciGateway';
     vi.clearAllMocks();
     vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined);
     window.history.pushState({}, '', '/fia');
@@ -68,6 +72,7 @@ describe('App', () => {
 
   afterEach(() => {
     cleanup();
+    document.title = originalTitle;
     document.getElementById('app-scroll-test-host')?.remove();
     vi.restoreAllMocks();
   });
@@ -76,6 +81,62 @@ describe('App', () => {
     renderAt('/fia');
 
     expect(screen.getByRole('heading', { name: 'Homepage' })).toBeInTheDocument();
+  });
+
+  test.each([
+    ['/fia', 'Home page'],
+    ['/fia/isis-instruments', 'ISIS instruments'],
+    ['/fia/reduction-history', 'Reduction history'],
+    ['/fia/reduction-history/LOQ', 'Reduction history'],
+    ['/fia/reduction-history/IMAT/latest-image', 'IMAT latest image'],
+    ['/fia/reduction-history/IMAT/stack-viewer?jobId=42', 'IMAT stack viewer'],
+    ['/fia/reduction-history/LOQ/value-editor-42', 'Reduction editor'],
+    ['/fia/experiment-viewer', 'Experiment viewer'],
+    ['/fia/experiment-viewer?instrument=LOQ&experiment=12345', 'Experiment viewer'],
+    ['/fia/live-data', 'Live data viewer'],
+    ['/fia/live-data/LOQ', 'Live data viewer'],
+    ['/fia/live-data/LOQ/edit-script', 'Live script editor'],
+    ['/fia/data-viewer/view/LOQ/12345/LOQ123.nxs', 'Data viewer'],
+    ['/fia/data-viewer/view/generic/experiment_number/12345/result.nxs', 'Data viewer'],
+    ['/fia/data-viewer/view/generic/user_number/67890/result.nxs', 'Data viewer'],
+  ])('sets the browser tab title for %s', (path, title) => {
+    renderAt(path);
+
+    expect(document.title).toBe(`${title} | FIA`);
+  });
+
+  test('restores the host title when the plugin unmounts', () => {
+    renderAt('/fia/experiment-viewer');
+    expect(document.title).toBe('Experiment viewer | FIA');
+
+    cleanup();
+
+    expect(document.title).toBe('SciGateway');
+  });
+
+  test('preserves a title set by the host before the plugin unmounts', () => {
+    renderAt('/fia/experiment-viewer');
+    document.title = 'Help | SciGateway';
+
+    cleanup();
+
+    expect(document.title).toBe('Help | SciGateway');
+  });
+
+  test('leaves the blank login route title to the host', () => {
+    renderAt('/fia/login');
+    expect(document.title).toBe('SciGateway');
+  });
+
+  test('restores the host title when navigating to the blank login route', () => {
+    renderAt('/fia');
+
+    act(() => {
+      window.history.pushState({}, '', '/fia/login');
+      window.dispatchEvent(new PopStateEvent('popstate', { state: {} }));
+    });
+
+    expect(document.title).toBe('SciGateway');
   });
 
   test('routes to the instruments page under the FIA basename', () => {
@@ -96,6 +157,7 @@ describe('App', () => {
 
   test('scrolls to the top when the pathname changes', async () => {
     renderAt('/fia');
+    expect(document.title).toBe('Home page | FIA');
     vi.mocked(window.scrollTo).mockClear();
 
     act(() => {
@@ -104,6 +166,7 @@ describe('App', () => {
     });
 
     expect(await screen.findByRole('heading', { name: 'ISIS instruments' })).toBeInTheDocument();
+    expect(document.title).toBe('ISIS instruments | FIA');
     expect(window.scrollTo).toHaveBeenCalledTimes(1);
     expect(window.scrollTo).toHaveBeenCalledWith({ top: 0, left: 0, behavior: 'auto' });
   });
@@ -151,6 +214,7 @@ describe('App', () => {
 
     expect(await screen.findByRole('heading', { name: 'ISIS instruments' })).toBeInTheDocument();
     expect(window.location.pathname).toBe('/fia/isis-instruments');
+    expect(document.title).toBe('ISIS instruments | FIA');
   });
 
   test.each(['LOQ', 'small-angle-neutron-scattering'])(
@@ -167,6 +231,7 @@ describe('App', () => {
 
     expect(await screen.findByRole('heading', { name: 'Homepage' })).toBeInTheDocument();
     expect(window.location.pathname).toMatch(/^\/fia\/?$/);
+    expect(document.title).toBe('Home page | FIA');
   });
 
   test('handles SciGateway token refresh and signout events', () => {
