@@ -30,6 +30,7 @@ jobs:
           filters: |
             scigateway:
               - 'container/scigateway.dockerfile'
+              - 'container/scigateway-page-title.js'
               - 'container/settings.json'
               - 'container/default.json'
               - 'container/images/**'

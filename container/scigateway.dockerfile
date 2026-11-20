@@ -4,8 +4,8 @@ WORKDIR /usr/local/apache2/htdocs
 
 USER root
 
-# Keep the browser title aligned with FIA branding
-RUN sed -i -e 's/<title>SciGateway<\/title>/<title>FIA<\/title>/' index.html
+# Brand the default tab title and load FIA's host page title handler.
+RUN sed -i -e 's|<title>SciGateway</title>|<title>FIA</title><script defer src="/scigateway-page-title.js"></script>|' index.html
 
 USER www-data
 
@@ -13,4 +13,5 @@ COPY --chown=www-data:www-data settings.json ./settings.json
 COPY --chown=www-data:www-data default.json ./res/default.json
 COPY --chown=www-data:www-data images ./res/images
 COPY --chown=www-data:www-data favicon.ico ./favicon.ico
+COPY --chown=www-data:www-data scigateway-page-title.js ./scigateway-page-title.js
 
