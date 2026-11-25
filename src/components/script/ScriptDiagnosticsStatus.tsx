@@ -7,8 +7,8 @@ import Typography from '@mui/material/Typography';
 import React from 'react';
 
 import type { ScriptDiagnostics } from '../../lib/useScriptDiagnostics';
-import type { SvgIconComponent } from '@mui/icons-material';
 import type { Theme } from '@mui/material/styles';
+import type SvgIcon from '@mui/material/SvgIcon';
 
 /**
  * The one line saying what the Python checker thinks, and whether it managed to think at all.
@@ -22,7 +22,7 @@ import type { Theme } from '@mui/material/styles';
 type PresentationColour = 'success' | 'warning' | 'error' | 'muted';
 
 type Presentation = {
-  icon: SvgIconComponent;
+  icon: typeof SvgIcon;
   label: string;
   /** Longer wording for the tooltip and the accessible name. */
   detail: string;

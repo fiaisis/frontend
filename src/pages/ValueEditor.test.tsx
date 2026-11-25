@@ -34,10 +34,32 @@ const renderEditor = (instrument: string): ReturnType<typeof createMemoryHistory
   return history;
 };
 
+const mantidEndpoint = '/jobs/runners';
+const imagingEndpoint = '/jobs/runners/mantidimaging';
+const mantidRepository = 'ghcr.io/fiaisis/mantid';
+const imagingRepository = 'ghcr.io/fiaisis/mantidimaging';
+const mantidVersions = { 'sha256:mantid-newer': '6.15.0', 'sha256:shared': '6.14.0' };
+const imagingVersions = { 'sha256:imaging-newer': '3.2.0', 'sha256:shared': '3.1.0' };
+const mantidLabels = ['Mantid 6.15.0', 'Mantid 6.14.0'];
+const imagingLabels = ['Mantid Imaging 3.2.0', 'Mantid Imaging 3.1.0'];
+const jobData = { script: { value: 'reduce()' } };
+
+const runnerSelect = (): HTMLElement => screen.getByRole('combobox', { name: 'Runner version' });
+const rerunButton = (): HTMLElement => screen.getByRole('button', { name: 'Rerun with changes' });
+
+const mockJob = (runnerImage?: string | null): void => {
+  vi.mocked(fiaApi.get).mockImplementation(async (url) => {
+    if (url === '/job/42') return { data: { ...jobData, runner_image: runnerImage } };
+    if (url === mantidEndpoint) return { data: mantidVersions };
+    if (url === imagingEndpoint) return { data: imagingVersions };
+    throw new Error(`Unexpected request: ${url}`);
+  });
+};
+
 describe('value editor runners', () => {
   beforeEach(() => {
     vi.resetAllMocks();
-    // Leave the rerun pending: these tests verify the request, not the delayed success notification.
+    // Leave the rerun pending while asserting the submitted request.
     vi.mocked(fiaApi.post).mockReturnValue(new Promise(() => {}));
   });
 
@@ -47,112 +69,188 @@ describe('value editor runners', () => {
   });
 
   test.each([
-    ['IMAT', '/jobs/runners/mantidimaging', 'ghcr.io/fiaisis/mantidimaging', 'Mantid Imaging'],
-    ['imat', '/jobs/runners/mantidimaging', 'ghcr.io/fiaisis/mantidimaging', 'Mantid Imaging'],
-    ['LOQ', '/jobs/runners', 'ghcr.io/fiaisis/mantid', 'Mantid'],
-  ])('uses the correct runner endpoint, names and image for %s', async (instrument, endpoint, repository, name) => {
-    const user = userEvent.setup();
-    vi.mocked(fiaApi.get).mockImplementation(async (url) => {
-      if (url === '/job/42') {
-        return { data: { script: { value: 'reduce()' }, run: { instrument_name: instrument } } };
-      }
-      if (url === endpoint) return { data: { 'sha256:first': '3.1.1', 'sha256:second': '3.1.0' } };
-      throw new Error(`Unexpected request: ${url}`);
-    });
+    {
+      instrument: 'IMAT',
+      originalImage: `${mantidRepository}@sha256:shared`,
+      originalLabel: mantidLabels[1],
+      expectedOptions: [...mantidLabels, ...imagingLabels],
+      chosenLabel: imagingLabels[1],
+      chosenImage: `${imagingRepository}@sha256:shared`,
+    },
+    {
+      instrument: 'imat',
+      originalImage: `${imagingRepository}:3.1.0@sha256:shared`,
+      originalLabel: imagingLabels[1],
+      expectedOptions: [...imagingLabels, ...mantidLabels],
+      chosenLabel: mantidLabels[1],
+      chosenImage: `${mantidRepository}@sha256:shared`,
+    },
+  ])(
+    'selects $originalLabel for $instrument and reruns with the chosen family',
+    async ({ instrument, originalImage, originalLabel, expectedOptions, chosenLabel, chosenImage }) => {
+      const user = userEvent.setup();
+      mockJob(originalImage);
+      renderEditor(instrument);
 
-    renderEditor(instrument);
+      await waitFor(() => expect(runnerSelect()).toHaveTextContent(originalLabel));
+      await user.click(runnerSelect());
+      const chosenOption = await screen.findByRole('option', { name: chosenLabel });
+      expect(screen.getAllByRole('option').map((option) => option.textContent)).toEqual(expectedOptions);
+      await user.click(chosenOption);
 
-    const selector = screen.getByRole('combobox', { name: 'Runner version' });
-    await waitFor(() => expect(selector).toHaveTextContent(`${name} 3.1.1`));
-    expect(fiaApi.get).toHaveBeenCalledWith(endpoint);
-    expect(fiaApi.get).not.toHaveBeenCalledWith(
-      endpoint === '/jobs/runners' ? '/jobs/runners/mantidimaging' : '/jobs/runners'
-    );
+      const editor = screen.getByRole('textbox', { name: 'Reduction script' });
+      await user.clear(editor);
+      await user.type(editor, 'updated_reduction()');
+      await user.click(rerunButton());
 
-    await user.click(selector);
-    await user.click(screen.getByRole('option', { name: `${name} 3.1.0` }));
-    const editor = await screen.findByRole('textbox', { name: 'Reduction script' });
-    await user.clear(editor);
-    await user.type(editor, 'updated_reduction()');
-    await user.click(screen.getByRole('button', { name: 'Rerun with changes' }));
-
-    expect(fiaApi.post).toHaveBeenCalledWith('/job/rerun', {
-      job_id: '42',
-      runner_image: `${repository}@sha256:second`,
-      script: 'updated_reduction()',
-    });
-  });
-
-  test.each([[{}], [[]], [null]])(
-    'disables reruns when Mantid Imaging returns no usable versions (%j)',
-    async (data) => {
-      vi.spyOn(console, 'error').mockImplementation(() => undefined);
-      vi.mocked(fiaApi.get).mockImplementation(async (url) =>
-        url === '/job/42' ? { data: { script: { value: 'reduce()' } } } : { data }
-      );
-
-      renderEditor('IMAT');
-
-      await screen.findByRole('textbox', { name: 'Reduction script' });
-      expect(screen.getByRole('combobox', { name: 'Runner version' })).toHaveAttribute('aria-disabled', 'true');
-      expect(screen.getByRole('button', { name: 'Rerun with changes' })).toBeDisabled();
-      expect(fiaApi.post).not.toHaveBeenCalled();
+      expect(fiaApi.post).toHaveBeenCalledWith('/job/rerun', {
+        job_id: '42',
+        runner_image: chosenImage,
+        script: 'updated_reduction()',
+      });
     }
   );
 
-  test('disables reruns when the Mantid Imaging request fails', async () => {
+  test('offers Mantid versions for other instruments and defaults to the first listed version', async () => {
+    const user = userEvent.setup();
+    mockJob(`${mantidRepository}@sha256:shared`);
+    renderEditor('LOQ');
+
+    await waitFor(() => expect(runnerSelect()).toHaveTextContent(mantidLabels[0]));
+    await user.click(runnerSelect());
+    expect(screen.getAllByRole('option').map((option) => option.textContent)).toEqual(mantidLabels);
+    expect(vi.mocked(fiaApi.get).mock.calls.map(([url]) => url)).not.toContain(imagingEndpoint);
+  });
+
+  test.each([
+    [mantidLabels[0], `${mantidRepository}@sha256:unlisted`],
+    [mantidLabels[0], `${mantidRepository}:6.14.0`],
+    [imagingLabels[0], `${imagingRepository}@sha256:unlisted`],
+    [imagingLabels[0], 'ghcr.io/fiaisis/mantid-custom@sha256:shared'],
+    [imagingLabels[0], null],
+    [imagingLabels[0], undefined],
+  ])('defaults to %s for original image %s', async (expectedVersion, runnerImage) => {
+    mockJob(runnerImage);
+    renderEditor('IMAT');
+
+    await waitFor(() => expect(runnerSelect()).toHaveTextContent(expectedVersion));
+    expect(rerunButton()).toBeEnabled();
+  });
+
+  test.each([
+    ['empty', {}],
+    ['malformed', []],
+    ['unavailable', new Error('Runner lookup failed')],
+  ])('requires an explicit selection when the preferred catalog is %s', async (_status, catalog) => {
+    const user = userEvent.setup();
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
     vi.mocked(fiaApi.get).mockImplementation(async (url) => {
-      if (url === '/job/42') return { data: { script: { value: 'reduce()' } } };
-      throw new Error('Runner lookup failed');
+      if (url === '/job/42') return { data: { ...jobData, runner_image: `${imagingRepository}@sha256:shared` } };
+      if (url === mantidEndpoint) return { data: mantidVersions };
+      if (catalog instanceof Error) throw catalog;
+      return { data: catalog };
     });
+    renderEditor('IMAT');
 
+    await waitFor(() => expect(runnerSelect()).toHaveTextContent('Choose a runner version'));
+    expect(rerunButton()).toBeDisabled();
+    await user.click(runnerSelect());
+    await user.click(screen.getByRole('option', { name: mantidLabels[0] }));
+    expect(rerunButton()).toBeEnabled();
+  });
+
+  test('disables reruns when neither catalog returns usable versions', async () => {
+    vi.mocked(fiaApi.get).mockImplementation(async (url) => {
+      if (url === '/job/42') return { data: jobData };
+      if (url === mantidEndpoint) return { data: { 'invalid-digest': '6.15.0' } };
+      return { data: { 'sha256:shared': null } };
+    });
     renderEditor('IMAT');
 
     await screen.findByRole('textbox', { name: 'Reduction script' });
-    expect(screen.getByRole('combobox', { name: 'Runner version' })).toHaveAttribute('aria-disabled', 'true');
-    expect(screen.getByRole('button', { name: 'Rerun with changes' })).toBeDisabled();
+    expect(runnerSelect()).toHaveAttribute('aria-disabled', 'true');
+    expect(rerunButton()).toBeDisabled();
   });
 
-  test('clears the previous runner selection when switching to IMAT', async () => {
-    let finishImaging!: (response: { data: Record<string, string> }) => void;
-    const imagingResponse = new Promise<{ data: Record<string, string> }>((resolve) => {
-      finishImaging = resolve;
-    });
+  test('disables reruns when the job cannot be loaded', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
     vi.mocked(fiaApi.get).mockImplementation(async (url) => {
-      if (url === '/job/42') return { data: { script: { value: 'reduce()' } } };
-      if (url === '/jobs/runners') return { data: { 'sha256:mantid': '6.9.0' } };
-      return imagingResponse;
+      if (url === '/job/42') throw new Error('Job lookup failed');
+      return { data: url === mantidEndpoint ? mantidVersions : imagingVersions };
     });
-    const history = renderEditor('LOQ');
-    await waitFor(() => expect(screen.getByRole('combobox')).toHaveTextContent('Mantid 6.9.0'));
+    renderEditor('IMAT');
 
-    act(() => history.push('/reduction-history/IMAT/value-editor-42'));
-
-    expect(screen.getByRole('combobox', { name: 'Runner version' })).not.toHaveTextContent('6.9.0');
-    expect(screen.getByRole('button', { name: 'Rerun with changes' })).toBeDisabled();
-    await act(async () => finishImaging({ data: { 'sha256:imaging': '3.0.0' } }));
-    expect(screen.getByRole('combobox')).toHaveTextContent('Mantid Imaging 3.0.0');
-    expect(screen.getByRole('button', { name: 'Rerun with changes' })).toBeEnabled();
+    await screen.findByRole('textbox', { name: 'Reduction script' });
+    expect(runnerSelect()).toHaveAttribute('aria-disabled', 'true');
+    expect(rerunButton()).toBeDisabled();
   });
 
-  test('ignores an old Mantid response after switching to IMAT', async () => {
-    let finishMantid!: (response: { data: Record<string, string> }) => void;
-    const mantidResponse = new Promise<{ data: Record<string, string> }>((resolve) => {
+  test('keeps the explicit selection when the preferred catalog arrives later', async () => {
+    let finishMantid!: (response: { data: typeof mantidVersions }) => void;
+    const mantidResponse = new Promise<{ data: typeof mantidVersions }>((resolve) => {
       finishMantid = resolve;
     });
     vi.mocked(fiaApi.get).mockImplementation(async (url) => {
-      if (url === '/job/42') return { data: { script: { value: 'reduce()' } } };
-      if (url === '/jobs/runners') return mantidResponse;
-      return { data: { 'sha256:imaging': '3.0.0' } };
+      if (url === '/job/42') return { data: { ...jobData, runner_image: `${mantidRepository}@sha256:shared` } };
+      if (url === mantidEndpoint) return mantidResponse;
+      return { data: imagingVersions };
     });
-    const history = renderEditor('LOQ');
+    const user = userEvent.setup();
+    renderEditor('IMAT');
 
-    act(() => history.push('/reduction-history/IMAT/value-editor-42'));
-    await waitFor(() => expect(screen.getByRole('combobox')).toHaveTextContent('Mantid Imaging 3.0.0'));
-    await act(async () => finishMantid({ data: { 'sha256:mantid': '6.9.0' } }));
+    await waitFor(() => expect(runnerSelect()).toHaveTextContent('Choose a runner version'));
+    await user.click(runnerSelect());
+    await user.click(screen.getByRole('option', { name: imagingLabels[1] }));
+    await act(async () => finishMantid({ data: mantidVersions }));
 
-    expect(screen.getByRole('combobox')).toHaveTextContent('Mantid Imaging 3.0.0');
-    expect(screen.getByRole('combobox')).not.toHaveTextContent('6.9.0');
+    expect(runnerSelect()).toHaveTextContent(imagingLabels[1]);
+    expect(rerunButton()).toBeEnabled();
+  });
+
+  test('resets the script and runner on job navigation and ignores the previous catalog response', async () => {
+    const nextJob = {
+      data: { script: { value: 'next_reduction()' }, runner_image: `${mantidRepository}@sha256:shared` },
+    };
+    let finishNextJob!: (response: typeof nextJob) => void;
+    const nextJobResponse = new Promise<typeof nextJob>((resolve) => {
+      finishNextJob = resolve;
+    });
+    let finishPreviousMantid!: (response: { data: Record<string, string> }) => void;
+    const previousMantidResponse = new Promise<{ data: Record<string, string> }>((resolve) => {
+      finishPreviousMantid = resolve;
+    });
+    let isFirstMantidRequest = true;
+    vi.mocked(fiaApi.get).mockImplementation(async (url) => {
+      if (url === '/job/42') return { data: { ...jobData, runner_image: `${imagingRepository}@sha256:shared` } };
+      if (url === '/job/43') return nextJobResponse;
+      if (url === mantidEndpoint) {
+        const response = isFirstMantidRequest ? previousMantidResponse : { data: mantidVersions };
+        isFirstMantidRequest = false;
+        return response;
+      }
+      return { data: imagingVersions };
+    });
+    const user = userEvent.setup();
+    const history = renderEditor('IMAT');
+
+    await waitFor(() => expect(runnerSelect()).toHaveTextContent(imagingLabels[1]));
+    await user.click(runnerSelect());
+    await user.click(screen.getByRole('option', { name: imagingLabels[0] }));
+    await user.type(screen.getByRole('textbox', { name: 'Reduction script' }), ' # edit');
+
+    act(() => history.push('/reduction-history/IMAT/value-editor-43'));
+    expect(runnerSelect()).toHaveAttribute('aria-disabled', 'true');
+    expect(rerunButton()).toBeDisabled();
+    await act(async () => finishNextJob(nextJob));
+    await act(async () => finishPreviousMantid({ data: { 'sha256:shared': '6.1.0' } }));
+
+    expect(runnerSelect()).toHaveTextContent(mantidLabels[1]);
+    expect(screen.getByRole('textbox', { name: 'Reduction script' })).toHaveValue('next_reduction()');
+    await user.click(rerunButton());
+    expect(fiaApi.post).toHaveBeenCalledWith('/job/rerun', {
+      job_id: '43',
+      runner_image: `${mantidRepository}@sha256:shared`,
+      script: 'next_reduction()',
+    });
   });
 });

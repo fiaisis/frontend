@@ -463,6 +463,40 @@ describe('Reduction history page', () => {
     cy.get(viewSelect).should('have.focus');
   });
 
+  it('defaults an IMAT rerun to the original runner and lets the user switch families', () => {
+    cy.viewport(1280, 720);
+    const job = { ...imatJobsResponse[0], runner_image: 'ghcr.io/fiaisis/mantid@sha256:abc123' };
+    cy.intercept('GET', /\/api\/instrument\/IMAT\/jobs\/count\?.*$/, { body: { count: 1 } });
+    cy.intercept('GET', /\/api\/instrument\/IMAT\/jobs\?.*$/, { body: [job] });
+    cy.intercept('GET', /\/api\/job\/302$/, { body: job });
+    cy.intercept('GET', /\/api\/jobs\/runners$/, {
+      body: { 'sha256:newer': '6.10.0', 'sha256:abc123': '6.9.0' },
+    });
+    cy.intercept('GET', /\/api\/jobs\/runners\/mantidimaging$/, {
+      body: { 'sha256:abc123': '3.1.0' },
+    }).as('getImagingRunners');
+    cy.intercept('POST', /\/api\/script\/analyse$/, (req) => {
+      req.reply({ body: { content_hash: req.body.content_hash, parses: true, diagnostics: [], truncated: false } });
+    });
+    cy.intercept('POST', /\/api\/job\/rerun$/, { body: 303 }).as('rerunImatJob');
+
+    cy.visitFia('/fia/reduction-history/IMAT');
+    cy.get('tr[aria-label="View reduction 302 details"]').click();
+    cy.get('[data-testid="reduction-details-modal"]').contains('a', 'Value editor').click();
+    cy.location('pathname').should('eq', '/fia/reduction-history/IMAT/value-editor-302');
+
+    cy.wait('@getImagingRunners');
+    cy.get('#runner-version').should('contain.text', 'Mantid 6.9.0').click();
+    cy.contains('[role="option"]', 'Mantid Imaging 3.1.0').click();
+    cy.contains('button', 'Rerun with changes').should('be.enabled').click();
+
+    cy.wait('@rerunImatJob').its('request.body').should('deep.equal', {
+      job_id: '302',
+      runner_image: 'ghcr.io/fiaisis/mantidimaging@sha256:abc123',
+      script: job.script.value,
+    });
+  });
+
   it('opens a generic IMAT stack viewer and loads stacks only after selection', () => {
     cy.viewport(1280, 720);
     cy.intercept('GET', /\/api\/instrument\/IMAT\/jobs\?.*$/, {

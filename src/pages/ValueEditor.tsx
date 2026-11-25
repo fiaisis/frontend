@@ -15,8 +15,8 @@ import {
   useTheme,
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { useHistory, useParams } from 'react-router-dom';
+import React, { useEffect, useRef, useState } from 'react';
+import { useParams } from 'react-router-dom';
 
 import { getJobTableChromeColors, JOB_TABLE_TOOLBAR_CONTROL_HEIGHT } from '../components/jobs/constants';
 import NavArrows from '../components/navigation/NavArrows';
@@ -25,7 +25,7 @@ import { getPageHeaderControlSx } from '../components/navigation/pageHeaderStyle
 import ScriptDiagnosticsStatus from '../components/script/ScriptDiagnosticsStatus';
 import { fiaApi } from '../lib/api';
 import { isValidInstrument } from '../lib/instrumentData';
-import { MantidVersionMap } from '../lib/types';
+import { Job, MantidVersionMap } from '../lib/types';
 import { useAvailablePluginHeight } from '../lib/useAvailablePluginHeight';
 import { useScriptEditor } from '../lib/useScriptEditor';
 
@@ -63,113 +63,135 @@ const a11yProps = (index: number): { id: string; 'aria-controls': string } => {
   };
 };
 
-const ValueEditor: React.FC = () => {
+const runnerCatalogs = {
+  mantid: {
+    endpoint: '/jobs/runners',
+    repository: 'ghcr.io/fiaisis/mantid',
+    name: 'Mantid',
+  },
+  imaging: {
+    endpoint: '/jobs/runners/mantidimaging',
+    repository: 'ghcr.io/fiaisis/mantidimaging',
+    name: 'Mantid Imaging',
+  },
+};
+
+type RunnerFamily = keyof typeof runnerCatalogs;
+
+type RunnerOption = {
+  image: string;
+  label: string;
+};
+
+type ValueEditorJob = {
+  runner_image?: string | null;
+  run?: Pick<Job['run'], 'instrument_name'> | null;
+  script?: Job['script'] | null;
+};
+
+const ValueEditorForJob: React.FC<{ urlInstrumentName: string; jobId: string }> = ({ urlInstrumentName, jobId }) => {
   const { rootRef, availableHeight } = useAvailablePluginHeight();
   const theme = useTheme();
   const editorChrome = getJobTableChromeColors(theme.palette.mode);
   const [value, setValue] = useState<number>(0);
-  const [runnerVersion, setRunnerVersion] = useState<string>('');
-  const [runners, setRunners] = useState<MantidVersionMap>({});
-  const { instrumentName: urlInstrumentName, jobId } = useParams<{ instrumentName: string; jobId: string }>();
+  const [chosenRunnerImage, setChosenRunnerImage] = useState('');
+  const [runnerOptions, setRunnerOptions] = useState<Partial<Record<RunnerFamily, RunnerOption[]>>>({});
+  const [job, setJob] = useState<ValueEditorJob | null>(null);
+  const [scriptValue, setScriptValue] = useState('');
+  const [loading, setLoading] = useState(true);
+  const rerunSuccessful = useRef<boolean | null>(null);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+
   const isImat = urlInstrumentName.toUpperCase() === 'IMAT';
-  const runnerEndpoint = isImat ? '/jobs/runners/mantidimaging' : '/jobs/runners';
-  const runnerRepository = isImat ? 'ghcr.io/fiaisis/mantidimaging' : 'ghcr.io/fiaisis/mantid';
-  const runnerName = isImat ? 'Mantid Imaging' : 'Mantid';
-  const history = useHistory();
+  const instrumentName = job?.run?.instrument_name || urlInstrumentName;
+  const originalImage = typeof job?.runner_image === 'string' ? job.runner_image.trim() : '';
+  const [originalReference, originalDigest] = originalImage.split('@');
+  const originalRepository = originalReference.split(':')[0];
+  const preferredFamily = isImat && originalRepository !== runnerCatalogs.mantid.repository ? 'imaging' : 'mantid';
+  const otherFamily = preferredFamily === 'mantid' ? 'imaging' : 'mantid';
+  const preferredOptions = runnerOptions[preferredFamily] ?? [];
+  const options = isImat ? [...preferredOptions, ...(runnerOptions[otherFamily] ?? [])] : preferredOptions;
+  const originalOption =
+    isImat && originalDigest
+      ? preferredOptions.find(({ image }) => image === `${originalRepository}@${originalDigest}`)
+      : undefined;
+  const defaultRunnerImage = originalOption?.image ?? preferredOptions[0]?.image ?? '';
+  const runnerImage = job ? chosenRunnerImage || defaultRunnerImage : '';
+  const canChooseRunner = job !== null && options.length > 0;
+  const canRerun = !loading && !!runnerImage;
 
   // Redirect if an instrument is specified in the URL but it's not a valid instrument name
   useEffect(() => {
     if (urlInstrumentName && !isValidInstrument(urlInstrumentName)) {
       window.location.replace('/404/');
     }
-  }, [urlInstrumentName, history]);
-
-  const [scriptValue, setScriptValue] = useState<string>('');
-  const [loading, setLoading] = useState<boolean>(true);
-  const [instrumentName, setInstrumentName] = useState<string | null>(null);
-  const rerunSuccessful = useRef<boolean | null>(null);
-  const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const userModified = useRef(false);
+  }, [urlInstrumentName]);
 
   // Python checking for the script tab. Advisory: nothing here touches the "Rerun with changes" button's
   // disabled state, because the checker cannot model facility code and would otherwise block scripts that
   // run perfectly well. Disabled while the job is still loading, so the first check is about the real script
   // rather than the empty editor shown before it arrives.
   const { diagnostics: scriptDiagnostics, onMount: onScriptEditorMount } = useScriptEditor(scriptValue, {
-    enabled: !loading,
+    enabled: !loading && job !== null,
   });
 
-  const fetchReduction = useCallback(async (): Promise<void> => {
-    setLoading(true);
+  useEffect(() => {
+    const controller = new AbortController();
+    const { signal } = controller;
+
     fiaApi
-      .get(`/job/${jobId}`)
-      .then((res) => res.data)
-      .then((data) => {
-        if (data?.script?.value && !userModified.current) {
-          setScriptValue(data.script.value);
-        }
-        if (data?.run?.instrument_name) {
-          setInstrumentName(data.run.instrument_name);
-        }
+      .get<ValueEditorJob>(`/job/${jobId}`, { signal })
+      .then(({ data }) => {
+        if (signal.aborted || !data || typeof data !== 'object' || Array.isArray(data)) return;
+        setJob(data);
+        setScriptValue(data.script?.value ?? '');
       })
-      .catch((err) => console.error('Error fetching reductions:', err))
-      .finally(() => setLoading(false));
-  }, [jobId]);
+      .catch((err) => {
+        if (!signal.aborted) console.error('Error fetching reductions:', err);
+      })
+      .finally(() => {
+        if (!signal.aborted) setLoading(false);
+      });
 
-  useEffect(() => {
-    fetchReduction();
-  }, [fetchReduction]);
-
-  useEffect(() => {
-    let isMounted = true;
-    setRunners({});
-    setRunnerVersion('');
-
-    fiaApi
-      .get(runnerEndpoint)
-      .then((res) => res.data)
-      .then((data) => {
-        if (!isMounted) return;
-
+    const fetchRunners = async (family: RunnerFamily): Promise<void> => {
+      const { endpoint, repository, name } = runnerCatalogs[family];
+      try {
+        const { data } = await fiaApi.get<MantidVersionMap>(endpoint, { signal });
+        if (signal.aborted) return;
         if (!data || typeof data !== 'object' || Array.isArray(data)) {
           console.error('Unexpected runner version response format:', data);
-          setRunners({});
-          setRunnerVersion('');
           return;
         }
 
-        const runnerData = data as MantidVersionMap;
-        setRunners(runnerData);
-
-        const runnerKeys = Object.keys(runnerData);
-        if (runnerKeys.length > 0) {
-          setRunnerVersion((current) => (current && runnerData[current] ? current : runnerKeys[0]));
-        } else {
-          setRunnerVersion('');
-        }
-      })
-      .catch((err) => {
-        if (isMounted) console.error('Failed to fetch runner versions:', err);
-      });
-
-    return () => {
-      isMounted = false;
+        const catalog = Object.entries(data)
+          .filter(
+            ([digest, version]) => /^sha256:[^\s@]+$/.test(digest) && typeof version === 'string' && version.trim()
+          )
+          .map(([digest, version]) => ({ image: `${repository}@${digest}`, label: `${name} ${version}` }));
+        setRunnerOptions((current) => ({ ...current, [family]: catalog }));
+      } catch (err) {
+        if (!signal.aborted) console.error(`Failed to fetch ${name} runner versions:`, err);
+      }
     };
-  }, [runnerEndpoint]);
+
+    void fetchRunners('mantid');
+    if (isImat) void fetchRunners('imaging');
+
+    return () => controller.abort();
+  }, [isImat, jobId]);
 
   const handleChange = (event: React.SyntheticEvent, newValue: number): void => {
     setValue(newValue);
   };
 
   const handleRunnerVersionChange = (event: SelectChangeEvent<string>): void => {
-    setRunnerVersion(event.target.value);
+    setChosenRunnerImage(event.target.value);
   };
 
   const handleRerun = async (): Promise<void> => {
-    if (!runnerVersion) return;
+    if (!canRerun) return;
 
     setLoading(true);
-    const runnerImage = `${runnerRepository}@${runnerVersion}`;
     fiaApi
       .post('/job/rerun', { job_id: jobId, runner_image: runnerImage, script: scriptValue })
       .then(() => (rerunSuccessful.current = true))
@@ -245,10 +267,10 @@ const ValueEditor: React.FC = () => {
               variant="body2"
               component="p"
               noWrap
-              title={`${instrumentName ?? urlInstrumentName} Job ${jobId} values`}
+              title={`${instrumentName} Job ${jobId} values`}
               sx={{ flex: '1 1 200px', minWidth: 0, fontWeight: 700, m: 0 }}
             >
-              {instrumentName ?? urlInstrumentName} Job {jobId} values
+              {instrumentName} Job {jobId} values
             </Typography>
 
             <Box sx={{ minWidth: 0 }}>
@@ -309,9 +331,13 @@ const ValueEditor: React.FC = () => {
                 <Select
                   id="runner-version"
                   labelId="runner-version-label"
-                  value={runnerVersion}
+                  value={runnerImage}
                   onChange={handleRunnerVersionChange}
-                  disabled={Object.keys(runners).length === 0}
+                  disabled={!canChooseRunner}
+                  displayEmpty={canChooseRunner}
+                  renderValue={(image) =>
+                    options.find((option) => option.image === image)?.label ?? 'Choose a runner version'
+                  }
                   size="small"
                   sx={{
                     width: { xs: '100%', sm: isImat ? 240 : 180 },
@@ -355,9 +381,9 @@ const ValueEditor: React.FC = () => {
                     MenuListProps: { sx: { py: 0 } },
                   }}
                 >
-                  {Object.entries(runners).map(([sha, version]) => (
-                    <MenuItem key={sha} value={sha}>
-                      {runnerName} {version}
+                  {options.map(({ image, label }) => (
+                    <MenuItem key={image} value={image}>
+                      {label}
                     </MenuItem>
                   ))}
                 </Select>
@@ -366,7 +392,7 @@ const ValueEditor: React.FC = () => {
                 variant="text"
                 startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <Replay fontSize="small" />}
                 onClick={handleRerun}
-                disabled={loading || !runnerVersion}
+                disabled={!canRerun}
                 sx={{
                   ...getPageHeaderControlSx(theme),
                   flexGrow: 0,
@@ -432,12 +458,7 @@ const ValueEditor: React.FC = () => {
               </Box>
             ) : (
               <Editor
-                onChange={(newValue) => {
-                  if (newValue !== null) {
-                    setScriptValue(newValue ?? '');
-                    userModified.current = true; // Indicates that the user has modified the script
-                  }
-                }}
+                onChange={(newValue) => setScriptValue(newValue ?? '')}
                 onMount={onScriptEditorMount}
                 height="100%"
                 defaultLanguage="python"
@@ -448,7 +469,7 @@ const ValueEditor: React.FC = () => {
                   fontSize: 14,
                   automaticLayout: true,
                   padding: { top: 12, bottom: 12 },
-                  ariaLabel: `${instrumentName ?? urlInstrumentName} reduction ${jobId} script editor`,
+                  ariaLabel: `${instrumentName} reduction ${jobId} script editor`,
                 }}
               />
             )}
@@ -461,6 +482,13 @@ const ValueEditor: React.FC = () => {
         </Box>
       </Box>
     </Box>
+  );
+};
+
+const ValueEditor: React.FC = () => {
+  const { instrumentName: urlInstrumentName, jobId } = useParams<{ instrumentName: string; jobId: string }>();
+  return (
+    <ValueEditorForJob key={`${urlInstrumentName}/${jobId}`} urlInstrumentName={urlInstrumentName} jobId={jobId} />
   );
 };
 
